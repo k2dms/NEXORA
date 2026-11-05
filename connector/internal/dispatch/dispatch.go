@@ -1,7 +1,7 @@
 // Package dispatch is the connector's front door — the total function
 // `packages/schema/protocol/command-allowlist.json#/dispatchRule` promises, with exactly one failure case and no
-// fallthrough. It decides whether a request may reach a handler and never what a handler does: the method
-// implementations are M3.
+// fallthrough. It decides whether a request may reach a handler and never what a handler does: connector.hello is
+// answered by internal/hello, and every method that changes state is M3.
 //
 // The order is the order the contract gives its rules. The caller before the method, because ADR-0004 rule 6 answers
 // a sender that is not on the allowlist with `UnauthorizedExtension` and nothing else, whatever it asked for. The
@@ -130,9 +130,9 @@ func New(cfg Config) (*Dispatcher, error) {
 	}, nil
 }
 
-// Methods returns the names this dispatcher can actually run, sorted. It is the surface a `connector.hello` answer
-// reports and a diagnostics dump prints, so a method the contract publishes and this build forgot is visible
-// instead of assumed.
+// Methods returns the names this dispatcher can actually run, sorted. It exists so that a method the contract
+// publishes and this build forgot to register is a visible gap rather than an assumed surface — what a hello
+// announces is the capability registry, which internal/hello reads from the projection.
 func (d *Dispatcher) Methods() []string {
 	out := make([]string, 0, len(d.handlers))
 	for name := range d.handlers {
