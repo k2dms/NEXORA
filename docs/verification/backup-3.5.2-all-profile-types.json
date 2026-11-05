@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 2,
+  "-enableQuickSwitch": true,
+  "-refreshOnProfileChange": true,
+  "-startupProfileName": "auto switch",
+  "-quickSwitchProfiles": ["proxy", "company-pac", "subscriptions"],
+  "-revertProxyChanges": true,
+  "-confirmDeletion": true,
+  "-showInspectMenu": true,
+  "-addConditionsToBottom": false,
+  "-showResultProfileOnActionBadgeText": false,
+  "-showExternalProfile": true,
+  "-monitorWebRequests": true,
+  "-downloadInterval": 240,
+  "-customCss": "/* fixture: no real user styling */\n.ProfileIntro { display: none; }",
+  "+proxy": {
+    "profileType": "FixedProfile",
+    "name": "proxy",
+    "color": "#99ccee",
+    "proxyForHttp": { "scheme": "http", "host": "http-proxy.example.com", "port": 3128 },
+    "proxyForHttps": { "scheme": "http", "host": "http-proxy.example.com", "port": 3128 },
+    "proxyForFtp": { "scheme": "http", "host": "http-proxy.example.com", "port": 3128 },
+    "fallbackProxy": { "scheme": "socks5", "host": "127.0.0.1", "port": 1080 },
+    "bypassList": [
+      { "conditionType": "BypassCondition", "pattern": "127.0.0.1" },
+      { "conditionType": "BypassCondition", "pattern": "::1" },
+      { "conditionType": "BypassCondition", "pattern": "localhost" },
+      { "conditionType": "BypassCondition", "pattern": "*.internal.example.com" }
+    ],
+    "auth": {
+      "all": { "username": "fixture-user", "password": "not-a-real-secret" },
+      "fallbackProxy": { "username": "fixture-socks-user", "password": "not-a-real-secret" }
+    }
+  },
+  "+company-pac": {
+    "profileType": "PacProfile",
+    "name": "company-pac",
+    "color": "#ff8888",
+    "revision": 4,
+    "pacUrl": "https://pac.example.com/company.pac",
+    "pacScript": "function FindProxyForURL(url, host) {\n  if (isInNet(host, \"10.0.0.0\", \"255.0.0.0\")) return \"DIRECT\";\n  return \"PROXY pac-egress.example.com:8080; DIRECT\";\n}"
+  },
+  "+subscriptions": {
+    "profileType": "RuleListProfile",
+    "name": "subscriptions",
+    "color": "#dd6633",
+    "format": "Switchy",
+    "sourceUrl": "https://rules.example.com/list.txt",
+    "matchProfileName": "proxy",
+    "defaultProfileName": "direct",
+    "lastUpdate": "2026-11-04T00:00:00.000Z",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "ruleList": "||example.org^\n||example.net^\n@@|http://excluded.example/\n"
+  },
+  "+auto switch": {
+    "profileType": "SwitchProfile",
+    "name": "auto switch",
+    "color": "#99dd99",
+    "revision": 2,
+    "defaultProfileName": "__ruleListOf_auto switch",
+    "rules": [
+      {
+        "condition": { "conditionType": "HostWildcardCondition", "pattern": "internal.example.com" },
+        "profileName": "direct"
+      },
+      {
+        "condition": { "conditionType": "HostRegexCondition", "pattern": "^shop\\.example\\.com$" },
+        "profileName": "proxy"
+      },
+      {
+        "condition": { "conditionType": "UrlWildcardCondition", "pattern": "*://mail.example.com/*" },
+        "profileName": "company-pac"
+      },
+      {
+        "condition": { "conditionType": "UrlRegexCondition", "pattern": "^https://upload\\." },
+        "profileName": "proxy"
+      },
+      {
+        "condition": { "conditionType": "HostLevelsCondition", "minValue": 1, "maxValue": 2 },
+        "profileName": "direct"
+      },
+      {
+        "condition": { "conditionType": "IpCondition", "ip": "192.0.2.0", "prefixLength": 24 },
+        "profileName": "subscriptions"
+      },
+      {
+        "condition": { "conditionType": "BypassCondition", "pattern": "10.0.0.0/8" },
+        "profileName": "direct"
+      },
+      {
+        "condition": { "conditionType": "KeywordCondition", "pattern": "cdn.example" },
+        "profileName": "proxy"
+      },
+      {
+        "condition": { "conditionType": "TimeCondition", "startHour": 9, "endHour": 18 },
+        "profileName": "proxy"
+      },
+      {
+        "condition": { "conditionType": "WeekdayCondition", "startDay": 1, "endDay": 5 },
+        "profileName": "proxy"
+      },
+      {
+        "condition": { "conditionType": "TrueCondition" },
+        "profileName": "direct"
+      }
+    ]
+  },
+  "+__ruleListOf_auto switch": {
+    "profileType": "RuleListProfile",
+    "name": "__ruleListOf_auto switch",
+    "color": "#dd6633",
+    "format": "Switchy",
+    "sourceUrl": "",
+    "matchProfileName": "proxy",
+    "defaultProfileName": "direct",
+    "ruleList": "||attached.example^\n"
+  }
+}
