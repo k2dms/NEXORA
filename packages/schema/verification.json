@@ -219,7 +219,7 @@
     },
     {
       "id": "VER-11",
-      "subject": "the Ladder A legacy build chain was run by hand on one host; clean-runner reproducibility and the pinned test floor are unverified",
+      "subject": "the Ladder A legacy build chain ran by hand on one host and is green on three runner images at the pinned floors (docs/audit/99-baseline-report.md §12, 2026-11-05); what the row still owes is the half no run can give it while no lockfile is tracked -- that the dependency set which built there is the set a later host resolves",
       "state": "no-run",
       "owner": "ci",
       "closesBy": { "kind": "ci-step", "ref": "legacy build + mocha-summary floor parsing in .github/workflows/verify.yml" },

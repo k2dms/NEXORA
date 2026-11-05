@@ -139,7 +139,9 @@ decoys. **VERIFIED** for the reads; **INFERRED** for "decoy" (the packaging path
   `omega-pac/Gruntfile.coffee` (it would apply
   the test's zone to *every* grunt task in the project, including `build`, to satisfy one spec). For the dates
   the suite builds (`01 Feb 2016 …`) London is UTC+0, so the exported zone does not move the floor
-  `verify.yml` pins; whether a clean runner reproduces that floor is §7.3's open question, not this one's.
+  `verify.yml` pins; a clean runner reproduces exactly that floor — all three images of the 2026-11-05 runs print
+  `142 passing, 1 failing` and `8 passing, 5 failing` (`docs/audit/99-baseline-report.md` §12), so §7.3's open
+  question about the zone is answered and this one is not a hazard on a runner.
 - **Correction to `docs/PROJECT-STATE.md`:** §6/#10 describes an *optional* fix "a `omega-pac/Gruntfile.coffee`
   wrapper `process.env.TZ ?= 'Europe/London'`". That wrapper does **not** exist — `omega-pac/Gruntfile.coffee:1`
   is only `module.exports = require('load-grunt-config')`. The TZ wrapper is a proposal, not current code.
@@ -231,10 +233,12 @@ has been observed here, so every verdict below is **INFERRED** from the YAML plu
 
 Both configs are pending a human decision to delete/replace (`docs/PROJECT-STATE.md` §9.3, §7).
 
-### 7.3 `.github/workflows/verify.yml` — written 2026-11-05, not yet run
+### 7.3 `.github/workflows/verify.yml` — written 2026-11-05, run three times that day, green on the third
 
-The file exists. What is *not* true of it: it has never executed on a runner, so nothing below about its
-behaviour on GitHub Actions is a measurement — the measurements are of its shell logic, taken on this host.
+The file exists and it has executed on GitHub runners: three runs of it on 2026-11-05, the
+first two red on defects in the workflow itself, the third green across all six jobs. The measurements below are
+therefore of two kinds — what was read off this host's shell before any runner existed, and what the runs printed,
+which is recorded line by line in `docs/audit/99-baseline-report.md` §12.
 
 - **Three jobs.** `contracts` runs the contract root, the citation checker, the two ADR record checks (the four
   `docs/adr/0001-adr-practice.md:99` promises — index parity, one `# ADR-NNNN:` heading, the six sections, no
@@ -254,32 +258,44 @@ behaviour on GitHub Actions is a measurement — the measurements are of its she
   how the runner is told to fetch while `omega-web/bower.json:37` and `:43` keep their text. Measured afterwards: a cold `bower install`
   succeeds **without** that config, because bower resolves those endpoints as `https://github.com/…\.git` on its
   own. The step therefore stays as belt-and-braces for a caller that passes the literal URL to git, and the
-  honest claim about the runner is the smaller one — it will install, and it will fetch 21 components this host
-  served from cache.
+  honest claim about the runner is the smaller one — it will install, and it will fetch what this host served from
+  cache. **Measured on the runner 2026-11-05:** all three images printed `Running "bower:install"` and
+  `>> Installed bower packages` inside the hub build, and the zip carries 252 `lib/` entries there, on images that
+  never held this host's cache (`docs/audit/99-baseline-report.md` §12). Worth naming precisely, because the
+  workflow does not run the `bower install` of `omega-build/package.json:12` at all: the components arrive through
+  grunt's own default sequence — `omega-web/grunt/aliases.coffee:9`, whose config is
+  `omega-web/grunt/bower.coffee:5` with `targetDir: 'build/lib/'` — which is also why the extension's own `lib/`
+  holds no tracked files.
 - **§7.1(c) — zero test coverage — becomes a pinned floor.** The step `VER-11 -- test floor per project, parsed
   from the mocha summary` runs `grunt test` per project and demands `>= 142 passing / <= 1 failing` for
   `omega-pac` and `>= 8 / <= 5` for `omega-target`, both read from `docs/audit/99-baseline-report.md` §5; it
   exports the zone instead of using the npm-script prefix (§4), and prints `NOTE: <project> has 0 test files`
   for the two projects whose glob matches nothing (§5) rather than letting a vacuous green pass.
 - **The 352-file lesson is the actual gate.** `VER-08 -- inspect the artifacts, never trust the exit code`
-  asserts 353 entries, 5 999 353 B (chromium) / 5 999 408 B (firefox) uncompressed, 252 `lib/` entries, 7
-  `_locales`, the exact top-level path set, and `js/omega_pac.min.js` present and ≥ 700 000 B; the next step
-  prints each sha256 beside the value recorded in `docs/audit/99-baseline-report.md` §6. Byte identity is a
-  NOTE, not an assertion, and probe-4 measured why: rebuilding the same tree on the same machine reproduced every
-  content figure and moved both hashes, because the zip stores per-entry build timestamps
-  (`docs/audit/99-baseline-report.md` §6).
+  asserts 353 entries, 252 `lib/` entries, 7 `_locales`, the exact top-level path set, and `js/omega_pac.min.js`
+  present and ≥ 700 000 B. The uncompressed totals — 5 999 353 B (chromium) / 5 999 408 B (firefox) — and the
+  bundle's recorded 742 272 B are printed as NOTEs beside the measured values, together with each sha256 beside the
+  value recorded in `docs/audit/99-baseline-report.md` §6. Byte identity is a NOTE, not an assertion, and probe-4
+  measured why: rebuilding the same tree on the same machine reproduced every content figure and moved both hashes,
+  because the zip stores per-entry build timestamps (`docs/audit/99-baseline-report.md` §6). The totals were an
+  assertion until the second run, which was red on ubuntu for exactly that reason: those figures are a property of
+  a `core.autocrlf=true` checkout, and a clean LF checkout of the same commit is 24 964 B smaller — demoted in the
+  same commit that fixed the Windows PATH defect, and green on the third run (§12).
 - **What it deliberately does not answer:** §7.1(d) — `release.yml` remains the only thing that publishes and
   still ships `chromium-release.zip`/`firefox-release.zip`; the lockfile gap (§6) is unchanged because a
   lockfile policy is a human decision; and the 6 failing legacy tests stay the pinned regression floor rather
   than a green suite.
-- **How it was validated without a runner.** Every `run:` block was extracted to a file and executed here under
-  `set -eo pipefail` with runner-like working directories — including `check_zip` against the real
+- **How it was validated before any runner existed.** Every `run:` block was extracted to a file and executed here
+  under `set -eo pipefail` with runner-like working directories — including `check_zip` against the real
   `dist/chromium-release.zip` and `run_floor` against the real `omega-pac` suite (both printed their measured
   values, e.g. `142 passing, 1 failing`) — and each guard was then re-run against a synthetic violation (a root
   `package.json`, an `omega-*` import specifier, a side-effect-only `import 'omega-pac/…'`, a `"file:` link into
-  the legacy tree, a `vless` literal in a `.svelte` file, a truncated zip) to prove it can fail. That is
-  evidence about the shell logic only: no `actions/*` step, no GitHub runner context, no `GITHUB_*` variable was
-  exercised, so the verdicts in §7.1 and §7.2 stand as written.
+  the legacy tree, a `vless` literal in a `.svelte` file, a truncated zip) to prove it can fail. That was evidence
+  about the shell logic only, and the three runs showed exactly how much that is worth: it caught nothing that the
+  runner did not, and the runner found two defects no host shell could — a Windows `$GITHUB_WORKSPACE` that is not a
+  POSIX path, and a byte total that is a property of one checkout. Both were reproduced here before being fixed
+  (`docs/audit/raw/probe-7-grunt-path.txt`), and both were green on the next run. The runner output itself is kept as
+  `docs/audit/raw/probe-8-runner-runs.txt`.
 
 ---
 
@@ -305,13 +321,13 @@ behaviour on GitHub Actions is a measurement — the measurements are of its she
 
 | Hazard | Evidence | Severity |
 |---|---|---|
-| No lockfile → non-deterministic resolution; §6 UNVERIFIED reproducibility | `.gitignore:3` | High |
-| `TZ=` prefix breaks `cmd.exe` npm scripts on Windows | `omega-pac/package.json:32` | High — measured (§4); CI exports the zone instead (§7.3), no run yet |
+| No lockfile → non-deterministic resolution; §6 UNVERIFIED reproducibility | `.gitignore:3` | High — unchanged by the runs: three clean images resolved and built without a lockfile (§12 of `docs/audit/99-baseline-report.md`), which proves a set resolves today, not that it is the same set next month |
+| `TZ=` prefix breaks `cmd.exe` npm scripts on Windows | `omega-pac/package.json:32` | High — measured (§4); CI exports the zone instead (§7.3), and the third run is green on both Windows cells at the pinned floors, which is the first time the workaround executed where the npm prefix cannot |
 | No `engines` pin → a future Node major can silently break Grunt 0.4 | §2, `omega-build/package.json:8` | Medium |
-| Bower deprecated registry + `git://` transport, moving `#main` refs | `omega-web/bower.json:37`, `:43` | Low-Medium — the transport is dead to *git* but bower normalises it to https and a cold install works (§1.1); `#main` is still a moving branch, and 21 of 26 components were served from this host's Bower cache, so a runner with an empty cache is still unmeasured |
-| npm resolution never re-measured from an empty `node_modules` | `.gitignore:3`, probe-4 §1-deps (`up to date` five times) | High — probe-4 reused this host's `node_modules`, so no lockfile-free cold `npm install` has been observed anywhere (§6) |
-| Vacuous test pass hides zero coverage in web + chromium | `omega-web/grunt/mochaTest.coffee:6` | Medium |
-| CI is either dormant (tag-gated) or dead (node:7.10 / `release.zip`) | `.github/workflows/release.yml:5`, `.circleci/config.yml:5` | Medium — and now three configs, since `verify.yml` has never run (§7.3) |
+| Bower deprecated registry + `git://` transport, moving `#main` refs | `omega-web/bower.json:37`, `:43` | Low-Medium — the transport is dead to *git* but bower normalises it to https and a cold install works (§1.1); `#main` is still a moving branch. The empty-cache half of this row is answered: the runner fetched every component with no cache behind it and the zip carries the same 252 `lib/` entries this host's warm cache produced (§7.3) |
+| npm resolution never re-measured from an empty `node_modules` | `.gitignore:3`, probe-4 §1-deps (`up to date` five times`) | High — **narrowed by the runs**: `npm install` from an empty tree has now been observed on three clean images with no lockfile in git, and every floor and artifact figure reproduced there (§12 of `docs/audit/99-baseline-report.md`). What is still not measured is a *user* machine and whether the resolved set is identical across images — the ubuntu and windows builds of one commit differ by 12 B uncompressed, unexplained |
+| Vacuous test pass hides zero coverage in web + chromium | `omega-web/grunt/mochaTest.coffee:6` | Medium — and the runner prints `NOTE: <project> has 0 test files` for both, on every cell, rather than passing them quietly |
+| CI is either dormant (tag-gated) or dead (node:7.10 / `release.zip`) | `.github/workflows/release.yml:5`, `.circleci/config.yml:5` | Medium — and now three configs, only one of which has ever run: `verify.yml` has three runs and a green one (§7.3), while `release.yml` stays tag-gated and `.circleci/config.yml` stays a config nothing executes |
 | `require.resolve('omega-pac/omega_pac.min.js')` at config load couples build order to file existence | `omega-target-chromium-extension/grunt/browserify.coffee:43` | Medium |
 
 Forward-looking note: the Connector is never inside the extension zip; packaging that is a Phase-2 concern.
@@ -324,9 +340,9 @@ This audit only records that **today** the zip is `build/` + filtered manifest
 
 | Claim | Why it could not be checked here |
 |---|---|
-| §6 / §8.2 dependency-resolution reproducibility on a clean machine | No lockfile is tracked (§6 verified), and a clean-room `npm install` was not run; reproducibility is therefore assumed unknown, not proven broken. Both 2026-11-05 probes got closer without closing it: probe-4 re-ran `npm run deps` against this host's existing `node_modules` (five `up to date` lines, so the chain was measured and the resolution was not), and probe-5 did move `omega-web/bower_components/` aside, but 21 of the 26 directories then resolved from this host's Bower cache rather than the network (§1.1). |
+| §6 / §8.2 dependency-resolution reproducibility on a clean machine | No lockfile is tracked (§6 verified), and a clean-room `npm install` was not run; reproducibility is therefore assumed unknown, not proven broken. Both 2026-11-05 probes got closer without closing it: probe-4 re-ran `npm run deps` against this host's existing `node_modules` (five `up to date` lines, so the chain was measured and the resolution was not), and probe-5 did move `omega-web/bower_components/` aside, but 21 of the 26 directories then resolved from this host's Bower cache rather than the network (§1.1). **The runner then closed the clean-tree half** — three images installed all five roots from an empty `node_modules`, with no lockfile, and reproduced every floor and every artifact content figure (§12 of `docs/audit/99-baseline-report.md`). What the row still refuses to call closed is resolution *identity*: no lockfile is tracked, so nothing states which set a future host will get, and the ubuntu and windows builds of one commit already differ by 12 B uncompressed for a reason nobody has computed. |
 | §4 that moving time-parsing to explicit UTC would change test semantics | `omega-pac/test/conditions.coffee:468` line verified present; the semantic consequence was not exercised. |
-| §7.1 / §7.2 / §7.3 CI verdicts | No CI run was observed for any of the three configs, including the one added on 2026-11-05; §7.1's and §7.2's verdicts stay INFERRED from YAML plus code facts, and §7.3's stay unproven for GitHub-runner behaviour (its shell logic, by contrast, was executed on this host). |
-| §7.3 that the matrix rows, `needs` ordering and `continue-on-error` do what the YAML says | Only the `run:` blocks were exercised, outside Actions; `actions/checkout@v4`, `actions/setup-node@v4`, `actions/upload-artifact@v4` and the `GITHUB_*` inputs the VER-06/VER-10 ranges read were never invoked. |
+| §7.1 / §7.2 / §7.3 CI verdicts | `verify.yml` has now run: three times on 2026-11-05, red, red, green (§12 of `docs/audit/99-baseline-report.md`), so §7.3's verdict is no longer an unproven one. §7.1's and §7.2's stay exactly as written — INFERRED from YAML plus code facts — because neither of those two configs has ever executed: `release.yml` reacts only to a `v*` tag, and no tag was pushed in this iteration, and `.circleci/config.yml` is a config nothing runs. |
+| §7.3 that the matrix rows, `needs` ordering and `continue-on-error` do what the YAML says | **Closed for the matrix and the `needs` gate; still open for `continue-on-error`.** The gate held when it mattered: in `42015170195` all three `contracts` cells were red and the `legacy-chain` job never executed — its log contains no line for it at all, and the API lists it as skipped with the matrix expression left unexpanded (`${{ matrix.os }} / ${{ matrix.node }}`), which is the shape GitHub gives a matrix job whose `needs` failed. `actions/checkout@v4`, `actions/setup-node@v4` and `actions/upload-artifact@v4` all executed. What no run measured is the non-blocking half: run `42017987418` had a red Node 24 cell, and the jobs API still called that cell `failure`, so `continue-on-error: ${{ matrix.node == '24' }}` is only observed in the case where it does not have to work — in `42020617681` the cell is green for the same reason the other two are. The suspicion behind this row was right about one thing, though: a `GITHUB_*` input did break, in a way no host shell could show. `$GITHUB_WORKSPACE` is `D:\a\NEXORA\NEXORA` on a Windows runner, and the `PATH` built from it reached grunt as `Error: Cannot find module 'A:\NEXORA\NEXORA\omega-build\node_modules\grunt-cli\bin\grunt'`; `docs/audit/raw/probe-7-grunt-path.txt` reproduces the same defect on this host, where the same `\a\` segment resolves against the Git install directory instead of a runner drive. |
 | §1.1 that `#main` actually moves | Both branches were resolved once, over https (`4de5f14a…`, `e22ff918…`), so they are alive; no second observation exists to show the ref shifting, so the drift risk is reasoned, not measured. The transport itself, however, **is** measured now — the earlier "not probed" entry was closed by the 2026-11-05 probes recorded in §1.1, as was §4's `cmd.exe` deduction. |
 | §8.1 "builds green on Node 24" | Carried from `docs/PROJECT-STATE.md` §5 measurements; not re-built during this audit (builds were forbidden in that iteration). The later probe-3 rebuild is in `docs/audit/99-baseline-report.md` §4.3, §10. |

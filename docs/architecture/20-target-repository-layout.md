@@ -28,7 +28,7 @@ E:/NEXORA
 ├─ .env.example, .gitattributes, .gitignore              EXISTS   root dotfiles added by this iteration (§11)
 ├─ .npmrc ×5                                             EXISTS   one per legacy project, none at root (§8)
 ├─ .github/workflows/release.yml                         EXISTS   legacy tag-driven publisher (§10)
-├─ .github/workflows/verify.yml                          EXISTS   PR-blocking, non-tagging counterpart; written 2026-11-05, never run (§11)
+├─ .github/workflows/verify.yml                          EXISTS   PR-blocking, non-tagging counterpart; written and first run 2026-11-05, green (§11)
 ├─ .circleci/config.yml                                  EXISTS   dead, cannot pass; pending PROJECT-STATE §9.3
 ├─ docs/{README,PROJECT-STATE}.md, audit/, adr/, verification/  EXISTS   Phase 0 + Phase 1 output
 ├─ docs/architecture/                                    PARTIAL  20-40; this file is 20
@@ -126,8 +126,9 @@ git, so the transport `omega-web/bower.json:37` and `:43` name is never handed t
 `git ls-remote git://…` still times out here, which is why `.github/workflows/verify.yml` keeps its
 `insteadOf` step — defence in depth for a caller that does pass the literal URL to git, not the thing that
 makes the build possible. No lockfile is tracked (`.gitignore:3`,
-`docs/audit/02-toolchain-decay-and-risk.md` §6), and 21 of the 26 components came from this host's Bower cache
-in the same measurement, so whether an empty-cache runner resolves all of them stays open.
+`docs/audit/02-toolchain-decay-and-risk.md` §6). The empty-cache question that measurement closed: 21 of the 26
+components came from this host's Bower cache in the 2026-11-05 rebuild, and the runner build of the same commit, on
+an image with no cache, produced a zip carrying the same 252 `lib/` entries (§12).
 
 ## 6. Cut-over commit: definition
 
@@ -149,7 +150,8 @@ and `Revert ` subjects. `ci` is the label for `.github/**`. This list was writte
 `.github/workflows/verify.yml` as the VER-06 step before it was stated in the document it cites, so the first run
 of that workflow on a real runner rejected this repository's own `ci(verify): …` commit — the defect the run found
 was the guard enforcing a rule its source document did not state. The rule is stated now; the vocabulary is
-declared here and the step reads it from here.
+declared here and the step reads it from here, and the third execution of that workflow — run `42020617681`, on
+`ubuntu-latest` and two `windows-latest` cells — passes it (`docs/audit/99-baseline-report.md` §12).
 
 ## 7. Import boundary for `nexora/**`
 
@@ -233,8 +235,9 @@ the two lint demotions (`omega-pac/grunt/coffeelint.coffee:11` and the chromium 
 pattern works: `tools/verify-vendor.mjs`, `tools/check-no-secrets.mjs`, `tools/check-doc-evidence.mjs`,
 `.gitattributes:23-25` (Go line rules declared before any Go exists), `.env.example:11` (empty value whose
 comment names the LIVE row it gates), `.gitignore:8-10` (`.env`, `.env.*`, `!.env.example`).
-`.github/workflows/verify.yml` is the addition of the same class, landed on 2026-11-05 and not yet run on a
-runner: a **new** workflow, PR-blocking and
+`.github/workflows/verify.yml` is the addition of the same class, landed on 2026-11-05 and run there the same day:
+three runner executions, the first two red on defects in the file itself and the third green, recorded in
+`docs/audit/99-baseline-report.md` §12. It is a **new** workflow, PR-blocking and
 non-tagging, leaving `.github/workflows/release.yml` untouched — that one fires only on a `v*` tag
 (`.github/workflows/release.yml:6`) and MUST NOT be reused as a verification gate.
 
@@ -261,11 +264,11 @@ non-tagging, leaving `.github/workflows/release.yml` untouched — that one fire
 | Every `path:line` citation in `docs/` still resolves | `node tools/check-doc-evidence.mjs` (`CITATION_RE` is the pattern, `FUTURE_PREFIX` exempts target paths, `selfCite` and `mutableCite` refuse line cites into files that move) | **GREEN for this file** |
 | Contract layer: schemas compile, examples valid, invalid rejected, every fixture frame replays against the envelope, allowlist is exactly 19 with one pre-hello method | `npm --prefix packages/schema run verify` (`packages/schema/package.json:8`; 19-method assertion `packages/schema/scripts/verify.mjs:186`, pre-hello `:187-192`) | **GREEN** — the run prints its own counts, and no assertion here depends on what it prints |
 | NEXORA keys never start with `+`; `secretBearing ⇒ ¬syncEligible`; `headers` stripped from sync | the prefix rejection at `packages/schema/scripts/verify.mjs:360-364`, the namespace loop at `packages/schema/scripts/verify.mjs:359-372` and the `headers` assertion at `packages/schema/scripts/verify.mjs:373-377` | **GREEN** — this is SEC-1 expressed as data |
-| Legacy build graph still reachable from `omega-build` | Ladder A (`omega-build/package.json:12-15`) run by hand, recorded in `docs/audit/99-baseline-report.md`; the `legacy-chain` job of `.github/workflows/verify.yml` automates install → link → hub build → tests → release → artifact inspection, and has never run | Verified: NO — deferred to Phase 2 |
+| Legacy build graph still reachable from `omega-build` | Ladder A (`omega-build/package.json:12-15`) run by hand, recorded in `docs/audit/99-baseline-report.md`; the `legacy-chain` job of `.github/workflows/verify.yml` automates install → link → hub build → tests → release → artifact inspection, and did all of it on three runner images on 2026-11-05, green, at the pinned floors (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 |
 | The six legacy directories have not moved | nothing | Verified: NO — deferred to Phase 2 |
-| `nexora/**` and `packages/**` import nothing from `omega-*` | the `VER-02` step of `.github/workflows/verify.yml` — import-specifier, side-effect-import and `file:` greps over both roots; executed here, never on a runner | Verified: NO — deferred to Phase 2 (§7) |
-| No `package.json` / `go.work` / `.npmrc` at the repository root | the `VER-04` step of `.github/workflows/verify.yml` — five root paths including `package-lock.json` and `go.mod`; executed here, never on a runner | Verified: NO — deferred to Phase 2 (§8) |
-| No connector, host shim, or Xray bytes inside `dist/*.zip` | the `VER-08` step's `check_zip`, which asserts the exact top-level path set, the 353-entry count and the bundle's presence, and ran here against both real artifacts | Verified: NO — deferred to Phase 2 (§9) |
+| `nexora/**` and `packages/**` import nothing from `omega-*` | the `VER-02` step of `.github/workflows/verify.yml` — import-specifier, side-effect-import and `file:` greps over both roots; green here and on three runner images, but over a `nexora/**` that holds no code yet, which is why the row is not met (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 (§7) |
+| No `package.json` / `go.work` / `.npmrc` at the repository root | the `VER-04` step of `.github/workflows/verify.yml` — five root paths including `package-lock.json` and `go.mod`; green here and on three runner images, while the mechanism this row is queued against, a `check-layout-guards` tool, has not been written (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 (§8) |
+| No connector, host shim, or Xray bytes inside `dist/*.zip` | the `VER-08` step's `check_zip`, which asserts the exact top-level path set, the 353-entry count and the bundle's presence, and ran against the artifacts each of the three runner builds produced, green (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 (§9) |
 | Extension identity and version-line continuity | nothing in-repo; store behaviour is external | Verified: NO — deferred to Phase 2, `docs/verification/live-matrix.md` LIVE-14 |
 | Line endings and binary classification stay as declared | `.gitattributes` itself, plus the `VER-10` step (`git diff --check` over the range and `git ls-files --eol` over the index); `git add --renormalize` is forbidden by the session rules | Verified: NO — deferred to Phase 2 |
 

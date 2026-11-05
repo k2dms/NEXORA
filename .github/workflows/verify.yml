@@ -3,9 +3,12 @@
 # actions/upload-artifact, and release.yml stays the sole thing that reacts to a `v*` tag.
 #
 # Steps are named after the row of docs/architecture/39-verification-matrix.md they are intended to close
-# (VER-02, VER-03, VER-04, VER-06, VER-08, VER-10, VER-11). Writing a workflow is not running one: those rows
-# stay `Verified: NO -- deferred to Phase 2` in the corpus until a run of this file is green, and the counts in
-# doc 39 move only when a human records the run.
+# (VER-02, VER-03, VER-04, VER-06, VER-08, VER-10, VER-11). Writing a workflow is not running one, and running it
+# is not closing a row: this file ran three times on 2026-11-05 -- red, red, green, with every measured line
+# recorded in docs/audit/99-baseline-report.md §12 -- and the rows keep the states
+# packages/schema/verification.json gives them, because that data has no state meaning closed and a row closes by
+# being deleted together with the labelled sentence it is anchored to. VER-06, VER-08, VER-10 and VER-11 are the
+# four whose stated condition (a green run of this file) that record now meets.
 #
 # Floors and expected artifact shapes below are measured values, each with its source:
 #   docs/audit/99-baseline-report.md §5   -- the legacy test floor (142/1, 8/5) and the 0-test-file projects
@@ -291,8 +294,15 @@ jobs:
           # bower.json keeps its text (docs/audit/99-baseline-report.md §7, §11).
           git config --global url."https://github.com/".insteadOf git://github.com/
 
-      - name: Install the five legacy roots (the set omega-build/package.json:12 installs)
+      - name: Install the five legacy roots (the npm half of omega-build/package.json:12; Bower is not run here)
         run: |
+          # The `deps` script this step mirrors ends its omega-web clause with `&& bower install`. That half is
+          # deliberately absent: the components arrive during the build, because omega-web's default grunt task
+          # list ends with the `bower` task (omega-web/grunt/aliases.coffee:9, configured by
+          # omega-web/grunt/bower.coffee:5 to copy into build/lib/) -- grunt-bower-task, not a bare bower call.
+          # Measured on the first green run, 2026-11-05: `Running "bower:install"` prints inside the hub build,
+          # `>> Installed bower packages` follows it, and the zip then carries 252 lib/ entries on an image that
+          # never held this repository's Bower cache (docs/audit/99-baseline-report.md §12).
           for p in omega-build omega-pac omega-target omega-web omega-target-chromium-extension; do
             echo "::group::$p"
             ( cd "$p" && npm install --no-audit --no-fund )

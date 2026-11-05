@@ -69,10 +69,16 @@ All seven also run unattended: `.github/workflows/verify.yml` executes them on e
 and on every pull request targeting `master`, and adds the guards only a machine can hold — the `VER-NN` rows it names
 in its step titles, plus the artifact inspection that `docs/audit/99-baseline-report.md` §6 turned into a rule (a build
 counts as green only when the zip is shown to carry 353 entries, 252 `lib/` files and `js/omega_pac.min.js` inside it,
-never from an exit code). What that file is **not** is a `YES` anywhere in this directory: it has never run on a
-runner. Each of its `run:` blocks was executed on the development host and re-run against a synthetic violation to
-prove the guard can fail — `docs/audit/02-toolchain-decay-and-risk.md` §7.3 — which is a claim about shell logic, not
-about CI. Until a green run is recorded here and in the queue, the workflow is this section's mirror, not its evidence.
+never from an exit code). It has now run there: three executions of it on 2026-11-05, the first two red on defects
+in the workflow — a commit label its own source document had never declared, a Windows `$GITHUB_WORKSPACE` that is
+not a POSIX path, and a byte total that was one checkout's property rather than a floor — and the third green across
+all six jobs, recorded line by line in `docs/audit/99-baseline-report.md` §12. Before those runs, each `run:` block
+had been executed on the development host and re-run against a synthetic violation to prove the guard can fail —
+`docs/audit/02-toolchain-decay-and-risk.md` §7.3 — which was a claim about shell logic, and the runs are what turned
+it into a claim about CI. What the green run is still not: a `YES` for any live row, because no browser was opened,
+and not a state change in the queue, because `packages/schema/verification.json` has no state meaning closed and
+closing a row means deleting the labelled line it is anchored to. That bookkeeping is `docs/architecture/39-verification-matrix.md` §8's
+first task in Phase 2, not a status edit in a document.
 
 ---
 

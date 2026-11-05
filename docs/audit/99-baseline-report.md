@@ -318,7 +318,8 @@ clean rebuild — the four-step chain, both pinned test floors to the individual
 artifact content assertion. One thing did not reproduce: the recorded sha256 of the two zips, which moves on a
 same-machine rebuild (§6). One thing that was inference became measurement: Bower resolves the declared `git://`
 endpoints over https by itself, so a cold install works without any transport rewrite (§7). One thing this
-iteration still has not done: run anything in a browser, or on a runner.
+iteration still has not done: run anything in a browser. The runner half it named alongside that is answered by
+§12 — three runs on 2026-11-05, the third green.
 
 ## 11. probe-4 and probe-5 — the iteration's own end-to-end check, 2026-11-05
 
@@ -362,8 +363,98 @@ fixture. None of that happened — no browser was launched in this iteration, an
 exporter-shaped rather than genuine `.bak` files (`docs/verification/live-matrix.md` LIVE-14, and §4 of
 `docs/verification/README.md` for what each row would need first). Under
 `docs/verification/live-env-contract.md`, an unexecuted row is `SKIPPED`, never `PASSED`, so `LIVE-01…24` are
-untouched by this section. The other half this report cannot close is a GitHub runner: `.github/workflows/verify.yml`
-has still never run there, and the registry below keeps that open.
+untouched by this section, and §12 opens no browser either. The other half this section could not close — a GitHub
+runner — is answered by §12: `.github/workflows/verify.yml` ran there three times on 2026-11-05, and the third run
+is green.
+
+## 12. `.github/workflows/verify.yml` on a GitHub runner — three runs, 2026-11-05
+
+§11 ended with the one thing this iteration had not done: get the file onto a runner. It is now on one, and the
+answer came as two red runs before it came as a green one. Every line quoted below is copied out of
+`gh run view <id> --log`, not re-derived from the workflow source, and the extraction itself is kept as
+`docs/audit/raw/probe-8-runner-runs.txt` — the three runs' job conclusions as the API reports them, every
+`##[error]` annotation verbatim, and each line quoted here beside the number of times the runner printed it.
+
+| Run | Commit | Result | What it found |
+|---|---|---|---|
+| `42015170195` | `4307ff6` | **red** — `VER-06`, all three `contracts` cells | the commit-label guard rejects a label it accepts nothing else of: `ci(verify): …`, which is the subject form this repository's own history uses. The vocabulary existed only in `.github/workflows/verify.yml`; `docs/architecture/20-target-repository-layout.md` §6, the document that step cites, never stated it. A guard enforcing a rule its source does not declare is the defect, and the commit that tripped it was already published — so the document was fixed first and the list second (`a7627ae`). All three cells printed the same line: `##[error]subject "ci(verify): add the PR-blocking workflow, written against measured values" carries no conventional label (doc 20 §6).` The `needs: contracts` gate then held: `legacy-chain` never executed, so its log has no line for it and the API lists the job with the matrix expression still unexpanded. |
+| `42017987418` | `a7627ae` | **red** — all three `legacy-chain` cells: `VER-08` on ubuntu, `VER-11` on both windows images | (a) `$GITHUB_WORKSPACE` on a windows runner is `D:\a\NEXORA\NEXORA` — that value appears 40 times in the run's log — and it is not a POSIX path, so the `PATH` entry built from it reached grunt as a mangled module path and mocha never started: `##[error]omega-pac produced no mocha summary; the run died before reporting.` followed by `Error: Cannot find module 'A:\NEXORA\NEXORA\omega-build\node_modules\grunt-cli\bin\grunt'` in both windows cells; (b) `VER-08` compared the zip's uncompressed total against a number recorded from a `core.autocrlf=true` checkout, so a correct build on a different image cannot match it: `##[error]dist/chromium-release.zip is 5974389 B, expected 5999353 B.` Both were reproduced on this host before the file changed — `docs/audit/raw/probe-7-grunt-path.txt` — the first as the same `Cannot find module` error with the same `\a\` segment resolved against this machine's Git install directory instead of a runner drive, the second as a measured 24 964-byte CR delta between a CRLF and an LF checkout of the same tree. |
+| `42020617681` | `ceedabf` | **green** — 6 jobs passed, 1 skipped | the whole file, on `ubuntu-latest`/Node 22, `windows-latest`/Node 22 and `windows-latest`/Node 24. |
+
+### What the green run measured
+
+`contracts`, identically on all three images: `checks run: 1217`, `OK: 13 schemas compile, 19 command docs conform,
+20 examples valid, 24 invalid examples rejected, 112 protocol frames replayed`,
+`checked 2252 path:line citations, 487 path#pointer citations and 1253 doc-name references in docs/`,
+`OK: the index matches 20 ADR files, exactly.`, `SELFTEST OK: 13 cases`,
+`OK: no secret-shaped content in 418 files (170 vendored/minified files skipped)` — both counters scan `git ls-files`,
+and at `ceedabf` this host printed the same 418 and the same 588, so the runner and the host were scanning the same
+tree (any later commit that adds a tracked file moves both, which is why they are read as a pair and not as a floor) —
+plus the `VER-02`, `VER-03`, `VER-04`, `VER-08`
+(binary-path) and `VER-10` guards, `OK: git diff --check clean and every tracked blob is LF or binary in the index.`
+and `OK: every commit subject in the range carries its label; 0 cut-over commit(s).`
+
+`legacy-chain`, on each of the three images:
+
+- `OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).` and
+  `OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).` — §5's floors reproduced on
+  a machine that had never seen this repository, which is what §5 left as the open question.
+- `NOTE: omega-web has 0 test files` and the same for `omega-target-chromium-extension`, printed rather than passed
+  quietly, as designed.
+- `Running "bower:install" (bower) task` → `>> Installed bower packages`, then in the artifact
+  `dist/chromium-release.zip: 353 entries, 5974389 B uncompressed, lib/=252, _locales=7` (ubuntu; windows is
+  `5974401` / `5974456`) and `OK: dist/chromium-release.zip matches the shape of doc 20 §5.`
+- `Created ../dist/chromium-release.zip (1901079 bytes)` / `(1901116 bytes)` on ubuntu, `(1901087)` / `(1901124)` on
+  windows; `OK: 2 shipped backups load and compile in the legacy engine`, `SELFTEST OK: 4/4 broken envelopes
+  rejected.`, `OK: every statically referenced vendor asset is present.`, and both backup inventories reproduced
+  (`profiles=4 compiled=3 refused-by-engine=1 rules=2 evaluations=15` and
+  `profiles=7 compiled=6 refused-by-engine=1 rules=11 evaluations=30`).
+- Three `NOTE` lines, all of them the deliberate demotions of §6 and of run `42017987418`: the totals are not the
+  recorded `5 999 353` / `5 999 408`, `js/omega_pac.min.js is 735547 B, not the recorded 742 272 B`, and neither
+  checksum matches. **Shape is the floor; bytes are an observation.** The two images differ from each other by
+  exactly 12 B in total and not at all in the bundle size; that difference is recorded, not explained — nothing in
+  this iteration computed a per-file diff between an ubuntu and a windows build.
+- `continue-on-error` on the Node 24 cell was not needed: it is green for the same reason the other two are. The
+  attribute itself is still unmeasured — `42017987418` had a red Node 24 cell and the jobs API called that cell
+  `failure` anyway, so what a red cell inside an otherwise green workflow would report has not been seen.
+  Every job prints GitHub's own `##[warning]Node.js 20 is deprecated … forced to run on Node.js 24` for
+  `actions/checkout@v4` and `actions/setup-node@v4`; that is the runner telling us the action pins, not this file.
+
+### Where the `lib/` files actually come from
+
+The 252 `lib/` entries in both zips are Bower output, and `omega-target-chromium-extension/lib` has no tracked
+files at all (`git ls-files` there prints nothing). `bower install` appears in `omega-build/package.json:12` only
+inside the `deps` script, which this workflow does not run — the chain gets them from grunt:
+`omega-web/Gruntfile.coffee:1` loads `load-grunt-config`, whose per-file config directory makes
+`omega-web/grunt/aliases.coffee:9` the last task of the default sequence, and that task's config is
+`omega-web/grunt/bower.coffee:5` — `targetDir: 'build/lib/'`. So `npm run build` is what fetches the components and
+places them, and the runner log above is the proof: `Running "bower:install"` appears inside the hub build, and the
+zip ends up carrying 252 of them. Two consequences: the "do not vendor" decision recorded in
+`docs/PROJECT-STATE.md` §1 row 2 turns out to be sound in a way it was not measured to be before — the artifact does
+depend on Bower, and a runner with no cache behind it produced the same 252 `lib/` entries this host did; and the
+`Install the five legacy roots` step installs npm only, deliberately, because the `bower install` half of
+`omega-build/package.json:12` is performed by the build itself.
+
+### What the green run does not do
+
+It does not move a single `VER-*` row. Three reasons, all mechanical:
+
+1. `packages/schema/verification.json` has no state meaning "closed" — `states.values` is `no-code`, `no-check`,
+   `no-run`, `no-fixture`, `needs-human` — so closing a row means deleting the row **and** the labelled sentence it
+   is anchored to, in `docs/architecture/20-target-repository-layout.md` §13, in docs 21/25/26/27/29, in the ADRs and
+   in `docs/verification/live-matrix.md`, then re-deriving `marker.counted` (202) and re-asserting the state
+   distribution in `packages/schema/scripts/verify.mjs`, which hard-codes 53/13/2/2/5 of 75. That is a commit of its
+   own, with its own measured numbers, not a side effect of a status update.
+2. For six of the rows, the run is evidence but not the named closing mechanism. `VER-04` and `VER-05` are queued
+   against a `check-layout-guards` tool that has not been written; `VER-02` and `VER-03` scanned roots that are still
+   empty of the code they will hold, so their green is a guard that executed, not a boundary that held under
+   pressure; `VER-09` needs a store, and `VER-57` needs a CSP load test the workflow does not contain.
+   `VER-06`, `VER-08`, `VER-10` and `VER-11` are the four whose stated condition — a green run of this file — is now
+   met; `docs/architecture/39-verification-matrix.md` §8 is the order they close in, and closing them is the
+   bookkeeping described in point 1 above.
+3. Nothing in this run touched the browser. `LIVE-01…24` are still `SKIPPED`, `docs/verification/live-matrix.md` is
+   unchanged, and the `connector` job is still `if: ${{ false }}`, so it reports SKIPPED on every run including this
+   one.
 
 ## UNVERIFIED registry
 
@@ -371,10 +462,12 @@ has still never run there, and the registry below keeps that open.
   not photographed).
 - Root cause of the three `OptionsSync #requestPush` 2 000 ms timeouts.
 - Whether the 354-vs-353 file difference is exactly the `manifest` task substitution (per-file diff not computed).
-- Clean-machine reproducibility of `npm install` + `bower install`. **Narrowed 2026-11-05**: the Bower half is
-  now measured on a cold `bower_components` (§7) and works, so what remains is the npm side on a machine with no
-  `node_modules`, no lockfile in git and an empty Bower cache (21 of 26 components were served from this host's
-  cache).
+- Clean-machine reproducibility of `npm install` + `bower install`. **Narrowed twice 2026-11-05.** The Bower half is
+  measured on a cold `bower_components` (§7) and works, and both halves are now measured on a machine that had never
+  held this tree: three GitHub runner images installed all five roots with no lockfile in git, built through the hub,
+  and produced a zip carrying the same 252 `lib/` entries this host's warm cache did (§12). What remains unmeasured is
+  narrower still — a *user* machine, whose image differs from GitHub's, and whether npm resolution there picks the
+  same versions; the runner proves a set resolves and builds, not that it is the same set everywhere.
 - ~~Whether `git://` Bower deps resolve on GitHub-protocol-restricted networks.~~ **Closed 2026-11-05, twice.**
   The first closure ("they do not resolve from this host; the https `insteadOf` rewrite is the mitigation") was
   itself wrong: raw `git ls-remote git://…` does time out here, but bower never uses that transport — it resolves
@@ -387,11 +480,19 @@ has still never run there, and the registry below keeps that open.
   (§6). The archive stores per-entry build timestamps, so no recorded hash is a floor; `verify.yml` prints the
   hash beside these values rather than asserting them. Whether the *uncompressed content* of the two builds is
   byte-identical is **UNVERIFIED** — probe-4 overwrote the 2026-11-04 zips before anyone thought to keep them,
-  which is the lesson to carry into Phase 2: keep the previous artifact when re-measuring an artifact.
+  which is the lesson to carry into Phase 2: keep the previous artifact when re-measuring an artifact. **Partly
+  answered by §12 from the other side:** two runner images of the same commit produced archives whose uncompressed
+  totals differ by 12 B (`5 974 389`/`5 974 444` on ubuntu against `5 974 401`/`5 974 456` on windows, both with 353
+  entries and the same 735 547 B bundle), so content is already known *not* to be byte-identical across images; the
+  per-file diff that says which 12 bytes is still not computed.
 - Whether any of `LIVE-01…24` passes: no browser was launched in this iteration (§11). Under
   `docs/verification/live-env-contract.md` those rows are `SKIPPED`, which is not this report claiming success.
-- That `.github/workflows/verify.yml` behaves as written on a GitHub runner. Every `run:` block was executed on
-  this host, including `check_zip` against the real artifacts and `run_floor` against the real `omega-pac`
-  suite, and each guard was re-run against a synthetic violation to prove it can fail — but no `actions/*` step,
-  runner context or `GITHUB_*` input was exercised. Its first green run is what closes the `VER-*` rows of
-  `docs/architecture/39-verification-matrix.md`, and that run has not happened.
+- That `.github/workflows/verify.yml` behaves as written on a GitHub runner. **Answered 2026-11-05: it does, after
+  two failures that were defects in the file rather than in the tree (§12).** Every `run:` block had already been
+  executed on this host, including `check_zip` against the real artifacts and `run_floor` against the real
+  `omega-pac` suite, and each guard was re-run against a synthetic violation to prove it can fail; what this host
+  could not exercise — the `actions/*` steps, the runner context, the `GITHUB_*` inputs — is what `42015170195` and
+  `42017987418` then found, and `42020617681` then passed. The consequence for the queue is recorded in §12 and is
+  deliberately not a state change: `docs/architecture/39-verification-matrix.md` still carries every `VER-*` row at
+  the state its data gives it, because closing one means deleting the row and the labelled line it is anchored to,
+  and re-deriving the counts that check the deletion.

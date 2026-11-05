@@ -62,7 +62,7 @@ These were probes, not assumptions. Each one removed work or added a requirement
 | # | Plan said | Reality (measured) | Consequence |
 |---|---|---|---|
 | 1 | Ladder B or C likely — Grunt 0.4 will die on Node 24 at module load (`glob@3.2`/`graceful-fs@2`) | **Grunt 0.4 runs on Node 24.** Full chain green | **Ladder A**. No side Node LTS install, no `engines.node` pin. Raw logs: `docs/audit/raw/probe-*.txt` |
-| 2 | Bower is dead; must vendor ~25 components into `omega-web/lib/` (multi-MB into git) | **`bower install` works on this host** (both `git://` deps resolve) | **Do not vendor.** `deps` and `grunt/aliases.coffee` stay untouched; `tools/verify-vendor.mjs` is the guard instead. Reproducibility on a clean runner stays **UNVERIFIED** and is recorded as such in `docs/audit/02` |
+| 2 | Bower is dead; must vendor ~25 components into `omega-web/lib/` (multi-MB into git) | **`bower install` works on this host** (both `git://` deps resolve), and the components turn out to arrive through **grunt**, not through that script | **Do not vendor.** `deps` and `grunt/aliases.coffee` stay untouched; `tools/verify-vendor.mjs` is the guard instead. Clean-runner reproducibility was UNVERIFIED when this row was written; the 2026-11-05 runs installed and built on three images with no cache behind them and produced the same 252 `lib/` entries (`docs/audit/99-baseline-report.md` §12). The lockfile gap is still open, and §12 states what that leaves unproven |
 | 3 | The build blocker is the toolchain | The blocker is **8 pre-existing `max_line_length` coffeelint *errors*** in `omega-pac`; `grunt test`-less default task aborts → `omega-pac/omega_pac.min.js` is never produced → `omega-target-chromium-extension/grunt/browserify.coffee` requires that file **at config load** → `Loading "Gruntfile.coffee" tasks...ERROR` → grunt-hub aborts | Fixed by demoting `max_line_length` from `error` to `warn` in exactly two files (see §5). No line was re-wrapped, no product behaviour changed |
 | 4 | `grunt release` exit code 0 ⇒ correct artifact | False. Pre-fix zip: 352 files / 1 710 687 B, **missing `js/omega_pac.min.js` (742 272 B)** — the extension loaded as a blank page | Good artifact baseline: **353 files, 5 999 353 B uncompressed, 252 `lib/` entries, 7 `_locales`** |
 | 5 | Tests are a green baseline | There are **7 real test files** in the repo. `omega-web` and `omega-target-chromium-extension` have **no `test/` directory at all**, yet `grunt test` there succeeds because `mochaTest.src` globs `test/**/*.coffee` and matches nothing; neither package.json even declares an npm `test` script. Real floor today: **omega-pac 142 passing / 1 failing**, **omega-target 8 passing / 5 failing** | The 6 pre-existing failures are the **pinned regression floor**, not a defect to fix in Phase 1. The failing `pacResult` SOCKS5 case (`omega-pac/test/profiles.coffee:49-52`) is a **Phase-2 blocking requirement** because `ConnectorProfile.compile` depends on that code path |
@@ -207,10 +207,11 @@ a claim or a deferral is unowned, owned twice, or if a document reads a distribu
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
 `40-open-decisions.md` exist now, so their cross-checks are real assertions.
-`node tools/check-doc-evidence.mjs` → **green: 2252 `path:line` citations, 487 `path#pointer` citations,
-1253 doc-and-script names** (the `path:line` figure fell by 21 when every cite into this file became a section
+`node tools/check-doc-evidence.mjs` → **green: 2260 `path:line` citations, 487 `path#pointer` citations,
+1287 doc-and-script names** (the `path:line` figure fell by 21 when every cite into this file became a section
 reference, and by 3 more when probe-4 turned the same rule on for `docs/audit/99-baseline-report.md`, which every
-probe round appends to; the third figure rose when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
+probe round appends to; it rose by 8 again when the runner record cited the legacy build configs it reads, and the
+third figure by 34 for the same reason. It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
@@ -263,14 +264,16 @@ What the contracts encode that a reader must not accidentally relax:
 honestly in `docs/audit/02`: contract-layer reproducibility on a clean runner is UNVERIFIED. Minimal fix if the
 user later changes policy: `!packages/**/package-lock.json`. Pending user decision — risk §7.5 of the plan.
 
-### 4.5 The plan's deliverables are all on disk — one of them has never executed
+### 4.5 The plan's deliverables are all on disk — and the one that had not executed has now executed
 
 Nothing the Phase 0/1 plan asks for on disk is absent any more. `.github/workflows/verify.yml` landed on
 2026-11-05 — three jobs (`contracts`, `legacy-chain`, and `connector` present but switched off with
 `if: ${{ false }}`), a three-row matrix, and the `VER-02`/`03`/`04`/`06`/`08`/`10`/`11` guards as executable steps —
-and it has **never run on a runner**: every `run:` block was executed on this host and proved able to fail against a
-synthetic violation, which is a claim about the shell logic, not about CI (`docs/audit/02-toolchain-decay-and-risk.md`
-§7.3). `tools/check-legacy-backup.mjs` — the command `LIVE-14`'s compile half cites — is on disk beside the other
+and it ran there the same day: three executions, red, red, green, each of the two failures a defect in the workflow
+itself rather than in the tree, all of them recorded line by line in `docs/audit/99-baseline-report.md` §12. Before
+those runs every `run:` block had been executed on this host and proved able to fail against a synthetic violation,
+which is a claim about the shell logic; the runs are what made it a claim about CI
+(`docs/audit/02-toolchain-decay-and-risk.md` §7.3). `tools/check-legacy-backup.mjs` — the command `LIVE-14`'s compile half cites — is on disk beside the other
 three gate scripts.
 `docs/architecture/39-verification-matrix.md`, `docs/architecture/40-open-decisions.md`, `packages/schema/verification.json` and
 `packages/schema/open-decisions.json` are **on disk** now, with the harness
@@ -286,7 +289,11 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
   Re-run end to end on 2026-11-05 by probe-4 — same four steps, same order, all exit 0, and its `npm run deps`
   reused this host's `node_modules` (five `up to date` lines), so it re-verified the chain rather than resolution.
 - Artifact assertions: 353 files / 5 999 353 B / 252 `lib/` entries / 7 `_locales`, and `js/omega_pac.min.js` present at 742 272 B —
-  every one of them reproduced from the 2026-11-05 rebuild, top-level path set included.
+  every one of them reproduced from the 2026-11-05 rebuild, top-level path set included. On a clean image the *shape*
+  figures reproduce and the *byte* figures do not: three runner builds of one commit gave 353 entries, 252 `lib/`,
+  7 `_locales` and the bundle, at 5 974 389 B / 5 974 444 B (ubuntu) and 5 974 401 B / 5 974 456 B (windows) with a
+  735 547 B bundle — the totals and the bundle size are properties of a CRLF checkout, which is why the workflow
+  prints them as NOTEs (`docs/audit/99-baseline-report.md` §12).
 - `sha256 dist/chromium-release.zip` = `b93d5100e4c05ccf7af365dfc1742344360579f482df72e4e9ce00f5ba964ba8`
 - `sha256 dist/firefox-release.zip` = `b2309ce3bd0c2be246f0c228ffde1290fa1756c10ad93d90f17380249b4a728f`
   (2026-11-05 values: `73eee79d015ed404dc4bfdaa6d634ae0626a0612b2d603cb3412e6e47be68a4f` and
@@ -307,19 +314,23 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
   with `TZ` exported.
 - `node tools/check-no-secrets.mjs --selftest` → 13/13 green.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
-- `node tools/check-doc-evidence.mjs` → **green** (2252 `path:line`, 487 `path#pointer`, 1252 doc-and-script
-  names; `PLANNED_DOCS` empty; probe-4 re-ran all of it on 2026-11-05 and §4.4 has the same figures).
+- `node tools/check-doc-evidence.mjs` → **green** (2260 `path:line`, 487 `path#pointer`, 1287 doc-and-script
+  names; `PLANNED_DOCS` empty; probe-4 re-ran all of it on 2026-11-05 and §4.4 has the same figures. The three
+  runner executions printed `2252 / 487 / 1253`, the corpus as it stood at `ceedabf` — `docs/audit/99-baseline-report.md`
+  §12).
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
-- `.github/workflows/verify.yml` → **written, step-verified here, zero runs on a runner.** Two consequences the next
-  maintainer must not lose: the `VER-NN` rows of `docs/architecture/39-verification-matrix.md` it names stay open
-  until a green CI run is recorded there, and the workflow's own first run has to answer the question §4.5 and
-  `docs/audit/02-toolchain-decay-and-risk.md` §7.3 leave open — whether a clean runner can install and build this
-  tree at all. probe-5 removed the transport half of that question: a cold `bower install` of the two `git://`
-  deps succeeds **without** any rewrite, because bower normalises them to `https://github.com/…\.git` before git
-  is involved (`git ls-remote git://…` from a shell still times out). What a runner still has to prove is the npm
-  side — no `node_modules`, no lockfile in git — plus 21 Bower components this host served from its own cache.
+- `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners three times on
+  2026-11-05: red, red, green** (`docs/audit/99-baseline-report.md` §12). What the green run answered is the question
+  §4.5 and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 used to leave open — a clean image can install and build
+  this tree: all five roots from an empty `node_modules`, no lockfile in git, both pinned test floors reproduced,
+  every artifact content figure reproduced, and the 252 `lib/` entries produced without this host's Bower cache
+  (probe-5 had already removed the transport half of that question: a cold `bower install` of the two `git://` deps
+  succeeds **without** any rewrite, because bower normalises them to `https://github.com/…\.git` before git is
+  involved, while `git ls-remote git://…` from a shell still times out). What it did not do is move a `VER-NN` row:
+  `packages/schema/verification.json` has no state meaning closed, so a met row is deleted together with the labelled
+  line that anchors it, and that is the first mechanical commit of Phase 2, not a status edit in this file.
 
 ---
 
@@ -350,7 +361,8 @@ Titles are in plan §3. `docs/adr/README.md` index matches the files, and the ma
 record shape ADR-0001 rules 1-3 require are two steps of `.github/workflows/verify.yml` —
 "The ADR index lists exactly the ADR files on disk" and "Each ADR has the shape ADR-0001 defines" — which print
 `OK: the index matches 20 ADR files, exactly.` and `OK: 20 ADR records each carry their number, …` when run here, and
-have not yet run on a runner. `docs/adr/0001-adr-practice.md:99` still calls them planned; that line is now
+printed the same two lines on each of the three runner images on 2026-11-05
+(`docs/audit/99-baseline-report.md` §12). `docs/adr/0001-adr-practice.md:99` still calls them planned; that line is now
 `docs/architecture/39-verification-matrix.md` §13's item 6, not a gap.
 
 **#8 `docs/architecture/20-40` — done: 20 to 40 are on disk.** `26-command-surface.md` names **exactly** the
@@ -360,7 +372,7 @@ SHOULD/MAY`, `Status:` header, `Trace: ADR-…; Contract: packages/schema/…` f
 document asserts behaviour nothing checks — otherwise it gets a `39-verification-matrix.md` row with
 `Verified: NO — deferred to Phase 2`.
 
-`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `201`
+`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `202`
 deferral labels over `44` documents are partitioned, on every run, into `75` rows, `26` sentences that define the
 label and `24` live rows the matrix owns — so a new deferral with no row, a row whose anchor moved, a row re-labelled
 instead of closed, or a document reading a distribution the data does not have, all fail the build. Writing it also
@@ -434,8 +446,8 @@ they are exporter-*shaped* files written from the audit's reading of `omega-web/
 its own words: the compile half runs against the real engine, and a genuine `.bak` from a real 3.5.2 install is part of
 what closes the browser half.
 
-**#10 Baseline fixes — done: `.github/workflows/verify.yml` is on disk, and the `TZ=` question is decided (in
-`docs/audit/02-toolchain-decay-and-risk.md` §4, not in a legacy file).** Three jobs: `contracts` (install
+**#10 Baseline fixes — done: `.github/workflows/verify.yml` is on disk, has run green there, and the `TZ=` question
+is decided (in `docs/audit/02-toolchain-decay-and-risk.md` §4, not in a legacy file).** Three jobs: `contracts` (install
 `packages/schema`, `npm run verify`, `check-doc-evidence.mjs`, the two ADR record checks below, `check-no-secrets.mjs`
 with its `--selftest` first, then the guards that only a machine can hold — root-bare `VER-04`, import boundary
 `VER-02`, no-protocol-in-JS `VER-03`, no-executable-bytes `VER-08`, line endings `VER-10`, commit shape `VER-06`),
@@ -482,10 +494,13 @@ a deduction became a fact (`docs/audit/02-toolchain-decay-and-risk.md` §4). (3)
 for a second reason; CI therefore invokes the hub's `grunt-cli` from `omega-build/node_modules/.bin`, which is also
 what keeps ADR-0018 rule 3's single driver intact. (4) A rebuild on the same machine of the same tree reproduces
 every artifact content assertion and moves both sha256 values, because the zip stores per-entry timestamps (§5).
-What is still true: **the file has never run on a runner**, every `VER-NN` row whose mechanism names it stays open
-in `docs/architecture/39-verification-matrix.md`, and its `run:` blocks were validated by extracting and executing
-them here, then re-running each guard against a synthetic violation so the guard is proved able to fail (§7.3 of
-`docs/audit/02-toolchain-decay-and-risk.md`).
+What is still true: its `run:` blocks were validated by extracting and executing them here first, then re-running
+each guard against a synthetic violation so the guard is proved able to fail (§7.3 of
+`docs/audit/02-toolchain-decay-and-risk.md`) — and the three runs that followed showed how much that was worth,
+because they found two defects no host shell could: a Windows `$GITHUB_WORKSPACE` that is not a POSIX path, and a
+byte total that belonged to one checkout rather than to the build. Both were reproduced here before being fixed, and
+both are green on the third run. What no run has done is open a browser; `LIVE-01…24` are still `SKIPPED`, and the
+rows in `docs/architecture/39-verification-matrix.md` keep the states the data gives them for the reason §12 states.
 
 **#11 End-to-end verification and report — done for everything a shell on this host can run, and not further.**
 Two probe rounds, both archived: `docs/audit/raw/probe-4-e2e-re-verification.txt` (the Ladder A chain → both
@@ -508,10 +523,22 @@ still owes — all need a person and a real Chrome. Under `docs/verification/liv
 row is `SKIPPED`, never `PASSED`, so `LIVE-01…24` and `docs/verification/live-matrix.md` are untouched by #11.
 That is a boundary, not an oversight.
 
-**One item belongs here and nowhere else: the first execution of `.github/workflows/verify.yml` on a runner.** It
-needs a push, so it is gated on the confirmation rule in §7, and its green run — with the raw output archived, per
-`docs/verification/live-matrix.md`'s promotion rules — is the artefact that lets the `VER-NN` rows whose mechanism
-names that file change state at all. Until then #10 is "written and locally step-verified", which is not "working".
+**The item that belonged here and nowhere else — the first execution of `.github/workflows/verify.yml` on a runner —
+is done.** It needed a push, so it was gated on the confirmation rule in §7; it happened on 2026-11-05, three times,
+and `docs/audit/99-baseline-report.md` §12 carries the measured output, with the raw capture of all three runs — job
+conclusions, every `##[error]` annotation, and each quoted line beside the number of times the runner printed it — at
+`docs/audit/raw/probe-8-runner-runs.txt`. That is the raw record this file's own convention asks for. #10 is therefore
+no longer "written and locally step-verified"; it is written, run, twice failing and once green. Two items take its
+place, and neither is a status edit:
+
+1. **The row bookkeeping.** `VER-06`, `VER-08`, `VER-10` and `VER-11` now meet the condition their records state — a
+   green run of that file — and the queue has no state meaning closed, so they close by deletion: the row out of
+   `packages/schema/verification.json`, its labelled sentence out of every document that carries it, `marker.counted`
+   re-derived, and the hard-coded state distribution in `packages/schema/scripts/verify.mjs` amended in the same
+   commit. `VER-02`/`03` stay (they scanned roots that hold no code yet), and `VER-04`/`05` stay queued against a
+   `check-layout-guards` tool that has not been written.
+2. **The browser half.** `LIVE-01…24`, unchanged and `SKIPPED`, need a person with a real Chrome, and `LIVE-14`
+   needs the export that would replace the fixtures' exporter-shaped values.
 
 ---
 
@@ -524,6 +551,14 @@ names that file change state at all. Until then #10 is "written and locally step
   (b) `packages/schema/*` plus the `check-no-secrets.mjs` fixture-path scoping its own negative example required;
   (c) `docs/audit/*`; (d) `docs/adr/*` + `docs/architecture/*` + `docs/README.md`; (e) `docs/verification/*` and
   this file; (f) the two coffeelint demotions, separate so they can be reverted without touching the documents.
+- **Four more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
+  `431ea0a..f38f27b` (the state record above), `f38f27b..4307ff6` (the workflow, and the queue and the register as
+  data, and the end-to-end re-verification), `4307ff6..a7627ae` and `a7627ae..ceedabf` (the two CI fixes). Each push
+  ran `.github/workflows/verify.yml`: `4307ff6` produced red, `a7627ae` produced red, `ceedabf` produced green, and
+  the run ids — `42015170195`, `42017987418`, `42020617681` — with their measured lines are recorded in
+  `docs/audit/99-baseline-report.md` §12. No `--force`, no `--no-verify`, no amend of anything already published: the
+  commit that first tripped the label guard stayed on `master` with its label, and the document moved to match the
+  guard instead.
 - **Every push requires separate explicit confirmation.** No `--force`, no `--no-verify`, no amend of published commits.
 - Never `git add --renormalize .` (the repo has `core.autocrlf=true` on this host; mass re-normalization is exactly
   the forbidden mass diff). If line endings must change, isolated commit, endings only.
@@ -588,7 +623,7 @@ names that file change state at all. Until then #10 is "written and locally step
 | # | Question | Blocks |
 |---|---|---|
 | 1 | Fix SEC-1 (`transformValueKeys` + `headers`) immediately after baseline, or hold it as a documented Phase-2 requirement until a test exists? | Phase 2 first PR |
-| 2 | Lockfile policy: keep `package-lock.json` ignored (build reproducibility stays UNVERIFIED) or add `!packages/**/package-lock.json`? | CI as a trust anchor |
+| 2 | Lockfile policy: keep `package-lock.json` ignored or add `!packages/**/package-lock.json`? What the 2026-11-05 runs changed is the framing: a lockfile-free install now *measurably* builds, on three clean images, and what stays unverified is that it resolves the same set somewhere else (`docs/audit/99-baseline-report.md` §12) | CI as a trust anchor |
 | 3 | `.circleci/config.yml`: delete in a separate commit or keep and mark dead? | cosmetic, but CI-red |
 | 4 | Chunking vs out-of-band for >1 MB is decided (chunking) — but does `subscription.refresh` deliver servers to the extension through chunked events, or does the Connector own subscriptions entirely? | `25-…`, `29-…`, data split |
 | 5 | inbound-per-tag vs single-inbound-with-routing (one Xray inbound per profile vs one with `routing` and `core.select`) | `27-…`, `core.select` semantics |

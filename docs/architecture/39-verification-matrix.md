@@ -318,7 +318,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
-| VER-11 | Ladder A ran by hand on one host; clean-runner reproducibility and the pinned floor are unverified | `ci` · ci-step | 1 · 2 |
+| VER-11 | Ladder A ran by hand on one host and is green on three runner images at the pinned floors; what the row still owes is the unpinned dependency set, which no run can supply while `.gitignore:3` keeps the lockfile out | `ci` · ci-step | 1 · 2 |
 | VER-57 | no CI build shows the packaged bundle survives the declared CSP | `ci` · ci-step | 1 · 2 |
 
 ### `no-fixture` — 2
@@ -414,15 +414,21 @@ distribution numbers in §4, §5 and `verify.mjs` (three assertions exist to mak
    history in place, and the same aside sits unsuperseded in `docs/adr/0016-svelte-5-vite-typescript.md:46`, so it
    stays: the ADR was true when written, and this file is the later fact. A superseding ADR is the only way to
    change the record, and nothing here reverses a decision.
-6. Three more lines are stale in exactly that sense, in the same direction: `docs/adr/0018-workspace-roots-and-no-root-package-json.md:55`,
+6. Three lines are stale in exactly that sense, in the same direction: `docs/adr/0018-workspace-roots-and-no-root-package-json.md:55`,
    the same record at `:121`, and `docs/adr/0020-test-strategy.md:126` all describe
    `.github/workflows/verify.yml` as not yet written. It was written on 2026-11-05, so those three were true when
-   authored and are now the earlier fact. Nothing in this queue moves because of it: a workflow that has never run
-   checks nothing, and every `VER-NN` row whose mechanism names it stays in this document with the state its data
-   gives it. `docs/audit/02-toolchain-decay-and-risk.md` §7.3 records what was actually executed and where.
-   The same reading applies to the sentences in `docs/architecture/20-target-repository-layout.md` §7 and §8 whose
-   deferral explains that no checker or guard exists yet for the import boundary or the bare root: the scan and the
-   guard are now steps of that workflow, and the deferral is still honest, because the step has not run.
+   authored and are now the earlier fact. The same day it ran: three executions, red, red, green, recorded line by
+   line in `docs/audit/99-baseline-report.md` §12, and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 says which
+   half of each claim the runner measured. Nothing in this queue moved because of it, and that is not timidity —
+   `packages/schema/verification.json` has no state meaning closed, so a row closes by being deleted together with
+   the labelled sentence in the document that anchors it, which changes `marker.counted` and the state distribution
+   §4 reads aloud — both of which `packages/schema/scripts/verify.mjs` holds as hard-coded numbers, on purpose. `VER-06`, `VER-08`, `VER-10` and `VER-11` are the four whose stated condition a green run now
+   meets; `VER-02` and `VER-03` ran over roots that hold no code yet; `VER-04` and `VER-05` are queued against a
+   `check-layout-guards` tool that has not been written; `VER-57` names a CSP load test the workflow does not
+   contain. The same reading applies to the sentences in `docs/architecture/20-target-repository-layout.md` §7 and §8
+   whose deferral explains that no checker or guard exists yet for the import boundary or the bare root: the scan and
+   the guard are steps of that workflow and they are green on a runner, and the deferral is still honest for the
+   different reason each row now gives — an empty `nexora/**`, and an unwritten tool.
 
 Trace: ADR-0001 · ADR-0002 · ADR-0003 · ADR-0004 · ADR-0005 · ADR-0006 · ADR-0008 · ADR-0009 · ADR-0010 ·
 ADR-0011 · ADR-0012 · ADR-0013 · ADR-0014 · ADR-0015 · ADR-0016 · ADR-0017 · ADR-0018 · ADR-0019 · ADR-0020 ·
