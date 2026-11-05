@@ -5,7 +5,7 @@
 # Steps are named after the row of docs/architecture/39-verification-matrix.md they are intended to close
 # (VER-02, VER-03, VER-04, VER-06, VER-08, VER-10, VER-11). Writing a workflow is not running one, and running it
 # is not closing a row. This file has run on runners since 2026-11-05, and docs/audit/99-baseline-report.md §12
-# tabulates seven of those runs -- twice red, four times green, once cancelled by the concurrency block below --
+# tabulates eight of those runs -- twice red, five times green, once cancelled by the concurrency block below --
 # counting its table, not the executions, because a commit recording a run of this workflow is itself one. The rows
 # keep the states packages/schema/verification.json gives them: that data has no state meaning closed, and a row
 # closes by being deleted together with the labelled sentence it is anchored to. VER-06, VER-08, VER-10 and VER-11

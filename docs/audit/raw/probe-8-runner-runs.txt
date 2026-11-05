@@ -1,16 +1,18 @@
-probe-8 -- .github/workflows/verify.yml executed on GitHub runners: the 7 runs that docs/audit/99-baseline-report.md
-§12 tabulates (run 1 to run 7 in that section's own numbering), 2026-11-05. That file has run more often than this
-capture holds; §12's rule is what decides which runs are findings, and the last block below records the one run the
-table leaves out.
+probe-8 -- .github/workflows/verify.yml executed on GitHub runners: the 8 runs that docs/audit/99-baseline-report.md
+§12 tabulates (run 1 to run 8 in that section's own numbering), 2026-11-05. That file has run more often than this
+capture holds; §12's rule is what decides which runs are findings, and two blocks below record the executions the
+table leaves out. The final block is not a run: it is the artifact checksum ledger every computed hash those executions
+printed, which is what makes the distinctness claim in §12 checkable from tracked data rather than from a fetched log.
 captured on: MINGW64_NT-10.0-26300 / bash 5.3.15(2)-release / node v24.22.1
 extraction:  gh run view <id> -R k2dms/NEXORA --log   (job <TAB> step <TAB> timestamp+content; the runner's own
              'set -x' command echoes are excluded here, so every line below is program output or an annotation)
              gh run view <id> -R k2dms/NEXORA --json headSha,conclusion,event,createdAt,jobs
 remote: nexora = git@github.com:k2dms/NEXORA.git; workflow 'Verify'; event push. origin (upstream ZeroOmega) was never pushed.
 form: 'x<n>' is how many times that exact line occurs in that run's log, grouped by the line plus the job that printed it.
-notes: every line below is machine-extracted except the `note:` lines of the last three blocks, which interpret the
-       cancellation run 6 produced, the verdict run 7 reproduced, and why run 8 appears as metadata and counted
-       occurrences rather than as a tabulated run.
+notes: every line below is machine-extracted except the `note:` lines of the last five blocks, which interpret the
+       cancellation run 6 produced, the verdict run 7 reproduced, why the two executions §12 leaves out appear as
+       metadata and counted occurrences rather than as rows, and what changed in the workflow's shape to make run 8
+       a row.
 
 ===============================================================================================
 run 42015170195
@@ -518,7 +520,8 @@ run 42029386377
     [Post job cleanup] x2  Post job cleanup.	| Ladder A legacy chain and artifact (windows-latest / Node 24)
 
 ===============================================================================================
-run 42033189223 -- the eighth execution, the one that section 12 of docs/audit/99-baseline-report.md does not tabulate
+run 42033189223 -- the eighth execution, the first of the two that section 12 of docs/audit/99-baseline-report.md
+does not tabulate
   head:       75bff0fd2a7fc736b362e97d445015fab855dc49
   conclusion: success
   event:      push
@@ -553,3 +556,181 @@ run 42033189223 -- the eighth execution, the one that section 12 of docs/audit/9
     x3  Artifact nexora-verify-<image>-node<n>.zip successfully finalized.
   the four zip totals it printed, per image: ubuntu 5974389 / 5974444 B, windows 5974401 / 5974456 B -- the same
   figures runs 4 to 7 printed, which is what 'a green of this shape' means in numbers.
+
+===============================================================================================
+run 42035782395 -- the ninth execution, the second one section 12 does not tabulate
+  head:       fe7a3e6d5dc4f3d22c9e376618d72e48b6fbf2b4
+  conclusion: success
+  event:      push
+  created:    2026-11-05T13:26:30Z
+  updated:    2026-11-05T13:30:13Z
+  note:       this is the push of fe7a3e6, the commit that replaced the run-count wording in the corpus with the
+              shape rule. It is the run that rule was written for: it is green, its job set is the one every tabulated
+              green has -- six passed and the connector job skipped -- and the only thing it changed is a counter.
+              Its log is where the doc-name figure first reads 1290, one above the 1289 that 42033189223 printed,
+              because that commit edits documents without citing anything new.
+  jobs, as the API reports them:
+    success   Contracts, docs and layout guards (ubuntu-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 24)
+    skipped   Go connector (enable in Phase 2)
+    success   Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 24)
+  the runner's own error annotations:
+    (none)
+  occurrences of the guard lines section 12 quotes, counted the same way as the blocks above:
+    x3  checked 2260 path:line citations, 487 path#pointer citations and 1290 doc-name references in docs/
+    x3  OK: no secret-shaped content in 419 files (170 vendored/minified files skipped).
+    x3  OK: no PE, ELF or Mach-O bytes in 589 tracked files.
+    x3  checks run: 1217
+    x3  OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).
+    x3  OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).
+    x6  NOTE: <project> has 0 test files -- a green run there proves nothing (docs/audit/99-baseline-report.md 5).
+    x6  <zip>: 353 entries, <bytes> B uncompressed, lib/=252, _locales=7
+    x6  OK: <zip> matches the shape of doc 20 5.
+    x6  NOTE: <zip> does not match the recorded checksum (byte identity across machines is UNVERIFIED, docs/audit/99 10)
+    x6  NOTE: js/omega_pac.min.js is 735547 B, not the recorded 742 272 B.
+    x3  Artifact nexora-verify-<image>-node<n>.zip successfully finalized.
+  the four zip totals it printed, per image: ubuntu 5974389 / 5974444 B, windows 5974401 / 5974456 B -- again the
+  same figures, and its six computed sha256 values join the ledger at the end of this file.
+
+===============================================================================================
+run 42046629162 -- the tenth execution, and the eighth row section 12 tabulates
+  head:       1004c4ec3085b8ae92cd340d33482d2c27d45fee
+  conclusion: success
+  event:      push
+  created:    2026-11-05T14:36:23Z
+  updated:    2026-11-05T14:40:05Z
+  note:       this is the push of 1004c4e, the commit that adds connector/ -- the first Go tree in the repository and
+              the reason this run is in the table. Section 12's rule is about shape, and the shape moved: the job that
+              every run above listed as `Go connector (enable in Phase 2)` with conclusion `skipped` is gone, and two
+              executing cells take its place, so the workflow's job totals change from 'six passed, one skipped' to
+              'eight passed, none skipped'.
+  jobs, as the API reports them:
+    success   Contracts, docs and layout guards (ubuntu-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 24)
+    success   Go connector (ubuntu-latest)
+    success   Go connector (windows-latest)
+    success   Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 24)
+  the runner's own error annotations:
+    (none)
+  the runner's own warning annotations, all of them:
+    x8  ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on
+        Node.js 24: actions/checkout@v4, actions/setup-node@v4 -- one per job, and now eight jobs instead of seven.
+    x1  ##[warning]Restore cache failed: Dependencies file is not found in D:\a\NEXORA\NEXORA. Supported file
+        pattern: go.sum   | Go connector (windows-latest)
+    x1  ##[warning]Restore cache failed: Dependencies file is not found in /home/runner/work/NEXORA/NEXORA. Supported
+        file pattern: go.sum   | Go connector (ubuntu-latest)
+        note: the module has no `require` line, so there is no go.sum for actions/setup-go@v5 to hash. This is what a
+        dependency-free module looks like to the cache step, and the two cells are otherwise green.
+  what the two connector cells printed, verbatim:
+    x1  go version go1.24.13 linux/amd64   | Go connector (ubuntu-latest)
+    x1  go version go1.24.13 windows/amd64 | Go connector (windows-latest)
+    x2  go -C connector build ./...        -- the three commands of the one step, echoed before their output
+    x2  go -C connector vet ./...
+    x2  go -C connector test ./...
+    x2  ok   github.com/k2dms/nexora/connector/internal/contract
+    x2  ok   github.com/k2dms/nexora/connector/internal/envelope
+    x2  ok   github.com/k2dms/nexora/connector/internal/frames
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen [no test files]
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen/gen [no test files]
+        note: three ok lines and two no-test-file lines per cell, in both images; the tree has no peer, no dispatcher
+        and no cmd/ yet, so this is the projection and the codec, and nothing else.
+  occurrences of the guard lines section 12 quotes, counted the same way as the blocks above:
+    x3  checked 2262 path:line citations, 487 path#pointer citations and 1306 doc-name references in docs/
+    x3  OK: no secret-shaped content in 429 files (170 vendored/minified files skipped).
+    x3  OK: no PE, ELF or Mach-O bytes in 599 tracked files.
+    x3  checks run: 1217
+    x3  OK: every commit subject in the range carries its label; 0 cut-over commit(s).
+    x3  OK: git diff --check clean and every tracked blob is LF or binary in the index.
+    x3  OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).
+    x3  OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).
+    x6  NOTE: <project> has 0 test files -- a green run there proves nothing (docs/audit/99-baseline-report.md 5).
+    x6  <zip>: 353 entries, <bytes> B uncompressed, lib/=252, _locales=7
+    x6  OK: <zip> matches the shape of doc 20 5.
+    x6  NOTE: <zip> does not match the recorded checksum (byte identity across machines is UNVERIFIED, docs/audit/99 10)
+    x6  NOTE: js/omega_pac.min.js is 735547 B, not the recorded 742 272 B.
+    x3  Artifact nexora-verify-<image>-node<n>.zip successfully finalized.
+    x3  >> Installed bower packages
+    x3  OK: 2 shipped backups load and compile in the legacy engine
+  the four zip totals it printed, per image: ubuntu 5974389 / 5974444 B uncompressed, windows 5974401 / 5974456 B --
+  identical to what runs 3 to 8 printed; the created-archive totals are 1901079 / 1901116 B on ubuntu and
+  1901087 / 1901124 B on windows, again the same as every run before it. Its six computed sha256 values join the
+  ledger at the end of this file, which is where the cross-run distinctness that section 12 claims can be checked.
+
+===============================================================================================
+artifact checksum ledger -- every computed sha256 the eight executions above that ran the legacy chain printed for the
+two extension zips, extracted from `gh run view <id> -R k2dms/NEXORA --log` lines shaped `<64 hex>  dist/<zip>`. This is
+the basis for the claim in docs/audit/99-baseline-report.md section 12 that no two builds have produced the same bytes:
+48 values, 6 per execution, and the set below has 48 distinct entries. The recorded baseline hashes of doc 99
+section 6 are NOT in this list -- no build has printed them.
+
+  42020617681 (6 values):
+    dist/chromium-release.zip  63769ca76cb3757f8bd63ff54f298bd257e9fb62d2b1fbb5816c3270c2527b54
+    dist/chromium-release.zip  7a99bb19065f342b6ed785e574acdf161c9525778b256e0f4c2c739e304d92be
+    dist/chromium-release.zip  8e02a56bea5c3ab70a101358ef820426c4ff8b2a7238d8d723475b49b1ccfaea
+    dist/firefox-release.zip   3b658ee18b4d7214f79e5bf52f9295f53fc5e21d0ce01d123fbb88fa936ab5b6
+    dist/firefox-release.zip   4155027327f0306e235c0f8a72b4f2839f8c4edc70b42bf81f03087db2ebe405
+    dist/firefox-release.zip   8aae81ff2250dafa7dbafda3650c2a9eacd93e782a9a58926c7a61cb15f71a8f
+
+  42025558933 (6 values):
+    dist/chromium-release.zip  07328e2417f3f375bc7af833b56d5a4841f8917888e7b36f3fd076e7b0e26c3d
+    dist/chromium-release.zip  2a8e478fd3786af1f92962259b933759262a80ba52bf19969130b9a3ab424164
+    dist/chromium-release.zip  a98eff0acd29121ae2cdab57c36c67a09a7e0f3b87b53383fa24eae4f1505d77
+    dist/firefox-release.zip   188d52c28d27023d4b481436e2f5d0aa11a64405015fb17d28990498966f3606
+    dist/firefox-release.zip   80fe6f8c609a4aed9470ac70b02727a59b24425ba3587295a216a4c6ffcf0d51
+    dist/firefox-release.zip   cd78c335326d6b9d9ba0583df6dc08b4dba0c372d8ea1ca1d351c148c69422e1
+
+  42027072602 (6 values):
+    dist/chromium-release.zip  c780a3fd1411a7d591a6ed37b961aff00b1010b93e3909a0c377231158a622eb
+    dist/chromium-release.zip  ceed553ff385f9ef0e81545c341467de5ee0d6c0c6aa42f1794a0b724f68b036
+    dist/chromium-release.zip  cff1397a2e5bb2b682893c3f1317942f47ae45f64cccfb7f30e566cb85669ae2
+    dist/firefox-release.zip   5fc6ba1fd4be89990c6fda21cc1f8d215150f90779b68258c89cb135f58ead9a
+    dist/firefox-release.zip   cb08beba3d9b16eb58791cb63e1e400e0b0cd9207e34312335d1aac5ac5390ec
+    dist/firefox-release.zip   fb4ff2d46a68501a73a38fd32efe594bcd4764ed7c25be8c632a1b681621606c
+
+  42029092102 (6 values):
+    dist/chromium-release.zip  248f343b7ece98bfbef2d5a60ac92c172f1283ac7e5ef883ee68e8b4d44ac109
+    dist/chromium-release.zip  5b50c55638f056e8e43ebaec075dd45dd68a40f5de477af0bc5d8f61e735b6e1
+    dist/chromium-release.zip  7bc7ad47411f4f3d61ce506ac4c21802a47d2b61e55b9178548f1887e64734b0
+    dist/firefox-release.zip   661fe5a534e09848f2e42ff221eee0a9e648aabef3b9266cfe89703d3565bd98
+    dist/firefox-release.zip   7561a0e97013ac62ad49878fa79a2c921ceec90784aa1621bd1e094e60082045
+    dist/firefox-release.zip   7e28025f17463c663f7cf885f31282bda9026c2d13de3f74179e14ed8ee44f15
+
+  42029386377 (6 values):
+    dist/chromium-release.zip  9c7153534db84c908b3308a90be4389863950acddfe37b78287a5d7962a651c6
+    dist/chromium-release.zip  b95f54196226b154234cfb5eba8f06fa562233e6359ed40cad42a281dc49c67f
+    dist/chromium-release.zip  e21290a8f0048ea5b09d3b8a22b49053604dd3be603facefa615b5ffa5064869
+    dist/firefox-release.zip   219c1c6b8ef9417080185efbdbaa415cfb6e30370a944be975da9d00f14fe7bb
+    dist/firefox-release.zip   5321a386d8e28345bacd563f309c5df248c83311dd334d502730d0a2eee13041
+    dist/firefox-release.zip   b98f2cddcb48f9932fd49e59d194c7384b73060be88b819dd1665e9f30406960
+
+  42033189223 (6 values):
+    dist/chromium-release.zip  3df1bd704417592bfbe084d5a72a97f87d08100153f4202c6d3df3b5b06f56f2
+    dist/chromium-release.zip  dac8a88945b91b779310c30ff9df10c7bf01c570ace09172cdf7f33049bed06a
+    dist/chromium-release.zip  dbdd5d83b5ad5d49f21194f30a8dc833512e19da9bb44e06724800de6e7c1fb5
+    dist/firefox-release.zip   5c2e0594bab3c57cfd39781becc034521172aed5cba7dfad6ff7ce940ad24278
+    dist/firefox-release.zip   a70e4305ee51f793e33497208046d35d4c5d3195b0a7594e1f602627a76c29f4
+    dist/firefox-release.zip   b4c87e353ac990912f79934074d52ff2cbbd0c7fd8f45a3ff02d5a5bace43171
+
+  42035782395 (6 values):
+    dist/chromium-release.zip  4330fab79ae854dd6c8d5eeffe22aecf40b2f4dcb830807c648c013c8b8c66dc
+    dist/chromium-release.zip  a54ddbeb83660c3180af1d554ee6cfec719e2f6a90e0eeffeb1b8dccc6f01580
+    dist/chromium-release.zip  b70d7ecfbd2a5fc33f3e83e985efbd1f6196209f4609efe4b0243a596d50ce3d
+    dist/firefox-release.zip   04bcc67553140412818f4a8643cee199b8ca2e7fcb450e5692402b0e7a7a3f7f
+    dist/firefox-release.zip   413ce121802a9defb1173d3c0cc378c53cc55b1adc50066d01ab8000183c43ed
+    dist/firefox-release.zip   b170e38d09a5f6a246e9cd4e6edc3c530b484e2956fbc8980c919d7cf03afe4d
+
+  42046629162 (6 values):
+    dist/chromium-release.zip  226f49e38513621ae412f8bea93d9b589ab14b7b2c3da2e1ee751f0ba35b8b85
+    dist/chromium-release.zip  2f73b76e636906f9fe50ed44537db63c4bf8b80a6457d4be6ecc00ffbed76e52
+    dist/chromium-release.zip  b7c92a2040acba43a6c904a1dec3fa46d3d64bfdc07283e723407a000fad6902
+    dist/firefox-release.zip   07ff6051241203f9b1d721a7696368a1e354c2353d6cb4d132d674de8355a45a
+    dist/firefox-release.zip   3cd2e8879700ae816feb8da24636848ad6d1e6169107d6b6217a52cbcc417a9c
+    dist/firefox-release.zip   d6d86f0cf772798f5d780295d1865a087d669aa028293abe7766902e797fa586
+
+  distinct values above: 48 of 48

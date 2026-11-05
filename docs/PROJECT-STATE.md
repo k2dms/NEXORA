@@ -207,8 +207,9 @@ a claim or a deferral is unowned, owned twice, or if a document reads a distribu
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
 `40-open-decisions.md` exist now, so their cross-checks are real assertions.
-`node tools/check-doc-evidence.mjs` → **green: 2260 `path:line` citations, 487 `path#pointer` citations,
-1290 doc-and-script names** (the `path:line` figure fell by 21 when every cite into this file became a section
+`node tools/check-doc-evidence.mjs` → **green: 2262 `path:line` citations, 487 `path#pointer` citations,
+1306 doc-and-script names** (they read `2260 / 487 / 1290` before §4.6's increment; the `path:line` figure fell by 21
+when every cite into this file became a section
 reference, and by 3 more when probe-4 turned the same rule on for `docs/audit/99-baseline-report.md`, which every
 probe round appends to; it rose by 8 again when the runner record cited the legacy build configs it reads, and the
 third figure by 34 for the same reason, and by two more in this sitting — its VER-11 row in
@@ -218,7 +219,7 @@ leaves one more named reference to the baseline report in `docs/` than it remove
 records moved the set again — **2262 / 487 / 1306**: two more `path:line` citations, sixteen more names, no new
 pointer — and it is the first increment in this repository whose citations point at executable code in a language
 other than CoffeeScript or JavaScript. Both figures moved for two reasons: §4.6 and §6 cite code paths that exist
-now, and nine documents outside `connector/` had to stop asserting that this host had no Go toolchain, no Go code or
+now, and ten documents besides this one had to stop asserting that this host had no Go toolchain, no Go code or
 no `connector/` tree — each of them now names §4.6 as the reason that sentence stopped being true.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
@@ -279,7 +280,7 @@ Nothing the Phase 0/1 plan asks for on disk is absent any more. `.github/workflo
 2026-11-05 — three jobs (`contracts`, `legacy-chain`, and `connector` present but switched off with
 `if: ${{ false }}` — it is switched on now, §4.6), a three-row matrix, and the
 `VER-02`/`03`/`04`/`06`/`08`/`10`/`11` guards as executable steps —
-and it ran there the same day: `docs/audit/99-baseline-report.md` §12 tabulates seven of those runs — twice red, four
+and it ran there the same day: `docs/audit/99-baseline-report.md` §12 tabulates eight of those runs — twice red, five
 times green and once cancelled by the file's own
 `concurrency` block — under the rule that a further run joins the table only when its shape differs, a rule this
 iteration had to write because every commit that records a run of that workflow is itself a commit that runs it. Each
@@ -326,9 +327,12 @@ tools/check-doc-evidence.mjs`, `npm --prefix packages/schema run verify`, `node 
 `node tools/check-legacy-backup.mjs` all stay green on the tree with `connector/` in it; §5 carries the counts.
 
 **CI.** The `connector` job that §4.5 recorded as switched off is switched on: two OS cells, `setup-go@v5` with
-`go-version: '1.24'`, and the same three commands. That changes the *shape* of `.github/workflows/verify.yml`, so the
-next execution is a row `docs/audit/99-baseline-report.md` §12's own rule says to tabulate; it is not a `VER-NN` row
-moving, for the reason §5 already gives.
+`go-version: '1.24'`, and the same three commands. That changed the *shape* of `.github/workflows/verify.yml`, so its
+next execution became a row `docs/audit/99-baseline-report.md` §12's own rule says to tabulate: `42046629162`, green,
+eight jobs passed and none skipped, printing `go version go1.24.13` on both images and, per cell, the three `ok` lines
+and two `[no test files]` lines this host's own `go -C connector test ./...` prints. Its verbatim output, including the
+two `Restore cache failed … go.sum` warnings a dependency-free module produces, is in
+`docs/audit/raw/probe-8-runner-runs.txt`. It is not a `VER-NN` row moving, for the reason §5 already gives.
 
 **Not yet.** No `cmd/nexora-host`, no `cmd/nexora-connector`, no ADR-0005 local pipe, no `connector.hello`
 negotiation, no dispatcher, no per-sender budgets enforced at dispatch, no chunk reassembly, no Core supervisor, no
@@ -345,13 +349,15 @@ parts, and the queue has no state meaning closed (§5).
   reused this host's `node_modules` (five `up to date` lines), so it re-verified the chain rather than resolution.
 - Artifact assertions: 353 files / 5 999 353 B / 252 `lib/` entries / 7 `_locales`, and `js/omega_pac.min.js` present at 742 272 B —
   every one of them reproduced from the 2026-11-05 rebuild, top-level path set included. On a clean image the *shape*
-  figures reproduce and the *byte* figures differ from this host's, then agree with each other: fifteen runner
-  builds — the three images of each of the five runs §12 tabulates whose legacy chain got that far — gave 353 entries, 252 `lib/`,
+  figures reproduce and the *byte* figures differ from this host's, then agree with each other: twenty-four runner
+  builds — the three images of each of the eight executions of that file whose legacy chain got that far, six of them
+  rows §12 tabulates and two of them the greens its shape rule leaves out — gave 353 entries, 252 `lib/`,
   7 `_locales` and the bundle, at 5 974 389 B / 5 974 444 B (ubuntu) and 5 974 401 B / 5 974 456 B (windows) with a
   735 547 B bundle, the same four totals in every one of those runs — so the totals and the bundle size are properties of a CRLF
   checkout against this host, and of the runner image against a different image, which is why the workflow
-  prints them as NOTEs (`docs/audit/99-baseline-report.md` §12). What no two builds ever shared is the hash: thirty
-  distinct sha256 values across those fifteen builds, none of them the two recorded below — and every further run of
+  prints them as NOTEs (`docs/audit/99-baseline-report.md` §12). What no two builds ever shared is the hash: forty-eight
+  distinct sha256 values across those twenty-four builds — the ledger that lists them is the final block of
+  `docs/audit/raw/probe-8-runner-runs.txt` — none of them the two recorded below, and every further execution of
   that file adds three builds and six hashes to a set that has never once matched a recorded value, which is the form
   this finding keeps rather than the count it had.
 - `sha256 dist/chromium-release.zip` = `b93d5100e4c05ccf7af365dfc1742344360579f482df72e4e9ce00f5ba964ba8`
@@ -381,14 +387,15 @@ parts, and the queue has no state meaning closed (§5).
 - `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 487 `path#pointer`, 1306 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
-  `42029386377` and `42033189223` printed `2260 / 487 / 1289`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
+  `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
+  `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
   as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
   set and never pinned.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
 - `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners since 2026-11-05 —
-  §12 tabulates seven of those runs: twice red, four times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
+  §12 tabulates eight of those runs: twice red, five times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
   §4.5 and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 used to leave open — a clean image can install and build
   this tree: all five roots from an empty `node_modules`, no lockfile in git, both pinned test floors reproduced,
   every artifact content figure reproduced, and the 252 `lib/` entries produced without this host's Bower cache
@@ -596,11 +603,11 @@ That is a boundary, not an oversight.
 
 **The item that belonged here and nowhere else — the first execution of `.github/workflows/verify.yml` on a runner —
 is done.** It needed a push, so it was gated on the confirmation rule in §7; it happened on 2026-11-05 and has
-happened since, and `docs/audit/99-baseline-report.md` §12 carries the measured output of the seven runs it
-tabulates, with the raw capture of those seven — job
+happened since, and `docs/audit/99-baseline-report.md` §12 carries the measured output of the eight runs it
+tabulates, with the raw capture of those eight — job
 conclusions, every `##[error]` annotation, and each quoted line beside the number of times the runner printed it — at
 `docs/audit/raw/probe-8-runner-runs.txt`. That is the raw record this file's own convention asks for. #10 is therefore
-no longer "written and locally step-verified"; it is written, run, twice failing, four times green and once cancelled —
+no longer "written and locally step-verified"; it is written, run, twice failing, five times green and once cancelled —
 and §12 states the rule that keeps that sentence true under the runs still to come. Two items take its
 place, and neither is a status edit:
 
@@ -633,8 +640,9 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`**, equal to local and remote `master` up to the last sha the bullet below names;
-  the §4.6 connector commit sits on it, one ahead, and is the pending push — unconfirmed as §7 requires.
+- Branch: **`nexora/architecture`**, and it is equal to `nexora/master` at the last sha the bullet below names
+  (`1004c4e`) — the connector commit is pushed, not pending. Local `master` still points at `f38f27b`; every push since
+  has been a fast-forward of `nexora/architecture` onto `nexora/master`, so the local branch pointer was never moved.
   Main branch for PRs upstream: `master`.
 - Remotes: `origin` = upstream ZeroOmega (**never push**), `nexora` = `git@github.com:k2dms/NEXORA.git`.
 - **Committed and pushed** (2026-11-05: `c367db2..431ea0a`, a clean fast-forward to `nexora/master`, no MR needed),
@@ -642,7 +650,7 @@ written before any behaviour existed. What each next milestone has to make true:
   (b) `packages/schema/*` plus the `check-no-secrets.mjs` fixture-path scoping its own negative example required;
   (c) `docs/audit/*`; (d) `docs/adr/*` + `docs/architecture/*` + `docs/README.md`; (e) `docs/verification/*` and
   this file; (f) the two coffeelint demotions, separate so they can be reverted without touching the documents.
-- **Nine more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
+- **Eleven more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
   `431ea0a..f38f27b` (the state record above), `f38f27b..4307ff6` (the workflow, and the queue and the register as
   data, and the end-to-end re-verification), `4307ff6..a7627ae` and `a7627ae..ceedabf` (the two CI fixes),
   `ceedabf..890fde6` and `890fde6..c81ae7e` (the §12 record, with `docs/audit/raw/probe-8-runner-runs.txt`),
@@ -654,11 +662,18 @@ written before any behaviour existed. What each next milestone has to make true:
   carried to the seven runs it tabulates: the cancelled `42029092102` and the green `42029386377` as rows, the
   regenerated capture, the finding about this file's own `concurrency` block, and — across audit docs 00, 02 and 99,
   architecture docs 20 and 39, the verification README, the docs index, this file and the workflow's header comment —
-  the run-count wording replaced by the shape rule, for the reason in the next bullet). Eight executions of
+  the run-count wording replaced by the shape rule, for the reason in the next bullet), `75bff0f..fe7a3e6` (that rule
+  standing in place of the counts, across audit docs 00, 02 and 99, architecture docs 20 and 39, the verification
+  README, the docs index, this file and the workflow's header comment, plus the untabulated run recorded in the
+  capture), and `fe7a3e6..1004c4e` (§4.6's M1: `connector/internal/{contract,contractgen,envelope,frames}` as a Go
+  module, the `connector` job no longer pinned off, and the documents that had to stop asserting this host had no
+  Go toolchain, no Go code and no `connector/` tree). Ten executions of
   `.github/workflows/verify.yml` came from those pushes — `42015170195` and `42017987418` red, `42020617681`,
-  `42025558933`, `42027072602`, `42029386377` and `42033189223` green, and `42029092102` `cancelled` because it was
-  still in flight when the push of `5dee596` landed two minutes into it. §12 tabulates the seven whose shapes it
-  records line by line and leaves the eighth out, because `42033189223` printed a green of the shape §12 already shows.
+  `42025558933`, `42027072602`, `42029386377`, `42033189223`, `42035782395` and `42046629162` green, and `42029092102`
+  `cancelled` because it was
+  still in flight when the push of `5dee596` landed two minutes into it. §12 tabulates the eight whose shapes it
+  records line by line and leaves `42033189223` and `42035782395` out, because each printed a green of the shape §12
+  already shows.
   No `--force`, no `--no-verify`, no amend of anything already published: the
   commit that first tripped the label guard stayed on `master` with its label, and the document moved to match the
   guard instead.
