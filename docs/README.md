@@ -64,6 +64,6 @@ Executable artefacts, outside this directory:
 | `docs/adr/0001-0020` | done |
 | `docs/architecture/20-40` | done — 39 is the queue of every claim nothing checks, 40 is the register of the questions 39 cannot close |
 | `docs/verification/*` | done — live matrix, env contract, both 3.5.2 backups, and the README that indexes what runs |
-| `verify.yml` + baseline fixes | done — written and executed step-by-step on this host, **and run on GitHub runners on 2026-11-05: red, red, green, green** (`docs/audit/99-baseline-report.md` §12). The `VER-*` rows it names keep the states the queue gives them; a green run is evidence, and closing a row is a separate mechanical commit, for the reason §12 states |
+| `verify.yml` + baseline fixes | done — written and executed step-by-step on this host, **and run on GitHub runners on 2026-11-05: twice red, three times green** (`docs/audit/99-baseline-report.md` §12). The `VER-*` rows it names keep the states the queue gives them; a green run is evidence, and closing a row is a separate mechanical commit, for the reason §12 states |
 | `probe-4` + `probe-5`, the end-to-end re-verification | done 2026-11-05 — the Ladder A chain, both test floors, all five gates, the artifact content and a cold Bower install, all re-measured and archived in `docs/audit/raw/` (`docs/audit/99-baseline-report.md` §11); the runner half is now recorded as run (§12), and the browser half as still not done, not as passed |
 | Anything in `connector/`, `nexora/`, `packages/{protocol,state,i18n,ui}` | **not in this iteration** |

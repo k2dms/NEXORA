@@ -168,7 +168,7 @@ Individually listed per document; the ones that matter across the whole audit:
    `levelOfControl` transitions, and the blank-page consequence of a missing bundle are inferred from code
    and logs, not observed in Chrome or Firefox.
 3. **CI history** — no run of either legacy configuration was executed (the third one this iteration added,
-   `.github/workflows/verify.yml`, has: four runs on 2026-11-05, the last two green, recorded in
+   `.github/workflows/verify.yml`, has: five runs on 2026-11-05, the last three green, recorded in
    `docs/audit/99-baseline-report.md` §12); the verdict that both CI configurations fail today is reasoned
    from their contents (`docs/audit/02-toolchain-decay-and-risk.md`).
 4. **The three `OptionsSync #requestPush` timeouts** — root cause not investigated.

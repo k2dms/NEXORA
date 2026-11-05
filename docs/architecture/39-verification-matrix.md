@@ -417,7 +417,7 @@ distribution numbers in §4, §5 and `verify.mjs` (three assertions exist to mak
 6. Three lines are stale in exactly that sense, in the same direction: `docs/adr/0018-workspace-roots-and-no-root-package-json.md:55`,
    the same record at `:121`, and `docs/adr/0020-test-strategy.md:126` all describe
    `.github/workflows/verify.yml` as not yet written. It was written on 2026-11-05, so those three were true when
-   authored and are now the earlier fact. The same day it ran: four executions, red, red, green, green, recorded line
+   authored and are now the earlier fact. The same day it ran: five executions, red, red, green, green, green, recorded line
    by line in `docs/audit/99-baseline-report.md` §12, and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 says which
    half of each claim the runner measured. Nothing in this queue moved because of it, and that is not timidity —
    `packages/schema/verification.json` has no state meaning closed, so a row closes by being deleted together with

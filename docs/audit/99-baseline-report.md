@@ -319,7 +319,7 @@ artifact content assertion. One thing did not reproduce: the recorded sha256 of 
 same-machine rebuild (§6). One thing that was inference became measurement: Bower resolves the declared `git://`
 endpoints over https by itself, so a cold install works without any transport rewrite (§7). One thing this
 iteration still has not done: run anything in a browser. The runner half it named alongside that is answered by
-§12 — four runs on 2026-11-05, the third and fourth green.
+§12 — five runs on 2026-11-05, the last three green.
 
 ## 11. probe-4 and probe-5 — the iteration's own end-to-end check, 2026-11-05
 
@@ -364,15 +364,15 @@ exporter-shaped rather than genuine `.bak` files (`docs/verification/live-matrix
 `docs/verification/README.md` for what each row would need first). Under
 `docs/verification/live-env-contract.md`, an unexecuted row is `SKIPPED`, never `PASSED`, so `LIVE-01…24` are
 untouched by this section, and §12 opens no browser either. The other half this section could not close — a GitHub
-runner — is answered by §12: `.github/workflows/verify.yml` ran there three times on 2026-11-05, and the third run
-is green.
+runner — is answered by §12: `.github/workflows/verify.yml` ran there five times on 2026-11-05, and the last three
+runs are green.
 
-## 12. `.github/workflows/verify.yml` on a GitHub runner — four runs, 2026-11-05
+## 12. `.github/workflows/verify.yml` on a GitHub runner — five runs, 2026-11-05
 
 §11 ended with the one thing this iteration had not done: get the file onto a runner. It is now on one, and the
-answer came as two red runs before it came as a green one, and the green one has since repeated on the commit that
-records it. Every line quoted below is copied out of `gh run view <id> --log`, not re-derived from the workflow
-source, and the extraction itself is kept as `docs/audit/raw/probe-8-runner-runs.txt` — the four runs' job
+answer came as two red runs before it came as a green one, and the green one has repeated twice — including on the
+commit that records it. Every line quoted below is copied out of `gh run view <id> --log`, not re-derived from the
+workflow source, and the extraction itself is kept as `docs/audit/raw/probe-8-runner-runs.txt` — the five runs' job
 conclusions as the API reports them, every `##[error]` annotation verbatim, each line quoted here beside the number
 of times the runner printed it, and the PATH forms counted per run so the fix is visible in the numbers.
 
@@ -382,24 +382,25 @@ of times the runner printed it, and the PATH forms counted per run so the fix is
 | `42017987418` | `a7627ae` | **red** — all three `legacy-chain` cells: `VER-08` on ubuntu, `VER-11` on both windows images | (a) `$GITHUB_WORKSPACE` on a windows runner is `D:\a\NEXORA\NEXORA` — that value appears 40 times in the run's log — and it is not a POSIX path, so the `PATH` entry built from it reached grunt as a mangled module path and mocha never started: `##[error]omega-pac produced no mocha summary; the run died before reporting.` followed by `Error: Cannot find module 'A:\NEXORA\NEXORA\omega-build\node_modules\grunt-cli\bin\grunt'` in both windows cells; (b) `VER-08` compared the zip's uncompressed total against a number recorded from a `core.autocrlf=true` checkout, so a correct build on a different image cannot match it: `##[error]dist/chromium-release.zip is 5974389 B, expected 5999353 B.` Both were reproduced on this host before the file changed — `docs/audit/raw/probe-7-grunt-path.txt` — the first as the same `Cannot find module` error with the same `\a\` segment resolved against this machine's Git install directory instead of a runner drive, the second as a measured 24 964-byte CR delta between a CRLF and an LF checkout of the same tree. |
 | `42020617681` | `ceedabf` | **green** — 6 jobs passed, 1 skipped | the whole file, on `ubuntu-latest`/Node 22, `windows-latest`/Node 22 and `windows-latest`/Node 24. |
 | `42025558933` | `890fde6` | **green** — same 6 passed, 1 skipped, no `##[error]` line anywhere in the log | the green result reproduced on the commit that records it, which is also the commit that adds a tracked file: `no secret-shaped content in 419 files` and `no PE, ELF or Mach-O bytes in 589 tracked files` where `ceedabf` printed 418 and 588, and `checked 2260 path:line citations, 487 path#pointer citations and 1287 doc-name references` where it printed `2252 / 487 / 1253`. Every legacy figure is unchanged — both floors, 353 entries, `lib/=252`, `_locales=7`, the same four zip byte counts — and the two artifacts still printed `NOTE: … does not match the recorded checksum`: twelve distinct sha256 values across these two runs — three per artifact, one per image, so no two runner images agree even on the same commit — and none of the twelve is §6's recorded hash. |
+| `42027072602` | `c81ae7e` | **green** — the same 6 passed, 1 skipped, again no `##[error]` line | the third green in a row, and the run this table stops at. `c81ae7e` adds no tracked file, so every counter it prints is `890fde6`'s: `2260 / 487 / 1287`, `419 files`, `589 tracked files`, `checks run: 1217`, both floors, the same four zip byte counts (`1 901 079` / `1 901 087` / `1 901 116` / `1 901 124`) and three fresh checksums per artifact. Every push re-executes this file, so the table could grow forever; it does not, because a fourth green adds no new fact and the record of the question §11 left open is complete at the point where the answer stopped changing — the next push, which carries this record to five runs, produces a sixth execution whose outcome is deliberately not tabulated. What would reopen it is a red run, and none has happened since `42017987418`. |
 
 ### What the green runs measured
 
-`contracts`, identically on all three images and in both green runs: `checks run: 1217`, `OK: 13 schemas compile,
+`contracts`, identically on all three images and in all three green runs: `checks run: 1217`, `OK: 13 schemas compile,
 19 command docs conform, 20 examples valid, 24 invalid examples rejected, 112 protocol frames replayed`,
 `OK: the index matches 20 ADR files, exactly.`, `SELFTEST OK: 13 cases`, plus the `VER-02`, `VER-03`, `VER-04`,
 `VER-08` (binary-path) and `VER-10` guards,
 `OK: git diff --check clean and every tracked blob is LF or binary in the index.` and
 `OK: every commit subject in the range carries its label; 0 cut-over commit(s).`
 
-The two corpus counters that scan the tree are the only lines that moved between the green runs: `ceedabf` printed
+The two corpus counters that scan the tree are the only lines that moved among the green runs: `ceedabf` printed
 `checked 2252 path:line citations, 487 path#pointer citations and 1253 doc-name references in docs/`,
 `no secret-shaped content in 418 files` and `no PE, ELF or Mach-O bytes in 588 tracked files`, while `890fde6` — the
 commit that adds the capture this section points at — printed `2260 / 487 / 1287`, `419 files` and `589 tracked
-files`. All three counters read `git ls-files`, so they are a property of the tree at the sha under test, which is
-why they are quoted as a set and never pinned as a floor.
+files`, and `c81ae7e` printed those same three numbers again. All three counters read `git ls-files`, so they are a
+property of the tree at the sha under test, which is why they are quoted as a set and never pinned as a floor.
 
-`legacy-chain`, on each of the three images, identically in both green runs:
+`legacy-chain`, on each of the three images, identically in all three green runs:
 
 - `OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).` and
   `OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).` — §5's floors reproduced on
@@ -469,7 +470,7 @@ They do not move a single `VER-*` row. Three reasons, all mechanical:
 - Whether the 354-vs-353 file difference is exactly the `manifest` task substitution (per-file diff not computed).
 - Clean-machine reproducibility of `npm install` + `bower install`. **Narrowed twice 2026-11-05.** The Bower half is
   measured on a cold `bower_components` (§7) and works, and both halves are now measured on machines that had never
-  held this tree: three GitHub runner images, in two separate green runs, installed all five roots with no lockfile in
+  held this tree: three GitHub runner images, in three separate green runs, installed all five roots with no lockfile in
   git, built through the hub, and produced a zip carrying the same 252 `lib/` entries this host's warm cache did (§12). What remains unmeasured is
   narrower still — a *user* machine, whose image differs from GitHub's, and whether npm resolution there picks the
   same versions; the runner proves a set resolves and builds, not that it is the same set everywhere.
