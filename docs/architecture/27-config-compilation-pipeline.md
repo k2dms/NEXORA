@@ -39,11 +39,22 @@ The contract:
 
 1. **Key order is lexicographic at every object depth**, emitted by the serializer, not inherited from map
    iteration (Go map order is randomised by design — an unsorted encoder would produce a different hash on
-   every call).
+   every call). The engine being replaced never sorted either: the PAC it ships is built by iterating the profile
+   table in whatever order the object has (`omega-pac/src/pac_generator.coffee:32`), so byte-determinism is an
+   obligation NEXORA takes on, not one it inherits — which is why this contract's row in §9 reads NO today, and why it
+   stops reading that way when a golden file exists.
 2. **No clocks, no paths, no PIDs** in the config. `createdAt`/`updatedAt` are envelope bookkeeping
-   (`docs/architecture/23-unified-server-model.md` §8) and MUST NOT reach the compiled bytes. The same
-   stripping rule the fixtures use applies here: a field ending in `At`, `Ms`, `Seconds` or `seq` is
-   time-shaped and is excluded from hash-relevant comparison.
+   (`docs/architecture/23-unified-server-model.md` §8) and MUST NOT reach the compiled bytes. The exclusion is
+   structural, not a name match: the compiler emits only keys it built from the model, so a time-shaped field has
+   no path into the document, and it is checked by the golden files rather than by a filter. A suffix rule would
+   misfire in both directions — `At`/`Ms`/`Seconds`/`seq` would strip `stickySeconds`, `cooldownSeconds` and
+   `probeIntervalSeconds`, which are semantics with declared ranges and defaults
+   (`packages/schema/connector-profile.schema.json`, and `docs/architecture/23-unified-server-model.md` §8 explains
+   why each exists), while missing the two fields that actually carry a clock in the engine being replaced:
+   `revision`, a timestamp in hex (`omega-pac/src/utils.coffee:4`, stamped by `updateRevision` at
+   `omega-pac/src/profiles.coffee:153`), and `lastUpdate`, an ISO string (`omega-target/src/options.coffee:805`).
+   The suffix list is kept where it is honest — `packages/schema/scripts/verify.mjs:483` uses it to compare two
+   replayed protocol *results*, which is a fixture device, not a compile rule.
 3. **`installRoot` is not inlined** into the config (`packages/schema/connector-settings.schema.json#/properties/core/properties/installRoot`):
    an absolute path would make the hash machine-specific, so a relocated Core changes no hash.
 4. **Numeric formatting is fixed** — no exponent form, no `1.0`; the port is an integer
@@ -164,12 +175,13 @@ are the same principle at two layers, which is why neither is allowed to be "bes
 | `domainStrategy` accepts only Xray's three values | "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" in `packages/schema/scripts/verify.mjs:847-890` | **GREEN** |
 | `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256` | **GREEN** for the shape; the *reporting behaviour* is Verified: NO |
 | Every `*Hash` field is one canonical lowercase sha256 pattern | the "`<field>` uses the canonical sha256 pattern" coverage check at `packages/schema/scripts/verify.mjs:750` | **GREEN** |
-| Compilation is byte-deterministic | nothing | Verified: NO — golden configs (VER-28's tier; no live row tests determinism) |
+| Compilation is byte-deterministic | the serializer only — `connector/internal/compile/emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder; nothing has compiled a profile into a document yet | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
 | Non-loopback bind is impossible to emit | nothing (the `const` helps, the compiler must still be checked) | Verified: NO — deferred to Phase 2 |
 | Block port range and allocation range are disjoint | nothing | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | nothing | Verified: NO — deferred to Phase 2 |
 | A failed apply leaves the previous config applied | nothing | Verified: NO — deferred to Phase 2 |
 | `localDNS` semantics decided before Phase 2 ships | — | open decision, `docs/architecture/40-open-decisions.md` |
+| Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | nothing | Verified: NO — deferred to Phase 2 (`docs/architecture/40-open-decisions.md`) |
 
 Trace: ADR-0002, ADR-0003, ADR-0006, ADR-0008, ADR-0010, ADR-0012, ADR-0013, ADR-0019, ADR-0020 · Contract:
 `packages/schema/connector-settings.schema.json`, `packages/schema/routing-policy.schema.json`,

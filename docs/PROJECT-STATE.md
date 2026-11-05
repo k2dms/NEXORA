@@ -195,11 +195,11 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `204` labelled lines over `44` documents partitioned into `77` rows `VER-01…VER-77`, `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `55` deferral
-sites over `14` documents partitioned into `35` entries `ODEC-01…ODEC-35`, each naming who can answer it
-(`product` 14, `contract` 12, `adr` 6, `measurement` 2, `upstream` 1), three options — thirty-four of the thirty-five,
-since the new entry carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
+The queue is `205` labelled lines over `44` documents partitioned into `78` rows `VER-01…VER-78`, `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `56` deferral
+sites over `14` documents partitioned into `36` entries `ODEC-01…ODEC-36`, each naming who can answer it
+(`product` 14, `contract` 13, `adr` 6, `measurement` 2, `upstream` 1), three options — thirty-five of the thirty-six,
+since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
 unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
@@ -273,6 +273,17 @@ limit is why a clause orphaned by the seventh slice's own edit had been sitting 
 unmatched parenthesis and no subject. Repairing it restates what it had been recording before the edit swallowed it:
 `DOCNAME_RE` checks that a `tools/*.mjs` name a document tells the reader to run is a file that exists, and
 `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does not exist.
+§4.15 moves the set a ninth time — **2281 / 516 / 1367** — and it is the first move in this series whose headline is a
+figure that barely changed: two new `path#pointer`s, the two JSON locations the record and its own harness read, against
+fourteen new `path:line` cites. Read per file against a clean worktree at the commit before: doc 27 `+5 / +0 / +3`, because a slice
+that repairs a clause by naming the fields it would have eaten has to cite the schema that declares them and the legacy
+code that carries the clock; this file `+8 / +2 / +4`; the register's document `+1 / +0 / +2`; the docs index
+`+0 / +0 / +2`; and docs 32, 33, 36 and 39 `+0 / +0 / +0` each — four documents whose citations into doc 27 were re-read
+and re-numbered, which is §4.11's lesson arriving a fourth time and the reason a re-read is never a delta. What this move
+has that the eight before it did not: one of those re-read citations had *never* been right. The row in doc 33's index
+that cites "the compiler's dependency on install state" pointed at the footer of doc 27 — a `See also` line, non-blank,
+so green for two slices, and not the claim. The guard checks that a number lands on text; it cannot check what the text
+says, so §8's decision 19 keeps the finding instead.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -847,7 +858,90 @@ quietly rewriting.
 
 ---
 
+### 4.15 M3's first slice: the serializer, and the determinism clause that would have eaten three fields (`connector/internal/compile/`, 2026-11-05)
+
+**What landed.** `connector/internal/compile/emit.go` and `emit_test.go` — stage 5 (emit) and stage 6 (hash) of
+`docs/architecture/27-config-compilation-pipeline.md` §2, and no other stage. The package serializes a document, sorts
+keys at every depth, keeps arrays in input order, formats integers only, and hashes the bytes it wrote. It resolves no
+profile reference, splits no rule, allocates no port, embeds no block target, and does not look at what it emitted for a
+loopback bind: stages 1-4 and stage 7 have no code, so this slice creates no `connector/testdata/config/` and no golden
+file — `VER-28` keeps its row, and `VER-78` arrives beside it precisely because a byte-stable serializer is not a
+compiler. This is the eighth `ok` package line of the series and the first Go code in the repository whose subject is a
+config rather than a frame.
+
+**Two decisions the emitter refuses to make, and how it says so.** `configHash` is documented as the sha256 of "the
+exact bytes written", and by the time a config is on disk two different byte strings exist: the document the compiler
+builds, whose credential positions are `keystore://<ref>` handles, and the materialized file, which holds the
+credential. Which one the hash covers decides whether a rotated secret changes the hash, whether the hash identifies
+intent or what Core loaded, and whether a logged digest hashes a secret-bearing document — and the corpus answers none
+of it: `packages/schema/protocol/commands/config.apply.json#/result/properties/configHash` is a pattern with no
+description, and `docs/architecture/23-unified-server-model.md` §8's own "not part of intent hash" uses a term defined
+nowhere in the repository. So `Emit` and `Hash` are two calls, the const `HashInputNote` names the open decision where
+the code that would have made it stands, and the register carries `ODEC-36` (`contract`, three candidates) gated to the
+queue by `VER-78`, both anchored on the new labelled invariant row in doc 27 §9. The second refusal is smaller: the
+contract does not say whether HTML characters are escaped, so the package says out loud that they are not, and the test
+suite then cross-checks the *ordering* claim against `encoding/json` with escaping disabled — two independent encoders
+agreeing on the canonical bytes of the shape doc 23 §9 calls A.
+
+**What the eleven tests buy.** Re-emitting shape A two hundred times and requiring identical bytes is the test for
+§3.1, because Go randomises map iteration and an unsorted encoder would change the hash on every call — the failure this
+contract exists to prevent, not a style preference. A float at `config.inbounds[0].port` is refused with that path in
+the message rather than formatted, because §3.4 forbids exponent form and `1.0` while defining no decimal rule, and no
+emitted shape in doc 23 §9 contains a non-integer to invent one for; an unsupported type is refused the same way.
+Invalid UTF-8 is refused rather than replaced, because a replacement character would reach the hash and two machines
+would then disagree about a config neither of them had. A `[]string` of `serverIds` comes out in the order it went in.
+A self-referential document is refused at thirty-two levels instead of overflowing the process that is supposed to keep
+Core running. The hash is pinned to `8e15609e…` for shape A, checked against the `^[0-9a-f]{64}$` pattern every `*Hash`
+field in the corpus uses, and shown to move when one port moves.
+
+**The contract defect this slice found — and it is the same shape as §4.11's and §4.12's.** Doc 27 §3.2 said the
+compiler would apply "the same stripping rule the fixtures use": any field named `…At`, `…Ms`, `…Seconds` or `…seq` is
+time-shaped and excluded from hash-relevant comparison. Writing the emitter made that sentence checkable, and it fails
+in both directions. It would strip `stickySeconds`, `cooldownSeconds` and `probeIntervalSeconds` — three fields with
+declared ranges, defaults and reasons in the data (`packages/schema/connector-profile.schema.json:59`,
+`packages/schema/connector-profile.schema.json:75`, `packages/schema/connector-profile.schema.json:77`), each of which
+changes what the Connector does. It would keep the two legacy fields that actually carry a clock, because neither name
+ends in those suffixes: `revision`, a timestamp rendered in hex (`omega-pac/src/utils.coffee:4`, stamped by
+`updateRevision` at `omega-pac/src/profiles.coffee:153`), and `lastUpdate`, an ISO string
+(`omega-target/src/options.coffee:805`). §3.2 now states the exclusion structurally — the compiler emits only keys it
+built from the model, and a golden file is what checks it — and names where the suffix list does belong:
+`packages/schema/scripts/verify.mjs:483`, which compares two replayed protocol *results*, a fixture device and not a
+compile rule. Doc 27 §3.1 gained the other half of the same reading: the legacy engine never sorted anything either, it
+iterates its profile table (`omega-pac/src/pac_generator.coffee:32`), so byte-determinism is an obligation NEXORA takes
+on rather than inherits — which is why the NO on that row is honest today and not a slip.
+
+**A citation defect, found while the guards were being re-read.** Five documents cite doc 27 by line number, and every
+number in that set moved when this slice made doc 27 longer — the ordinary §4.11 failure, arriving for the fourth time.
+Re-reading them found one that had never been right: doc 33's index row cites "the compiler's dependency on install
+state", and the number it carried pointed at the *footer* of doc 27 — a `See also` line, non-blank, and not the claim.
+`tools/check-doc-evidence.mjs` asserts that a cited line exists and has text on it; it cannot assert that the line holds
+the sentence the prose describes, so a wrong number that lands on any non-blank line is green here indefinitely. The
+durable form is §8's decision 19: re-read the sentence beside a citation, not only its number.
+
+**And a third defect, of a kind no guard was written for: a sentence that quotes the label becomes a claim in the
+queue.** The two paragraphs above each reproduced the label in prose — one in doc 27 §3.1 explaining why the row reads
+that way, one here — and `packages/schema/verification.json#/marker/pattern` reads a line, not a role, so any line
+carrying that spelling is a deferred claim owed a row. The partition came up with 207 claims against the 205 the queue
+declares and named both new lines unowned. No row was added: the obligation those sentences quote is owned already, by
+the §9 line they point at, and re-anchoring one obligation in two places would inflate what Phase 2 is billed for. Both
+now say that the row *reads NO* instead of reproducing the label, which keeps the sentence and drops the double count.
+What is worth carrying forward is that the corpus's deferral total is a property of its prose style, so a slice that
+explains a deferral has to state it rather than quote it — and that the harness caught this on its own, in the same run
+that was already checking the arithmetic of the queue. The finding re-litigated itself while being written: the sentence above, which says that a quoted label
+becomes a claim, carried a quoted label, and §8's decision 20 tripped the same counter on its first draft. A rule about
+prose style is hard to state without performing it.
+
+**Gates.** `gofmt -l connector` prints nothing, `go -C connector vet ./...` is clean, and
+`go -C connector test -count=1 ./...` now prints eight `ok` lines where §5 recorded seven. The schema harness is at
+1217 checks with its distributions moved to `no-code` 56, 78 rows, `connector` 37 and `assertion` 18; the register is
+at 36 entries over 56 sites with `contract` at thirteen. `node tools/check-no-secrets.mjs` enumerates **439** files
+with this package staged — two more than §4.13 recorded, which is §5's standing note about that guard reading
+`git ls-files` come true in the ordinary way.
+
+---
+
 ## 5. Verification state to the letter
+
 
 - `cd omega-build && npm run deps && npm run dev && npx grunt && npx grunt release` → **exit 0** for the whole chain (Ladder A).
   Re-run end to end on 2026-11-05 by probe-4 — same four steps, same order, all exit 0, and its `npm run deps`
@@ -883,15 +977,16 @@ quietly rewriting.
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **437** files — §4.12's 435 plus
-  the two that §4.13's package adds, because the guard walks `git ls-files` and so counts a file when it is staged, not
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **439** files — §4.13's 437 plus
+  the two that §4.15's package adds, because the guard walks `git ls-files` and so counts a file when it is staged, not
   when it is thought of.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
   is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
   six `ok` package lines where §4.6 recorded three — `contract`, `dispatch`, `envelope`, `frames`, `hello` and `peer`
-  — and §4.13 makes it seven with `github.com/k2dms/nexora/connector/cmd/nexora-connector`; `gofmt -l connector` still
+  — §4.13 makes it seven with `github.com/k2dms/nexora/connector/cmd/nexora-connector` and §4.15 eight with
+  `github.com/k2dms/nexora/connector/internal/compile`; `gofmt -l connector` still
   prints nothing. No `VER-NN` row moves on any of those increments: §4.6's "Not yet"
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
@@ -899,17 +994,19 @@ quietly rewriting.
   question two of this repository's own packages raised against each other; §4.10 names the three pieces of contract
   data that answered it and the boundary the answer drew; §4.11 names the four that stopped the next package before its
   first line; §4.12 names the contract sentence that had been naming the wrong process for as long as the tests had
-  been green; §4.13 is the first slice since §4.7 to move the `ok` count rather than the prose beside it, and §4.14
-  moves no Go code at all — it registers what the running binary proved the contract does not say.
-- `node tools/check-doc-evidence.mjs` → **green** (2267 `path:line`, 514 pointers, 1356 doc-and-script
+  been green; §4.13 is the first slice since §4.7 to move the `ok` count rather than the prose beside it, §4.14
+  moves no Go code at all — it registers what the running binary proved the contract does not say — and §4.15 moves the
+  count again with a package whose subject is a config rather than a frame, which is the first Go code in this
+  repository able to produce a `configHash` and therefore the reason `VER-78` exists to name which byte string it is a
+  hash of.
+- `node tools/check-doc-evidence.mjs` → **green** (2281 `path:line`, 516 pointers, 1367 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
   `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
   as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
-  set and never pinned. No execution has printed a set since: the eight M2 slices are on this branch and not on
-  `nexora/master` (§7), so the three figures above are this host's, and §4.4 says which slice moved which of them and
-  in what shape.)
+  set and never pinned. No runner set has been *read* since: the two guard runs this host printed after that execution
+  are records of this machine, and §4.4 says which slice moved which of the three figures and in what shape.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
@@ -1189,18 +1286,19 @@ written before any behaviour existed. What each next milestone has to make true:
    string and a check in a file the next real slice already opens; none is small enough to be done in a commit that
    would then have to be found again.
 2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
-   leaves to a human.
+   leaves to a human. One of the five is begun: §4.15 lands doc 27 §2's stages 5 and 6 — the serializer and the hash —
+   and stops there, because stages 1 to 4 are what decide what the serializer would be claiming to have compiled. The
+   order the rest builds in is §10's closing note.
 
 ---
 
 ## 7. Git rules of this session (do not improvise)
 
 - Branch: **`nexora/architecture`**. `nexora/master` was last
-  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the eight slices
+  fast-forwarded to the sha the bullet below names (`96d1613`): the runner-record commit `f1a3829` and the eight slices
   §4.7 to §4.14 record — five of them code, three found by reading: two before a line of Go was written and one while
-  the seventh was still running — are on this
-  branch and not
-  there, because a push needs its own confirmation each time
+  the seventh was still running — are on both, because that push was asked for and confirmed before it happened. §4.15's
+  slice is on this branch and not there, because a push needs its own confirmation each time
   and this file states that rather than assuming it was given. Local `master`
   still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
   so the local branch pointer was never moved.
@@ -1211,7 +1309,7 @@ written before any behaviour existed. What each next milestone has to make true:
   (b) `packages/schema/*` plus the `check-no-secrets.mjs` fixture-path scoping its own negative example required;
   (c) `docs/audit/*`; (d) `docs/adr/*` + `docs/architecture/*` + `docs/README.md`; (e) `docs/verification/*` and
   this file; (f) the two coffeelint demotions, separate so they can be reverted without touching the documents.
-- **Eleven more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
+- **Twelve more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
   `431ea0a..f38f27b` (the state record above), `f38f27b..4307ff6` (the workflow, and the queue and the register as
   data, and the end-to-end re-verification), `4307ff6..a7627ae` and `a7627ae..ceedabf` (the two CI fixes),
   `ceedabf..890fde6` and `890fde6..c81ae7e` (the §12 record, with `docs/audit/raw/probe-8-runner-runs.txt`),
@@ -1228,16 +1326,28 @@ written before any behaviour existed. What each next milestone has to make true:
   README, the docs index, this file and the workflow's header comment, plus the untabulated run recorded in the
   capture), and `fe7a3e6..1004c4e` (§4.6's M1: `connector/internal/{contract,contractgen,envelope,frames}` as a Go
   module, the `connector` job no longer pinned off, and the documents that had to stop asserting this host had no
-  Go toolchain, no Go code and no `connector/` tree). Ten executions of
+  Go toolchain, no Go code and no `connector/` tree), and `1004c4e..96d1613` (§4.7 through §4.14: `connector/internal/`
+  `{peer,dispatch,hello,envelope}`, then `connector/cmd/nexora-connector`, with the three slices found by reading — the
+  `internal/chunk` gate, the contract sentence that named the wrong process, and `ODEC-35` — carried in the same
+  push, because a registration found while a slice is in flight has no separate fast-forward of its own). Twelve executions of
   `.github/workflows/verify.yml` came from those pushes — `42015170195` and `42017987418` red, `42020617681`,
   `42025558933`, `42027072602`, `42029386377`, `42033189223`, `42035782395` and `42046629162` green, and `42029092102`
   `cancelled` because it was
-  still in flight when the push of `5dee596` landed two minutes into it. §12 tabulates the eight whose shapes it
+  still in flight when the push of `5dee596` landed two minutes into it, and `42077447021` and `42077576648` — the same
+  tree judged twice, ~50 s apart, both green, because the second of them came from the ref in the bullet below. §12 tabulates the eight whose shapes it
   records line by line and leaves `42033189223` and `42035782395` out, because each printed a green of the shape §12
   already shows.
   No `--force`, no `--no-verify`, no amend of anything already published: the
   commit that first tripped the label guard stayed on `master` with its label, and the document moved to match the
   guard instead.
+- **A ref on the remote that this session did not mean to make, and has not deleted.** The first attempt at the
+  `1004c4e..96d1613` push used the refspec `nexora/architecture:nexora/master` — the local branch name pasted after a
+  colon — so GitHub created `refs/heads/nexora/master` rather than moving `refs/heads/master`. The corrected
+  `nexora/architecture:master` fast-forward followed it inside a minute, both refs carry `96d1613`, and neither holds a
+  commit the other lacks, so no work hangs on the stray one. What it does cost is the duplicate execution named above:
+  `.github/workflows/verify.yml` reacts to a push on any ref, so a branch whose name repeats its remote's is a second
+  copy of the build. Removing it is `git push nexora --delete nexora/master` — a delete of published state, so it goes
+  on this list rather than into a command this file ran, and waits for the same confirmation every push here waits for.
 - **The enumerated list above is authoritative only up to the sha it names, and the reason is worth stating once:**
   every commit that records a run of this workflow is itself a commit that runs it, so no sentence in this repository
   can state a final count of executions and survive its own push. This file's next push is therefore one more
@@ -1348,6 +1458,22 @@ written before any behaviour existed. What each next milestone has to make true:
     catch stale figures, read the check itself before concluding the harness is wrong or the document is; both can be
     right about different things. And when a §4.12-style repair of a *sentence* is queued as an assertion, name which
     file the assertion will read, because an assertion that reads the data cannot protect a document from itself.
+19. **A citation that resolves is not a citation that points at the claim** (§4.15). The row in doc 33's index that
+    cites "the compiler's dependency on install state" carried, for two slices, a line number into doc 27 that landed on
+    that document's `See also` footer — a real file, a non-blank line, and not the sentence. The guard that owns
+    citations asserts resolution, not relevance, and a wrong number that hits any text is indistinguishable from a right
+    one. So: when a document grows, re-read the *description beside each number* in the documents that cite it, not only
+    the numbers, because a re-numbered citation moves no counter and no build output. The residual this leaves is honest
+    and worth naming: a guard could compare a phrase from the citing description against the cited line, and nothing here
+    does, which means the corpus has a class of defect that only the person editing catches — §4.11's finding one level
+    deeper, and the reason a re-read is recorded as work rather than skipped as a formality.
+20. **A deferral is stated, not quoted** (§4.15). Two sentences that explained why an existing row reads NO spelled the
+    label inline, and the marker the queue declares in its data matches a line rather than a role, so
+    the partition billed the corpus two extra deferred claims and named them unowned. The two answers were a second anchor on
+    the same row, or prose that says *the row reads NO*. The first was refused: one obligation owned twice inflates what
+    Phase 2 is billed for, which is the number this whole mechanism exists to keep honest. So the rule is the second —
+    quote a label only on a line a row already owns — and the general shape behind it is worth the sentence: the corpus's
+    deferral total is a property of its prose style, not only of its claims.
 
 ---
 
@@ -1394,11 +1520,14 @@ of §6's queue was written.
 
 ---
 
-*End of handoff log. The remaining work order is §6: the connector queue it orders — `internal/chunk`, then
-`cmd/nexora-host`, with §4.6 to §4.14 the inventory of what exists of it — and task #11,
-the end-to-end pass no document in this corpus can do for itself. The first item on that queue is stopped, and §4.11
-says by what; the last is stopped too, and §4.14 says by what — a decision with three surviving answers, which is the
-first time this queue has been blocked by an ADR rather than by a gap in the data. Plus the decisions in §7 and the nine questions in
+*End of handoff log. The remaining work order is §6's, and §4.15 changed its shape without changing its two stoppers.
+The Connector queue now runs: the compile pipeline's stages 1 to 4 — resolve, split, allocate, embed — over the
+serializer §4.15 landed, then stage 7's validation and probe, then the Core supervisor and the keystore reads that
+`keystore://<ref>` position needs, then the golden configs `VER-28` and `VER-78` anchor on. `internal/chunk` and
+`cmd/nexora-host` stay where they were: the first is stopped by `ODEC-34`, and the second by `ODEC-35` — a decision with
+three surviving answers, which is the first time this queue has been blocked by an ADR rather than by a gap in the data.
+`ODEC-36` is the third stopped thing and the cheapest: it gates a row, not a package, and a field with a description
+closes it. Plus the decisions in §7 and the nine questions in
 §9, which are not work an agent may finish; the note under that table says why one ninth stopped being a question and
 what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the

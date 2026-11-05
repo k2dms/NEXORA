@@ -59,7 +59,7 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
 | `docs/architecture/25-native-messaging-protocol.md:234` | `SecretRedacted` vs a corrupt document | §11 |
 | `docs/architecture/26-command-surface.md:162` | `maskedConfig` must contain no keystore value | §13 |
-| `docs/architecture/27-config-compilation-pipeline.md:116` | mask and label rules for unrepresentable fields | §9, §10 |
+| `docs/architecture/27-config-compilation-pipeline.md:127` | mask and label rules for unrepresentable fields | §9, §10 |
 | `docs/architecture/29-subscriptions-and-servers.md:278` | `detail` masked like any other text | §8 |
 | `docs/architecture/29-subscriptions-and-servers.md:319` | M3–M5: credentials inside a subscription | §6, §14 |
 | `docs/architecture/29-subscriptions-and-servers.md:375` | the write primitive "that does not exist yet" | §6 — it exists now |
@@ -311,7 +311,7 @@ The other half of the policy, and the half that protects the user from the engin
 | subscription content `sha256` | integrity | change detection; SEC-7 shows legacy already treats it as non-secret |
 | `url` (display form) | feed address | the query-dropped address is what the user recognises; the credential-bearing whole address lives at `urlRef` |
 
-This table is where `docs/architecture/27-config-compilation-pipeline.md:116` and
+This table is where `docs/architecture/27-config-compilation-pipeline.md:127` and
 `docs/architecture/31-security-model.md`'s masking hand-off land: an unrepresentable field is reported by name
 with its value intact, because the field that cannot be compiled is configuration, not a credential.
 

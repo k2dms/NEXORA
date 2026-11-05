@@ -27,7 +27,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 204
+    "counted": 205
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -951,6 +951,15 @@
       "closesBy": { "kind": "assertion", "ref": "the local pipe names the sender the host resolved and refuses a frame whose sender it cannot resolve" },
       "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "The sender identity crosses hop 2 by a named mechanism" }],
       "why": "ADR-0005 rule 2 promises a pipe schema versioned separately, carrying its own version field, refusing a mismatch rather than guessing, and no file in `packages/schema` defines it: `framing.json` describes itself as the contract for the extension-to-host pipe, and the one part of it that reaches this process -- `senderPolicy`, whose budgets `docs/architecture/31-security-model.md` §8 counts in the Connector -- resolves the sender from an OS event on the other hop. Doc 25 §2 then says the same closed fourteen-field envelope crosses hop 2 verbatim, and none of its properties is a sender, so the `Identity` value `connector/internal/dispatch` demands on every call -- whose own comment says none of it comes from the payload -- has no producer. Three transport shapes survive and they disagree about where identity lives, which is a boundary (`ODEC-35`), not a field."
+    },
+    {
+      "id": "VER-78",
+      "subject": "the compiled bytes are byte-deterministic and `configHash` covers the byte string `ODEC-36` names — there is no compiler, so neither the stability nor the hash's subject is proven",
+      "state": "no-code",
+      "owner": "connector",
+      "closesBy": { "kind": "assertion", "ref": "golden configs compile byte-for-byte and configHash is the sha256 of the bytes the register names" },
+      "at": [{ "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Which byte string `configHash` covers" }],
+      "why": "This row answers the §9 invariant 'Which byte string `configHash` covers — the handle-bearing document or the materialized bytes', split on purpose from `VER-28`: `VER-28` owns the labelled golden-fixtures line that carries the byte-determinism claim, and this row owns the pipeline's own closing statement that the hash is over 'the exact bytes written' while two byte strings exist by the time a config is on disk (`docs/architecture/27-config-compilation-pipeline.md` §3 item 6, `docs/architecture/22-component-contracts.md` §9, `docs/architecture/23-unified-server-model.md` §9). It has two halves a golden config alone cannot settle. The determinism half is Tier 2 of ADR-0020 and waits on the compiler exactly like `VER-28`: `connector/internal/compile` proves the *serializer* byte-stable over a document a test hands it, and a hand-built document is not a compiled one — stages 1 to 4 of `docs/architecture/27-config-compilation-pipeline.md` §2 have no producer, so there is nothing to compare a golden against. The subject half is not a code problem at all: `config.apply` returns one `^[0-9a-f]{64}$` value with no description (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`), and nothing says whether it hashes the handle-bearing document or the materialized bytes, so a golden file can be byte-stable and still hash the wrong string. Which bytes the hash covers is `ODEC-36`, and `ODEC-36` gates this row: no assertion can name the byte string until the register says which one it is."
     }
   ]
 }

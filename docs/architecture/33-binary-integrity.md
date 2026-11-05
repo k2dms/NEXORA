@@ -54,7 +54,7 @@ green today.
 | `docs/architecture/22-component-contracts.md:83` | the host's pinnable identity being the manifest it writes | §3, §14 |
 | `docs/architecture/22-component-contracts.md:144` | an unbootable Core (bad binary, AV quarantine) routed here | §12, §13 |
 | `docs/architecture/23-unified-server-model.md:76` | what the *pinned Core* supports (REALITY over gRPC) | §4.3 |
-| `docs/architecture/27-config-compilation-pipeline.md:179` | the compiler's dependency on install state | §7, §11 |
+| `docs/architecture/27-config-compilation-pipeline.md:58` | the compiler's dependency on install state | §7, §11 |
 | `docs/architecture/30-failure-policy.md:66` | `contained: false` plus an integrity alarm | §15 |
 | `docs/architecture/30-failure-policy.md:369` | how Core is fetched and verified | §5, §6 |
 | `docs/architecture/31-security-model.md:26` | binary provenance | §3, §14 |
