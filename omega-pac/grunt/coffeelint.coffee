@@ -7,6 +7,8 @@ module.exports =
         left: 0
         right: 1
     missing_fat_arrows: level: 'warn'
+    # coffeelint's 80-column default predates this codebase
+    max_line_length: level: 'warn'
     no_empty_functions: level: 'error'
     no_empty_param_list: level: 'error'
     no_interpolation_in_single_quotes: level: 'error'
