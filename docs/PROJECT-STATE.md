@@ -234,7 +234,13 @@ not a place in a file. The negotiation §4.9 moves it a fourth time — **2266 /
 this time, because it is the first section of this file whose `path:line` citations are not about where a rule lives
 but about where two of this repository's own packages read the same data differently: all four of them are inside §9's
 ninth row. The three new pointers are locations inside `packages/schema/protocol/`, and the four new names are the
-documents and the live matrix those two sections read.
+documents and the live matrix those two sections read. §4.10 answers that row and moves the set a fifth time —
+**2262 / 500 / 1323** — and its shape is the finding rather than an accident: the four `path:line` citations leave,
+every one of them having been the ninth row's address for the disagreement, and four `path#pointer` citations take
+their place, because what settled the question is a rule in the contract data and in
+`docs/adr/0007-typed-versioned-command-allowlist.md`, not a place in a file. A disagreement between two implementations
+gets cited by line; the rule that ends it gets cited by pointer. The six new names are ADR-0007 and the schema harness,
+each of them restated by every section that carries the answer — §4.9's addendum, §4.10's table and §9's note.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
@@ -332,11 +338,14 @@ happens to have.
 | `connector/internal/contractgen/` | a generator that reads `packages/schema/protocol/**` and refuses to emit on drift — it re-checks the `protocolVersion` agreement across the four files that carry it, that `availableBeforeHello` and `requiresHello` are complements, that the capability registry covers the surface, that the privileged set equals `senderPolicy.privilegedMethods.names`, that the byte limits are ordered, that every `onExceed` is `Busy`, and that there is exactly one `"*"` catch-all |
 | `connector/internal/contract/` | `contract_gen.go` (committed, 19 methods / 23 codes / 13 capabilities / 6 budgets / the transport numbers) plus a drift test that regenerates it and compares the **bytes**, so the method list in Go cannot diverge from `packages/schema/protocol/command-allowlist.json:12` unnoticed — the same rule §3 of `docs/architecture/20-target-repository-layout.md` writes for `packages/protocol/` |
 | `connector/internal/frames/` | the 4-byte little-endian prefix codec; `Write` checks the limit **before** touching the writer, which is what `docs/architecture/25-native-messaging-protocol.md` requires of the sender |
-| `connector/internal/envelope/` | the envelope validator: required keys, closed object, id/method/trace/hash patterns, the four type rules, allowlist membership for `method`, taxonomy membership for `error.code`, and the chunk mirror; reports **every** violation, not the first |
+| `connector/internal/envelope/` | the envelope validator: required keys, closed object, id/method/trace/hash patterns, the four type rules, taxonomy membership for `error.code`, and the chunk mirror; reports **every** violation, not the first. It does not decide whether a method is published — see §4.10, which is where that rule moved from and to |
 
 **Measured on this host** (`go -C connector …`, the invocation form ADR-0018 rule 7 mandates): `build ./...`,
-`vet ./...` and `test ./...` all exit 0, and the replay test prints `replayed 112 protocol frames (110 accepted,
-2 refused)` — the two refusals being the two `examples/invalid/envelope.*.json` files, asserted separately. `node
+`vet ./...` and `test ./...` all exit 0, and the replay test printed `replayed 112 protocol frames (110 accepted,
+2 refused)` — the two refusals being the corpus's two requests for names the allowlist does not publish, with the
+named invalid examples asserted by their own test. §4.10 moved that refusal out of the codec, so the same command now
+prints `replayed 112 protocol frames, every one of them accepted as a frame`; §4.10 carries that measurement and this
+one stands as what was true when M1 landed. `node
 tools/check-doc-evidence.mjs`, `npm --prefix packages/schema run verify`, `node tools/check-no-secrets.mjs` and
 `node tools/check-legacy-backup.mjs` all stay green on the tree with `connector/` in it; §5 carries the counts.
 
@@ -516,6 +525,13 @@ answer is what makes `unknownMethodBehavior` an answer rather than a teardown. W
 other. Until it is answered, the reader in these tests tolerates that one refusal by id and fails on any other, so the
 day the answer changes the test says so.
 
+**The day the answer changed was the next slice.** §9's ninth question turned out to have three pieces of data older
+than itself answering it — `docs/adr/0007-typed-versioned-command-allowlist.md` rule 2 says an unknown method MUST be
+*answered*, `packages/schema/protocol/envelope.schema.json#/properties/method` declares a pattern and no membership
+rule, and the Node harness sends those two frames on and requires the recorded answer — so the codec was the half out
+of step with the contract it mirrors. §4.10 records the change, the test that replaced the one it removed, and the
+clause in `recordedHellos` that this paragraph describes becoming unnecessary.
+
 **Measured on this host**, Go 1.27.3: `gofmt -l connector` prints nothing, `go -C connector vet ./...` exits 0, and
 `go -C connector test -count=1 ./...` adds `ok github.com/k2dms/nexora/connector/internal/hello` — ten tests, every one
 named in the table above — so that invocation now prints six `ok` package lines. Still no runner has measured this
@@ -529,6 +545,63 @@ which §6 keeps out of this iteration, and a `YES` in that legend means executed
 endpoints agreeing. No `VER-NN` row covers the window rule at all: `VER-13` is the reconnect that re-runs this frame,
 `VER-18` is the pipe version that does not exist, and `VER-49` is the framing row §4.7 left open on a heartbeat this
 package never sees. So there is nothing here to close, and nothing here to reopen.
+
+---
+
+### 4.10 M2's fourth slice: the boundary §9's ninth question turned out to have an answer for (`connector/internal/envelope/`, 2026-11-05)
+
+**The question, and the three pieces of data that answer it.** §4.9 recorded the two halves of `connector/` refusing
+each other: the codec rejected a request for a name the allowlist does not publish, `connector/internal/peer/peer.go`
+ends the stream on anything the codec rejects, and so the exchange the corpus records —
+`packages/schema/fixtures/protocol/handshake.jsonl` asking for `core.snooze` and being answered `UnknownMethod` — could
+not happen in one process. The answer was not a preference between two defensible readings; it was already written
+down, three times, in data older than the question.
+
+| Data | What it says |
+|---|---|
+| `packages/schema/protocol/envelope.schema.json#/properties/method` | a `pattern` and nothing else. Membership lives in the *description*, which is prose; the validator that owns this file does not enforce it, so a codec refusing unpublished names was enforcing a rule the schema it mirrors does not carry |
+| `docs/adr/0007-typed-versioned-command-allowlist.md` | rule 2: an unknown method MUST produce `UnknownMethod` and MUST be answered before any state is read or written. The verb is *answered*, and a teardown is not an answer. The ADR was accepted before either Go package existed |
+| `packages/schema/scripts/verify.mjs` | the Node half reads the same two frames, sends them on, and asks only that a name outside the allowlist produce `UnknownMethod` and nothing else. Under doc 25 §2's "one contract, two implementations", the Go codec was the implementation out of step |
+
+**The change.** `Parse` keeps the dotted-name pattern — `core:snooze` with a colon is still a rejected frame, and
+`TestTargetedViolations` still says so — and no longer consults the projection for membership. The package comment now
+states the boundary in one sentence: this package answers "is that a frame", and only `internal/dispatch` answers "is
+that a method".
+
+**What the replay test lost, and what it has instead.** The exception list is gone from
+`TestReplayProtocolFixtures`: the assertion is now that **all 112 corpus frames parse**, with no id excused, and the
+two named negatives are still named — by id *and* by the unpublished method the corpus pairs them with — and are
+required to still be in the corpus, so a fixture that quietly stopped recording them fails this test instead of
+weakening it. The refusal itself moved to `TestTheUnpublishedNamesInTheCorpusAreAnsweredHereNotInTheCodec` in
+`connector/internal/dispatch/`, which reads the same files, parses them with the real codec, dispatches them through
+the real front door, and compares the verdict with the answer the corpus records: same code, and the taxonomy's
+`retryable` equal to the flag on the recorded error. That is the stronger of the two assertions, and the first test in
+this module where two of its packages and the corpus meet in one sentence.
+
+**Why this is not a loosening.** Removing a check in front of a dispatcher deserves the question "what gate went
+away?". None did. `internal/dispatch` resolves the name through `contract.LookupMethod` — the generated closed set,
+no prefix match, no default handler, tested against a name one character from a real one, a capitalised one, a bare
+word and the empty string — and `New` refuses to build a dispatcher holding a handler for an unpublished name, which
+§4.8 records as "the fallthrough `deniedByDefault` forbids, wearing a Go map". There is no path from a frame the codec
+accepts to a handler the allowlist does not publish. What moved was a duplicate gate standing in front of the gate,
+whose only observable effect was the teardown.
+
+**What §4.9's fixture reader no longer tolerates.** `recordedHellos` had a clause excusing one refusal by id and
+failing on any other. It is gone, and the reader now fails on any rejection at all — which is the assertion that would
+have caught this in M1, sitting in a test that was already reading the file frame by frame.
+
+**Measured on this host**, Go 1.27.3: `gofmt -l connector` prints nothing, `go -C connector vet ./...` exits 0, and
+`go -C connector test -count=1 ./...` prints the same six `ok` package lines §4.9 printed, with
+`replayed 112 protocol frames, every one of them accepted as a frame` where §4.6 quotes `(110 accepted, 2 refused)`.
+No runner has measured any of §4.7 to §4.10 yet — §7 records that the three slices before this one are on this branch
+and not on `nexora/master`, and this one joins them.
+
+**No queue row moves, for a new reason.** Nothing in `packages/schema/verification.json` asserts *where* the
+`UnknownMethod` verdict is produced: `VER-13` closes by `LIVE-13`, a reconnect no running process has performed, and
+no row asks which package refuses. What this slice changes is the queue in §6 — the two items it gated on §9's ninth
+question, `internal/chunk` and `cmd/nexora-connector`, are unblocked, and §6 now says so. `VER-49`'s heartbeat clause
+stays exactly where §4.7 left it: §9's eighth question is still open, and this answer says nothing about which frame
+carries a beat.
 
 ---
 
@@ -578,14 +651,17 @@ package never sees. So there is nothing here to close, and nothing here to reope
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
   row rather than by one more Go test, and §4.9 names the live row whose mechanism is half in this repository and the
-  question two of this repository's own packages raised against each other.
-- `node tools/check-doc-evidence.mjs` → **green** (2266 `path:line`, 496 `path#pointer`, 1317 doc-and-script
+  question two of this repository's own packages raised against each other; §4.10 names the three pieces of contract
+  data that answered it and the boundary the answer drew.
+- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 500 `path#pointer`, 1323 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
   `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
   as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
-  set and never pinned.)
+  set and never pinned. No execution has printed a set since: the four M2 slices are on this branch and not on
+  `nexora/master` (§7), so the three figures above are this host's, and §4.4 says which slice moved which of them and
+  in what shape.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
@@ -818,28 +894,30 @@ place, and neither is a status edit:
 **Connector, in the order the user set on 2026-11-05.** M1 is §4.6's four packages — the last thing that could be
 written before any behaviour existed. What each next milestone has to make true:
 
-1. **M2 — both processes as far as they are testable without Xray.** Three of its in-process halves have begun:
+1. **M2 — both processes as far as they are testable without Xray.** Four of its in-process halves have begun:
    §4.7's `connector/internal/peer/` is the endpoint that refuses an oversized write before it reaches the writer,
    bounds the outstanding-request and in-flight-byte budgets, discards a late answer by `id`, ends the stream on an
    illegal inbound frame, and treats a closed port as the client going away rather than as a shutdown signal;
    §4.8's `connector/internal/dispatch/` is the front door that resolves a method against the closed allowlist, gates
    it on the sender, the negotiation and the announced capabilities, and counts the per-sender budgets before any
    handler can half-apply; §4.9's `connector/internal/hello/` is the frame that produces the value the third of those
-   gates reads. What §4.8's package does *not* have an honest way to do is the heartbeat clause, for the reason §4.7
+   gates reads; and §4.10's `connector/internal/envelope/` is the codec that stops at "is that a frame" and leaves
+   "is that a method" to the front door, which is what lets the corpus's own `UnknownMethod` exchanges happen inside
+   one process. What §4.8's package does *not* have an honest way to do is the heartbeat clause, for the reason §4.7
    gives and §9 asks. Remaining, in the order they build on each other: `internal/chunk`, the reassembly that
    `packages/schema/protocol/framing.json#/oversizedPayloads` requires to fail a whole import with
-   `IntegrityMismatch` rather than apply part of one — written after §9's ninth question settles, because that
-   requirement has no `VER` row of its own and the frame it reassembles arrives through the same codec-or-front-door
-   path the question is about; then `cmd/nexora-connector`, the process that reads a pipe and owns a dispatcher, which
-   cannot be written honestly until that question is answered, because that process is exactly where
-   `internal/envelope` and `internal/dispatch` meet and disagree; then `cmd/nexora-host` — sender identity resolved
-   from the platform per
+   `IntegrityMismatch` rather than apply part of one — the gate this list put in front of it, §9's ninth question, is
+   answered in §4.10, and the frame a chunk carries arrives through a codec that no longer pre-empts the verdict;
+   then `cmd/nexora-connector`, the process that reads a pipe and owns a dispatcher — which is exactly where
+   `internal/envelope` and `internal/dispatch` met and disagreed, and now meet in the test §4.10 names; then
+   `cmd/nexora-host` — sender identity resolved from the platform per
    ADR-0004, the two-ports-per-sender cap that closes the oldest, and spawn/adopt of the connector over the local pipe
    whose separate version is rule 2 of `docs/adr/0005-two-process-connector.md`. `VER-49`, `VER-13`, `VER-51`,
    `VER-52` and `VER-55` all ask about that behaviour, and `docs/verification/live-matrix.md`'s `LIVE-01` asks about
    the negotiation. §4.7 records why `VER-49` in particular does not close on the peer alone; §4.8 records why the
    three sender-policy rows need a running host and cannot close on a unit test; §4.9 records why `LIVE-01` names two
-   test halves and only one of them is in this repository.
+   test halves and only one of them is in this repository; §4.10 records why a boundary that only decides *which*
+   package speaks moves no row either.
 2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
    leaves to a human.
 
@@ -848,8 +926,8 @@ written before any behaviour existed. What each next milestone has to make true:
 ## 7. Git rules of this session (do not improvise)
 
 - Branch: **`nexora/architecture`**. `nexora/master` was last
-  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the three M2
-  slices §4.7, §4.8 and §4.9 record are on this branch and not there, because a push needs its own confirmation each time
+  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the four M2
+  slices §4.7, §4.8, §4.9 and §4.10 record are on this branch and not there, because a push needs its own confirmation each time
   and this file states that rather than assuming it was given. Local `master`
   still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
   so the local branch pointer was never moved.
@@ -950,6 +1028,14 @@ written before any behaviour existed. What each next milestone has to make true:
 12. **Three of the six §14 UI sections ship without the Connector** — Subscriptions, Routing (browser plane),
     Settings (existing keys). Dashboard, Servers and the connector half of Diagnostics are meaningless before
     Phase 2. Do not promise all six in one UI iteration; that promise is stubs.
+13. **The codec answers "is that a frame", and only the front door answers "is that a method"** (§4.10, which is
+    §9's former ninth question resolved by data rather than by a person): `connector/internal/envelope/` does not
+    consult the projection for allowlist membership, because
+    `packages/schema/protocol/envelope.schema.json#/properties/method` declares a pattern, ADR-0007 rule 2 puts the
+    refusal in *resolution*, and a codec that refuses first turns an unpublished name into a transport teardown
+    through `connector/internal/peer/`. Do not re-add the check "for safety": the gate is
+    `connector/internal/dispatch/`, `New` already refuses a handler for a name the allowlist does not publish, and
+    §4.10 names the composed test that shows the corpus's own two negatives still get answered.
 
 ---
 
@@ -965,7 +1051,16 @@ written before any behaviour existed. What each next milestone has to make true:
 | 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
 | 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
 | 8 | What carries the heartbeat? `packages/schema/protocol/framing.json#/liveness` gives the interval (25 s), the miss count (3) and a **direction** (`host-to-extension`), and `packages/schema/protocol/envelope.schema.json#/properties/type` has four values — `request`, `response`, `event`, `progress` — none of them a beat. So either the beat is an envelope frame the data has not named (which one, given the closed object and the four type rules), or `nexora-host` keeps the port open without writing and only the extension counts, or the beat belongs to the local pipe instead and the direction value is wrong. Until one of those is chosen, no Go peer can claim the third clause of `VER-49`'s closer, and the peer in §4.7 counts *any* inbound frame as a beat arrived — a proxy, not the contract | `VER-49`, §11 of `docs/architecture/25-native-messaging-protocol.md`, the watchdog in `connector/internal/peer/` |
-| 9 | Does a method the allowlist does not publish reach the front door, or die in the codec? The two halves of `connector/` answer differently and both are asserted by tests: `packages/schema/fixtures/protocol/handshake.jsonl:8` records a `core.snooze` request answered `UnknownMethod`, `connector/internal/envelope/envelope_test.go:38` calls exactly that frame one of the corpus's two named negatives and requires the validator to refuse it, and `connector/internal/peer/peer.go:169` tears the transport down on any frame `Parse` rejects. Composed, the process cannot produce the exchange the fixture records, and `packages/schema/protocol/command-allowlist.json:10`'s `unknownMethodBehavior` names an answer no sender would receive. Either the codec stops owning the allowlist — and the replay test loses the teeth that make it mean something — or the peer gains a second verdict for this one violation class and answers it. Both readings are defensible; the choice changes a documented M1 position, so it is not an agent's to make silently | the composed `cmd/nexora-connector` in §6, `VER-13`'s reconnect, and the meaning of `UnknownMethod` in a running process |
+**This list ran to nine rows until §4.10.** The ninth — whether a name the allowlist does not publish is refused by
+the codec or by the front door — was raised here as a choice between two defensible readings and turned out not to be
+one: `docs/adr/0007-typed-versioned-command-allowlist.md` rule 2 says an unknown method MUST be *answered*,
+`packages/schema/protocol/envelope.schema.json#/properties/method` declares a pattern and no membership rule, and
+`packages/schema/scripts/verify.mjs` replays the two frames in question and requires the answer the corpus records.
+The codec was the half out of step with the contract it mirrors. A question the corpus already answers does not belong
+in a list of questions that need a human, so the row is deleted rather than marked answered, for the same reason §5
+deletes a queue row that closed; §4.10 carries the change and §8's thirteenth entry carries the position. What remains
+in this list is eight questions, and only the eighth has a Go package waiting on it — `VER-49`'s heartbeat clause,
+which §4.7 declined to fake.
 
 ---
 
@@ -981,7 +1076,9 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ---
 
-*End of handoff log. The remaining work order is §6 task #11 — the end-to-end pass no document in this corpus can do
-for itself — plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish. §4.5 is
-the inventory that says why nothing else is owed. Everything in §1, §2, §5 was measured, not inferred — re-run the
+*End of handoff log. The remaining work order is §6: the connector queue it orders — `internal/chunk`, then
+`cmd/nexora-connector`, then `cmd/nexora-host`, with §4.6 to §4.10 the inventory of what exists of it — and task #11,
+the end-to-end pass no document in this corpus can do for itself. Plus the decisions in §7 and the eight questions in
+§9, which are not work an agent may finish; the note under that table says why the ninth stopped being one of them.
+Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

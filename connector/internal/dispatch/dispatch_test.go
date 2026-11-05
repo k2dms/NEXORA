@@ -1,13 +1,17 @@
 package dispatch
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/k2dms/nexora/connector/internal/contract"
+	"github.com/k2dms/nexora/connector/internal/contractgen"
 	"github.com/k2dms/nexora/connector/internal/envelope"
 )
 
@@ -385,5 +389,79 @@ func TestANonRequestFrameIsNotDispatched(t *testing.T) {
 	}
 	if *ran != 0 {
 		t.Error("a frame that is not a request reached a handler")
+	}
+}
+
+// TestTheUnpublishedNamesInTheCorpusAreAnsweredHereNotInTheCodec is the two halves of this module meeting on the
+// frames the corpus itself records against names the allowlist does not publish. internal/envelope accepts them
+// — its half of the contract is a pattern, not a membership list — which is what lets them arrive here, where the
+// closed set is resolved. Had the codec refused them, internal/peer would have ended the stream on the way, and
+// the exchange the corpus records, a request answered UnknownMethod, could not have happened in one process.
+func TestTheUnpublishedNamesInTheCorpusAreAnsweredHereNotInTheCodec(t *testing.T) {
+	negatives := map[string]string{"req-000000ff": "core.snooze", "po-req-0004": "connector.ping"}
+
+	root, err := contractgen.FindRepoRoot(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := filepath.Glob(filepath.Join(root, "packages", "schema", "fixtures", "protocol", "*.jsonl"))
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no fixture files in the repository: %v", err)
+	}
+	arrived := map[string]bool{}
+	recorded := map[string]*envelope.Error{}
+	for _, file := range files {
+		raw, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, line := range bytes.Split(bytes.TrimSpace(raw), []byte("\n")) {
+			f, err := envelope.Parse(line)
+			if err != nil {
+				t.Fatalf("%s: the codec rejected a corpus frame: %v", filepath.Base(file), err)
+			}
+			if name, asking := negatives[f.ID]; asking && f.Type == envelope.TypeRequest && f.Method != nil && *f.Method == name {
+				arrived[f.ID] = true
+			}
+			if f.Type == envelope.TypeResponse && f.InReplyTo != nil && f.Error != nil {
+				if _, ok := negatives[*f.InReplyTo]; ok {
+					recorded[*f.InReplyTo] = f.Error
+				}
+			}
+		}
+	}
+
+	ran, h := counting(t)
+	d, err := New(Config{Handlers: map[string]Handler{"core.start": h}, Now: (&clock{t: time.Unix(0, 0)}).Now})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	id := negotiated(contract.CapabilityNames()...)
+
+	for reqID, name := range negatives {
+		if !arrived[reqID] {
+			t.Errorf("the corpus no longer records %s as a request for %q, so this test referees nothing", reqID, name)
+			continue
+		}
+		_, r := d.Dispatch(context.Background(), id, request(t, reqID, name))
+		if r == nil || r.Code != "UnknownMethod" {
+			t.Errorf("%s asking for %q got %+v, want UnknownMethod", reqID, name, r)
+			continue
+		}
+		answer, ok := recorded[reqID]
+		if !ok {
+			t.Errorf("%s is refused here and the corpus records no answer to compare", reqID)
+			continue
+		}
+		if answer.Code != r.Code {
+			t.Errorf("the corpus answers %s with %q, this package refuses %q", reqID, answer.Code, r.Code)
+		}
+		c, _ := contract.LookupCode(r.Code)
+		if answer.Retryable != nil && *answer.Retryable != c.Retryable {
+			t.Errorf("the corpus marks %s' answer retryable=%v, the taxonomy says %v", reqID, *answer.Retryable, c.Retryable)
+		}
+	}
+	if *ran != 0 {
+		t.Error("a name the allowlist does not publish reached a handler")
 	}
 }

@@ -5,6 +5,9 @@
 // Parse is strict in the same direction the schema is strict: a field the schema does not declare is a
 // violation, not something to ignore, because an unknown field on this pipe means one side was built from a
 // different contract. A frame that fails validation is never dispatched and never applied.
+//
+// The boundary is the schema's own: this package answers "is that a frame?", and only internal/dispatch answers
+// "is that a method?". Everything else in the process reads one of those two answers.
 package envelope
 
 import (
@@ -179,10 +182,14 @@ func Parse(data []byte) (*Frame, error) {
 			add("method", "must be a string")
 		} else {
 			f.Method = &s
+			// The shape only. Membership in the closed allowlist is deliberately not checked here:
+			// `envelope.schema.json#/properties/method` declares a pattern and nothing else, and ADR-0007 rule 2
+			// puts the refusal in *resolution* — "an unknown method MUST produce UnknownMethod and MUST be
+			// answered". A codec that refuses first turns a published method name's absence into a transport
+			// teardown, because internal/peer ends the stream on any frame Parse rejects; internal/dispatch is
+			// the package that owns that verdict, and the fixtures record the exchange it produces.
 			if !reMethod.MatchString(s) {
 				add("method", "must be a dotted lower-camel name such as connector.hello")
-			} else if _, found := contract.LookupMethod(s); !found {
-				add("method", fmt.Sprintf("%q is not in the closed command allowlist (UnknownMethod, never a fallthrough)", s))
 			}
 		}
 	}

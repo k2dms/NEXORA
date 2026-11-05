@@ -24,11 +24,10 @@ type pair struct{ req, res *envelope.Frame }
 
 // recordedHellos reads the two hello exchanges the fixture records, and nothing else.
 //
-// One other line in that file is refused by the codec: `req-000000ff`, whose method `core.snooze` the allowlist
-// does not publish. internal/envelope asserts that refusal as the corpus's named negative, so this reader has to
-// accept it — and the fact that a reader which *uses* the corpus has to make room for it is the disagreement
-// `docs/PROJECT-STATE.md` §9's ninth question records: the fixture answers that frame with `UnknownMethod`, and a
-// request the codec throws away can never reach the dispatcher whose whole job is answering it.
+// That file also records `req-000000ff`, a request for `core.snooze` — a name the allowlist does not publish. It is
+// a valid frame: the codec accepts it, internal/dispatch refuses it, and that refusal is what the fixture's
+// `UnknownMethod` answer is the record of. So this reader skips it as what it is, not as something it has to make
+// room for.
 func recordedHellos(t *testing.T) []pair {
 	t.Helper()
 	root, err := contractgen.FindRepoRoot(".")
@@ -41,22 +40,10 @@ func recordedHellos(t *testing.T) []pair {
 	}
 	responses := map[string]*envelope.Frame{}
 	var hellos []*envelope.Frame
-	var refused []string
 	for i, line := range bytes.Split(bytes.TrimSpace(raw), []byte("\n")) {
 		f, err := envelope.Parse(line)
 		if err != nil {
-			var probe struct {
-				ID     string `json:"id"`
-				Method string `json:"method"`
-			}
-			if err := json.Unmarshal(line, &probe); err != nil {
-				t.Fatalf("line %d is neither an envelope nor readable JSON: %v", i+1, err)
-			}
-			if probe.ID != "req-000000ff" || probe.Method != "core.snooze" {
-				t.Fatalf("line %d (%s) is a valid fixture frame the codec rejected: %v", i+1, probe.ID, err)
-			}
-			refused = append(refused, probe.ID)
-			continue
+			t.Fatalf("line %d is a fixture frame the codec rejected: %v", i+1, err)
 		}
 		switch {
 		case f.Type == envelope.TypeResponse && f.InReplyTo != nil:
@@ -64,9 +51,6 @@ func recordedHellos(t *testing.T) []pair {
 		case f.Method != nil && *f.Method == "connector.hello":
 			hellos = append(hellos, f)
 		}
-	}
-	if len(refused) != 1 {
-		t.Fatalf("the codec refused %d recorded frames, want the corpus's one named negative", len(refused))
 	}
 	if len(hellos) != 2 {
 		t.Fatalf("the fixture records %d hellos, and this package's tests are written against the two in it", len(hellos))

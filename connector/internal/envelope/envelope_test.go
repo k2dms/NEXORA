@@ -32,15 +32,17 @@ func fixtureFiles(t *testing.T) []string {
 	return files
 }
 
-// The fixture corpus carries two requests whose methods the allowlist does not publish; their responses answer
-// UnknownMethod. They are the corpus's own named negatives, so the Go validator must refuse exactly them and
-// nothing else — a replay that quietly accepts them proves nothing.
-var namedNegatives = map[string]bool{"req-000000ff": true, "po-req-0004": true}
+// Two requests in the corpus ask for names the allowlist does not publish, and each is answered `UnknownMethod`.
+// They are the corpus's named negatives, and they are valid frames: the schema puts a pattern on `method` and no
+// membership rule, because ADR-0007 rule 2 places the refusal in resolution. So the replay below must accept every
+// line, these two included, and internal/dispatch is where their refusal is asserted — a codec that rejected them
+// would be taking the front door's job and, through internal/peer, the transport down with it.
+var namedNegatives = map[string]string{"req-000000ff": "core.snooze", "po-req-0004": "connector.ping"}
 
 // TestReplayProtocolFixtures is the "one contract, two implementations" rule of
 // docs/architecture/25-native-messaging-protocol.md §2: the frames the Node harness replays are replayed here.
 func TestReplayProtocolFixtures(t *testing.T) {
-	total, accepted, refused := 0, 0, map[string]bool{}
+	total, parsed := 0, map[string]bool{}
 	for _, file := range fixtureFiles(t) {
 		raw, err := os.ReadFile(file)
 		if err != nil {
@@ -52,40 +54,24 @@ func TestReplayProtocolFixtures(t *testing.T) {
 			}
 			total++
 			f, err := Parse([]byte(line))
-			if err == nil {
-				accepted++
-				_ = f
+			if err != nil {
+				t.Errorf("%s line %d: valid fixture frame rejected: %v", filepath.Base(file), i+1, err)
 				continue
 			}
-			inv, ok := err.(*Invalid)
-			if !ok {
-				t.Fatalf("%s line %d: Parse returned %v, want *Invalid", filepath.Base(file), i+1, err)
+			if method, ok := namedNegatives[f.ID]; ok && f.Method != nil && *f.Method == method {
+				parsed[f.ID] = true
 			}
-			var probe struct {
-				ID string `json:"id"`
-			}
-			if err := json.Unmarshal([]byte(line), &probe); err != nil {
-				t.Fatalf("%s line %d: unreadable fixture line: %v", filepath.Base(file), i+1, err)
-			}
-			if !namedNegatives[probe.ID] {
-				t.Errorf("%s line %d: valid fixture frame rejected: %v", filepath.Base(file), i+1, inv)
-				continue
-			}
-			if !strings.Contains(inv.Error(), "closed command allowlist") {
-				t.Errorf("%s line %d: the named negative was refused for the wrong reason: %v", filepath.Base(file), i+1, inv)
-			}
-			refused[probe.ID] = true
 		}
 	}
-	for id := range namedNegatives {
-		if !refused[id] {
-			t.Errorf("frame %s is the corpus's named negative and the Go validator accepted it", id)
+	for id, method := range namedNegatives {
+		if !parsed[id] {
+			t.Errorf("the corpus no longer records %s as a request for %q, so the boundary this test guards is asserted against nothing", id, method)
 		}
 	}
-	if accepted+len(refused) != total || total == 0 {
-		t.Errorf("accounting does not close: %d frames, %d accepted, %d refused", total, accepted, len(refused))
+	if total == 0 {
+		t.Fatal("the fixture corpus offered no frames to replay")
 	}
-	t.Logf("replayed %d protocol frames (%d accepted, %d refused)", total, accepted, len(refused))
+	t.Logf("replayed %d protocol frames, every one of them accepted as a frame", total)
 }
 
 func TestInvalidExamplesFromTheSchemaRoot(t *testing.T) {
@@ -125,7 +111,6 @@ func TestTargetedViolations(t *testing.T) {
 		{"missing id", `{"v":1,"type":"request","method":"connector.hello","sentAt":"2026-11-04T10:00:00Z"}`, "id is required"},
 		{"short id", `{"v":1,"id":"abc","type":"request","method":"connector.hello","sentAt":"2026-11-04T10:00:00Z"}`, "^[A-Za-z0-9_-]{8,36}$"},
 		{"frame version zero", `{"v":0,"id":"req-00000001","type":"request","method":"connector.hello","sentAt":"2026-11-04T10:00:00Z"}`, "outside 1..255"},
-		{"unknown method", `{"v":1,"id":"req-00000001","type":"request","method":"core.snooze","sentAt":"2026-11-04T10:00:00Z"}`, "closed command allowlist"},
 		{"method with a colon", `{"v":1,"id":"req-00000001","type":"request","method":"core:snooze","sentAt":"2026-11-04T10:00:00Z"}`, "dotted lower-camel"},
 		{"args as a string", `{"v":1,"id":"req-00000001","type":"request","method":"connector.hello","args":"{}","sentAt":"2026-11-04T10:00:00Z"}`, "must be an object or null"},
 		{"not a date-time", `{"v":1,"id":"req-00000001","type":"request","method":"connector.hello","sentAt":"yesterday"}`, "RFC 3339"},
