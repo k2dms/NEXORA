@@ -199,8 +199,13 @@ and command doc".
 ## 8. How often: per-sender budgets
 
 The budget is data: `packages/schema/protocol/framing.json#/senderPolicy/rateLimits`. Per sender id, per Connector
-process, counted by the host **before dispatch**, so a request refused by budget never reaches a handler and cannot
-half-apply (`packages/schema/protocol/framing.json#/senderPolicy/rateLimitFacts/countedWhere`).
+process, counted by the Connector **before dispatch**, so a request refused by budget never reaches a handler and cannot
+half-apply (`packages/schema/protocol/framing.json#/senderPolicy/rateLimitFacts/countedWhere`). The shim cannot count,
+and this is not a preference: a scoped budget names a method, the method name is inside the payload, and
+`docs/architecture/25-native-messaging-protocol.md` §2 forbids the shim to interpret payloads -- what it does enforce is
+the sender allowlist, the byte limits and the ports per sender, all three answerable from an opened port and a frame
+header without opening anything. The counters therefore live in the process that holds the keystore, which is the
+process the amplification guard in `#/senderPolicy/refusals/amplificationGuard` is written to protect.
 
 | Scope | Budget | On exceed | Why that number |
 |---|---|---|---|

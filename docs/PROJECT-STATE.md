@@ -248,6 +248,12 @@ numbers re-read and moved by twenty-one lines, and a re-numbered citation change
 slice adds is seven pointers and twelve names — four pointers and three names in the paragraph the protocol document now
 carries, one name in the register's new argument for why a green check hid the answer, two in the index row that says
 the package is not written, and the rest in this file's own record of the finding.
+§4.12 moves the set a seventh time — **2262 / 508 / 1340** — and it is the smallest move in the series in one figure
+and the loosest in another: no `path:line` citation is added or lost, one citation by pointer arrives because the record
+names the field it repaired, and five names arrive because a slice that settles a disagreement between two files has to
+cite both of them, twice in the finding and once in §4.4's own sentence. It re-numbers one citation instead, which is
+the §4.11 shape arriving one slice later than predicted: four added lines in doc 31 §8 moved doc 34's cite into that
+document's `unlimitedStorage` row.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
@@ -669,6 +675,56 @@ is the honest direction for this find: `VER-76` is `no-code` and gated by `ODEC-
 there is no test to write and no package to name — so the correct output of reading the contract was a row, not a
 green tick.
 
+### 4.12 M2's sixth slice: the contract sentence that named the wrong process (2026-11-05)
+
+**Found by reading `framing.json` end to end in order to say precisely what the second hop does not have.**
+`packages/schema/protocol/framing.json#/senderPolicy/rateLimitFacts/countedWhere` said the budgets are counted by
+"**the host**, before dispatch", `docs/architecture/31-security-model.md` §8 repeated the phrase as though it were its
+own reasoning, and the code counts in the other process — `Dispatcher.charge` in
+`connector/internal/dispatch/dispatch.go`. The package comment had already been walked around the contradiction rather
+than through it: it quoted the field's entire second clause, "before dispatch: a request refused by budget never
+reaches the handler, so it cannot half-apply", and dropped the two words that came before them.
+
+**The wrong reading is not inaccurate, it is unimplementable.** A scoped budget names a method — every row of
+`#/senderPolicy/rateLimits` is keyed by one — and the method name is
+inside the envelope, which `docs/architecture/25-native-messaging-protocol.md` §2 forbids the shim to open: it
+"does not translate, re-serialize, or interpret payloads — it enforces the sender allowlist and the byte limits, then
+pumps". For the shim to know that this frame is the ninth `server.test` of its window it would have to parse the
+payload, and to parse the payload on the second hop it would have to be told who sent it, which is the field
+ADR-0004 rule 3 puts outside the envelope. The contract asked for a control that can only exist by breaking two others.
+
+**Three signs name the Connector, and none of them is the code.** (1) The field sitting one line above in the same
+object, `#/senderPolicy/rateLimitFacts/scopeOfBudget`, scopes every budget "per sender id, per **Connector** process";
+a budget one process spends and another expires is not a budget. (2) The reason attached to the guard below it,
+`#/senderPolicy/refusals/amplificationGuard/why`, is the cost of answering "on the only process that holds the
+keystore" — the refusal loop it defends is one the Connector suffers, not one the shim observes from outside. (3)
+`#/senderPolicy/portsPerSender` is the one row of that whole policy the shim really does own, precisely because closing
+the oldest port is answerable from an opened connection without reading a byte of payload — which is the same test the
+three rows above fail. So the answer was in the file all along; it was in the fields nobody quoted.
+
+**What the repair is.** Data first: `countedWhere` now names the Connector, keeps the half-apply clause, and carries
+the shim's impossibility as its own second sentence, so the next reader gets the reason and not just the verdict.
+Then the document that had been repeating the wrong word: §8 of `docs/architecture/31-security-model.md` states the
+impossibility rather than a preference, and names the three things the shim actually enforces. Then the comment that
+half-quoted the contract, which now quotes it whole — a comment that cites half a sentence is the mechanism by which a
+contradiction like this survives a green test suite.
+
+**Measured on this host.** `node packages/schema/scripts/verify.mjs` → green, **1217 checks**, the same count as before
+this slice: it adds no assertion and removes none, because it changes what one field says.
+`node tools/check-doc-evidence.mjs` → green at **2262 / 508 / 1340**, §4.4's seventh move — no `path:line` figure, one
+citation by pointer, five names. `node tools/check-no-secrets.mjs` → green, 435 files.
+`go -C connector vet ./...` → 0, `gofmt -l connector` → empty, `go -C connector test -count=1 ./...` → the same six
+`ok` lines §4.11 printed, because the Go delta is a comment. The figures are this slice's own commit's; §9's next
+entry and the row it gates will move the same three numbers when the slice that registers the second hop lands.
+
+**Two things deliberately not done.** No `ODEC` entry and no `VER` row: nothing remains undecided once the field names
+the process that has the information, and a register entry for a question the data already answers is the defect doc 40
+calls an entry the register invented. And no new assertion, although the cheap honest one is obvious — the harness
+reading §8 and `countedWhere` for the same process name, so that the two cannot drift apart again. It is queued rather
+than written here, because `packages/schema/scripts/verify.mjs` is the file the slice that registers the second hop is
+editing its distribution assertions in right now, and a third writer in that array produces a check count no run of
+this repository will reproduce.
+
 ---
 
 ## 5. Verification state to the letter
@@ -719,14 +775,15 @@ green tick.
   row rather than by one more Go test, and §4.9 names the live row whose mechanism is half in this repository and the
   question two of this repository's own packages raised against each other; §4.10 names the three pieces of contract
   data that answered it and the boundary the answer drew; §4.11 names the four that stopped the next package before its
-  first line — and none of the five changed a `ok` count, because only §4.10 moved code.
-- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 507 `path#pointer`, 1335 doc-and-script
+  first line; §4.12 names the contract sentence that had been naming the wrong process for as long as the tests had
+  been green — and none of the six changed a `ok` count, because only §4.10 moved code.
+- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 508 `path#pointer`, 1340 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
   `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
   as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
-  set and never pinned. No execution has printed a set since: the five M2 slices are on this branch and not on
+  set and never pinned. No execution has printed a set since: the six M2 slices are on this branch and not on
   `nexora/master` (§7), so the three figures above are this host's, and §4.4 says which slice moved which of them and
   in what shape.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
@@ -998,7 +1055,8 @@ written before any behaviour existed. What each next milestone has to make true:
 
 - Branch: **`nexora/architecture`**. `nexora/master` was last
   fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the five slices
-  §4.7 to §4.11 record — four of them code, the fifth a contract gap found by reading — are on this branch and not
+  §4.7 to §4.12 record — four of them code, two found by reading the contract before writing anything — are on this
+  branch and not
   there, because a push needs its own confirmation each time
   and this file states that rather than assuming it was given. Local `master`
   still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
@@ -1114,6 +1172,12 @@ written before any behaviour existed. What each next milestone has to make true:
     slices, and the value of that green run is precisely that it does not assert where a slice's bytes ride. When an
     answer is chosen, `VER-76` and `ODEC-34` are deleted in the same commit that adds the field, its examples, and the
     assertion named in the row's `closesBy` — not marked closed.
+15. **A contract sentence and a green test can disagree in plain sight, and the test is not automatically the one that
+    is wrong** (§4.12). When one field of `packages/schema` attributes an act to a process that another field of the
+    same file, another section of the document that quotes it, and the code all place elsewhere, the prose is the
+    defect: repair the field, then the quotation, then the comment that had been quoting it in halves. Do not add a
+    `VER-NN` row for it — the register has no question left once the field names the process that holds the
+    information — and do not let a comment survive by quoting the half of a contract that suits it.
 
 ---
 
@@ -1161,7 +1225,7 @@ of §6's queue was written.
 ---
 
 *End of handoff log. The remaining work order is §6: the connector queue it orders — `internal/chunk`, then
-`cmd/nexora-connector`, then `cmd/nexora-host`, with §4.6 to §4.11 the inventory of what exists of it — and task #11,
+`cmd/nexora-connector`, then `cmd/nexora-host`, with §4.6 to §4.12 the inventory of what exists of it — and task #11,
 the end-to-end pass no document in this corpus can do for itself. The first item on that queue is stopped, and §4.11
 says by what. Plus the decisions in §7 and the nine questions in
 §9, which are not work an agent may finish; the note under that table says why one ninth stopped being a question and

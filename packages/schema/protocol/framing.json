@@ -157,7 +157,7 @@
       "scopeOfBudget": "per sender id, per Connector process, not per browser tab -- the Connector is single-instance by design (ADR-0005)",
       "notPersisted": "spent budget dies with the process; a reconnect is not a fresh budget for an attacker but is for a user who restarted the browser",
       "refusalIsRetryable": "onExceed is always Busy, whose taxonomy entry declares retryable true; QuotaExceeded is a storage-layer code and must never be the answer to a rate limit, because a client cannot tell 'back off' from 'you are out of space'",
-      "countedWhere": "the host, before dispatch: a request refused by budget never reaches the handler, so it cannot half-apply"
+      "countedWhere": "the Connector, before it hands the frame to a handler: a request refused by budget never reaches the handler, so it cannot half-apply. Never the shim -- a scoped budget names a method, and the method name is inside the payload, which `docs/architecture/25-native-messaging-protocol.md` §2 forbids the shim to interpret. What the shim does enforce is what an opened port and a frame header answer without opening the payload: the sender allowlist, the byte limits, and the ports per sender"
     },
     "refusals": {
       "loggedFields": "sender id, method name, window remaining -- never args, which may carry a document the user typed (docs/architecture/32)",

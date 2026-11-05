@@ -8,7 +8,10 @@
 // method before the negotiation, because `docs/architecture/26-command-surface.md` §0 rule 1 resolves the name
 // against a closed set and rule 3 gates everything but `connector.hello` behind a successful hello. The negotiation
 // before the budget, because `packages/schema/protocol/framing.json#/senderPolicy/rateLimitFacts/countedWhere` puts
-// the counting "before dispatch: a request refused by budget never reaches the handler, so it cannot half-apply".
+// the counting in this process -- "the Connector, before it hands the frame to a handler" -- and adds why it cannot be
+// the shim's: a scoped budget names a method, the method name is inside the payload, and
+// `docs/architecture/25-native-messaging-protocol.md` §2 forbids the shim to interpret payloads. A request refused by
+// budget never reaches a handler, so it cannot half-apply.
 // And all of them before state.
 //
 // What is deliberately not here: which ports a sender may hold open. `#/senderPolicy/portsPerSender` caps them at
