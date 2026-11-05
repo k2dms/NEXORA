@@ -1,0 +1,461 @@
+# PR-blocking, non-tagging counterpart of .github/workflows/release.yml
+# (docs/architecture/20-target-repository-layout.md §11). It never publishes: the only upload below is
+# actions/upload-artifact, and release.yml stays the sole thing that reacts to a `v*` tag.
+#
+# Steps are named after the row of docs/architecture/39-verification-matrix.md they are intended to close
+# (VER-02, VER-03, VER-04, VER-06, VER-08, VER-10, VER-11). Writing a workflow is not running one: those rows
+# stay `Verified: NO -- deferred to Phase 2` in the corpus until a run of this file is green, and the counts in
+# doc 39 move only when a human records the run.
+#
+# Floors and expected artifact shapes below are measured values, each with its source:
+#   docs/audit/99-baseline-report.md §5   -- the legacy test floor (142/1, 8/5) and the 0-test-file projects
+#   docs/audit/99-baseline-report.md §6   -- 353 entries, 5 999 353 / 5 999 408 B, omega_pac.min.js 742 272 B
+#   docs/architecture/20-target-repository-layout.md §5 -- the same baseline restated as the layout contract
+
+name: Verify
+
+on:
+  push:
+    branches: ['master', 'nexora/**']
+  pull_request:
+    branches: ['master']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  contracts:
+    name: Contracts, docs and layout guards (${{ matrix.os }} / Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, node: '22' }
+          - { os: windows-latest, node: '22' }
+          - { os: windows-latest, node: '24' }
+    # Node 24 is the version this repository was audited on (docs/audit/99-baseline-report.md §1) and is the
+    # one with the `minifyify@4.4.0` EBADENGINE, so it reports without blocking the merge.
+    continue-on-error: ${{ matrix.node == '24' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # VER-06 reads commit subjects in the push/PR range, which needs more than the tip.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # ADR-0018 rule 2: every root installs and runs alone. There is deliberately no root `npm install`.
+      - name: Install the contract root
+        working-directory: packages/schema
+        run: npm install --no-audit --no-fund
+
+      - name: Contract layer (schemas, command docs, examples, invalid examples, protocol fixtures)
+        working-directory: packages/schema
+        run: npm run verify
+
+      - name: Every citation in docs/ resolves to a real line or a real pointer
+        run: node tools/check-doc-evidence.mjs
+
+      - name: The ADR index lists exactly the ADR files on disk (ADR-0001, docs/adr/README.md rule 5)
+        run: |
+          listed=$(grep -oE '[0-9]{4}-[a-z0-9-]+\.md' docs/adr/README.md | LC_ALL=C sort -u)
+          onDisk=$(cd docs/adr && ls [0-9]*.md | LC_ALL=C sort -u)
+          missing=$(comm -13 <(printf '%s\n' "$listed") <(printf '%s\n' "$onDisk"))
+          ghost=$(comm -23 <(printf '%s\n' "$listed") <(printf '%s\n' "$onDisk"))
+          if [ -n "$missing$ghost" ]; then
+            printf 'not indexed: %s\n' "${missing:-none}"
+            printf 'indexed but absent: %s\n' "${ghost:-none}"
+            echo "::error::docs/adr/README.md and the records in docs/adr are different sets. A decision that" \
+                 "is not in the index is a decision nobody can find (docs/adr/0001-adr-practice.md, rule 5 of" \
+                 "the index's own Adding a record list)."
+            exit 1
+          fi
+          echo "OK: the index matches $(printf '%s\n' "$onDisk" | awk 'END{print NR}') ADR files, exactly."
+
+      # ADR-0001 rules 1-3 and 5, and the four checks its own ## Verification promises: index parity (step above),
+      # one `# ADR-NNNN:` heading per file, the six section headings in the one legal order, no duplicate number.
+      # A decision record whose shape drifts is a record a design document can no longer cite by section.
+      - name: Each ADR has the shape ADR-0001 defines (heading, Status and Date, section sequence)
+        run: |
+          fail=0
+          want='Context|Decision|Consequences|Alternatives considered|Evidence|Verification|'
+          for f in docs/adr/[0-9][0-9][0-9][0-9]-*.md; do
+            base=$(basename "$f")
+            num=${base%%-*}
+            h1=$(grep -c '^# ADR-' "$f" || true)
+            if [ "$h1" != 1 ]; then
+              echo "::error file=$base::$h1 \`# ADR-\` headings; rule 1 wants one decision per file and rule 3 wants one H1."
+              fail=1
+            elif ! head -3 "$f" | grep -q "^# ADR-$num:"; then
+              echo "::error file=$base::the H1 does not carry \`ADR-$num:\`, the number its filename issues."
+              fail=1
+            fi
+            if ! grep -qE '^Status: (Accepted|Proposed|Superseded by ADR-[0-9]{4})$' "$f"; then
+              echo "::error file=$base::no \`Status:\` line in the three states rule 4 allows."
+              fail=1
+            fi
+            if ! grep -qE '^Date: [0-9]{4}-[0-9]{2}-[0-9]{2}$' "$f"; then
+              echo "::error file=$base::no dated \`Date:\` line, so the record cannot be placed in time."
+              fail=1
+            fi
+            got=$(grep '^## ' "$f" | sed 's/^## //' | tr '\n' '|' || true)
+            if [ "$got" != "$want" ]; then
+              echo "::error file=$base::sections are [$got], the sequence is [$want] and no other sections are legal."
+              fail=1
+            fi
+          done
+          nums=$(for f in docs/adr/[0-9][0-9][0-9][0-9]-*.md; do basename "$f" | cut -d- -f1; done | LC_ALL=C sort)
+          dupes=$(printf '%s\n' "$nums" | LC_ALL=C uniq -d)
+          if [ -n "$dupes" ]; then
+            echo "::error::ADR numbers issued twice: $dupes (rule 2 — a number is never reused)."
+            fail=1
+          fi
+          numbered=$(printf '%s\n' "$nums" | LC_ALL=C sort -u)
+          k=$(printf '%s\n' "$numbered" | awk 'END{print NR}')
+          have=$(printf '%s\n' "$numbered" | tr '\n' ' ')
+          want_nums=$(awk -v k="$k" 'BEGIN{for(i=1;i<=k;i++) printf "%04d ", i}')
+          if [ "$have" != "$want_nums" ]; then
+            echo "::error::the numbering is not sequential from 0001: found [$have], expected [$want_nums]."
+            fail=1
+          fi
+          if [ "$fail" != 0 ]; then exit 1; fi
+          echo "OK: $k ADR records each carry their number, their status and date, and the six sections in order."
+
+      - name: Secret scanner -- self-test first, then the tree
+        run: |
+          node tools/check-no-secrets.mjs --selftest
+          node tools/check-no-secrets.mjs
+
+      - name: VER-04 -- the repository root stays bare (ADR-0018 rule 1, doc 20 §8)
+        run: |
+          for f in package.json package-lock.json go.work go.mod .npmrc; do
+            if [ -e "$f" ]; then
+              echo "::error::$f exists at the repository root. A root manifest lets any tool reach the" \
+                   "legacy grunt graph and rewrites the node_modules layout the prebuilt bundles resolve" \
+                   "against (docs/adr/0018-workspace-roots-and-no-root-package-json.md rule 1)."
+              exit 1
+            fi
+          done
+          echo "OK: no root package.json / package-lock.json / go.work / go.mod / .npmrc."
+
+      - name: VER-02 -- nothing under packages/ or nexora/ imports from omega-* (ADR-0018 rule 4)
+        run: |
+          roots=()
+          for d in packages nexora; do
+            if [ -d "$d" ]; then roots+=("$d"); fi
+          done
+          hits=$(grep -rnE "(from|require\(|import\()[[:space:]]*['\"][^'\"]*omega[-a-z]" \
+                   --include='*.js' --include='*.mjs' --include='*.cjs' --include='*.ts' --include='*.tsx' \
+                   --include='*.svelte' --exclude-dir=node_modules "${roots[@]}" || true)
+          sideeffect=$(grep -rnE '^[[:space:]]*(import|export)[[:space:]]+['\''"][^'\''"]*omega[-a-z]' \
+                   --include='*.js' --include='*.mjs' --include='*.cjs' --include='*.ts' --include='*.tsx' \
+                   --include='*.svelte' --exclude-dir=node_modules "${roots[@]}" || true)
+          linked=$(grep -rn '"file:[^"]*omega' --include='package.json' "${roots[@]}" || true)
+          if [ -n "$hits$sideeffect$linked" ]; then
+            printf '%s\n%s\n%s\n' "$hits" "$sideeffect" "$linked"
+            echo "::error::an import specifier reaches the legacy tree. Contracts are data; the UI consumes" \
+                 "types derived from packages/schema, never a re-export of an omega-* module" \
+                 "(docs/architecture/20-target-repository-layout.md §7)."
+            exit 1
+          fi
+          echo "OK: no omega-* import specifier or file: dependency under ${roots[*]}."
+
+      - name: VER-03 -- no transport protocol implemented in JS (constraint 1, ADR-0003)
+        run: |
+          files=$(for d in packages nexora; do
+                    if [ -d "$d" ]; then
+                      find "$d" -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \
+                        -o -name '*.ts' -o -name '*.tsx' -o -name '*.svelte' \) -not -path '*/node_modules/*'
+                    fi
+                  done)
+          # The contract harness names the protocols because it validates the schemas that name them; it is the
+          # one JS file allowed to contain the words, and it holds no transport code.
+          offenders=$(printf '%s\n' "$files" | xargs -r grep -ilE 'vless|reality|xtls' \
+                        | grep -v '^packages/schema/scripts/verify.mjs$' || true)
+          if [ -n "$offenders" ]; then
+            printf '%s\n' "$offenders"
+            echo "::error::protocol names appear in executable JS. VLESS/REALITY/Vision is implemented by the" \
+                 "Go Connector and nowhere else (docs/adr/0003-xray-implements-all-transport-protocols.md)."
+            exit 1
+          fi
+          echo "OK: no JS or TS file outside the schema harness mentions vless, reality or xtls."
+
+      - name: VER-08 -- no executable bytes in a tracked path (ADR-0019 rule 1)
+        run: |
+          node -e '
+            const { execSync } = require("child_process");
+            const { openSync, readSync, closeSync } = require("fs");
+            const files = execSync("git ls-files -z", { encoding: "buffer" }).toString().split("\0").filter(Boolean);
+            const bad = [];
+            for (const f of files) {
+              let fd;
+              try { fd = openSync(f, "r"); } catch { continue; }
+              const head = Buffer.alloc(4);
+              const n = readSync(fd, head, 0, 4, 0);
+              closeSync(fd);
+              if (n < 4) continue;
+              const pe = head[0] === 0x4d && head[1] === 0x5a;
+              const elf = head[0] === 0x7f && head[1] === 0x45 && head[2] === 0x4c && head[3] === 0x46;
+              const macho = (head[0] === 0xfe && head[1] === 0xed) || (head[0] === 0xcf && head[1] === 0xfa)
+                || (head[0] === 0xca && head[1] === 0xfe) || (head[0] === 0xce && head[1] === 0xfa);
+              if (pe || elf || macho) bad.push(f);
+            }
+            if (bad.length) { console.error("executable bytes committed: " + bad.join(", ")); process.exit(1); }
+            console.log("OK: no PE, ELF or Mach-O bytes in " + files.length + " tracked files.");
+          '
+
+      - name: VER-10 -- line endings and whitespace stay as declared (.gitattributes)
+        run: |
+          base='${{ github.event.pull_request.base.sha || github.event.before }}'
+          if git cat-file -e "${base}^{commit}" 2>/dev/null; then range="$base..HEAD"; else range=''; fi
+          git diff --check $range
+          bad=$(git ls-files --eol | awk '$1 == "i/crlf" || $1 == "i/mixed" { print $NF }')
+          if [ -n "$bad" ]; then
+            printf '%s\n' "$bad"
+            echo "::error::a committed blob carries CRLF or mixed endings. This host runs core.autocrlf=true" \
+                 "and .gitattributes promises LF in the index; a mass re-normalization is the forbidden diff" \
+                 "(docs/architecture/20-target-repository-layout.md §13)."
+            exit 1
+          fi
+          echo "OK: git diff --check clean and every tracked blob is LF or binary in the index."
+
+      - name: VER-06 -- commit shape (doc 20 §6)
+        run: |
+          base='${{ github.event.pull_request.base.sha || github.event.before }}'
+          if git cat-file -e "${base}^{commit}" 2>/dev/null; then range="$base..HEAD"; else range='-1'; fi
+          cutover=0
+          while IFS=$'\t' read -r sha subject; do
+            if ! printf '%s' "$subject" \
+                 | grep -qE '^(feat|fix|docs|build|test|refactor|chore|perf)(\([a-z0-9._/-]+\))?!?: |^CUT-OVER: |^Merge |^Revert '; then
+              echo "::error file=${sha}::subject \"$subject\" carries no conventional label (doc 20 §6)."
+              exit 1
+            fi
+            if printf '%s' "$subject" | grep -q '^CUT-OVER: '; then
+              cutover=$((cutover + 1))
+              outside=$(git show --name-only --format= "$sha" \
+                | grep -vE '^(nexora/|tools/|docs/|\.github/|\.gitattributes|\.gitignore|\.env\.example|omega-target-chromium-extension/overlay/manifest(-firefox)?\.json)$' \
+                || true)
+              if [ -n "$outside" ]; then
+                printf '%s\n' "$outside"
+                echo "::error file=${sha}::a CUT-OVER commit touches a path outside doc 20 §6 rule 2."
+                exit 1
+              fi
+            fi
+          done < <(git log --format='%H%x09%s' $range)
+          if [ "$cutover" -gt 1 ]; then
+            echo "::error::${cutover} CUT-OVER commits in one range: a cut-over is exactly one commit (doc 20 §6)."
+            exit 1
+          fi
+          echo "OK: every commit subject in the range carries its label; $cutover cut-over commit(s)."
+
+  legacy-chain:
+    name: Ladder A legacy chain and artifact (${{ matrix.os }} / Node ${{ matrix.node }})
+    needs: contracts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, node: '22' }
+          - { os: windows-latest, node: '22' }
+          - { os: windows-latest, node: '24' }
+    continue-on-error: ${{ matrix.node == '24' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Rewrite the dead git:// transport that two Bower deps use
+        run: |
+          # omega-web/bower.json:37 and :43 name git://github.com/... . GitHub switched its Git servers off
+          # for that transport in 2022, and `git ls-remote git://github.com/zero-peak/zero-dependencies.git`
+          # times out from this repository's host too -- the probe saw bower succeed because the components
+          # were already installed, which is why clean-runner reproducibility was UNVERIFIED
+          # (docs/audit/99-baseline-report.md §7). The rewrite is runner config, not a repository change:
+          # bower.json keeps its URL and bower shells out to git, so the fetch goes over https.
+          git config --global url."https://github.com/".insteadOf git://github.com/
+
+      - name: Install the five legacy roots (the set omega-build/package.json:12 installs)
+        run: |
+          for p in omega-build omega-pac omega-target omega-web omega-target-chromium-extension; do
+            echo "::group::$p"
+            ( cd "$p" && npm install --no-audit --no-fund )
+            echo "::endgroup::"
+          done
+
+      - name: Link the bundles in hub order (omega-build/package.json:13)
+        run: |
+          for p in omega-pac omega-target omega-web omega-target-chromium-extension; do
+            echo "::group::dev $p"
+            ( cd "$p" && npm run dev )
+            echo "::endgroup::"
+          done
+
+      - name: Build every project through the hub (npm run build -> grunt)
+        working-directory: omega-build
+        run: npm run build
+
+      - name: VER-11 -- test floor per project, parsed from the mocha summary
+        run: |
+          # grunt 0.4.5 ships no bin (omega-pac/node_modules/grunt/package.json has no `bin` field), so `npx grunt`
+          # in a project has nothing to run. The hub installs grunt-cli, and the hub is the only driver ADR-0018
+          # rule 3 allows, so that binary is what the per-project grunt tasks are invoked through.
+          export PATH="$GITHUB_WORKSPACE/omega-build/node_modules/.bin:$PATH"
+          run_floor() { # project, min passing, max failing, TZ
+            local p=$1 min=$2 max=$3 tz=$4 out pass fail n
+            n=$(find "$p/test" -name '*.coffee' 2>/dev/null | wc -l || true)
+            if [ "$n" -eq 0 ]; then
+              echo "NOTE: $p has 0 test files -- a green run there proves nothing" \
+                   "(docs/audit/99-baseline-report.md §5)."
+              return 0
+            fi
+            out=$( cd "$p" && { if [ -n "$tz" ]; then TZ="$tz"; export TZ; fi; grunt test; } 2>&1 ) || true
+            pass=$(printf '%s\n' "$out" | grep -E '^[[:space:]]*[0-9]+ passing' | tail -1 | awk '{print $1}' || true)
+            fail=$(printf '%s\n' "$out" | grep -E '^[[:space:]]*[0-9]+ failing' | tail -1 | awk '{print $1}' || true)
+            fail=${fail:-0}
+            if [ -z "$pass" ]; then
+              echo "::error::$p produced no mocha summary; the run died before reporting."
+              printf '%s\n' "$out" | tail -30
+              exit 1
+            fi
+            if [ "$pass" -lt "$min" ] || [ "$fail" -gt "$max" ]; then
+              echo "::error::$p is off its pinned floor: $pass passing / $fail failing, expected >= $min and" \
+                   "<= $max (docs/audit/99-baseline-report.md §5)."
+              printf '%s\n' "$out" | tail -40
+              exit 1
+            fi
+            echo "OK: $p at or above its floor -- $pass passing, $fail failing (pinned >= $min, <= $max)."
+          }
+          # omega-pac/package.json:32 is "TZ=Europe/London grunt test": a POSIX prefix cmd.exe cannot parse
+          # (docs/audit/99-baseline-report.md §1), so CI exports the zone instead of editing the script. The
+          # tests build dates in local time; both zones land on UTC+0 for the dates in use, and the honest
+          # fix -- explicit UTC in omega-pac/test/conditions.coffee:468 -- changes test semantics and is a
+          # Phase-2 decision, recorded in docs/audit/02-toolchain-decay-and-risk.md.
+          run_floor omega-pac 142 1 Europe/London
+          run_floor omega-target 8 5 ''
+          run_floor omega-web 0 0 ''
+          run_floor omega-target-chromium-extension 0 0 ''
+
+      - name: Package the extension (the grunt task omega-build/package.json:15 delegates to)
+        working-directory: omega-target-chromium-extension
+        # The hub's own `release` script is `cd ../omega-target-chromium-extension && grunt release`; its
+        # forward-slash `cd` is not portable to cmd.exe, and ADR-0018 rule 7 asks CI to invoke per-root
+        # commands explicitly anyway. This is the same task, in the directory that owns it, through the
+        # hub's grunt-cli for the same reason the test step does.
+        run: |
+          export PATH="$GITHUB_WORKSPACE/omega-build/node_modules/.bin:$PATH"
+          grunt release
+
+      - name: VER-08 -- inspect the artifacts, never trust the exit code
+        run: |
+          command -v unzip >/dev/null || { echo "::error::unzip is missing on this runner"; exit 1; }
+          entries() { unzip -v "$1" | awk 'NF >= 8 && $1 ~ /^[0-9]+$/ && $2 !~ /files/ { print $1 "\t" $8 }'; }
+          check_zip() { # zip, expected uncompressed total
+            local z=$1 bytes=$2 n sum pac lib loc top bad
+            n=$(entries "$z" | awk 'END{print NR}')
+            sum=$(entries "$z" | awk -F'\t' '{ s += $1 } END { print s }')
+            pac=$(entries "$z" | awk -F'\t' '$2 == "js/omega_pac.min.js" { print $1 }')
+            lib=$(unzip -Z1 "$z" | grep -c '^lib/' || true)
+            loc=$(unzip -Z1 "$z" | sed -n 's|^_locales/\([^/]*\)/.*|\1|p' | LC_ALL=C sort -u | awk 'END{print NR}')
+            top=$(unzip -Z1 "$z" | sed 's|/.*||' | LC_ALL=C sort -u | tr '\n' ' ')
+            bad=$(unzip -Z1 "$z" | grep -iE '\.(exe|dll|so|dylib|node|wasm)$|^connector/|(^|/)xray' || true)
+            local expected="AUTHORS COPYING _locales css img indexedDB.js js lib localstorage-polyfill.js log.js manifest.json options.html partials popup popup-iframe.html popup-iframe.js popup.html x-background.js "
+            echo "$z: $n entries, $sum B uncompressed, lib/=$lib, _locales=$loc"
+            # Most severe first: what the archive is allowed to contain, then the shape it must have.
+            [ -z "$bad" ] || { printf '%s\n' "$bad"; echo "::error::$z carries Core or connector bytes (ADR-0019)."; exit 1; }
+            [ "$top" = "$expected" ] || { echo "::error::unexpected top-level set: $top"; exit 1; }
+            [ "$n" = 353 ] || { echo "::error::$z has $n entries, expected 353 (docs/audit/99-baseline-report.md §6)."; exit 1; }
+            [ "$sum" = "$bytes" ] || { echo "::error::$z is $sum B, expected $bytes B."; exit 1; }
+            [ "$lib" = 252 ] || { echo "::error::$z carries $lib lib/ entries, expected 252."; exit 1; }
+            [ "$loc" = 7 ] || { echo "::error::$z carries $loc _locales directories, expected 7."; exit 1; }
+            if [ -z "$pac" ]; then
+              echo "::error::$z has no js/omega_pac.min.js -- this is the 352-file artifact that loads as a" \
+                   "blank options page (docs/audit/99-baseline-report.md §6)."
+              exit 1
+            fi
+            if [ "$pac" -lt 700000 ]; then
+              echo "::error::js/omega_pac.min.js is $pac B, far below the 742 272 B measured bundle."
+              exit 1
+            fi
+            [ "$pac" = 742272 ] || echo "NOTE: js/omega_pac.min.js is $pac B, not the recorded 742 272 B."
+            echo "OK: $z matches the shape of doc 20 §5."
+          }
+          check_zip dist/chromium-release.zip 5999353
+          check_zip dist/firefox-release.zip 5999408
+
+      - name: Checksum the artifacts and print them beside the recorded baseline
+        run: |
+          node -e '
+            const { createHash } = require("crypto");
+            const { readFileSync, writeFileSync } = require("fs");
+            const zips = ["dist/chromium-release.zip", "dist/firefox-release.zip"];
+            const recorded = {
+              "dist/chromium-release.zip": "b93d5100e4c05ccf7af365dfc1742344360579f482df72e4e9ce00f5ba964ba8",
+              "dist/firefox-release.zip": "b2309ce3bd0c2be246f0c228ffde1290fa1756c10ad93d90f17380249b4a728f",
+            };
+            let out = "";
+            for (const z of zips) {
+              const h = createHash("sha256").update(readFileSync(z)).digest("hex");
+              out += h + "  " + z + "\n";
+              console.log(h === recorded[z] ? "OK: " + z + " matches the recorded checksum"
+                                            : "NOTE: " + z + " does not match the recorded checksum (" +
+                                              "byte identity across machines is UNVERIFIED, docs/audit/99 §10)");
+            }
+            writeFileSync("dist/sha256.txt", out);
+            process.stdout.write(out);
+          '
+
+      - name: Every lib/ reference in the sources resolves in the built tree
+        run: node tools/verify-vendor.mjs
+
+      - name: The shipped 3.5.2 backups still load and compile in the engine just built
+        run: |
+          node tools/check-legacy-backup.mjs --selftest
+          node tools/check-legacy-backup.mjs
+
+      - name: Upload the artifacts (workflow artifacts only -- this file never creates a release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexora-verify-${{ matrix.os }}-node${{ matrix.node }}
+          path: |
+            dist/chromium-release.zip
+            dist/firefox-release.zip
+            dist/sha256.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  connector:
+    # Deliberately absent from the two jobs above, and switched off here rather than deleted, so the gap is
+    # visible: Go, Docker and Python are all absent on the audited host (docs/audit/99-baseline-report.md §1)
+    # and there is no connector/ tree yet. Enable in Phase 2, with ADR-0018 rule 7's `go -C connector` style.
+    # Also deliberately absent: web-ext lint (it would report the inherited manifest findings on every run and
+    # teach the team to ignore the job), the live matrix (docs/verification/live-env-contract.md -- a missing
+    # env var means SKIPPED, never PASSED), and any Go-shaped root file (VER-04 guards the root).
+    name: Go connector (enable in Phase 2)
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Build, vet and test the connector
+        working-directory: connector
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...

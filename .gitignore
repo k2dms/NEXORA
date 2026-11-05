@@ -12,3 +12,7 @@ package-lock.json
 # Scratch and build staging: the legacy grunt chain writes tmp/{chromium,firefox} during
 # `grunt release`, and this iteration writes measurement scripts there. Neither is a deliverable.
 tmp/
+
+# The release directory the hub writes: two zips plus the checksum file .github/workflows/verify.yml
+# produces beside them. Build output, never a committed artifact (constraint: no binaries in git).
+dist/
