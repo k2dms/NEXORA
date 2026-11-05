@@ -319,7 +319,8 @@ artifact content assertion. One thing did not reproduce: the recorded sha256 of 
 same-machine rebuild (§6). One thing that was inference became measurement: Bower resolves the declared `git://`
 endpoints over https by itself, so a cold install works without any transport rewrite (§7). One thing this
 iteration still has not done: run anything in a browser. The runner half it named alongside that is answered by
-§12 — seven runs on 2026-11-05: two red, four green, one cancelled.
+§12, which tabulates seven runs on 2026-11-05 — two red, four green, one cancelled — under a rule that keeps later
+green runs of the same shape out of the table, and so keeps this sentence true.
 
 ## 11. probe-4 and probe-5 — the iteration's own end-to-end check, 2026-11-05
 
@@ -364,16 +365,17 @@ exporter-shaped rather than genuine `.bak` files (`docs/verification/live-matrix
 `docs/verification/README.md` for what each row would need first). Under
 `docs/verification/live-env-contract.md`, an unexecuted row is `SKIPPED`, never `PASSED`, so `LIVE-01…24` are
 untouched by this section, and §12 opens no browser either. The other half this section could not close — a GitHub
-runner — is answered by §12: `.github/workflows/verify.yml` ran there seven times on 2026-11-05 — twice red,
-four times green, once cancelled by its own `concurrency` block.
+runner — is answered by §12: `.github/workflows/verify.yml` has run there, and §12 tabulates seven of those runs on
+2026-11-05 — twice red, four times green, once cancelled by its own `concurrency` block — the runs it leaves out
+being green executions of a shape already in the table.
 
-## 12. `.github/workflows/verify.yml` on a GitHub runner — seven runs, 2026-11-05
+## 12. `.github/workflows/verify.yml` on a GitHub runner — seven runs tabulated, 2026-11-05
 
 §11 ended with the one thing this iteration had not done: get the file onto a runner. It is now on one, and the
 answer came as two red runs before it came as a green one, the green one repeated, and the sixth of the seven is
 neither red nor green but `cancelled` — by this file's own `concurrency` block, which had never had the chance to
 fire until two pushes arrived inside one build. Every line quoted below is copied out of `gh run view <id> --log`, not re-derived from the
-workflow source, and the extraction itself is kept as `docs/audit/raw/probe-8-runner-runs.txt` — the seven runs' job
+workflow source, and the extraction itself is kept as `docs/audit/raw/probe-8-runner-runs.txt` — those seven runs' job
 conclusions as the API reports them, every `##[error]` annotation verbatim, each line quoted here beside the number
 of times the runner printed it, and the PATH forms counted per run so the fix is visible in the numbers. One
 timestamp quoted below is not a log line but run metadata — the `createdAt` of `42029386377`, from
@@ -392,7 +394,8 @@ next push rather than by anything the tree did.
 
 ### What the green runs measured
 
-`contracts`, identically on all three images and in all seven runs, with the one exception the red rows explain —
+`contracts`, identically on all three images and in all seven tabulated runs, with the one exception the red rows
+explain —
 `42015170195` never printed the commit-subject line, because printing it is the step that run failed on: `checks run: 1217`, `OK: 13 schemas compile,
 19 command docs conform, 20 examples valid, 24 invalid examples rejected, 112 protocol frames replayed`,
 `OK: the index matches 20 ADR files, exactly.`, `SELFTEST OK: 13 cases`, plus the `VER-02`, `VER-03`, `VER-04`,
@@ -404,12 +407,12 @@ The two corpus counters that scan the tree are the only lines that moved among t
 `checked 2252 path:line citations, 487 path#pointer citations and 1253 doc-name references in docs/`,
 `no secret-shaped content in 418 files` and `no PE, ELF or Mach-O bytes in 588 tracked files`, `890fde6` — the
 commit that adds the capture this section points at — and `c81ae7e` printed `2260 / 487 / 1287`, `419 files` and `589 tracked
-files`, and `f15acb8` and `5dee596` printed `2260 / 487 / 1289` beside those same two file counts. All three counters read `git ls-files`
+files`, and `f15acb8`, `5dee596` and `75bff0f` printed `2260 / 487 / 1289` beside those same two file counts. All three counters read `git ls-files`
 and the current contents of `docs/`, so they are a property of the tree at the sha under test, which is why they are
 quoted as a set and never pinned as a floor.
 
-`legacy-chain`, on each of the three images, in every run whose legacy job ran the chain — the four greens and,
-with a `cancelled` verdict rather than a `success` one, the two windows cells of `42029092102`:
+`legacy-chain`, on each of the three images, in every run whose legacy job ran the chain — the four tabulated greens
+and, with a `cancelled` verdict rather than a `success` one, the two windows cells of `42029092102`:
 
 - `OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).` and
   `OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).` — §5's floors reproduced on
@@ -429,10 +432,12 @@ with a `cancelled` verdict rather than a `success` one, the two windows cells of
   checksum matches. **Shape is the floor; bytes are an observation.** The two images differ from each other by
   exactly 12 B in total and not at all in the bundle size; that difference is recorded, not explained — nothing in
   this iteration computed a per-file diff between an ubuntu and a windows build.
-- The checksum NOTEs aggregate into the sharpest form of the same finding: across the five runs whose legacy chain
-  reached that step — `42020617681`, `42025558933`, `42027072602`, `42029092102` and `42029386377` — there are
-  fifteen builds and thirty computed `sha256` values, two per build, and all thirty are distinct from each other and
-  from §6's two recorded hashes. No runner image has ever reproduced another image's bytes, or its own.
+- The checksum NOTEs aggregate into the sharpest form of the same finding: across the five runs §12 tabulates whose
+  legacy chain reached that step — `42020617681`, `42025558933`, `42027072602`, `42029092102` and `42029386377` — there
+  are fifteen builds and thirty computed `sha256` values, two per build, and all thirty are distinct from each other and
+  from §6's two recorded hashes. No runner image has ever reproduced another image's bytes, or its own. The aggregate
+  grows by six with every further run of this file, which is why the finding is stated as a rule rather than as a count:
+  §6's recorded hashes have not been matched by any build any image has produced, including the eighth run's.
 - `continue-on-error` on the Node 24 cell was not needed: it is green for the same reason the other two are. The
   attribute itself is still unmeasured — `42017987418` had a red Node 24 cell and the jobs API called that cell
   `failure` anyway, so what a red cell inside an otherwise green workflow would report has not been seen.
@@ -454,6 +459,30 @@ evidence and its log is, which is why a cancelled run is tabulated here at all; 
 one verdict, so a push waits for its run instead of stacking behind the previous one. The other workflow in
 `.github/workflows/` declares no `concurrency` block at all, so interruptibility is a property of this gate, chosen
 in this file, not of the repository's CI as a whole.
+
+### The eighth run, and why the corpus stopped counting executions
+
+`75bff0f` is the commit that carries the two rows above, and pushing it executed this file an eighth time —
+`42033189223`, conclusion `success`, six jobs passed and one skipped, no `##[error]` line anywhere in its log. Every
+guard line it printed matches `42029386377` character for character: `2260 path:line citations, 487 path#pointer
+citations and 1289 doc-name references`, `no secret-shaped content in 419 files`, `no PE, ELF or Mach-O bytes in 589
+tracked files`, `checks run: 1217`, `353 entries`, `lib/=252`, `_locales=7`, both pinned floors (`142 passing, 1
+failing` and `8 passing, 5 failing`), the two `0 test files` NOTEs on each image, `js/omega_pac.min.js is 735547 B,
+not the recorded 742 272 B` twice per build, the six `does not match the recorded checksum` NOTEs with the six computed
+hashes printed beside them, and the zip byte counts already tabulated — ubuntu `5 974 389` and `5 974 444`, windows
+`5 974 401` and `5 974 456`. The third of the corpus counters is a property of the tree at the sha under test, as the
+note above says, and the references this section adds move it, so the next execution prints `2260 / 487 / 1290` where
+the eighth printed `1289` — a number changing, not a shape differing. It is a green of exactly the shape §12's
+convention describes, so it opens no row, and this section is the last place in the corpus that counts runs rather than
+naming that rule.
+
+The reason is structural, not fatigue: **every commit that records a run of this workflow is itself a commit that
+runs it.** A sentence asserting a literal number of executions is therefore false at the moment the push carrying it
+lands — that is how five became seven, and seven became eight, with the correction travelling in the commit it
+describes. What stays true is a claim about the table plus a claim about the rule, which is what §12 now states: the
+seven runs tabulated, their verdicts, and the condition under which any later run joins them. The eighth run measured
+that condition holding. Its log is not added to the raw capture for the same reason the run is not added to the table:
+nothing in it is new.
 
 ### Where the `lib/` files actually come from
 
@@ -499,7 +528,8 @@ They do not move a single `VER-*` row. Three reasons, all mechanical:
 - Whether the 354-vs-353 file difference is exactly the `manifest` task substitution (per-file diff not computed).
 - Clean-machine reproducibility of `npm install` + `bower install`. **Narrowed twice 2026-11-05.** The Bower half is
   measured on a cold `bower_components` (§7) and works, and both halves are now measured on machines that had never
-  held this tree: three GitHub runner images, in four green runs and a fifth whose two windows cells did the same work
+  held this tree: three GitHub runner images, in the four green runs §12 tabulates and a fifth whose two windows cells
+  did the same work
   under a `cancelled` verdict, installed all five roots with no lockfile in
   git, built through the hub, and produced a zip carrying the same 252 `lib/` entries this host's warm cache did (§12). What remains unmeasured is
   narrower still — a *user* machine, whose image differs from GitHub's, and whether npm resolution there picks the
@@ -520,8 +550,9 @@ They do not move a single `VER-*` row. Three reasons, all mechanical:
   answered by §12 from the other side:** two runner images of the same commit produced archives whose uncompressed
   totals differ by 12 B (`5 974 389`/`5 974 444` on ubuntu against `5 974 401`/`5 974 456` on windows, both with 353
   entries and the same 735 547 B bundle), so content is already known *not* to be byte-identical across images; the
-  per-file diff that says which 12 bytes is still not computed. §12 aggregates it: thirty computed `sha256` values
-  across fifteen runner builds, all distinct, none equal to the two recorded here.
+  per-file diff that says which 12 bytes is still not computed. §12 aggregates it as a rule rather than a count: every
+  runner build yet observed produced two `sha256` values distinct from every other build's and from the two recorded
+  here, and each further run of that file adds six more to the set.
 - Whether any of `LIVE-01…24` passes: no browser was launched in this iteration (§11). Under
   `docs/verification/live-env-contract.md` those rows are `SKIPPED`, which is not this report claiming success.
 - That `.github/workflows/verify.yml` behaves as written on a GitHub runner. **Answered 2026-11-05: it does, after

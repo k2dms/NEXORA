@@ -152,7 +152,7 @@ of that workflow on a real runner rejected this repository's own `ci(verify): �
 was the guard enforcing a rule its source document did not state. The rule is stated now; the vocabulary is
 declared here and the step reads it from here, and every execution of that workflow since has passed it — runs
 `42020617681`, `42025558933`, `42027072602`, `42029092102` (whose `contracts` cells all succeeded before the run was
-cancelled downstream) and `42029386377`, each on `ubuntu-latest` and two `windows-latest` cells
+cancelled downstream), `42029386377` and `42033189223`, each on `ubuntu-latest` and two `windows-latest` cells
 (`docs/audit/99-baseline-report.md` §12).
 
 ## 7. Import boundary for `nexora/**`
@@ -238,9 +238,11 @@ pattern works: `tools/verify-vendor.mjs`, `tools/check-no-secrets.mjs`, `tools/c
 `.gitattributes:23-25` (Go line rules declared before any Go exists), `.env.example:11` (empty value whose
 comment names the LIVE row it gates), `.gitignore:8-10` (`.env`, `.env.*`, `!.env.example`).
 `.github/workflows/verify.yml` is the addition of the same class, landed on 2026-11-05 and run there the same day:
-seven runner executions: the first two red on defects in the file itself, four green, and one cancelled by the
-file's own `concurrency` block, recorded in
-`docs/audit/99-baseline-report.md` §12. It is a **new** workflow, PR-blocking and
+`docs/audit/99-baseline-report.md` §12 tabulates seven of its runs — the first two red on defects in the file itself,
+four green, and one cancelled by the
+file's own `concurrency` block. It counts the table's rows and not the file's executions because a record of this
+workflow is itself a commit that runs it; §12 states the rule that decides when a further run is a finding. It is a
+**new** workflow, PR-blocking and
 non-tagging, leaving `.github/workflows/release.yml` untouched — that one fires only on a `v*` tag
 (`.github/workflows/release.yml:6`) and MUST NOT be reused as a verification gate.
 

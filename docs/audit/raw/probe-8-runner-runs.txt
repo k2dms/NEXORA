@@ -1,12 +1,16 @@
-probe-8 -- .github/workflows/verify.yml executed on GitHub runners: 7 runs (run 1 to run 7, the numbering docs/audit/99-baseline-report.md §12 uses), 2026-11-05
+probe-8 -- .github/workflows/verify.yml executed on GitHub runners: the 7 runs that docs/audit/99-baseline-report.md
+§12 tabulates (run 1 to run 7 in that section's own numbering), 2026-11-05. That file has run more often than this
+capture holds; §12's rule is what decides which runs are findings, and the last block below records the one run the
+table leaves out.
 captured on: MINGW64_NT-10.0-26300 / bash 5.3.15(2)-release / node v24.22.1
 extraction:  gh run view <id> -R k2dms/NEXORA --log   (job <TAB> step <TAB> timestamp+content; the runner's own
              'set -x' command echoes are excluded here, so every line below is program output or an annotation)
              gh run view <id> -R k2dms/NEXORA --json headSha,conclusion,event,createdAt,jobs
 remote: nexora = git@github.com:k2dms/NEXORA.git; workflow 'Verify'; event push. origin (upstream ZeroOmega) was never pushed.
 form: 'x<n>' is how many times that exact line occurs in that run's log, grouped by the line plus the job that printed it.
-notes: every line below is machine-extracted except the `note:` lines of the last two blocks, which interpret
-       the cancellation those runs produced and cite the timestamps the extraction shows.
+notes: every line below is machine-extracted except the `note:` lines of the last three blocks, which interpret the
+       cancellation run 6 produced, the verdict run 7 reproduced, and why run 8 appears as metadata and counted
+       occurrences rather than as a tabulated run.
 
 ===============================================================================================
 run 42015170195
@@ -512,3 +516,40 @@ run 42029386377
     [Post job cleanup] x2  Post job cleanup.	| Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
     [Post job cleanup] x2  Post job cleanup.	| Ladder A legacy chain and artifact (windows-latest / Node 22)
     [Post job cleanup] x2  Post job cleanup.	| Ladder A legacy chain and artifact (windows-latest / Node 24)
+
+===============================================================================================
+run 42033189223 -- the eighth execution, the one that section 12 of docs/audit/99-baseline-report.md does not tabulate
+  head:       75bff0fd2a7fc736b362e97d445015fab855dc49
+  conclusion: success
+  event:      push
+  created:    2026-11-05T13:08:56Z
+  updated:    2026-11-05T13:12:43Z
+  note:       this is the push of 75bff0f -- the commit that put runs 6 and 7 into the table above. It is recorded
+              here and not there for the reason section 12 states: a commit that records a run of this workflow is
+              itself a commit that runs it, so the corpus counts its table, not the executions, and a further run
+              joins the table only when its shape differs. This one printed the shape runs 3, 4, 5 and 7 printed.
+  jobs, as the API reports them:
+    success   Contracts, docs and layout guards (ubuntu-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 24)
+    skipped   Go connector (enable in Phase 2)
+    success   Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 24)
+  the runner's own error annotations:
+    (none)
+  occurrences of the guard lines section 12 quotes, counted the same way as the blocks above:
+    x3  checked 2260 path:line citations, 487 path#pointer citations and 1289 doc-name references in docs/
+    x3  OK: no secret-shaped content in 419 files (170 vendored/minified files skipped).
+    x3  OK: no PE, ELF or Mach-O bytes in 589 tracked files.
+    x3  checks run: 1217
+    x3  OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).
+    x3  OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).
+    x6  NOTE: <project> has 0 test files -- a green run there proves nothing (docs/audit/99-baseline-report.md 5).
+    x6  <zip>: 353 entries, <bytes> B uncompressed, lib/=252, _locales=7
+    x6  OK: <zip> matches the shape of doc 20 5.
+    x6  NOTE: <zip> does not match the recorded checksum (byte identity across machines is UNVERIFIED, docs/audit/99 10)
+    x6  NOTE: js/omega_pac.min.js is 735547 B, not the recorded 742 272 B.
+    x3  Artifact nexora-verify-<image>-node<n>.zip successfully finalized.
+  the four zip totals it printed, per image: ubuntu 5974389 / 5974444 B, windows 5974401 / 5974456 B -- the same
+  figures runs 4 to 7 printed, which is what 'a green of this shape' means in numbers.

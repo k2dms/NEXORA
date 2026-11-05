@@ -208,12 +208,13 @@ every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.m
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
 `40-open-decisions.md` exist now, so their cross-checks are real assertions.
 `node tools/check-doc-evidence.mjs` → **green: 2260 `path:line` citations, 487 `path#pointer` citations,
-1289 doc-and-script names** (the `path:line` figure fell by 21 when every cite into this file became a section
+1290 doc-and-script names** (the `path:line` figure fell by 21 when every cite into this file became a section
 reference, and by 3 more when probe-4 turned the same rule on for `docs/audit/99-baseline-report.md`, which every
 probe round appends to; it rose by 8 again when the runner record cited the legacy build configs it reads, and the
 third figure by 34 for the same reason, and by two more in this sitting — its VER-11 row in
 `docs/architecture/21-system-context.md` now names that runner record, and this file's sentence about the count now
-names that document.
+names that document. It rose by one more in the pass that recorded the seventh and eighth runner runs: that pass
+leaves one more named reference to the baseline report in `docs/` than it removes.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
@@ -272,8 +273,11 @@ user later changes policy: `!packages/**/package-lock.json`. Pending user decisi
 Nothing the Phase 0/1 plan asks for on disk is absent any more. `.github/workflows/verify.yml` landed on
 2026-11-05 — three jobs (`contracts`, `legacy-chain`, and `connector` present but switched off with
 `if: ${{ false }}`), a three-row matrix, and the `VER-02`/`03`/`04`/`06`/`08`/`10`/`11` guards as executable steps —
-and it ran there the same day: seven executions, twice red, four times green and once cancelled by the file's own
-`concurrency` block, each of the two failures a defect in the workflow
+and it ran there the same day: `docs/audit/99-baseline-report.md` §12 tabulates seven of those runs — twice red, four
+times green and once cancelled by the file's own
+`concurrency` block — under the rule that a further run joins the table only when its shape differs, a rule this
+iteration had to write because every commit that records a run of that workflow is itself a commit that runs it. Each
+of the two failures was a defect in the workflow
 itself rather than in the tree, all of them recorded line by line in `docs/audit/99-baseline-report.md` §12. Before
 those runs every `run:` block had been executed on this host and proved able to fail against a synthetic violation,
 which is a claim about the shell logic; the runs are what made it a claim about CI
@@ -295,12 +299,14 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
 - Artifact assertions: 353 files / 5 999 353 B / 252 `lib/` entries / 7 `_locales`, and `js/omega_pac.min.js` present at 742 272 B —
   every one of them reproduced from the 2026-11-05 rebuild, top-level path set included. On a clean image the *shape*
   figures reproduce and the *byte* figures differ from this host's, then agree with each other: fifteen runner
-  builds — the three images of each of the five runs whose legacy chain got that far — gave 353 entries, 252 `lib/`,
+  builds — the three images of each of the five runs §12 tabulates whose legacy chain got that far — gave 353 entries, 252 `lib/`,
   7 `_locales` and the bundle, at 5 974 389 B / 5 974 444 B (ubuntu) and 5 974 401 B / 5 974 456 B (windows) with a
   735 547 B bundle, the same four totals in every one of those runs — so the totals and the bundle size are properties of a CRLF
   checkout against this host, and of the runner image against a different image, which is why the workflow
   prints them as NOTEs (`docs/audit/99-baseline-report.md` §12). What no two builds ever shared is the hash: thirty
-  distinct sha256 values across those fifteen builds, none of them the two recorded below.
+  distinct sha256 values across those fifteen builds, none of them the two recorded below — and every further run of
+  that file adds three builds and six hashes to a set that has never once matched a recorded value, which is the form
+  this finding keeps rather than the count it had.
 - `sha256 dist/chromium-release.zip` = `b93d5100e4c05ccf7af365dfc1742344360579f482df72e4e9ce00f5ba964ba8`
 - `sha256 dist/firefox-release.zip` = `b2309ce3bd0c2be246f0c228ffde1290fa1756c10ad93d90f17380249b4a728f`
   (2026-11-05 values: `73eee79d015ed404dc4bfdaa6d634ae0626a0612b2d603cb3412e6e47be68a4f` and
@@ -321,17 +327,17 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
   with `TZ` exported.
 - `node tools/check-no-secrets.mjs --selftest` → 13/13 green.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
-- `node tools/check-doc-evidence.mjs` → **green** (2260 `path:line`, 487 `path#pointer`, 1289 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2260 `path:line`, 487 `path#pointer`, 1290 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
-  local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102` and
-  `42029386377` printed `2260 / 487 / 1289`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
+  local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
+  `42029386377` and `42033189223` printed `2260 / 487 / 1289`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
   as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
   set and never pinned.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
-- `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners seven times on
-  2026-11-05: twice red, four times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
+- `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners since 2026-11-05 —
+  §12 tabulates seven of those runs: twice red, four times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
   §4.5 and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 used to leave open — a clean image can install and build
   this tree: all five roots from an empty `node_modules`, no lockfile in git, both pinned test floors reproduced,
   every artifact content figure reproduced, and the 252 `lib/` entries produced without this host's Bower cache
@@ -538,11 +544,13 @@ row is `SKIPPED`, never `PASSED`, so `LIVE-01…24` and `docs/verification/live-
 That is a boundary, not an oversight.
 
 **The item that belonged here and nowhere else — the first execution of `.github/workflows/verify.yml` on a runner —
-is done.** It needed a push, so it was gated on the confirmation rule in §7; it happened on 2026-11-05, seven times,
-and `docs/audit/99-baseline-report.md` §12 carries the measured output, with the raw capture of all seven runs — job
+is done.** It needed a push, so it was gated on the confirmation rule in §7; it happened on 2026-11-05 and has
+happened since, and `docs/audit/99-baseline-report.md` §12 carries the measured output of the seven runs it
+tabulates, with the raw capture of those seven — job
 conclusions, every `##[error]` annotation, and each quoted line beside the number of times the runner printed it — at
 `docs/audit/raw/probe-8-runner-runs.txt`. That is the raw record this file's own convention asks for. #10 is therefore
-no longer "written and locally step-verified"; it is written, run, twice failing, four times green and once cancelled. Two items take its
+no longer "written and locally step-verified"; it is written, run, twice failing, four times green and once cancelled —
+and §12 states the rule that keeps that sentence true under the runs still to come. Two items take its
 place, and neither is a status edit:
 
 1. **The row bookkeeping.** `VER-06`, `VER-08`, `VER-10` and `VER-11` now meet the condition their records state — a
@@ -565,24 +573,31 @@ place, and neither is a status edit:
   (b) `packages/schema/*` plus the `check-no-secrets.mjs` fixture-path scoping its own negative example required;
   (c) `docs/audit/*`; (d) `docs/adr/*` + `docs/architecture/*` + `docs/README.md`; (e) `docs/verification/*` and
   this file; (f) the two coffeelint demotions, separate so they can be reverted without touching the documents.
-- **Eight more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
+- **Nine more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
   `431ea0a..f38f27b` (the state record above), `f38f27b..4307ff6` (the workflow, and the queue and the register as
   data, and the end-to-end re-verification), `4307ff6..a7627ae` and `a7627ae..ceedabf` (the two CI fixes),
   `ceedabf..890fde6` and `890fde6..c81ae7e` (the §12 record, with `docs/audit/raw/probe-8-runner-runs.txt`),
   `c81ae7e..f15acb8` (the same record carried to the fifth run: §12's table, the regenerated capture, the run-count
   wording in the docs index, audit docs 00, 02 and 99, architecture docs 20, 21 and 39, the verification README and
   the workflow's own header comment — doc 21's no-protocol-code row moving here, while the queue data's VER-11 subject
-  and architecture doc 39's VER-11 row had moved in the push before it), and `f15acb8..5dee596` (one clause: which row
-  moved in which push, correcting the attribution the message of `f15acb8` made). Seven further executions of
+  and architecture doc 39's VER-11 row had moved in the push before it), `f15acb8..5dee596` (one clause: which row
+  moved in which push, correcting the attribution the message of `f15acb8` made), and `5dee596..75bff0f` (the §12 table
+  carried to the seven runs it tabulates: the cancelled `42029092102` and the green `42029386377` as rows, the
+  regenerated capture, the finding about this file's own `concurrency` block, and — across audit docs 00, 02 and 99,
+  architecture docs 20 and 39, the verification README, the docs index, this file and the workflow's header comment —
+  the run-count wording replaced by the shape rule, for the reason in the next bullet). Eight executions of
   `.github/workflows/verify.yml` came from those pushes — `42015170195` and `42017987418` red, `42020617681`,
-  `42025558933`, `42027072602` and `42029386377` green, and `42029092102` `cancelled` because it was still in flight
-  when the push of `5dee596` landed two minutes into it — with the measured lines recorded in
-  `docs/audit/99-baseline-report.md` §12. The run this file's own push triggers is the eighth, and §12's convention is
-  that it enters the table only if its shape differs from a green of this kind.
-  No `--force`, no `--no-verify`, no amend of
-  anything already published: the
+  `42025558933`, `42027072602`, `42029386377` and `42033189223` green, and `42029092102` `cancelled` because it was
+  still in flight when the push of `5dee596` landed two minutes into it. §12 tabulates the seven whose shapes it
+  records line by line and leaves the eighth out, because `42033189223` printed a green of the shape §12 already shows.
+  No `--force`, no `--no-verify`, no amend of anything already published: the
   commit that first tripped the label guard stayed on `master` with its label, and the document moved to match the
   guard instead.
+- **The enumerated list above is authoritative only up to the sha it names, and the reason is worth stating once:**
+  every commit that records a run of this workflow is itself a commit that runs it, so no sentence in this repository
+  can state a final count of executions and survive its own push. This file's next push is therefore one more
+  fast-forward and one more execution, and what decides whether it is a finding is §12's rule — a run enters the table
+  when its shape differs — not any count in this file.
 - **Every push requires separate explicit confirmation.** No `--force`, no `--no-verify`, no amend of published commits.
   Pushes go one at a time and wait for their own run: `concurrency.cancel-in-progress` in `.github/workflows/verify.yml`
   makes a second push inside one build cancel the first run's verdict, which is how `42029092102` ended.
