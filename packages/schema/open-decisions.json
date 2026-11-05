@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schema.nexora.local/open-decisions.json",
   "title": "NEXORA open-decision register — every question Phase 1 refused to answer silently",
-  "description": "Phase 1's rule is that a document may raise a question but must not answer it with a guess. Fifty-four deferral sites across `docs/**` say, in one form or another, 'this goes to `docs/architecture/40-open-decisions.md`'. This file is that destination: one entry per question, each owning the exact lines that deferred to it, so the corpus cannot defer to a document that does not keep the item. It is the sixth list in the repository's data-home rule -- the queue of claims with no check is `packages/schema/verification.json` (doc 39); this is the queue of claims with no *answer*, and the two are tied: every entry names the `VER-NN` rows it gates and, where the answer is a number only a browser yields, the `COMP-NN` row it waits on. An entry is not a decision. It becomes one by an ADR, a contract addition, a measurement, or a human answer in `docs/PROJECT-STATE.md` §9 -- at which point the entry is deleted from this file, not marked `decided`, for the same reason a closed queue row is deleted: a status field you can edit in place is a status field you will.",
+  "description": "Phase 1's rule is that a document may raise a question but must not answer it with a guess. Fifty-five deferral sites across `docs/**` say, in one form or another, 'this goes to `docs/architecture/40-open-decisions.md`'. This file is that destination: one entry per question, each owning the exact lines that deferred to it, so the corpus cannot defer to a document that does not keep the item. It is the sixth list in the repository's data-home rule -- the queue of claims with no check is `packages/schema/verification.json` (doc 39); this is the queue of claims with no *answer*, and the two are tied: every entry names the `VER-NN` rows it gates and, where the answer is a number only a browser yields, the `COMP-NN` row it waits on. An entry is not a decision. It becomes one by an ADR, a contract addition, a measurement, or a human answer in `docs/PROJECT-STATE.md` §9 -- at which point the entry is deleted from this file, not marked `decided`, for the same reason a closed queue row is deleted: a status field you can edit in place is a status field you will.",
   "protocolVersion": 1,
   "scope": {
     "owns": [
@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 54
+    "counted": 55
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -527,6 +527,20 @@
         "subset model: each slice carries a valid subset of `profiles` and `servers`, `contentHash` over the canonical serialization of the union -- keeps every frame individually schema-valid, but makes `encoding: \"base64\"` meaningless on a frame of JSON objects, leaves the enum's other member (`json`) as the natural fit, and requires a canonical byte form this repository has never defined"
       ],
       "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "cannot be written from this document without guessing" }]
+    },
+    {
+      "id": "ODEC-35",
+      "question": "How does the sender identity cross hop 2 -- the `nexora-host` to `nexora-connector` local pipe -- and what is that pipe's message schema?",
+      "decidedBy": "adr",
+      "blocks": { "verification": ["VER-77"], "compatibility": [] },
+      "why": "The corpus states a requirement and no field to read an answer out of: ADR-0005 rule 2 (`docs/adr/0005-two-process-connector.md:30-32`) makes the pipe's schema a contract 'versioned separately' that 'MUST carry its own version field', and the only transport contract in `packages/schema` -- `protocol/framing.json` -- describes itself as the one for 'the extension-to-host pipe', and the half of it that reaches this process is written from the other side: `senderPolicy`'s identity facts resolve from an OS event on hop 1, while its budgets are counted in the Connector (`docs/architecture/31-security-model.md` §8), so the process that spends a sender's budget cannot see which sender it is. doc 25 §2 then closes the last escape: the same envelope crosses both hops untranslated, `protocol/envelope.schema.json#/additionalProperties` is `false` over fourteen properties none of which is a sender, and ADR-0004 rule 3 forbids a payload field from becoming identity even if the object were opened -- the same ADR rejects a self-framed pipe because there 'the sender identity becomes whoever can open the pipe' (`docs/adr/0004-native-messaging-only-no-loopback-http-control.md:74-76`). So the survivors disagree about where identity lives, and choosing between them moves ADR-0005's boundary and the reasoning ADR-0004 rests on, which is a new ADR rather than a field. This is not `ODEC-02`: that asks what the pipe's two version floors are, a question the floor answers only once someone has said what the pipe carries. Until it is chosen, `connector/internal/dispatch`'s `Identity` -- whose comment says none of it comes from the payload -- has no producer, and no `cmd/` process can be written against a transport the contracts do not describe.",
+      "options": [
+        "one pipe instance per sender: identity is *which pipe* the host opened, so the pipe's naming and creation contract moves into `packages/schema` and `protocol/framing.json#/senderPolicy/rateLimitFacts/scopeOfBudget`'s 'per sender id' becomes a per-pipe count wherever one sender holds more than one pipe",
+        "an out-of-band startup handshake on the pipe before the first envelope, carrying `{senderId, allowlisted, pipeVersion}`: permitted by ADR-0005's 'versioned separately', but a second protocol on one pipe -- the objection doc 25 §5 raises against the temp-file handoff, 'gives the pipe two protocols instead of one' -- and a message no envelope contract covers",
+        "OS peer credentials on hop 2 (`SO_PEERCRED`, the named-pipe client pid) mapped to the host process the connector was started by: authentic, and it needs no new message, but it authenticates the *host*, not the extension, so it still requires option one or option two for the sender id",
+        "a sender field in the envelope: excluded by ADR-0004 rule 3 and by the closed fourteen-field object, recorded so the exclusion is not re-litigated, the way `protocol/framing.json#/oversizedPayloads/alternativesRejected` records the handoff it also refuses"
+      ],
+      "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "This defers to `docs/architecture/40-open-decisions.md`; its entry names the four" }]
     }
   ]
 }

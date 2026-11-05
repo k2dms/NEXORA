@@ -195,10 +195,12 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `203` labelled lines over `44` documents partitioned into `76` rows `VER-01…VER-76`, `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `54` deferral
-sites over `14` documents partitioned into `34` entries `ODEC-01…ODEC-34`, each naming who can answer it
-(`product` 14, `contract` 12, `adr` 5, `measurement` 2, `upstream` 1), three options, and the `VER`/`COMP` rows it
+The queue is `204` labelled lines over `44` documents partitioned into `77` rows `VER-01…VER-77`, `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `55` deferral
+sites over `14` documents partitioned into `35` entries `ODEC-01…ODEC-35`, each naming who can answer it
+(`product` 14, `contract` 12, `adr` 6, `measurement` 2, `upstream` 1), three options — thirty-four of the thirty-five,
+since the new entry carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
+unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
@@ -254,9 +256,23 @@ names the field it repaired, and five names arrive because a slice that settles 
 cite both of them, twice in the finding and once in §4.4's own sentence. It re-numbers one citation instead, which is
 the §4.11 shape arriving one slice later than predicted: four added lines in doc 31 §8 moved doc 34's cite into that
 document's `unlimitedStorage` row.
-It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
-reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
-not exist.
+§4.13 and §4.14 move the set an eighth time — **2267 / 514 / 1356** — together, and in the shape of a code slice plus
+the registration it forces. Read per file against a clean worktree at `4997081` — which is the only way to attribute a
+move this size, because two of this slice's authors were editing the same tree — the protocol document carries the
+evidence half of it, `+3 / +3 / +6`: a deferral that claims four contract statements close on each other has to cite
+all four, and the
+invariant row the new queue entry anchors on cites the register beside them. This file moves `+1 / +2 / +6`, the
+register's document `+1 / +1 / +2`, and the docs index `+2` names — one row for the package that now runs, one for the
+one that is stopped. Nothing was re-numbered by accident, and doc 32 moves `+0 / +0 / +0` while two of its citations
+shifted by fifty lines, which is the third arrival of §4.11's lesson and the reason a re-read is not a delta: the slice
+that registers a gap in a document also makes that document longer. What no guard here can see is the count word §7 had
+been carrying since the seventh slice's own commit — "the five slices §4.7 to §4.12 record", for six of them, above a
+breakdown that adds to a different number again: a tally written beside a list drifts from that list silently, and
+`tools/check-doc-evidence.mjs` checks that citations resolve, never that prose counts its own rows — and the same
+limit is why a clause orphaned by the seventh slice's own edit had been sitting in this paragraph for a day with an
+unmatched parenthesis and no subject. Repairing it restates what it had been recording before the edit swallowed it:
+`DOCNAME_RE` checks that a `tools/*.mjs` name a document tells the reader to run is a file that exists, and
+`PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does not exist.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -372,7 +388,9 @@ two `Restore cache failed … go.sum` warnings a dependency-free module produces
 
 **Not yet.** No `cmd/nexora-host`, no `cmd/nexora-connector`, no ADR-0005 local pipe, no `connector.hello`
 negotiation, no dispatcher, no per-sender budgets enforced at dispatch, no chunk reassembly, no Core supervisor, no
-keystore, no config compiler, no prober. `VER-49`/`13`/`52`/`55` keep their rows in
+keystore, no config compiler, no prober — a snapshot of eleven items at M1, of which four are since written (§4.8,
+§4.9, §4.13) and two more are since registered as questions with names (§4.11, §4.14). The live inventory is §6's queue,
+not this line. `VER-49`/`13`/`52`/`55` keep their rows in
 `packages/schema/verification.json` — none of them is met by M1, each asks about the behaviour of those missing
 parts, and the queue has no state meaning closed (§5).
 
@@ -414,7 +432,8 @@ it, and `TestTheBudgetsAreTheContractsAndCrossTheTwoDirections` fails if a const
 
 **Not yet**, and unchanged from §4.6's list: no `cmd/nexora-host`, no `cmd/nexora-connector`, no ADR-0005 local
 pipe, no `connector.hello` negotiation, no sender identity, no dispatcher, no per-sender budgets enforced *at
-dispatch*, no chunk reassembly, no Core supervisor, no keystore, no config compiler, no prober.
+dispatch*, no chunk reassembly, no Core supervisor, no keystore, no config compiler, no prober. (Twelve here; four of
+them written by §4.8, §4.9 and §4.13, two registered by §4.11 and §4.14, and §6 is the live list.)
 
 **`VER-49` does not close on this slice**, and the reason is worth the words because it is the first time the queue
 and the contract disagree rather than the queue and the code. Its `closesBy.ref` asks that the framing peer
@@ -725,6 +744,107 @@ than written here, because `packages/schema/scripts/verify.mjs` is the file the 
 editing its distribution assertions in right now, and a third writer in that array produces a check count no run of
 this repository will reproduce.
 
+### 4.13 M2's seventh slice: the process, and the identity it has to be told (`connector/cmd/nexora-connector/`, 2026-11-05)
+
+**What exists now.** A Connector that runs. `connector/cmd/nexora-connector` opens one Native Messaging stream on
+stdin and stdout — a ~15-line `duplex` joins the two descriptors because nothing else does it and `internal/peer` takes
+one `io.ReadWriteCloser` — puts `internal/peer`'s host-side limits on it (`peer.ToExtension()`: reads capped at the
+extension's 1 MiB, writes at the host's 1 GiB), and hands every frame that arrives to `internal/dispatch` with
+`internal/hello` behind it. Two transports, one function: the length-prefixed mode is the contract's, and `--jsonl` —
+one frame per line, one answer per line, exit at EOF — exists because a human at a shell cannot type four length bytes,
+and shares `service.respond` rather than reimplementing it, so the affordance cannot drift from the transport.
+
+**What it registers, and why that is the honest list.** `connector.hello`, and `connector.version` — because both
+fields that command's result requires are data this process holds: its own release and
+`packages/schema/protocol/framing.json#/protocolVersion`. `coreVersion`, `schemaVersion`, `pinsVersion` and `buildId`
+are optional and belong to a supervisor, a pins reader and a release tool this build does not have, so they are absent,
+which is `internal/hello`'s stance for the same fields. Everything else published — `core.*`, `config.*`, `profile.*`,
+`keystore.purge`, `diagnostics.get`, `connector.health`, `server.test`, `connector.events.subscribe` — is left
+unregistered, so the front door answers it `Internal` for what it actually is: a method this build has no handler for.
+`New` refuses a dispatcher built around an unpublished name, and an unpublished name is answered
+`UnknownMethod` rather than torn down (ADR-0007 rule 2), which the recorded corpus exercises at exactly that frame.
+
+**It refuses to serve before it is told who it is talking to.** `--sender-id` and `--allowlisted` inject the answer
+the host's platform will resolve in production; `--allowlisted` defaults to false, so an omitted flag allows nothing
+rather than allowing everything; the process prints one line to stderr naming the injection as a stand-in and the
+undecided transport as its reason, and exits 1 with no sender id at all. That line is the point, not decoration: the
+front door's `Identity` has no producer, §4.14 registers why, and a binary that silently assumed an id would have
+buried the question inside a working demo.
+
+**Measured, not asserted.** `go -C connector test -count=1 ./...` → **seven** `ok` lines where §4.7 to §4.12 printed
+six; `gofmt -l connector` empty, `vet` and `build` exit 0; `check-no-secrets.mjs` → green, and its file count moves
+with this commit because `git ls-files` is how it enumerates. The nine tests in `main_test.go` are of two kinds: the
+front door's table (hello answered, `core.snooze` answered not killed, `HandshakeFailed` before the negotiation,
+`Internal` for a published method with no handler, a non-allowlisted sender answered only `UnauthorizedExtension` with
+its `password` asserted absent from the bytes, and two malformed lines ending the stream exactly as `peer.Serve` does),
+and the transport's (two `peer.Peer` over `net.Pipe`, where the gate opens only when a hello has crossed it; the
+recorded `handshake.jsonl` replayed through this dispatcher).
+
+**Then the binary was run, on purpose, against the corpus's own frames.** Feeding the six `type":"request"` lines of
+`packages/schema/fixtures/protocol/handshake.jsonl` into `--jsonl --sender-id demo.extension --allowlisted
+--connector-version 1.0.0` answers, in order: `ok` with 13 capabilities, `ok` with `1.0.0`/`1`, `Internal` for
+`core.status`, `UnknownMethod` for `core.snooze`, `VersionMismatch` for the fixture's too-old second hello, and
+`HandshakeFailed` for `connector.health` behind it. The last two are the finding. The negotiation this process
+established was *withdrawn* by a mismatching hello — `Session.Record`'s stated rule, "a `VersionMismatch` on an
+already-negotiated connection is the only thing that can withdraw it" — so the frame that follows is refused by a gate
+whose message says it arrived before the hello. The message is the gate's generic wording and the state is correct;
+naming that wording is now a line in §6, not a fix smuggled into a slice about a binary.
+
+### 4.14 M2's eighth slice: the second hop registered as data, and the one entry that turned out not to be a question
+
+**What landed.** `docs/architecture/25-native-messaging-protocol.md` §2 now carries three paragraphs titled "The one
+thing §2 does not decide" — the only deferral site for the new entry — and its invariant table gained the labelled row
+`VER-77` anchors on. The register holds `ODEC-35` (`adr`, four candidates of which one, a sender field in the envelope,
+is recorded as **excluded, not open**), and the queue holds `VER-77` (`no-code`, `connector`, closing by an assertion
+nothing prints yet). The coupled figures move together, and these are the eighth of the series: 204 labelled lines, 77
+rows, 55 sites, 35 entries, with `no-code` 55, `connector` 36 and `assertion` 17 in the distribution the harness
+insists the data has — and the register's `adr` group at six, one more than it has held since the register was written,
+because this is the first entry no field edit can answer. Doc 32's two citations into doc 25 §11 were re-read and moved by fifty lines (`:184`→`:234`,
+`:183-184`→`:234-235`) — the same failure §4.11 named, arriving on schedule for the third time, because the slice that
+registers a gap in a document also makes that document longer. Re-tallying the queue to write that row is also what
+found a number no guard reads: doc 39's §2 had been saying six rows are `needs-human` where the data has held five
+through every slice that cited it — the sibling of §4.4's count word, and corrected here rather than silently, because a
+stale tally in an inventory document is a claim about the corpus, and the corpus is the product.
+
+**Three of doc 39's own tallies were one behind the data, and no build ever failed for it.** Reading §5 aloud to write
+the new row's numbers found `connector` listed as 34 where the check has asserted 35 at `4997081`,
+`assertion` listed as 15 where it asserted 16, and §2's prose saying six rows are `needs-human` where the data has held
+five across every slice that cited it. The reason is in the check's own wording: the assertion whose message reads
+"the owner distribution doc 39 reads aloud is what the data says" compares the data against a constant and never opens
+`docs/architecture/39-verification-matrix.md`. It is a sound check and a false name — §4.12's shape one level down, a
+sentence describing more than the mechanism behind it does, green for as long as nobody read the sentence. The three
+figures above are corrected from the data in this commit; the assertion that would keep them corrected is queued in §6.
+
+**The argument for why this is `adr` and not a field.** Four statements in this corpus close on each other and leave
+nothing between them: the connector's `Identity` must be resolved by someone and its own comment says it is not in the
+payload; the envelope is closed at fourteen properties, none a sender, and ADR-0004 rule 3 forbids a payload field from
+*becoming* identity; the shim may not stamp one on, because an injected field is the translation doc 22 §2 forbids;
+and the mechanism doc 31 §4 names for this crossing — "the inherited pipe and the per-user lock file" — is a lock whose
+recorded fields are `{pid, pipeVersion, startedAt, configHash}`, with no sender among them. Three shapes survive
+(which pipe the host opened; a handshake before the first envelope; OS peer credentials that authenticate the *host*
+and still not the extension) and they disagree about where identity lives, which moves ADR-0005's boundary. A field
+edit would hide that; a new ADR carries it.
+
+**One candidate entry was checked and refused, and the check is the part worth keeping.** The same reading surfaced a
+second question — who counts the rate budgets, and is a budget per sender — phrased as though nothing had a test. It
+does. `Dispatcher.charge` indexes `d.spent[id.SenderID][key(rl)]`, and
+`TestABudgetIsPerSenderAndNotPerProcess` in `connector/internal/dispatch/dispatch_test.go` spends one sender's
+`diagnostics.get` budget, refuses that sender's second call with retryable `Busy`, admits a second sender's first call,
+and asserts the handler ran exactly twice — quoting `#/senderPolicy/rateLimitFacts/scopeOfBudget` in its own comment
+while it does it. So no `ODEC-36` and no `VER-78` were added: §4.12 had already answered which process counts, and the
+per-sender half was already answered by code and by a named green test. A register entry for a question the tree has
+answered is the defect doc 40 §3 calls a question the register invented, and the harness cannot catch it — the count
+would have agreed. The only durable form of this is §8's decision 17.
+
+**Where the two slices touched.** §4.12 repaired `countedWhere` while the hop-2 reading was in progress, so the
+sentence "framing.json's `senderPolicy` describes that one hop" — written from its `#/description` — was true about
+identity and false about budgets by the time it landed. The document and both `why` fields now say the sharper thing:
+the policy's identity facts resolve from an OS event on hop 1, its budgets are spent in the Connector, and that
+mismatch *is* the gap — the process that spends a sender's budget is not the process that can see which sender it is.
+Doc 40 §5 gained its seventh paragraph for `ODEC-35`, and that paragraph's own clause ("a transport for a process
+nobody has built") went stale inside the iteration §4.13 describes, which the paragraph now says out loud instead of
+quietly rewriting.
+
 ---
 
 ## 5. Verification state to the letter
@@ -763,27 +883,31 @@ this repository will reproduce.
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green.
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **437** files — §4.12's 435 plus
+  the two that §4.13's package adds, because the guard walks `git ls-files` and so counts a file when it is staged, not
+  when it is thought of.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
-  is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation prints
+  is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
   six `ok` package lines where §4.6 recorded three — `contract`, `dispatch`, `envelope`, `frames`, `hello` and `peer`
-  — and `gofmt -l connector` still prints nothing. No `VER-NN` row moves on any of those increments: §4.6's "Not yet"
+  — and §4.13 makes it seven with `github.com/k2dms/nexora/connector/cmd/nexora-connector`; `gofmt -l connector` still
+  prints nothing. No `VER-NN` row moves on any of those increments: §4.6's "Not yet"
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
   row rather than by one more Go test, and §4.9 names the live row whose mechanism is half in this repository and the
   question two of this repository's own packages raised against each other; §4.10 names the three pieces of contract
   data that answered it and the boundary the answer drew; §4.11 names the four that stopped the next package before its
   first line; §4.12 names the contract sentence that had been naming the wrong process for as long as the tests had
-  been green — and none of the six changed a `ok` count, because only §4.10 moved code.
-- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 508 `path#pointer`, 1340 doc-and-script
+  been green; §4.13 is the first slice since §4.7 to move the `ok` count rather than the prose beside it, and §4.14
+  moves no Go code at all — it registers what the running binary proved the contract does not say.
+- `node tools/check-doc-evidence.mjs` → **green** (2267 `path:line`, 514 pointers, 1356 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
   `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
   as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
-  set and never pinned. No execution has printed a set since: the six M2 slices are on this branch and not on
+  set and never pinned. No execution has printed a set since: the eight M2 slices are on this branch and not on
   `nexora/master` (§7), so the three figures above are this host's, and §4.4 says which slice moved which of them and
   in what shape.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
@@ -843,8 +967,8 @@ SHOULD/MAY`, `Status:` header, `Trace: ADR-…; Contract: packages/schema/…` f
 document asserts behaviour nothing checks — otherwise it gets a `39-verification-matrix.md` row with
 `Verified: NO — deferred to Phase 2`.
 
-`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `203`
-deferral labels over `44` documents are partitioned, on every run, into `76` rows, `26` sentences that define the
+`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `204`
+deferral labels over `44` documents are partitioned, on every run, into `77` rows, `26` sentences that define the
 label and `24` live rows the matrix owns — so a new deferral with no row, a row whose anchor moved, a row re-labelled
 instead of closed, or a document reading a distribution the data does not have, all fail the build. Writing it also
 caught seven citations that pointed at a live row which does not test the claim: `LIVE-08`→`LIVE-13` for the
@@ -1018,8 +1142,8 @@ place, and neither is a status edit:
 **Connector, in the order the user set on 2026-11-05.** M1 is §4.6's four packages — the last thing that could be
 written before any behaviour existed. What each next milestone has to make true:
 
-1. **M2 — both processes as far as they are testable without Xray.** Four of its in-process halves have begun:
-   §4.7's `connector/internal/peer/` is the endpoint that refuses an oversized write before it reaches the writer,
+1. **M2 — both processes as far as they are testable without Xray.** Four in-process packages are written, and §4.13
+   joins them into a process that runs: §4.7's `connector/internal/peer/` is the endpoint that refuses an oversized write before it reaches the writer,
    bounds the outstanding-request and in-flight-byte budgets, discards a late answer by `id`, ends the stream on an
    illegal inbound frame, and treats a closed port as the client going away rather than as a shutdown signal;
    §4.8's `connector/internal/dispatch/` is the front door that resolves a method against the closed allowlist, gates
@@ -1036,16 +1160,34 @@ written before any behaviour existed. What each next milestone has to make true:
    the contract does not say. `VER-76` and `ODEC-34` are that gap as data, §9's ninth row is it as a question, and this
    list will not put a third item in front of `internal/chunk` until one of the two surviving readings is chosen;
    then `cmd/nexora-connector`, the process that reads a pipe and owns a dispatcher — which is exactly where
-   `internal/envelope` and `internal/dispatch` met and disagreed, and now meet in the test §4.10 names; then
-   `cmd/nexora-host` — sender identity resolved from the platform per
-   ADR-0004, the two-ports-per-sender cap that closes the oldest, and spawn/adopt of the connector over the local pipe
-   whose separate version is rule 2 of `docs/adr/0005-two-process-connector.md`. `VER-49`, `VER-13`, `VER-51`,
-   `VER-52` and `VER-55` all ask about that behaviour, and `docs/verification/live-matrix.md`'s `LIVE-01` asks about
-   the negotiation. §4.7 records why `VER-49` in particular does not close on the peer alone; §4.8 records why the
+   `internal/envelope` and `internal/dispatch` met and disagreed, and now meet in the test §4.10 names — is written,
+   measured and was run against the corpus's own frames, and §4.13 records what it answers, what it refuses, and the one
+   sentence of its output that is imprecise; then `cmd/nexora-host`, which is the only item on this list stopped by a
+   decision rather than by a dependency: §4.14 registers `ODEC-35` and `VER-77` because no file in this repository says
+   how the identity the platform resolves for a port reaches the process on the far side of the local pipe — ADR-0005
+   rule 2 promises that pipe a message schema versioned separately and none is defined, the envelope is closed at
+   fourteen properties none of them a sender, and ADR-0004 rule 3 forbids a payload field from *becoming* identity.
+   Until an ADR chooses among the three shapes that survive, the honest host is one that injects the same demo identity
+   the connector is already told, which is a second binary repeating the first rather than a second hop.
+   `VER-49`, `VER-13`, `VER-51`, `VER-52`, `VER-55` and `VER-77` all ask about that behaviour, and
+   `docs/verification/live-matrix.md`'s `LIVE-01` asks about the negotiation. §4.7 records why `VER-49` in particular does not close on the peer alone; §4.8 records why the
    three sender-policy rows need a running host and cannot close on a unit test; §4.9 records why `LIVE-01` names two
    test halves and only one of them is in this repository; §4.10 records why a boundary that only decides *which*
    package speaks moves no row either; and §4.11 records why reading the first item on this list, rather than writing
-   it, moved the queue up instead of down.
+   it, moved the queue up instead of down. §4.12 records the mechanism by which a contract sentence naming the wrong
+   process stayed green, §4.13 that the sentence was testable both ways at once, and §4.14 that this list's last item is
+   a question with three surviving answers rather than work nobody has done. Three cheap items queue beside this
+   milestone, none of them a slice: `connector/internal/hello`'s gate answers a frame that arrived *after* a
+   `VersionMismatch` withdrew a negotiation with the wording that it arrived before one — the state is right and the
+   sentence is wrong (§4.13); §4.12 leaves an assertion un-written rather than race a concurrent editor of
+   `packages/schema/scripts/verify.mjs`, the harness reading §8 of `docs/architecture/31-security-model.md` and
+   `packages/schema/protocol/framing.json#/senderPolicy/rateLimitFacts/countedWhere` for the same process name so the
+   two cannot drift apart again; and §4.14 finds the same shape one level down — an assertion whose message says it
+   checks what the queue document reads aloud compares the data to a constant and never opens that document. The check
+   that would make doc 39's tallies un-rottable is the third item here, not a variant of the second: one reads a
+   document against one field, the other reads a document against the whole distribution. All three are a
+   string and a check in a file the next real slice already opens; none is small enough to be done in a commit that
+   would then have to be found again.
 2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
    leaves to a human.
 
@@ -1054,8 +1196,9 @@ written before any behaviour existed. What each next milestone has to make true:
 ## 7. Git rules of this session (do not improvise)
 
 - Branch: **`nexora/architecture`**. `nexora/master` was last
-  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the five slices
-  §4.7 to §4.12 record — four of them code, two found by reading the contract before writing anything — are on this
+  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the eight slices
+  §4.7 to §4.14 record — five of them code, three found by reading: two before a line of Go was written and one while
+  the seventh was still running — are on this
   branch and not
   there, because a push needs its own confirmation each time
   and this file states that rather than assuming it was given. Local `master`
@@ -1178,6 +1321,33 @@ written before any behaviour existed. What each next milestone has to make true:
     defect: repair the field, then the quotation, then the comment that had been quoting it in halves. Do not add a
     `VER-NN` row for it — the register has no question left once the field names the process that holds the
     information — and do not let a comment survive by quoting the half of a contract that suits it.
+16. **A process answers with the data it holds and refuses to start without the data it does not** (§4.13).
+    `connector/cmd/nexora-connector/` registers the two published methods whose required result fields it actually
+    possesses — the negotiation and the two version strings — and leaves every other published name unregistered so the
+    front door answers it `Internal`, which is the code for "this build has no handler", not a placeholder for a guess.
+    The same rule governs the two inputs it cannot measure for itself: `--sender-id` has no default and the process exits
+    rather than serving a frame whose sender nobody resolved, and `--connector-version` falls back to Go's stamped
+    module version but treats a local `(devel)` build as no version at all, because a product version a binary invented
+    for itself is the field a user would later trust. A build-info string is not a release. When the real producer of
+    either value lands — the host for the identity, the release tooling for the four optional version fields — the flag
+    disappears rather than becoming a default.
+17. **A claim that nothing tests a rule is a claim about the tree, and the tree answers it** (§4.14). A reading of the
+    rate-budget contract arrived phrased as though no test existed for who counts a budget or whether it is per sender,
+    and proposed a register entry and a queue row for the question. `TestABudgetIsPerSenderAndNotPerProcess` in
+    `connector/internal/dispatch/dispatch_test.go:245` spends one sender's budget, refuses that sender's second call,
+    admits a second sender's first, and asserts the handler ran exactly twice — while quoting the contract field that
+    scopes the budget in its own comment. The entry was refused. This is not a courtesy check on a draft: every
+    assertion in `packages/schema/scripts/verify.mjs` counts register entries and would have agreed with a register that
+    holds a question this repository has already answered, which is the defect doc 40 §3 names a question the register
+    invented. The check that catches it is the one that reads the named test before the row is written.
+18. **A check's message describes its intent, not its behaviour; read the code before trusting the sentence** (§4.14).
+    The assertion that pins the queue's owner distribution says in its own message that it is checking what the
+    inventory document reads aloud, and it never opens that document — it compares the data to a constant. Three of
+    `docs/architecture/39-verification-matrix.md`'s numbers sat one behind the data at `4997081` under a green build
+    that had been printing that message the whole time. So: when a stale figure survives a check whose label claims to
+    catch stale figures, read the check itself before concluding the harness is wrong or the document is; both can be
+    right about different things. And when a §4.12-style repair of a *sentence* is queued as an assertion, name which
+    file the assertion will read, because an assertion that reads the data cannot protect a document from itself.
 
 ---
 
@@ -1225,9 +1395,10 @@ of §6's queue was written.
 ---
 
 *End of handoff log. The remaining work order is §6: the connector queue it orders — `internal/chunk`, then
-`cmd/nexora-connector`, then `cmd/nexora-host`, with §4.6 to §4.12 the inventory of what exists of it — and task #11,
+`cmd/nexora-host`, with §4.6 to §4.14 the inventory of what exists of it — and task #11,
 the end-to-end pass no document in this corpus can do for itself. The first item on that queue is stopped, and §4.11
-says by what. Plus the decisions in §7 and the nine questions in
+says by what; the last is stopped too, and §4.14 says by what — a decision with three surviving answers, which is the
+first time this queue has been blocked by an ADR rather than by a gap in the data. Plus the decisions in §7 and the nine questions in
 §9, which are not work an agent may finish; the note under that table says why one ninth stopped being a question and
 what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the

@@ -22,6 +22,54 @@ sender allowlist and the byte limits, then pumps. Consequence: a bug in the code
 is why the codec is one artefact in `packages/protocol/` compiled for TypeScript and mirrored by a Go test
 reading the same fixtures (`docs/architecture/20-target-repository-layout.md` §3).
 
+**The one thing §2 does not decide.** §2 is exact about the frame and silent about the sender. ADR-0005 rule 2
+(`docs/adr/0005-two-process-connector.md:30-32`) requires the two processes to communicate over a local pipe "whose
+message schema is versioned **separately** from the extension-facing protocol", carrying "its own version field" and
+refusing a mismatch "rather than guess" — and no file in `packages/schema/` defines that schema or that field.
+`packages/schema/protocol/framing.json` says as much about itself: its `#/description` scopes it to "the
+extension-to-host pipe", and `#/senderPolicy` is written from that hop as well — its identity facts are an OS event on
+the browser side, while its budgets are spent by a sender only that hop can name and are counted in the Connector
+(`docs/architecture/31-security-model.md` §8). That is the sharper form of the same silence: the process that spends a
+sender's budget is not the process that can see which sender it is spending.
+The pipe's version *number* is already queued (`VER-18` and `ODEC-02`, both anchored on
+`docs/architecture/21-system-context.md` §12's invariant row); the other half of the same silence is not: **how the
+sender identity crosses hop 2, and what hop 2's message schema is at all.**
+
+Four statements this corpus already makes close on each other there. (i) §2 above: the envelope crosses untranslated,
+and the process that must know the sender is the connector — `connector/internal/dispatch` takes an
+`Identity{SenderID, Allowlisted, Negotiated, Capabilities}` on every `Dispatch` call and its own comment states
+"None of it comes from the payload", while `connector/internal/hello`'s `Session.Identity(senderID string,
+allowlisted bool)` can only be called with a value someone resolved. (ii) The frame cannot carry it:
+`packages/schema/protocol/envelope.schema.json#/additionalProperties` is `false` over fourteen named properties —
+`v`, `id`, `type`, `method`, `args`, `result`, `error`, `inReplyTo`, `ok`, `traceId`, `sentAt`, `seq`, `progress`,
+`chunk` — none of them a sender, and ADR-0004 rule 3
+(`docs/adr/0004-native-messaging-only-no-loopback-http-control.md:32-35`) forbids a payload field from *becoming*
+identity even if the object were opened. (iii) The shim may not add one either:
+`docs/architecture/22-component-contracts.md` §2's Out is frames on the local pipe "verbatim (no translation, no
+re-serialization of payloads)", and a field the shim injects is a translation. (iv)
+`docs/architecture/31-security-model.md` §4 names this crossing's trust mechanism as "the inherited pipe and the
+per-user lock file", and `docs/architecture/21-system-context.md` §11 records that lock's fields as
+`{pid, pipeVersion, startedAt, configHash}` — no sender id among them — while
+`packages/schema/protocol/framing.json#/senderPolicy/identity/resolvedFrom` resolves the id from "the Native
+Messaging manifest registration the OS hands the host when the port opens": a hop-1 event, whose hop-2 counterpart is
+the host process's own credentials, which name the shim and no extension. ADR-0004 priced exactly that shape when it
+rejected a self-framed named pipe — there the sender identity becomes "whoever can open the pipe"
+(`docs/adr/0004-native-messaging-only-no-loopback-http-control.md:74-76`).
+
+The candidates are four, and the data removes one. (a) One pipe instance per sender, so identity is *which pipe* the
+host opened: honest about who speaks, but it needs the pipe's naming and creation contract in `packages/schema`, and
+it turns `#/senderPolicy/rateLimitFacts/scopeOfBudget`'s "per sender id" into a per-pipe count wherever one sender
+holds more than one pipe. (b) An out-of-band startup handshake on the pipe, before the first envelope, carrying
+`{senderId, allowlisted, pipeVersion}`: ADR-0005's "versioned separately" permits the shape, but it puts a second
+protocol on one pipe — the objection §5 raises against the temp-file handoff, in its own words "gives the pipe two
+protocols instead of one" — and it is a message no envelope contract covers. (c) OS peer credentials on hop 2
+(`SO_PEERCRED`, the named-pipe client pid) mapped to the host process the connector was started by: authentic, but it
+authenticates the *host*, so it still needs (a) or (b) for the sender id. (d) A sender field in the envelope:
+**excluded, not open** — forbidden twice over, by ADR-0004 rule 3 and by the closed object above, and recorded here
+the way `packages/schema/protocol/framing.json#/oversizedPayloads/alternativesRejected` records the handoff it also
+refuses. (a), (b) and (c) survive and disagree about where identity lives, so nothing can drive the front door as a
+real process until one is chosen. This defers to `docs/architecture/40-open-decisions.md`; its entry names the four.
+
 ## 3. Framing
 
 | Property | Value | Source |
@@ -262,6 +310,7 @@ and no bidirectional streaming RPC semantics.
 | Frame limits are the documented ones and ordered | framing sanity block, `packages/schema/scripts/verify.mjs:242-263` | **GREEN** |
 | Envelope `required` is exactly `v,id,type,sentAt` | `#/required` + ajv compile of every fixture frame | **GREEN** |
 | `request`/`response`/`event` field discipline | `#/allOf` + the two must-reject envelope examples | **GREEN** |
+| The sender identity crosses hop 2 by a named mechanism, and hop 2 has a contract of its own | nothing | Verified: NO — deferred to Phase 2 (the envelope is closed at fourteen fields and none of them is a sender, and no file in `packages/schema/` states the local pipe's message schema or its version field — see §2's last three paragraphs; naming that contract is the assertion this row promises) |
 | Chunk shape is one object mirrored in `profile.import` | "the envelope chunk shape and profile.import args.chunk are one shape" assertion | **GREEN** |
 | Chunk groups complete and non-vacuous | the chunk-group block with its absent-group, clean-group and split-hash guards | **GREEN** |
 | Slice bodies reassemble to the document the sender hashed | nothing | Verified: NO — deferred to Phase 2 (the contract says what a slice *is* and never says where its bytes ride — see §5's last paragraph; the reassembly test is the assertion this row promises) |
