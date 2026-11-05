@@ -1,0 +1,423 @@
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/conditions.coffee
+    line 282  Line exceeds maximum allowed length  Length is 83, max is 80
+    line 372  Line exceeds maximum allowed length  Length is 129, max is 80
+    line 542  Line exceeds maximum allowed length  Length is 91, max is 80
+
+ 3 warnings
+
+
+src/rule_list.coffee
+    line 87  Line exceeds maximum allowed length  Length is 84, max is 80
+
+ 1 warning
+
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_pac.min.js[39m created.
+
+[32mDone, without errors.[39m
+build:omega-pac|exit=0|1s
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+[32m>> [39m9 files lint free.
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_target.min.js[39m created.
+
+[32mDone, without errors.[39m
+build:omega-target|exit=0|2s
+[4mRunning "copy:pac" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:lib" (copy) task[24m
+Created [36m2[39m directories, copied [36m170[39m files
+
+[4mRunning "copy:img" (copy) task[24m
+Created [36m1[39m directories, copied [36m10[39m files
+
+[4mRunning "copy:popup" (copy) task[24m
+Created [36m9[39m directories, copied [36m28[39m files
+
+[4mRunning "jade:web" (jade) task[24m
+Warning: missing space before text for line 14 of jade file "src/options.jade"
+File build/options.html created.
+Warning: missing space before text for line 28 of jade file "src/popup.jade"
+File build/popup.html created.
+File build/partials/about.html created.
+File build/partials/apply_options_confirm.html created.
+File build/partials/builtin.html created.
+File build/partials/cannot_delete_profile.html created.
+File build/partials/delete_attached.html created.
+File build/partials/delete_profile.html created.
+File build/partials/fixed_auth_edit.html created.
+File build/partials/general.html created.
+File build/partials/input_group_clear.html created.
+File build/partials/io.html created.
+File build/partials/new_profile.html created.
+File build/partials/omega_profile_select.html created.
+File build/partials/options_welcome.html created.
+File build/partials/profile.html created.
+File build/partials/profile_fixed.html created.
+File build/partials/profile_pac.html created.
+File build/partials/profile_rule_list.html created.
+File build/partials/profile_switch.html created.
+File build/partials/profile_unsupported.html created.
+File build/partials/profile_virtual.html created.
+File build/partials/rename_profile.html created.
+File build/partials/replace_profile.html created.
+File build/partials/reset_options_confirm.html created.
+File build/partials/rule_remove_confirm.html created.
+File build/partials/rule_reset_confirm.html created.
+File build/partials/theme.html created.
+File build/partials/ui.html created.
+
+[4mRunning "less:web_options" (less) task[24m
+File tmp/css/options.css created: 0 B → 10.35 kB
+
+[4mRunning "less:web_popup" (less) task[24m
+File tmp/css/popup.css created: 0 B → 3.8 kB
+
+[4mRunning "autoprefixer:unprefixed" (autoprefixer) task[24m
+File build/css/options.css created.
+File build/css/popup.css created.
+
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m11 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+[32m>> [39m19 files lint free.
+
+[4mRunning "coffee:web" (coffee) task[24m
+[32m>> [39m6 files created.
+
+[4mRunning "coffee:web_omega" (coffee) task[24m
+[32m>> [39m1 files created.
+
+[4mRunning "bower:install" (bower) task[24m
+[32m>> [39mInstalled bower packages
+[32m>> [39mCopied packages to [90mE:\NEXORA\omega-web\build\lib[39m
+
+[32mDone, without errors.[39m
+build:omega-web|exit=0|2s
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m9 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/module/proxy/proxy_impl_firefox.coffee
+    line 103  Line exceeds maximum allowed length  Length is 85, max is 80
+    line 107  Line exceeds maximum allowed length  Length is 87, max is 80
+
+ 2 warnings
+
+
+src/module/proxy/proxy_impl_listener.coffee
+    line 67  Line exceeds maximum allowed length  Length is 85, max is 80
+    line 71  Line exceeds maximum allowed length  Length is 87, max is 80
+
+ 2 warnings
+
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_target_chromium_extension.min.js[39m created.
+
+[4mRunning "browserify:omega_webext_proxy_script" (browserify) task[24m
+[32m>> [39mBundle [36mbuild/js/omega_webext_proxy_script.min.js[39m created.
+
+[4mRunning "coffee:coffee" (coffee) task[24m
+[32m>> [39m4 files created.
+
+[4mRunning "copy:web" (copy) task[24m
+Created [36m58[39m directories, copied [36m329[39m files
+
+[4mRunning "copy:target" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:target_self" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:target_popup" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:overlay" (copy) task[24m
+Copied [36m8[39m files
+
+[4mRunning "copy:docs" (copy) task[24m
+Copied [36m2[39m files
+
+[4mRunning "po2crx:locales" (po2crx) task[24m
+File "build/_locales/en/messages.json" created.
+File "build/_locales/zh/messages.json" created.
+File "build/_locales/cs/messages.json" created.
+File "build/_locales/fa/messages.json" created.
+File "build/_locales/ru/messages.json" created.
+File "build/_locales/zh_CN/messages.json" created.
+File "build/_locales/zh_TW/messages.json" created.
+(node:18392) [DEP0128] DeprecationWarning: Invalid 'main' field in '\\?\E:\NEXORA\omega-target-chromium-extension\node_modules\po2json\package.json' of './lib/po2json'. Please either fix that or report it to the module author
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[32mDone, without errors.[39m
+build:omega-target-ext|exit=0|2s
+artifact:pac-min-root|exit=0|0s
+artifact:target-min-root|exit=0|0s
+artifact:ext-min-root|exit=0|0s
+artifact:web-build|exit=0|0s
+[4mRunning "hub:omega-pac:default" (hub) task[24m
+[32m>> [39mRunning [default] on E:\NEXORA\omega-pac\Gruntfile.coffee
+
+
+>> E:\NEXORA\omega-pac\Gruntfile.coffee:
+
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/conditions.coffee
+    line 282  Line exceeds maximum allowed length  Length is 83, max is 80
+    line 372  Line exceeds maximum allowed length  Length is 129, max is 80
+    line 542  Line exceeds maximum allowed length  Length is 91, max is 80
+
+ 3 warnings
+
+
+src/rule_list.coffee
+    line 87  Line exceeds maximum allowed length  Length is 84, max is 80
+
+ 1 warning
+
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_pac.min.js[39m created.
+
+[32mDone, without errors.[39m
+
+[4mRunning "hub:omega-target:default" (hub) task[24m
+[32m>> [39mRunning [default] on E:\NEXORA\omega-target\Gruntfile.coffee
+
+
+>> E:\NEXORA\omega-target\Gruntfile.coffee:
+
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+[32m>> [39m9 files lint free.
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_target.min.js[39m created.
+
+[32mDone, without errors.[39m
+
+[4mRunning "hub:omega-web:default" (hub) task[24m
+[32m>> [39mRunning [default] on E:\NEXORA\omega-web\Gruntfile.coffee
+
+
+>> E:\NEXORA\omega-web\Gruntfile.coffee:
+
+[4mRunning "copy:pac" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:lib" (copy) task[24m
+Created [36m2[39m directories, copied [36m170[39m files
+
+[4mRunning "copy:img" (copy) task[24m
+Created [36m1[39m directories, copied [36m10[39m files
+
+[4mRunning "copy:popup" (copy) task[24m
+Created [36m9[39m directories, copied [36m28[39m files
+
+[4mRunning "jade:web" (jade) task[24m
+[31m>> [39mWarning: missing space before text for line 14 of jade file "src/options.jade"
+File build/options.html created.
+[31m>> [39mWarning: missing space before text for line 28 of jade file "src/popup.jade"
+File build/popup.html created.
+File build/partials/about.html created.
+File build/partials/apply_options_confirm.html created.
+File build/partials/builtin.html created.
+File build/partials/cannot_delete_profile.html created.
+File build/partials/delete_attached.html created.
+File build/partials/delete_profile.html created.
+File build/partials/fixed_auth_edit.html created.
+File build/partials/general.html created.
+File build/partials/input_group_clear.html created.
+File build/partials/io.html created.
+File build/partials/new_profile.html created.
+File build/partials/omega_profile_select.html created.
+File build/partials/options_welcome.html created.
+File build/partials/profile.html created.
+File build/partials/profile_fixed.html created.
+File build/partials/profile_pac.html created.
+File build/partials/profile_rule_list.html created.
+File build/partials/profile_switch.html created.
+File build/partials/profile_unsupported.html created.
+File build/partials/profile_virtual.html created.
+File build/partials/rename_profile.html created.
+File build/partials/replace_profile.html created.
+File build/partials/reset_options_confirm.html created.
+File build/partials/rule_remove_confirm.html created.
+File build/partials/rule_reset_confirm.html created.
+File build/partials/theme.html created.
+File build/partials/ui.html created.
+
+[4mRunning "less:web_options" (less) task[24m
+File tmp/css/options.css created: 0 B → 10.35 kB
+
+[4mRunning "less:web_popup" (less) task[24m
+File tmp/css/popup.css created: 0 B → 3.8 kB
+
+[4mRunning "autoprefixer:unprefixed" (autoprefixer) task[24m
+File build/css/options.css created.
+File build/css/popup.css created.
+
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m11 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+[32m>> [39m19 files lint free.
+
+[4mRunning "coffee:web" (coffee) task[24m
+[32m>> [39m6 files created.
+
+[4mRunning "coffee:web_omega" (coffee) task[24m
+[32m>> [39m1 files created.
+
+[4mRunning "bower:install" (bower) task[24m
+[32m>> [39mInstalled bower packages
+[32m>> [39mCopied packages to [90mE:\NEXORA\omega-web\build\lib[39m
+
+[32mDone, without errors.[39m
+
+[4mRunning "hub:omega-target-*:default" (hub) task[24m
+[32m>> [39mRunning [default] on E:\NEXORA\omega-target-chromium-extension\Gruntfile.coffee
+
+
+>> E:\NEXORA\omega-target-chromium-extension\Gruntfile.coffee:
+
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m9 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/module/proxy/proxy_impl_firefox.coffee
+    line 103  Line exceeds maximum allowed length  Length is 85, max is 80
+    line 107  Line exceeds maximum allowed length  Length is 87, max is 80
+
+ 2 warnings
+
+
+src/module/proxy/proxy_impl_listener.coffee
+    line 67  Line exceeds maximum allowed length  Length is 85, max is 80
+    line 71  Line exceeds maximum allowed length  Length is 87, max is 80
+
+ 2 warnings
+
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_target_chromium_extension.min.js[39m created.
+
+[4mRunning "browserify:omega_webext_proxy_script" (browserify) task[24m
+[32m>> [39mBundle [36mbuild/js/omega_webext_proxy_script.min.js[39m created.
+
+[4mRunning "coffee:coffee" (coffee) task[24m
+[32m>> [39m4 files created.
+
+[4mRunning "copy:web" (copy) task[24m
+Created [36m58[39m directories, copied [36m329[39m files
+
+[4mRunning "copy:target" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:target_self" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:target_popup" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:overlay" (copy) task[24m
+Copied [36m8[39m files
+
+[4mRunning "copy:docs" (copy) task[24m
+Copied [36m2[39m files
+
+[4mRunning "po2crx:locales" (po2crx) task[24m
+File "build/_locales/en/messages.json" created.
+File "build/_locales/zh/messages.json" created.
+File "build/_locales/cs/messages.json" created.
+File "build/_locales/fa/messages.json" created.
+File "build/_locales/ru/messages.json" created.
+File "build/_locales/zh_CN/messages.json" created.
+File "build/_locales/zh_TW/messages.json" created.
+[31m>> [39m(node:1292) [DEP0128] DeprecationWarning: Invalid 'main' field in '\\?\E:\NEXORA\omega-target-chromium-extension\node_modules\po2json\package.json' of './lib/po2json'. Please either fix that or report it to the module author[31m
+>> [39m(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[32mDone, without errors.[39m
+
+[32mDone, without errors.[39m
+hub:build|exit=0|7s
+[4mRunning "manifest" task[24m
+
+[4mRunning "compress:chromium" (compress) task[24m
+Created ../dist/chromium-release.zip (1903305 bytes)
+
+[4mRunning "compress:firefox" (compress) task[24m
+Created ../dist/firefox-release.zip (1903342 bytes)
+
+[32mDone, without errors.[39m
+release:ext|exit=0|1s
+total 3724
+drwxr-xr-x 1 dms 197121       0 Nov  4 13:19 .
+drwxr-xr-x 1 dms 197121       0 Nov  4 13:26 ..
+-rw-r--r-- 1 dms 197121 1903305 Nov  4 13:32 chromium-release.zip
+-rw-r--r-- 1 dms 197121 1903342 Nov  4 13:32 firefox-release.zip
+dist|exit=0|0s
+LADDER-A COMPLETE

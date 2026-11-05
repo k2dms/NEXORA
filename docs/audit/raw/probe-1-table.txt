@@ -1,0 +1,11 @@
+install:omega-build|exit=0|12s
+install:omega-pac|exit=0|24s
+install:omega-target|exit=0|9s
+install:omega-web|exit=0|20s
+install:omega-target-chromium-extension|exit=0|9s
+build:omega-pac|missing|-
+build:omega-target|missing|-
+build:omega-web|missing|-
+build:omega-target-chromium-extension|missing|-
+hub-build|exit=3|1s
+hub-release|exit=3|1s

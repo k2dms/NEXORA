@@ -1,0 +1,326 @@
+=== HOST FACTS ===
+node: v24.22.1
+npm: 11.19.1
+script-shell: null
+git: git version 2.56.0.windows.3
+uname: MINGW64_NT-10.0-26300 HOME-PC 3.6.10-5a1665c8.x86_64 2026-09-28 10:40 UTC x86_64 Msys
+platform: win32 x64
+
+### STEP: install:omega-build
+--- cwd: /e/NEXORA/omega-build
+--- cmd: npm install --no-audit --no-fund
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated rimraf@2.2.8: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@5.0.15: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated coffee-script@1.3.3: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+
+added 62 packages in 12s
+npm notice
+npm notice New major version of npm available! 11.19.1 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+--- exit=0 elapsed=12s
+
+### STEP: install:omega-pac
+--- cwd: /e/NEXORA/omega-pac
+--- cmd: npm install --no-audit --no-fund
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.19.1' }
+npm warn EBADENGINE }
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@5.0.15: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated path-dirname@1.0.2: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+npm warn deprecated rimraf@2.2.8: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated urix@0.1.0: Please see https://github.com/lydell/urix#deprecated
+npm warn deprecated resolve-url@0.2.1: https://github.com/lydell/resolve-url#deprecated
+npm warn deprecated source-map-resolve@0.5.3: See https://github.com/lydell/source-map-resolve#deprecated
+npm warn deprecated sprintf@0.1.5: The sprintf package is deprecated in favor of sprintf-js.
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated querystring@0.2.0: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated coffee-script@1.3.3: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated graceful-fs@2.0.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated minimatch@2.0.10: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated glob@4.5.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated mkdirp@0.3.0: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated mkdirp@0.3.5: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated glob@3.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated jade@0.26.3: Jade has been renamed to pug, please install the latest version of pug instead of jade
+npm warn deprecated coffee-script@1.12.7: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated mkdirp@0.3.5: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated coffee-script@1.11.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.7.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated mocha@1.20.1: Mocha v1.x is no longer supported.
+npm warn deprecated lodash-node@2.4.1: This package is discontinued. Use lodash@^4.0.0.
+
+added 578 packages in 23s
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   tldjs@1.8.0 (postinstall: node ./bin/postinstall.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+--- exit=0 elapsed=24s
+
+### STEP: install:omega-target
+--- cwd: /e/NEXORA/omega-target
+--- cmd: npm install --no-audit --no-fund
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.19.1' }
+npm warn EBADENGINE }
+npm warn deprecated path-dirname@1.0.2: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm warn deprecated minimatch@2.0.10: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated urix@0.1.0: Please see https://github.com/lydell/urix#deprecated
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@4.5.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@5.0.15: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated graceful-fs@2.0.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated resolve-url@0.2.1: https://github.com/lydell/resolve-url#deprecated
+npm warn deprecated source-map-resolve@0.5.3: See https://github.com/lydell/source-map-resolve#deprecated
+npm warn deprecated rimraf@2.2.8: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated formatio@1.1.1: This package is unmaintained. Use @sinonjs/formatio instead
+npm warn deprecated samsam@1.1.2: This package has been deprecated in favour of @sinonjs/samsam
+npm warn deprecated querystring@0.2.0: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated mkdirp@0.3.0: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated mkdirp@0.3.5: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated mkdirp@0.3.5: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated glob@3.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated coffee-script@1.3.3: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.11.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.12.7: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.7.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated jade@0.26.3: Jade has been renamed to pug, please install the latest version of pug instead of jade
+npm warn deprecated mocha@1.20.1: Mocha v1.x is no longer supported.
+npm warn deprecated sinon@1.17.7: 16.1.1
+npm warn deprecated lodash-node@2.4.1: This package is discontinued. Use lodash@^4.0.0.
+
+added 542 packages in 9s
+--- exit=0 elapsed=9s
+
+### STEP: install:omega-web
+--- cwd: /e/NEXORA/omega-web
+--- cmd: npm install --no-audit --no-fund
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated natives@1.1.6: This module relies on Node.js's internals and will break at some point. Do not use it, and update to graceful-fs@4.x.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated graceful-fs@2.0.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated stable@0.1.8: Modern JS already guarantees Array#sort() is a stable sort, so this library is deprecated. See the compatibility table on MDN: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#browser_compatibility
+npm warn deprecated grunt-ng-annotate@0.3.2: grunt-ng-annotate is deprecated. Switch to babel-plugin-angularjs-annotate or provide annotations by yourself.
+npm warn deprecated cryptiles@0.2.2: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).
+npm warn deprecated rimraf@2.2.8: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated transformers@2.1.0: Deprecated, use jstransformer
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated constantinople@2.0.1: Please update to at least constantinople 3.1.1
+npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated sntp@0.2.4: This module moved to @hapi/sntp. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.
+npm warn deprecated boom@0.4.2: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated request@2.40.0: request has been deprecated, see https://github.com/request/request/issues/3142
+npm warn deprecated node-uuid@1.4.8: Use uuid module instead
+npm warn deprecated mkdirp@0.3.0: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated mkdirp@0.3.5: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated hoek@0.9.1: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).
+npm warn deprecated glob@3.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated coffee-script@1.3.3: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.11.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.7.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated hawk@1.1.1: This module moved to @hapi/hawk. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.
+npm warn deprecated jade@0.26.3: Jade has been renamed to pug, please install the latest version of pug instead of jade
+npm warn deprecated jade@1.3.1: Jade has been renamed to pug, please install the latest version of pug instead of jade
+npm warn deprecated mocha@1.20.1: Mocha v1.x is no longer supported.
+npm warn deprecated lodash-node@2.4.1: This package is discontinued. Use lodash@^4.0.0.
+
+added 264 packages in 20s
+--- exit=0 elapsed=20s
+
+### STEP: install:omega-target-chromium-extension
+--- cwd: /e/NEXORA/omega-target-chromium-extension
+--- cmd: npm install --no-audit --no-fund
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.19.1' }
+npm warn EBADENGINE }
+npm warn deprecated path-dirname@1.0.2: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm warn deprecated minimatch@2.0.10: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated urix@0.1.0: Please see https://github.com/lydell/urix#deprecated
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@4.5.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@5.0.15: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated graceful-fs@1.2.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated graceful-fs@2.0.3: please upgrade to graceful-fs 4 for compatibility with current and future versions of Node.js
+npm warn deprecated resolve-url@0.2.1: https://github.com/lydell/resolve-url#deprecated
+npm warn deprecated source-map-resolve@0.5.3: See https://github.com/lydell/source-map-resolve#deprecated
+npm warn deprecated rimraf@2.2.8: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated minimatch@0.2.14: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue
+npm warn deprecated querystring@0.2.0: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.
+npm warn deprecated nomnom@1.8.0: Package no longer supported. Contact support@npmjs.com for more info.
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.1.21: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated mkdirp@0.3.0: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated mkdirp@0.3.5: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated mkdirp@0.3.5: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
+npm warn deprecated glob@3.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@3.2.11: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated coffee-script@1.3.3: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.12.7: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.11.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated coffee-script@1.7.1: CoffeeScript on NPM has moved to "coffeescript" (no hyphen)
+npm warn deprecated jade@0.26.3: Jade has been renamed to pug, please install the latest version of pug instead of jade
+npm warn deprecated mocha@1.20.1: Mocha v1.x is no longer supported.
+npm warn deprecated lodash-node@2.4.1: This package is discontinued. Use lodash@^4.0.0.
+
+added 579 packages in 9s
+--- exit=0 elapsed=9s
+
+### STEP: build:omega-pac
+--- local grunt absent (install did not produce it)
+
+### STEP: build:omega-target
+--- local grunt absent (install did not produce it)
+
+### STEP: build:omega-web
+--- local grunt absent (install did not produce it)
+
+### STEP: build:omega-target-chromium-extension
+--- local grunt absent (install did not produce it)
+
+### STEP: hub-build
+--- cwd: /e/NEXORA/omega-build
+--- cmd: ./node_modules/.bin/grunt
+[4mRunning "hub:omega-pac:default" (hub) task[24m
+[32m>> [39mRunning [default] on E:\NEXORA\omega-pac\Gruntfile.coffee
+
+
+>> E:\NEXORA\omega-pac\Gruntfile.coffee:
+
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/conditions.coffee
+    line 282  Line exceeds maximum allowed length  Length is 83, max is 80
+    line 372  Line exceeds maximum allowed length  Length is 129, max is 80
+    line 542  Line exceeds maximum allowed length  Length is 91, max is 80
+
+ 3 errors
+
+
+src/rule_list.coffee
+    line 87  Line exceeds maximum allowed length  Length is 84, max is 80
+
+ 1 error
+
+[33mWarning: Task "coffeelint:src" failed. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+[33mWarning: Task "hub:omega-pac:default" failed. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+--- exit=3 elapsed=1s
+
+### STEP: hub-release
+--- cwd: /e/NEXORA/omega-build
+--- cmd: npm run release
+
+> omega-build@0.0.1 release
+> cd ../omega-target-chromium-extension && grunt  release
+
+Loading "Gruntfile.coffee" tasks...[31mERROR[39m
+[31m>> [39mError: Cannot find module 'omega-pac/omega_pac.min.js'[31m
+>> [39mRequire stack:[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\grunt\browserify.coffee[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\lib\readfile.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\lib\readconfigdir.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\lib\gruntconfig.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\index.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\Gruntfile.coffee[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\grunt\lib\grunt\task.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\grunt\lib\grunt.js[31m
+>> [39m- E:\NEXORA\omega-build\node_modules\grunt-cli\bin\grunt
+[33mWarning: Task "release" not found. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+--- exit=3 elapsed=1s
+
+=== SUMMARY ===
+install:omega-build|exit=0|12s
+install:omega-pac|exit=0|24s
+install:omega-target|exit=0|9s
+install:omega-web|exit=0|20s
+install:omega-target-chromium-extension|exit=0|9s
+build:omega-pac|missing|-
+build:omega-target|missing|-
+build:omega-web|missing|-
+build:omega-target-chromium-extension|missing|-
+hub-build|exit=3|1s
+hub-release|exit=3|1s

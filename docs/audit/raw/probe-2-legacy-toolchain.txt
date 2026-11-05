@@ -1,0 +1,1036 @@
+
+### STEP: link-chain
+--- cwd: /e/NEXORA/omega-build
+--- cmd: npm run dev
+
+> omega-build@0.0.1 dev
+> (cd ../omega-pac && npm run dev) && (cd ../omega-target && npm run dev) && (cd ../omega-web && npm run dev) && (cd ../omega-target-chromium-extension/ && npm run dev)
+
+
+> omega-pac@0.0.1 dev
+> npm link
+
+
+added 1 package, and audited 3 packages in 247ms
+
+found 0 vulnerabilities
+
+> omega-target@0.0.1 dev
+> npm link omega-pac && npm link
+
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.19.1' }
+npm warn EBADENGINE }
+
+up to date, audited 544 packages in 6s
+
+39 packages are looking for funding
+  run `npm fund` for details
+
+48 vulnerabilities (4 low, 6 moderate, 26 high, 12 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+added 1 package, and audited 3 packages in 245ms
+
+found 0 vulnerabilities
+
+> omega-web@0.0.1 dev
+> npm link omega-pac && npm link
+
+
+up to date, audited 266 packages in 5s
+
+3 packages are looking for funding
+  run `npm fund` for details
+
+54 vulnerabilities (1 low, 11 moderate, 23 high, 19 critical)
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+
+added 1 package, and audited 3 packages in 244ms
+
+found 0 vulnerabilities
+
+> omega-target-chromium-extension@0.0.1 dev
+> npm link omega-target && npm link omega-web && npm link omega-pac
+
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.19.1' }
+npm warn EBADENGINE }
+
+up to date, audited 583 packages in 3s
+
+40 packages are looking for funding
+  run `npm fund` for details
+
+54 vulnerabilities (4 low, 12 moderate, 24 high, 14 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.19.1' }
+npm warn EBADENGINE }
+
+up to date, audited 583 packages in 2s
+
+40 packages are looking for funding
+  run `npm fund` for details
+
+54 vulnerabilities (4 low, 12 moderate, 24 high, 14 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.19.1' }
+npm warn EBADENGINE }
+
+up to date, audited 583 packages in 2s
+
+40 packages are looking for funding
+  run `npm fund` for details
+
+54 vulnerabilities (4 low, 12 moderate, 24 high, 14 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+--- exit=0 elapsed=20s
+
+### STEP: build:omega-pac
+--- cwd: /e/NEXORA/omega-pac
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/conditions.coffee
+    line 282  Line exceeds maximum allowed length  Length is 83, max is 80
+    line 372  Line exceeds maximum allowed length  Length is 129, max is 80
+    line 542  Line exceeds maximum allowed length  Length is 91, max is 80
+
+ 3 errors
+
+
+src/rule_list.coffee
+    line 87  Line exceeds maximum allowed length  Length is 84, max is 80
+
+ 1 error
+
+[33mWarning: Task "coffeelint:src" failed. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+--- exit=3 elapsed=1s
+
+### STEP: build:omega-target
+--- cwd: /e/NEXORA/omega-target
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+[32m>> [39m9 files lint free.
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_target.min.js[39m created.
+
+[32mDone, without errors.[39m
+--- exit=0 elapsed=1s
+
+### STEP: build:omega-web
+--- cwd: /e/NEXORA/omega-web
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt
+[4mRunning "copy:pac" (copy) task[24m
+
+
+[4mRunning "copy:lib" (copy) task[24m
+Created [36m2[39m directories, copied [36m170[39m files
+
+[4mRunning "copy:img" (copy) task[24m
+Created [36m1[39m directories, copied [36m10[39m files
+
+[4mRunning "copy:popup" (copy) task[24m
+Created [36m9[39m directories, copied [36m28[39m files
+
+[4mRunning "jade:web" (jade) task[24m
+Warning: missing space before text for line 14 of jade file "src/options.jade"
+File build/options.html created.
+Warning: missing space before text for line 28 of jade file "src/popup.jade"
+File build/popup.html created.
+File build/partials/about.html created.
+File build/partials/apply_options_confirm.html created.
+File build/partials/builtin.html created.
+File build/partials/cannot_delete_profile.html created.
+File build/partials/delete_attached.html created.
+File build/partials/delete_profile.html created.
+File build/partials/fixed_auth_edit.html created.
+File build/partials/general.html created.
+File build/partials/input_group_clear.html created.
+File build/partials/io.html created.
+File build/partials/new_profile.html created.
+File build/partials/omega_profile_select.html created.
+File build/partials/options_welcome.html created.
+File build/partials/profile.html created.
+File build/partials/profile_fixed.html created.
+File build/partials/profile_pac.html created.
+File build/partials/profile_rule_list.html created.
+File build/partials/profile_switch.html created.
+File build/partials/profile_unsupported.html created.
+File build/partials/profile_virtual.html created.
+File build/partials/rename_profile.html created.
+File build/partials/replace_profile.html created.
+File build/partials/reset_options_confirm.html created.
+File build/partials/rule_remove_confirm.html created.
+File build/partials/rule_reset_confirm.html created.
+File build/partials/theme.html created.
+File build/partials/ui.html created.
+
+[4mRunning "less:web_options" (less) task[24m
+File tmp/css/options.css created: 0 B → 10.35 kB
+
+[4mRunning "less:web_popup" (less) task[24m
+File tmp/css/popup.css created: 0 B → 3.8 kB
+
+[4mRunning "autoprefixer:unprefixed" (autoprefixer) task[24m
+File build/css/options.css created.
+File build/css/popup.css created.
+
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m11 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+[32m>> [39m19 files lint free.
+
+[4mRunning "coffee:web" (coffee) task[24m
+[32m>> [39m6 files created.
+
+[4mRunning "coffee:web_omega" (coffee) task[24m
+[32m>> [39m1 files created.
+
+[4mRunning "bower:install" (bower) task[24m
+(node:1668) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[32m>> [39mInstalled bower packages
+[32m>> [39mCopied packages to [90mE:\NEXORA\omega-web\build\lib[39m
+
+[32mDone, without errors.[39m
+--- exit=0 elapsed=23s
+
+### STEP: build:omega-target-chromium-extension
+--- cwd: /e/NEXORA/omega-target-chromium-extension
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt
+Loading "Gruntfile.coffee" tasks...[31mERROR[39m
+[31m>> [39mError: Cannot find module 'omega-pac/omega_pac.min.js'[31m
+>> [39mRequire stack:[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\grunt\browserify.coffee[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\lib\readfile.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\lib\readconfigdir.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\lib\gruntconfig.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\load-grunt-config\index.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\Gruntfile.coffee[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\grunt\lib\grunt\task.js[31m
+>> [39m- E:\NEXORA\omega-target-chromium-extension\node_modules\grunt\lib\grunt.js[31m
+>> [39m- E:\NEXORA\omega-build\node_modules\grunt-cli\bin\grunt
+[33mWarning: Task "default" not found. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+--- exit=3 elapsed=0s
+
+### STEP: artifact:omega_pac.min.js
+--- cwd: /e/NEXORA
+--- cmd: test -f omega-pac/omega_pac.min.js
+--- exit=1 elapsed=0s
+
+### STEP: artifact:omega_target.min.js
+--- cwd: /e/NEXORA
+--- cmd: test -f omega-target/omega_target.min.js
+--- exit=0 elapsed=0s
+
+### STEP: artifact:omega-web/build
+--- cwd: /e/NEXORA
+--- cmd: test -d omega-web/build
+--- exit=0 elapsed=0s
+
+### STEP: force:omega-pac
+--- cwd: /e/NEXORA/omega-pac
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt --force
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/conditions.coffee
+    line 282  Line exceeds maximum allowed length  Length is 83, max is 80
+    line 372  Line exceeds maximum allowed length  Length is 129, max is 80
+    line 542  Line exceeds maximum allowed length  Length is 91, max is 80
+
+ 3 errors
+
+
+src/rule_list.coffee
+    line 87  Line exceeds maximum allowed length  Length is 84, max is 80
+
+ 1 error
+
+[33mWarning: Task "coffeelint:src" failed. [4mUsed --force, continuing.[24m[39m
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_pac.min.js[39m created.
+
+[31mDone, but with warnings.[39m
+--- exit=0 elapsed=2s
+
+### STEP: force:omega-target
+--- cwd: /e/NEXORA/omega-target
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt --force
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m5 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+[32m>> [39m9 files lint free.
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_target.min.js[39m created.
+
+[32mDone, without errors.[39m
+--- exit=0 elapsed=1s
+
+### STEP: force:omega-target-chromium-extension
+--- cwd: /e/NEXORA/omega-target-chromium-extension
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt --force
+[4mRunning "coffeelint:gruntfile" (coffeelint) task[24m
+[32m>> [39m1 file lint free.
+
+[4mRunning "coffeelint:tasks" (coffeelint) task[24m
+[32m>> [39m9 files lint free.
+
+[4mRunning "coffeelint:src" (coffeelint) task[24m
+
+src/module/proxy/proxy_impl_firefox.coffee
+    line 103  Line exceeds maximum allowed length  Length is 85, max is 80
+    line 107  Line exceeds maximum allowed length  Length is 87, max is 80
+
+ 2 errors
+
+
+src/module/proxy/proxy_impl_listener.coffee
+    line 67  Line exceeds maximum allowed length  Length is 85, max is 80
+    line 71  Line exceeds maximum allowed length  Length is 87, max is 80
+
+ 2 errors
+
+[33mWarning: Task "coffeelint:src" failed. [4mUsed --force, continuing.[24m[39m
+
+[4mRunning "browserify:index" (browserify) task[24m
+[32m>> [39mBundle [36mindex.js[39m created.
+
+[4mRunning "browserify:browser" (browserify) task[24m
+[32m>> [39mBundle [36momega_target_chromium_extension.min.js[39m created.
+
+[4mRunning "browserify:omega_webext_proxy_script" (browserify) task[24m
+[32m>> [39mBundle [36mbuild/js/omega_webext_proxy_script.min.js[39m created.
+
+[4mRunning "coffee:coffee" (coffee) task[24m
+[32m>> [39m4 files created.
+
+[4mRunning "copy:web" (copy) task[24m
+Created [36m58[39m directories, copied [36m328[39m files
+
+[4mRunning "copy:target" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:target_self" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:target_popup" (copy) task[24m
+Copied [36m1[39m files
+
+[4mRunning "copy:overlay" (copy) task[24m
+Copied [36m8[39m files
+
+[4mRunning "copy:docs" (copy) task[24m
+Copied [36m2[39m files
+
+[4mRunning "po2crx:locales" (po2crx) task[24m
+File "build/_locales/en/messages.json" created.
+File "build/_locales/zh/messages.json" created.
+File "build/_locales/cs/messages.json" created.
+File "build/_locales/fa/messages.json" created.
+File "build/_locales/ru/messages.json" created.
+File "build/_locales/zh_CN/messages.json" created.
+File "build/_locales/zh_TW/messages.json" created.
+(node:6656) [DEP0128] DeprecationWarning: Invalid 'main' field in '\\?\E:\NEXORA\omega-target-chromium-extension\node_modules\po2json\package.json' of './lib/po2json'. Please either fix that or report it to the module author
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[31mDone, but with warnings.[39m
+--- exit=0 elapsed=2s
+
+### STEP: artifact:after-force
+--- cwd: /e/NEXORA
+--- cmd: bash -c ls -la omega-pac/omega_pac.min.js omega-target/omega_target.min.js 2>&1
+-rw-r--r-- 1 dms 197121 742272 Nov  4 13:19 omega-pac/omega_pac.min.js
+-rw-r--r-- 1 dms 197121 351559 Nov  4 13:19 omega-target/omega_target.min.js
+--- exit=0 elapsed=0s
+
+### STEP: test:omega-pac-grunt
+--- cwd: /e/NEXORA/omega-pac
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt test
+[4mRunning "mochaTest:test" (mochaTest) task[24m
+
+
+  Conditions
+    TrueCondition
+      √ should always return true 
+    FalseCondition
+      √ should always return false 
+    UrlRegexCondition
+      √ should match requests based on regex pattern 
+(node:7100) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+      √ should not match requests not matching the pattern 
+      √ should support regex meta chars 
+      √ should fallback to not match if pattern is invalid 
+    UrlWildcardCondition
+      √ should match requests based on wildcard pattern 
+      √ should not match requests not matching the pattern 
+      √ should support wildcard question marks 
+      √ should not support regex meta chars 
+      √ should support multiple patterns in one condition 
+    HostRegexCondition
+      √ should match requests based on regex pattern 
+      √ should not match requests not matching the pattern 
+      √ should not match URL parts other than the host 
+    HostWildcardCondition
+      √ should match requests based on wildcard pattern 
+      √ should also match hostname without the optional level 
+      √ should process patterns like *.*example.com correctly 
+      √ should allow override of the magical behavior 
+      √ should not match URL parts other than the host 
+      √ should support multiple patterns in one condition 
+    BypassCondition
+      √ should correctly support patterns containing hosts 
+      √ should match the scheme specified in the pattern 
+      √ should match the port specified in the pattern 
+      √ should correctly support patterns using IPv4 literals 
+      √ should correctly support IPv6 canonicalization 
+      √ should correctly support IPv6 canonicalization 2 
+      √ should parse IPv4 CIDR notation 
+      √ should parse IPv6 CIDR notation 
+      √ should parse IPv6 CIDR notation with zero prefixLength 
+      √ should match 127.0.0.1 when <local> is used 
+      √ should match [::1] when <local> is used 
+      √ should match any host without dots when <local> is used 
+    IpCondition
+      √ should support IPv4 subnet 
+      √ should support IPv6 subnet 
+      √ should support IPv6 subnet with zero prefixLength 
+      √ should not match domain name to IP subnet 
+      √ should not pass domain name to isInNet function 
+    KeywordCondition
+      √ should match requests based on substring 
+      √ should not match HTTPS requests 
+    WeekdayCondition
+      √ should match requests based on date range 
+      √ should match the day if startDay == endDay 
+      √ should not match anything if startDay > endDay 
+      √ should match according to .days 
+      √ should prefer .days to .startDay and .endDay 
+    TimeCondition
+      √ should match requests based on hour range 
+(node:7100) [DEP0170] DeprecationWarning: The URL http://time-00:00:00/ is invalid. Future versions of Node.js will throw an error.
+      √ should match the hour if startHour == endHour 
+      √ should not match anything if startHour > endHour 
+    #typeFromAbbr
+      √ should get condition types by abbrs 
+    #str and #fromStr
+      √ should encode & decode TrueCondition correctly 
+      √ should encode & decode conditions with pattern correctly 
+      √ should encode & decode False while preserving pattern 
+      √ should encode & decode FalseCondition without any pattern 
+      √ should encode & decode HostWildcardCondition using shorthand syntax 
+      √ should encode & decode HostWildcardCondition ending with colon 
+      √ should encode & decode BypassCondition correctly 
+      √ should add brackets for IPv6 hosts in BypassCondition 
+      √ should add brackets for IPv6 hosts with scheme in BypassCondition 
+      √ should encode & decode IpCondition correctly 
+      √ should provide sensible fallbacks for invalid IpCondition 
+      √ should assume full match for IpCondition without prefixLength 
+      √ should provide sensible fallbacks for invalid IpCondition 
+      √ should encode & decode HostLevelsCondition correctly 
+      √ should provide sensible fallbacks for HostLevels out of range 
+      √ should encode & decode WeekdayCondition correctly 
+      √ should provide sensible fallbacks for Weekday out of range 
+      √ should encode & decode WeekdayCondition with days 
+      √ should encode & decode TimeCondition correctly 
+      √ should provide sensible fallbacks for Hour out of range 
+      √ should parse conditions with extra spaces correctly 
+      √ should parse abbreviated condition types correctly 
+      √ should parse escaped HostWildcardCondition starting with colon 
+
+  PacGenerator
+    √ should generate pac scripts from options 
+    √ should be able to compress pac scripts 
+
+  Profiles
+    #pacResult
+      √ should return DIRECT for no proxy 
+      √ should return a valid PAC result for a proxy 
+      1) should return special compatible result for SOCKS5
+    #byName
+      √ should get profiles from builtin profiles 
+      √ should get profiles from given options 
+    #allReferenceSet
+      √ should throw if referenced profile does not exist 
+      √ should process a dumb profile for each missing profile if requested 
+    SystemProfile
+      √ should be builtin with the name "system" 
+      √ should not match request to profiles 
+      √ should throw when trying to compile 
+    DirectProfile
+      √ should be builtin with the name "direct" 
+      √ should return "DIRECT" when compiled 
+    FixedProfile
+      √ should use protocol-specific proxies if suitable 
+      √ should use fallback proxies for other protocols 
+      √ should not return authentication if not provided for protocol 
+      √ should not use any proxy for requests matching the bypassList 
+    PacProfile
+      √ should return the result of the pac script 
+      √ should not fail for PAC with trailing comments 
+      √ should return includable for non-file pacUrl 
+      √ should return not includable for file: pacUrl 
+    SwitchProfile
+      √ should match requests based on rules 
+      √ should respect the order of rules 
+      √ should return defaultProfileName when no rules match 
+      √ should calulate directly referenced profiles correctly 
+      √ should clear the reference cache on profile revision change 
+      √ should clear the reference cache if explicitly requested 
+    VirtualProfile
+      √ should always return defaultProfileName 
+    RulelistProfile
+      √ should calulate directly referenced profiles correctly 
+      √ should calulate referenced profiles for rule list with results 
+      √ should match requests based on the rule list 
+      √ should update rule list on update 
+      √ should not fail when ruleList is not provided 
+      √ should switch to AutoProxy format on update if detected 
+
+  RuleList
+    AutoProxy
+      √ should parse keyword conditions 
+      √ should parse keyword conditions with asterisks 
+      √ should parse host conditions 
+      √ should parse "starts-with" conditions 
+      √ should parse "starts-with" conditions for the HTTP scheme 
+      √ should parse url regex conditions 
+      √ should ignore comment lines 
+      √ should parse multiple lines 
+      √ should put exclusive rules first 
+    Switchy
+      √ should parse empty rule lists 
+      √ should ignore stuff before #BEGIN or after #END. 
+      √ should parse wildcard rules 
+      √ should parse RegExp rules 
+      √ should parse exclusive rules 
+      √ should parse multiple rules in multiple sections 
+      √ should put exclusive rules first 
+    Switchy (omega format)
+      √ should parse empty rule lists 
+      √ should ignore comment lines. 
+      √ should compose and parse HostWildcardCondition 
+      √ should compose and parse HostRegexCondition 
+      √ should compose and parse disabled rules 
+      √ should compose and parse exclusive rules 
+      √ should compose and parse conditions starting with special chars 
+      √ should parse multiple conditions 
+      √ should respect the top-down order of conditions 
+      √ should add a default rule when results are enabled 
+      √ should compose and parse conditions with results 
+      √ should compose and parse exclusive conditions with results 
+
+  ShexpUtils
+    #escapeSlash
+      √ should escape all forward slashes 
+      √ should not escape slashes that are already escaped 
+      √ should know the difference between escaped and unescaped slashes 
+    #shExp2RegExp
+      √ should escape regex meta chars and back slashes 
+
+  getBaseDomain
+    √ should return domains with zero level unchanged 
+    √ should return domains with one level unchanged 
+    √ should treat two-segment TLD as one component 
+    √ should not mistake short domains with two-segment TLDs 
+    √ should not try to modify IP address literals 
+
+
+  142 passing (94ms)
+  1 failing
+
+  1) Profiles #pacResult should return special compatible result for SOCKS5:
+
+      AssertionError: expected 'SOCKS5 127.0.0.1:8888' to equal 'SOCKS5 127.0.0.1:8888; SOCKS 127.0.0.1:8888'
+      + expected - actual
+
+      +"SOCKS5 127.0.0.1:8888; SOCKS 127.0.0.1:8888"
+      -"SOCKS5 127.0.0.1:8888"
+      
+      at context.<anonymous> (E:\NEXORA\omega-pac\test\profiles.coffee:52:40)
+      at callFn (E:\NEXORA\omega-pac\node_modules\mocha\lib\runnable.js:223:21)
+      at Test.Runnable.run (E:\NEXORA\omega-pac\node_modules\mocha\lib\runnable.js:216:7)
+      at Runner.runTest (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:373:10)
+      at E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:451:12
+      at next (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:298:14)
+      at E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:308:7
+      at next (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:246:23)
+      at Immediate.<anonymous> (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:275:5)
+      at processImmediate (node:internal/timers:574:21)
+      at process.topLevelDomainCallback (node:domain:161:15)
+      at process.callbackTrampoline (node:internal/async_hooks:129:24)
+  
+
+
+
+[33mWarning: Task "mochaTest:test" failed. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+--- exit=3 elapsed=1s
+
+### STEP: test:omega-target
+--- cwd: /e/NEXORA/omega-target
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt test
+[4mRunning "mochaTest:test" (mochaTest) task[24m
+
+
+  OptionsSync
+    #merge
+      √ should choose the one with newer revision 
+      1) should use oldVal when sync is disabled in newVal
+      2) should use oldVal when sync is disabled in oldVal
+      √ should favor oldVal when revisions are equal 
+      √ should favor oldVal when newVal deeply equals oldVal 
+      √ should choose newVal when newVal is different 
+    #requestPush
+      √ should store pendingChanges 
+      3) should schedule storage write
+      4) should combine multiple write operations
+      5) should disable syncing for the profiles if quota is exceeded
+    #copyTo
+      √ should fetch all items from remote storage 
+      √ should merge with local as base 
+    #watchAndPull
+      √ should pull changes into local when remote changes (43ms)
+
+
+  8 passing (6s)
+  5 failing
+
+  1) OptionsSync #merge should use oldVal when sync is disabled in newVal:
+
+      AssertionError: expected { Object (revision, is, ...) } to equal { revision: '1', is: 'oldVal' }
+      + expected - actual
+
+       {
+      +  "is": "oldVal",
+      +  "revision": "1"
+      -  "is": "newVal",
+      -  "revision": "2",
+      -  "syncOptions": "disabled"
+       }
+      
+      at context.<anonymous> (E:\NEXORA\omega-target\test\options_sync.coffee:43:52)
+      at callFn (E:\NEXORA\omega-target\node_modules\mocha\lib\runnable.js:223:21)
+      at Test.Runnable.run (E:\NEXORA\omega-target\node_modules\mocha\lib\runnable.js:216:7)
+      at Runner.runTest (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:373:10)
+      at E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:451:12
+      at next (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:298:14)
+      at E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:308:7
+      at next (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:246:23)
+      at Immediate.<anonymous> (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:275:5)
+      at processImmediate (node:internal/timers:574:21)
+      at process.topLevelDomainCallback (node:domain:161:15)
+      at process.callbackTrampoline (node:internal/async_hooks:129:24)
+  
+
+  2) OptionsSync #merge should use oldVal when sync is disabled in oldVal:
+
+      AssertionError: expected { revision: '2', is: 'newVal' } to equal { Object (revision, is, ...) }
+      + expected - actual
+
+       {
+      +  "is": "oldVal",
+      +  "revision": "1",
+      +  "syncOptions": "disabled"
+      -  "is": "newVal",
+      -  "revision": "2"
+       }
+      
+      at context.<anonymous> (E:\NEXORA\omega-target\test\options_sync.coffee:47:52)
+      at callFn (E:\NEXORA\omega-target\node_modules\mocha\lib\runnable.js:223:21)
+      at Test.Runnable.run (E:\NEXORA\omega-target\node_modules\mocha\lib\runnable.js:216:7)
+      at Runner.runTest (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:373:10)
+      at E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:451:12
+      at next (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:298:14)
+      at E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:308:7
+      at next (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:246:23)
+      at Immediate.<anonymous> (E:\NEXORA\omega-target\node_modules\mocha\lib\runner.js:275:5)
+      at processImmediate (node:internal/timers:574:21)
+      at process.topLevelDomainCallback (node:domain:161:15)
+      at process.callbackTrampoline (node:internal/async_hooks:129:24)
+  
+
+  3) OptionsSync #requestPush should schedule storage write:
+     Error: timeout of 2000ms exceeded
+      at Timeout.<anonymous> (E:\NEXORA\omega-target\node_modules\mocha\lib\runnable.js:139:19)
+      at listOnTimeout (node:internal/timers:685:17)
+      at processTimers (node:internal/timers:618:7)
+  
+
+  4) OptionsSync #requestPush should combine multiple write operations:
+     Error: timeout of 2000ms exceeded
+      at Timeout.<anonymous> (E:\NEXORA\omega-target\node_modules\mocha\lib\runnable.js:139:19)
+      at listOnTimeout (node:internal/timers:685:17)
+      at processTimers (node:internal/timers:618:7)
+  
+
+  5) OptionsSync #requestPush should disable syncing for the profiles if quota is exceeded:
+     Error: timeout of 2000ms exceeded
+      at Timeout.<anonymous> (E:\NEXORA\omega-target\node_modules\mocha\lib\runnable.js:139:19)
+      at listOnTimeout (node:internal/timers:685:17)
+      at processTimers (node:internal/timers:618:7)
+  
+
+
+
+[33mWarning: Task "mochaTest:test" failed. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+--- exit=3 elapsed=7s
+
+### STEP: test:omega-pac-tzenv
+--- cwd: /e/NEXORA/omega-pac
+--- cmd: bash -c TZ=Europe/London '/e/NEXORA/omega-build/node_modules/.bin/grunt' test
+[4mRunning "mochaTest:test" (mochaTest) task[24m
+
+
+  Conditions
+    TrueCondition
+      √ should always return true 
+    FalseCondition
+      √ should always return false 
+    UrlRegexCondition
+      √ should match requests based on regex pattern 
+(node:4100) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+      √ should not match requests not matching the pattern 
+      √ should support regex meta chars 
+      √ should fallback to not match if pattern is invalid 
+    UrlWildcardCondition
+      √ should match requests based on wildcard pattern 
+      √ should not match requests not matching the pattern 
+      √ should support wildcard question marks 
+      √ should not support regex meta chars 
+      √ should support multiple patterns in one condition 
+    HostRegexCondition
+      √ should match requests based on regex pattern 
+      √ should not match requests not matching the pattern 
+      √ should not match URL parts other than the host 
+    HostWildcardCondition
+      √ should match requests based on wildcard pattern 
+      √ should also match hostname without the optional level 
+      √ should process patterns like *.*example.com correctly 
+      √ should allow override of the magical behavior 
+      √ should not match URL parts other than the host 
+      √ should support multiple patterns in one condition 
+    BypassCondition
+      √ should correctly support patterns containing hosts 
+      √ should match the scheme specified in the pattern 
+      √ should match the port specified in the pattern 
+      √ should correctly support patterns using IPv4 literals 
+      √ should correctly support IPv6 canonicalization 
+      √ should correctly support IPv6 canonicalization 2 
+      √ should parse IPv4 CIDR notation 
+      √ should parse IPv6 CIDR notation 
+      √ should parse IPv6 CIDR notation with zero prefixLength 
+      √ should match 127.0.0.1 when <local> is used 
+      √ should match [::1] when <local> is used 
+      √ should match any host without dots when <local> is used 
+    IpCondition
+      √ should support IPv4 subnet 
+      √ should support IPv6 subnet 
+      √ should support IPv6 subnet with zero prefixLength 
+      √ should not match domain name to IP subnet 
+      √ should not pass domain name to isInNet function 
+    KeywordCondition
+      √ should match requests based on substring 
+      √ should not match HTTPS requests 
+    WeekdayCondition
+      √ should match requests based on date range 
+      √ should match the day if startDay == endDay 
+      √ should not match anything if startDay > endDay 
+      √ should match according to .days 
+      √ should prefer .days to .startDay and .endDay 
+    TimeCondition
+      √ should match requests based on hour range 
+(node:4100) [DEP0170] DeprecationWarning: The URL http://time-00:00:00/ is invalid. Future versions of Node.js will throw an error.
+      √ should match the hour if startHour == endHour 
+      √ should not match anything if startHour > endHour 
+    #typeFromAbbr
+      √ should get condition types by abbrs 
+    #str and #fromStr
+      √ should encode & decode TrueCondition correctly 
+      √ should encode & decode conditions with pattern correctly 
+      √ should encode & decode False while preserving pattern 
+      √ should encode & decode FalseCondition without any pattern 
+      √ should encode & decode HostWildcardCondition using shorthand syntax 
+      √ should encode & decode HostWildcardCondition ending with colon 
+      √ should encode & decode BypassCondition correctly 
+      √ should add brackets for IPv6 hosts in BypassCondition 
+      √ should add brackets for IPv6 hosts with scheme in BypassCondition 
+      √ should encode & decode IpCondition correctly 
+      √ should provide sensible fallbacks for invalid IpCondition 
+      √ should assume full match for IpCondition without prefixLength 
+      √ should provide sensible fallbacks for invalid IpCondition 
+      √ should encode & decode HostLevelsCondition correctly 
+      √ should provide sensible fallbacks for HostLevels out of range 
+      √ should encode & decode WeekdayCondition correctly 
+      √ should provide sensible fallbacks for Weekday out of range 
+      √ should encode & decode WeekdayCondition with days 
+      √ should encode & decode TimeCondition correctly 
+      √ should provide sensible fallbacks for Hour out of range 
+      √ should parse conditions with extra spaces correctly 
+      √ should parse abbreviated condition types correctly 
+      √ should parse escaped HostWildcardCondition starting with colon 
+
+  PacGenerator
+    √ should generate pac scripts from options 
+    √ should be able to compress pac scripts 
+
+  Profiles
+    #pacResult
+      √ should return DIRECT for no proxy 
+      √ should return a valid PAC result for a proxy 
+      1) should return special compatible result for SOCKS5
+    #byName
+      √ should get profiles from builtin profiles 
+      √ should get profiles from given options 
+    #allReferenceSet
+      √ should throw if referenced profile does not exist 
+      √ should process a dumb profile for each missing profile if requested 
+    SystemProfile
+      √ should be builtin with the name "system" 
+      √ should not match request to profiles 
+      √ should throw when trying to compile 
+    DirectProfile
+      √ should be builtin with the name "direct" 
+      √ should return "DIRECT" when compiled 
+    FixedProfile
+      √ should use protocol-specific proxies if suitable 
+      √ should use fallback proxies for other protocols 
+      √ should not return authentication if not provided for protocol 
+      √ should not use any proxy for requests matching the bypassList 
+    PacProfile
+      √ should return the result of the pac script 
+      √ should not fail for PAC with trailing comments 
+      √ should return includable for non-file pacUrl 
+      √ should return not includable for file: pacUrl 
+    SwitchProfile
+      √ should match requests based on rules 
+      √ should respect the order of rules 
+      √ should return defaultProfileName when no rules match 
+      √ should calulate directly referenced profiles correctly 
+      √ should clear the reference cache on profile revision change 
+      √ should clear the reference cache if explicitly requested 
+    VirtualProfile
+      √ should always return defaultProfileName 
+    RulelistProfile
+      √ should calulate directly referenced profiles correctly 
+      √ should calulate referenced profiles for rule list with results 
+      √ should match requests based on the rule list 
+      √ should update rule list on update 
+      √ should not fail when ruleList is not provided 
+      √ should switch to AutoProxy format on update if detected 
+
+  RuleList
+    AutoProxy
+      √ should parse keyword conditions 
+      √ should parse keyword conditions with asterisks 
+      √ should parse host conditions 
+      √ should parse "starts-with" conditions 
+      √ should parse "starts-with" conditions for the HTTP scheme 
+      √ should parse url regex conditions 
+      √ should ignore comment lines 
+      √ should parse multiple lines 
+      √ should put exclusive rules first 
+    Switchy
+      √ should parse empty rule lists 
+      √ should ignore stuff before #BEGIN or after #END. 
+      √ should parse wildcard rules 
+      √ should parse RegExp rules 
+      √ should parse exclusive rules 
+      √ should parse multiple rules in multiple sections 
+      √ should put exclusive rules first 
+    Switchy (omega format)
+      √ should parse empty rule lists 
+      √ should ignore comment lines. 
+      √ should compose and parse HostWildcardCondition 
+      √ should compose and parse HostRegexCondition 
+      √ should compose and parse disabled rules 
+      √ should compose and parse exclusive rules 
+      √ should compose and parse conditions starting with special chars 
+      √ should parse multiple conditions 
+      √ should respect the top-down order of conditions 
+      √ should add a default rule when results are enabled 
+      √ should compose and parse conditions with results 
+      √ should compose and parse exclusive conditions with results 
+
+  ShexpUtils
+    #escapeSlash
+      √ should escape all forward slashes 
+      √ should not escape slashes that are already escaped 
+      √ should know the difference between escaped and unescaped slashes 
+    #shExp2RegExp
+      √ should escape regex meta chars and back slashes 
+
+  getBaseDomain
+    √ should return domains with zero level unchanged 
+    √ should return domains with one level unchanged 
+    √ should treat two-segment TLD as one component 
+    √ should not mistake short domains with two-segment TLDs 
+    √ should not try to modify IP address literals 
+
+
+  142 passing (97ms)
+  1 failing
+
+  1) Profiles #pacResult should return special compatible result for SOCKS5:
+
+      AssertionError: expected 'SOCKS5 127.0.0.1:8888' to equal 'SOCKS5 127.0.0.1:8888; SOCKS 127.0.0.1:8888'
+      + expected - actual
+
+      +"SOCKS5 127.0.0.1:8888; SOCKS 127.0.0.1:8888"
+      -"SOCKS5 127.0.0.1:8888"
+      
+      at context.<anonymous> (E:\NEXORA\omega-pac\test\profiles.coffee:52:40)
+      at callFn (E:\NEXORA\omega-pac\node_modules\mocha\lib\runnable.js:223:21)
+      at Test.Runnable.run (E:\NEXORA\omega-pac\node_modules\mocha\lib\runnable.js:216:7)
+      at Runner.runTest (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:373:10)
+      at E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:451:12
+      at next (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:298:14)
+      at E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:308:7
+      at next (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:246:23)
+      at Immediate.<anonymous> (E:\NEXORA\omega-pac\node_modules\mocha\lib\runner.js:275:5)
+      at processImmediate (node:internal/timers:574:21)
+      at process.topLevelDomainCallback (node:domain:161:15)
+      at process.callbackTrampoline (node:internal/async_hooks:129:24)
+  
+
+
+
+[33mWarning: Task "mochaTest:test" failed. Use --force to continue.[39m
+
+[31mAborted due to warnings.[39m
+--- exit=3 elapsed=1s
+
+### STEP: release
+--- cwd: /e/NEXORA/omega-target-chromium-extension
+--- cmd: /e/NEXORA/omega-build/node_modules/.bin/grunt release
+[4mRunning "manifest" task[24m
+
+[4mRunning "compress:chromium" (compress) task[24m
+Created ../dist/chromium-release.zip (1710687 bytes)
+
+[4mRunning "compress:firefox" (compress) task[24m
+Created ../dist/firefox-release.zip (1710724 bytes)
+
+[32mDone, without errors.[39m
+--- exit=0 elapsed=1s
+
+### STEP: dist
+--- cwd: /e/NEXORA
+--- cmd: bash -c ls -la dist 2>&1
+total 3348
+drwxr-xr-x 1 dms 197121       0 Nov  4 13:19 .
+drwxr-xr-x 1 dms 197121       0 Nov  4 13:19 ..
+-rw-r--r-- 1 dms 197121 1710687 Nov  4 13:19 chromium-release.zip
+-rw-r--r-- 1 dms 197121 1710724 Nov  4 13:19 firefox-release.zip
+--- exit=0 elapsed=0s
+
+=== SUMMARY ===
+link-chain|exit=0|20s
+build:omega-pac|exit=3|1s
+build:omega-target|exit=0|1s
+build:omega-web|exit=0|23s
+build:omega-target-chromium-extension|exit=3|0s
+artifact:omega_pac.min.js|exit=1|0s
+artifact:omega_target.min.js|exit=0|0s
+artifact:omega-web/build|exit=0|0s
+force:omega-pac|exit=0|2s
+force:omega-target|exit=0|1s
+force:omega-target-chromium-extension|exit=0|2s
+artifact:after-force|exit=0|0s
+test:omega-pac-grunt|exit=3|1s
+test:omega-target|exit=3|7s
+test:omega-pac-tzenv|exit=3|1s
+release|exit=0|1s
+dist|exit=0|0s

@@ -1,0 +1,17 @@
+link-chain|exit=0|20s
+build:omega-pac|exit=3|1s
+build:omega-target|exit=0|1s
+build:omega-web|exit=0|23s
+build:omega-target-chromium-extension|exit=3|0s
+artifact:omega_pac.min.js|exit=1|0s
+artifact:omega_target.min.js|exit=0|0s
+artifact:omega-web/build|exit=0|0s
+force:omega-pac|exit=0|2s
+force:omega-target|exit=0|1s
+force:omega-target-chromium-extension|exit=0|2s
+artifact:after-force|exit=0|0s
+test:omega-pac-grunt|exit=3|1s
+test:omega-target|exit=3|7s
+test:omega-pac-tzenv|exit=3|1s
+release|exit=0|1s
+dist|exit=0|0s
