@@ -1,0 +1,29 @@
+probe-7 -- grunt resolution on a Windows runner, reproduced on this host
+date: 2026-11-05T11:37Z
+host: MINGW64_NT-10.0-26300 3.6.10-5a1665c8.x86_64 / bash 5.3.15(2)-release / node v24.22.1
+core.autocrlf: true / zip under test: 1860 512B-blocks
+
+@@@ A: PATH built from a Windows-shaped workspace path -- exactly what the runner did
+    export PATH="$GITHUB_WORKSPACE/omega-build/node_modules/.bin:$PATH"; cd omega-pac && TZ=Europe/London grunt test
+Error: Cannot find module 'C:\Program Files\Git\NEXORA\omega-build\node_modules\grunt-cli\bin\grunt'
+@@@ A outcome: mocha never starts. The exit code of the pipeline above is grep's, not the suite's, so the
+    signal is the absence of a "N passing" line -- which is precisely the condition VER-11 reports as
+    "produced no mocha summary; the run died before reporting". The runner printed the same class of error with
+    its own mangled drive letter (`A:\NEXORA\NEXORA\...\grunt-cli\bin\grunt`); here the same PATH shape resolves
+    against the Git install directory. Both are the same defect: a PATH entry with backslashes is not a path.
+
+@@@ B: the same export, built from $PWD (the POSIX form the step now uses)
+  PATH entry = /e/NEXORA/omega-build/node_modules/.bin
+  142 passing (102ms)
+  1 failing
+
+@@@ C: no shim, no PATH change -- node on the hub's grunt-cli entry
+  142 passing (100ms)
+  1 failing
+
+@@@ D: unzip in Git Bash on Windows, and the artifact totals the two platforms report
+  command -v unzip -> /usr/bin/unzip
+  this host (CRLF checkout), dist/chromium-release.zip:
+    entries=353 sum=5999353 B
+  ubuntu cell of run 42017987418 reported, for the same build:
+    entries=353 sum=5974389 B, lib/=252, _locales=7   (the difference is 24964 CR bytes)

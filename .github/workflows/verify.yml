@@ -316,7 +316,14 @@ jobs:
           # grunt 0.4.5 ships no bin (omega-pac/node_modules/grunt/package.json has no `bin` field), so `npx grunt`
           # in a project has nothing to run. The hub installs grunt-cli, and the hub is the only driver ADR-0018
           # rule 3 allows, so that binary is what the per-project grunt tasks are invoked through.
-          export PATH="$GITHUB_WORKSPACE/omega-build/node_modules/.bin:$PATH"
+          #
+          # The PATH entry is built from $PWD, not $GITHUB_WORKSPACE, and run 42017987418 is the reason: on a
+          # windows runner $GITHUB_WORKSPACE is `D:\a\NEXORA\NEXORA`, which is not a POSIX path, so the shim it
+          # finds resolves to a mangled module path and the suite dies before mocha starts
+          # (`Cannot find module ...grunt-cli\bin\grunt`). Reproduced on this host with the same shape
+          # (`docs/audit/raw/probe-7-grunt-path.txt`): the backslash PATH entry fails, the `$PWD` entry and a direct
+          # `node ../omega-build/node_modules/grunt-cli/bin/grunt` both give the pinned 142 passing / 1 failing.
+          export PATH="$PWD/omega-build/node_modules/.bin:$PATH"
           run_floor() { # project, min passing, max failing, TZ
             local p=$1 min=$2 max=$3 tz=$4 out pass fail n
             n=$(find "$p/test" -name '*.coffee' 2>/dev/null | wc -l || true)
@@ -359,7 +366,7 @@ jobs:
         # commands explicitly anyway. This is the same task, in the directory that owns it, through the
         # hub's grunt-cli for the same reason the test step does.
         run: |
-          export PATH="$GITHUB_WORKSPACE/omega-build/node_modules/.bin:$PATH"
+          export PATH="$PWD/omega-build/node_modules/.bin:$PATH"
           grunt release
 
       - name: VER-08 -- inspect the artifacts, never trust the exit code
@@ -381,7 +388,12 @@ jobs:
             [ -z "$bad" ] || { printf '%s\n' "$bad"; echo "::error::$z carries Core or connector bytes (ADR-0019)."; exit 1; }
             [ "$top" = "$expected" ] || { echo "::error::unexpected top-level set: $top"; exit 1; }
             [ "$n" = 353 ] || { echo "::error::$z has $n entries, expected 353 (docs/audit/99-baseline-report.md §6)."; exit 1; }
-            [ "$sum" = "$bytes" ] || { echo "::error::$z is $sum B, expected $bytes B."; exit 1; }
+            # The uncompressed total is printed, not asserted. Run 42017987418 measured why: the ubuntu cell built
+            # the same archive -- 353 entries, the same top-level set, lib/=252, _locales=7 -- and its total was
+            # 5 974 389 B against the 5 999 353 B recorded on this host. The 24 964 B difference is the CR bytes of a
+            # CRLF checkout (`core.autocrlf=true`, docs/audit/99-baseline-report.md §6 and §11), so the total is an
+            # observation of one checkout, in the same way the recorded sha256 values are. Shape is the floor.
+            [ "$sum" = "$bytes" ] || echo "NOTE: $z is $sum B, not the recorded $bytes B (checkout-dependent, see above)."
             [ "$lib" = 252 ] || { echo "::error::$z carries $lib lib/ entries, expected 252."; exit 1; }
             [ "$loc" = 7 ] || { echo "::error::$z carries $loc _locales directories, expected 7."; exit 1; }
             if [ -z "$pac" ]; then
