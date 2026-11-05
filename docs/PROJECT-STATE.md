@@ -207,8 +207,8 @@ a claim or a deferral is unowned, owned twice, or if a document reads a distribu
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
 `40-open-decisions.md` exist now, so their cross-checks are real assertions.
-`node tools/check-doc-evidence.mjs` → **green: 2262 `path:line` citations, 491 `path#pointer` citations,
-1312 doc-and-script names** (they read `2260 / 487 / 1290` before §4.6's increment; the `path:line` figure fell by 21
+`node tools/check-doc-evidence.mjs` → **green: 2262 `path:line` citations, 493 `path#pointer` citations,
+1313 doc-and-script names** (they read `2260 / 487 / 1290` before §4.6's increment; the `path:line` figure fell by 21
 when every cite into this file became a section
 reference, and by 3 more when probe-4 turned the same rule on for `docs/audit/99-baseline-report.md`, which every
 probe round appends to; it rose by 8 again when the runner record cited the legacy build configs it reads, and the
@@ -228,7 +228,9 @@ sections had to establish is not where a line of code sits but what the data say
 and how many values the envelope's `type` can take. The six new names are the documents those sections cite for the
 same reason. Nothing above or in §5 is a runner's number for this tree: `42046629162` measured `1004c4e`, and no
 execution has happened since, so the figures the runner printed stay in the run record and the figures this paragraph
-prints are read on this host.
+prints are read on this host. The front door §4.8 moves it a third time — **2262 / 493 / 1313** — and again with no
+new `path:line` citation, because what those two sections cite is a rule in the contract data and a section of doc 31,
+not a place in a file.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
@@ -401,6 +403,56 @@ decline to arm it, would close a row by testing a configuration no process uses.
 
 ---
 
+### 4.8 M2's second slice: the front door (`connector/internal/dispatch/`, 2026-11-05)
+
+`connector/internal/dispatch/` is the total function
+`packages/schema/protocol/command-allowlist.json#/dispatchRule` promises — "resolves the method string against this
+list before touching any state; the resolution is a total function with exactly one failure case" — with the gates
+that function has to pass in the order the contract puts them. It decides *whether* a request reaches a handler and
+never what a handler does, so it is the last connector piece that can be written before M3's method implementations.
+
+| Gate, in order | What it answers | Test in `connector/internal/dispatch/dispatch_test.go` |
+|---|---|---|
+| the frame is a request | a non-`request` envelope is `BadRequest`, before anything is read out of it | `TestANonRequestFrameIsNotDispatched` |
+| the caller is on the allowlist | `UnauthorizedExtension`, not retryable, and the sender does not learn whether the method it asked for exists — ADR-0004 rule 6 answered "only" with the sender error | `TestTheCallerIsResolvedBeforeTheMethodIsNamed` |
+| the method is published | `UnknownMethod` for a name one character away from a real one, for a capitalised one, for a bare word and for the empty string; no default handler and no closest match | `TestAnUnknownMethodIsRefusedWithNoFallthrough` |
+| the negotiation happened | every method but `connector.hello` before a successful hello is `HandshakeFailed`, walked over all 19 published names, with the handlers counting that none of them ran | `TestNothingIsDispatchableBeforeHelloExceptHello` |
+| the hello announced the capability | a method whose `capabilities[]` the peer did not report is `HandshakeFailed`, because doc 31's two-code split puts "the negotiation did not agree" on that side and `docs/architecture/25-native-messaging-protocol.md` §7 states the MUST NOT | `TestAMethodNeedsTheCapabilityItsHelloAnnounced` |
+| the build has a handler | a published method with no registered handler answers `Internal` rather than silently succeeding, and `New` refuses to build a dispatcher around a name the allowlist does not publish — that would be the fallthrough `deniedByDefault` forbids, wearing a Go map | `TestAPublishedMethodWithNoHandlerSaysInternal` |
+| the sender's budget | its method's named window and the `"*"` floor, both counted before dispatch, answered with retryable `Busy`, and the handler's counter proves the refused request never started work | `TestABudgetRefusalIsBusyRetryableAndReachesNoHandler`, `TestTheCatchAllFloorIsUnderEveryNamedBudget`, `TestABudgetIsPerSenderAndNotPerProcess` |
+| the refusal guard | ten refusals in ten seconds from one sender and the answer stops being a code: `Refusal.Close` tells the host to end the stream, which is not a shutdown signal for the connector or Core | `TestTenRefusalsInTenSecondsClosesThePort`, `TestAHandlerErrorIsAnAnswerNotARefusal` |
+
+**Three readings this package had to make, because the data stops short of them.** A budget counts *admitted*
+requests: `#/senderPolicy/rateLimitFacts/countedWhere` says a request refused by budget never reaches the handler,
+and charging a refusal would let a sender that is already being refused spend the budget of the sender behind it.
+The amplification guard counts every front-door refusal regardless of code — its stated reason in
+`#/senderPolicy/refusals/amplificationGuard/why` is the cost of answering, not the identity of the caller — but it
+does **not** count a handler's own error, because a method that fails is an answer the user needs and a failing M3
+handler must not be able to tear down the pipe it is reporting through. And a capability the hello did not announce
+is `HandshakeFailed` rather than a new code, because the taxonomy is closed (doc 25 §8 rule 1: a code outside it is a
+protocol violation) and doc 31 defines `HandshakeFailed` as "the negotiation did not happen **or did not agree**".
+
+**What this package does not do, and where that belongs.** `#/senderPolicy/portsPerSender` caps a sender at two open
+ports and closes the oldest — a fact about connections, so the host owns it and this function has never seen a
+connection. `privilegedMethods.rule` is a MAY that a *build* exercises by what it writes into the host's on-disk
+allowlist, so there is no second knob here: a sender that is allowlisted is the pinned id by construction, and a
+dispatcher flag invented without a configuration source would be a policy no process can set. And there is no
+`connector.hello` handler yet — the negotiation this package reads is handed to it as `Identity.Negotiated`, and
+producing that value is the host's and the hello command's own work.
+
+**Measured on this host**, Go 1.27.3: `gofmt -l connector` prints nothing, `go -C connector vet ./...` exits 0, and
+`go -C connector test -count=1 ./...` adds `ok github.com/k2dms/nexora/connector/internal/dispatch` — eleven tests,
+every one named in the table above. Still no runner has measured this tree.
+
+**No queue row moves on this slice**, and it is worth naming which ones it touches: `VER-51`, `VER-52` and `VER-55`
+are the rows about the budget, the unknown sender and the counted-before-dispatch refusal, and all three close by a
+live row (`LIVE-17`, `LIVE-16`, `LIVE-17`), because what those rows ask is that the refusal happen in a running host
+with a real sender on the other end. A unit test here proves the front door's logic; it does not prove that a
+process opens, resolves a sender id from the platform and answers on a pipe. `VER-49` is unaffected — this package
+never touches the framing rules that row's closer names.
+
+---
+
 ## 5. Verification state to the letter
 
 - `cd omega-build && npm run deps && npm run dev && npx grunt && npx grunt release` → **exit 0** for the whole chain (Ladder A).
@@ -441,11 +493,13 @@ decline to arm it, would close a row by testing a configuration no process uses.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
-  is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7 the same invocation prints four `ok`
-  package lines where §4.6 recorded three, and `gofmt -l connector` still prints nothing. No `VER-NN` row moves on
-  either increment: §4.6's "Not yet" list is the list of what those rows ask about, and §4.7 gives the reason
-  `VER-49` keeps its row now that two of the three clauses its closer names have a test.
-- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 491 `path#pointer`, 1312 doc-and-script
+  is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7 and §4.8 the same invocation prints five
+  `ok` package lines where §4.6 recorded three — `contract`, `dispatch`, `envelope`, `frames` and `peer` — and
+  `gofmt -l connector` still prints nothing. No `VER-NN` row moves on any of those increments: §4.6's "Not yet" list
+  is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
+  clauses its closer names have a test, and §4.8 names the three rows its own tests touch and why all three close by
+  a live row rather than by one more Go test.
+- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 493 `path#pointer`, 1313 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -684,19 +738,22 @@ place, and neither is a status edit:
 **Connector, in the order the user set on 2026-11-05.** M1 is §4.6's four packages — the last thing that could be
 written before any behaviour existed. What each next milestone has to make true:
 
-1. **M2 — both processes as far as they are testable without Xray.** Its framing half has begun: §4.7's
-   `connector/internal/peer/` is the endpoint that refuses an oversized write before it reaches the writer, bounds
-   the outstanding-request and in-flight-byte budgets, discards a late answer by `id`, ends the stream on an illegal
-   inbound frame, and treats a closed port as the client going away rather than as a shutdown signal. What that
-   package does *not* yet have an honest way to do is the heartbeat clause, for the reason §4.7 gives and §9 now
-   asks. Remaining, in the order they build on each other: `cmd/nexora-host` — sender identity per ADR-0004 and
-   spawn/adopt of the connector over the local pipe whose separate version is rule 2 of
-   `docs/adr/0005-two-process-connector.md`; `internal/dispatch` — the dispatcher over the generated surface (closed
-   method table, `UnknownMethod` with no fallthrough, `deniedByDefault`, and nothing dispatchable before negotiation
-   except `connector.hello` — the rule in `packages/schema/protocol/command-allowlist.json`), the per-sender budgets
-   answering `Busy` *before* dispatch, and chunk reassembly; then `cmd/nexora-connector` as the process that runs it.
-   `VER-49`, `VER-13`, `VER-52` and `VER-55` all ask about that behaviour. §4.7 records why `VER-49` in particular
-   does not close on the peer alone; the other three ask about parts that do not exist yet.
+1. **M2 — both processes as far as they are testable without Xray.** Two of its in-process halves have begun:
+   §4.7's `connector/internal/peer/` is the endpoint that refuses an oversized write before it reaches the writer,
+   bounds the outstanding-request and in-flight-byte budgets, discards a late answer by `id`, ends the stream on an
+   illegal inbound frame, and treats a closed port as the client going away rather than as a shutdown signal;
+   §4.8's `connector/internal/dispatch/` is the front door that resolves a method against the closed allowlist, gates
+   it on the sender, the negotiation and the announced capabilities, and counts the per-sender budgets before any
+   handler can half-apply. What that second package does *not* have an honest way to do is the heartbeat clause, for
+   the reason §4.7 gives and §9 now asks. Remaining, in the order they build on each other: the `connector.hello`
+   handler and the version-window rule that produces `Identity.Negotiated`; `internal/chunk`, the reassembly that
+   `packages/schema/protocol/framing.json#/oversizedPayloads` requires to fail a whole import with
+   `IntegrityMismatch` rather than apply part of one; `cmd/nexora-connector`, the process that reads a pipe and owns
+   a dispatcher; `cmd/nexora-host` — sender identity resolved from the platform per ADR-0004, the two-ports-per-sender
+   cap that closes the oldest, and spawn/adopt of the connector over the local pipe whose separate version is rule 2
+   of `docs/adr/0005-two-process-connector.md`. `VER-49`, `VER-13`, `VER-51`, `VER-52` and
+   `VER-55` all ask about that behaviour. §4.7 records why `VER-49` in particular does not close on the peer alone;
+   §4.8 records why the three sender-policy rows need a running host and cannot close on a unit test.
 2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
    leaves to a human.
 
@@ -704,9 +761,10 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`**, at `f1a3829` plus the peer commit §4.7 records. `nexora/master` was last
-  fast-forwarded to the sha the bullet below names (`1004c4e`), so those two are on this branch and not there: a push
-  needs its own confirmation each time, and this file states it rather than assuming it was given. Local `master`
+- Branch: **`nexora/architecture`**. `nexora/master` was last
+  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the two M2
+  slices §4.7 and §4.8 record are on this branch and not there, because a push needs its own confirmation each time
+  and this file states that rather than assuming it was given. Local `master`
   still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
   so the local branch pointer was never moved.
   Main branch for PRs upstream: `master`.
