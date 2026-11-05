@@ -207,8 +207,8 @@ a claim or a deferral is unowned, owned twice, or if a document reads a distribu
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
 `40-open-decisions.md` exist now, so their cross-checks are real assertions.
-`node tools/check-doc-evidence.mjs` → **green: 2262 `path:line` citations, 487 `path#pointer` citations,
-1306 doc-and-script names** (they read `2260 / 487 / 1290` before §4.6's increment; the `path:line` figure fell by 21
+`node tools/check-doc-evidence.mjs` → **green: 2262 `path:line` citations, 491 `path#pointer` citations,
+1312 doc-and-script names** (they read `2260 / 487 / 1290` before §4.6's increment; the `path:line` figure fell by 21
 when every cite into this file became a section
 reference, and by 3 more when probe-4 turned the same rule on for `docs/audit/99-baseline-report.md`, which every
 probe round appends to; it rose by 8 again when the runner record cited the legacy build configs it reads, and the
@@ -221,6 +221,14 @@ pointer — and it is the first increment in this repository whose citations poi
 other than CoffeeScript or JavaScript. Both figures moved for two reasons: §4.6 and §6 cite code paths that exist
 now, and ten documents besides this one had to stop asserting that this host had no Go toolchain, no Go code or
 no `connector/` tree — each of them now names §4.6 as the reason that sentence stopped being true.
+The peer slice §4.7 moves the set a second time, and in a different shape — **2262 / 491 / 1312**: no new `path:line`
+citation, four new pointers, and all four of them JSON locations inside
+`packages/schema/protocol/framing.json` or `packages/schema/protocol/envelope.schema.json`, because what those two
+sections had to establish is not where a line of code sits but what the data says about the direction of a heartbeat
+and how many values the envelope's `type` can take. The six new names are the documents those sections cite for the
+same reason. Nothing above or in §5 is a runner's number for this tree: `42046629162` measured `1004c4e`, and no
+execution has happened since, so the figures the runner printed stay in the run record and the figures this paragraph
+prints are read on this host.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
@@ -342,6 +350,57 @@ parts, and the queue has no state meaning closed (§5).
 
 ---
 
+### 4.7 M2's first slice: the framing peer (`connector/internal/peer/`, 2026-11-05)
+
+What §4.6's `frames` and `envelope` packages describe, `connector/internal/peer/` now *applies*: one pipe endpoint
+that owns the transport rules a codec cannot own — the two directional byte ceilings and the backpressure budget in
+`packages/schema/protocol/framing.json`, the late-answer rule and the "an illegal frame ends the stream" rule of
+`docs/architecture/25-native-messaging-protocol.md`, and the closed-port semiotics of
+`docs/adr/0005-two-process-connector.md`. The rules, and the test that measures each of them on this host:
+
+| Rule | What the peer does | Test in `connector/internal/peer/peer_test.go` |
+|---|---|---|
+| the sender refuses before the write | `Request` compares the marshalled frame with `Config.WriteLimit` and returns `*frames.TooLargeError` without touching the writer, so the caller keeps an unsent request and the budget stays whole | `TestAnOversizedRequestIsRefusedBeforeThePipe` |
+| backpressure has two ceilings, not one | the concurrency cap and the in-flight byte budget, reserved and released on the same path; the byte budget is shown to bind on its own by holding the concurrency cap out of the way | `TestTheConcurrencyCapStopsIssuing`, `TestTheInFlightByteBudgetStopsIssuing`, `TestTheBudgetsAreTheContractsAndCrossTheTwoDirections` |
+| a late answer is discarded by `id` | a reply whose request already timed out has nowhere to go, so it is counted by `Discarded()` and never reaches the handler — the rule whose stated reason is that a late `replace`-class answer would be a configuration the user did not ask for | `TestALateAnswerIsDiscardedAndItsEffectNotReapplied` |
+| an oversized or illegal inbound frame ends the stream | `Serve` returns `*frames.TooLargeError`, never `frames.ErrTruncated` (a message-delimited pipe that skips a frame is read out of step from there on), and a rejection that names the frame; neither is handed to the handler | `TestAnOversizedInboundFrameIsATransportErrorNotATruncation`, `TestAnInvalidInboundFrameEndsTheStream` |
+| a closed port is the client going away | `Serve` returns `nil` for `frames.ErrClosed`, `Close()` unblocks outstanding requests with `ErrPeerClosed`, and neither path declares the peer lost — rule 4 of `docs/adr/0005-two-process-connector.md`: it is not a shutdown signal | the tail of `TestSilenceIsCountedInTheContractsOwnUnits` |
+| the liveness arithmetic and the verdict | `Missed()` counts whole intervals of silence against `Config.Now`; the watchdog turns the third miss into `ErrPeerLost` and tears the pipe down | `TestSilenceIsCountedInTheContractsOwnUnits`, `TestThreeMissedHeartbeatsTearTheTransportDown` |
+
+**Measured on this host**, Go 1.27.3: `gofmt -l connector` prints nothing, `go -C connector vet ./...` exits 0, and
+`go -C connector test -count=1 ./...` adds `ok github.com/k2dms/nexora/connector/internal/peer` to §4.6's three `ok`
+lines. Nine tests, all of them in `peer_test.go`, every one named in the table above and each of them passing here.
+No runner has executed since `1004c4e`, so nothing in this section quotes one; §5 carries the corpus counts this host
+reads.
+
+**The rule neither constructor arms, and the reason.** `ToExtension()` and `ToHost()` both leave
+`HeartbeatInterval` and `MissedHeartbeats` at zero, so neither starts the watchdog. The reason is the direction the
+data declares: `packages/schema/protocol/framing.json#/liveness/heartbeatDirection` is `host-to-extension`, so on the
+hop that has a heartbeat at all the Go peer is the one *sending* the beats and the extension is the one counting
+misses. A deadline on inbound silence in `nexora-host` would tear the transport down under a browser that is merely
+idle — and on that hop the contract's own "the client is gone" signal is the port closing, not a missed beat.
+`ToHost()` arms nothing either, because `packages/schema/protocol/framing.json#/liveness` speaks of the browser hop
+and ADR-0005's local pipe has no liveness number of its own — its rule 2 is a version rule. The machinery is written and measured anyway: the
+two liveness tests set the interval by hand, which is exactly how a peer that turns out to *receive* the beats arms
+it, and `TestTheBudgetsAreTheContractsAndCrossTheTwoDirections` fails if a constructor starts arming it on its own.
+
+**Not yet**, and unchanged from §4.6's list: no `cmd/nexora-host`, no `cmd/nexora-connector`, no ADR-0005 local
+pipe, no `connector.hello` negotiation, no sender identity, no dispatcher, no per-sender budgets enforced *at
+dispatch*, no chunk reassembly, no Core supervisor, no keystore, no config compiler, no prober.
+
+**`VER-49` does not close on this slice**, and the reason is worth the words because it is the first time the queue
+and the contract disagree rather than the queue and the code. Its `closesBy.ref` asks that the framing peer
+"refuse an oversized write, discard a late answer by id, **and** treat three missed heartbeats as a lost peer".
+Two of those three clauses now have a test that names them; the third cannot be claimed honestly yet, because the
+contract gives that heartbeat to the other endpoint and gives it no frame. That gap is §9's eighth question — the
+first question in that list that writing code raised rather than reading the plan — and
+until it is answered the row, its five labelled anchors in `docs/architecture/25-native-messaging-protocol.md`, and
+the distribution counts §5 and `docs/architecture/39-verification-matrix.md` read from those rows all stay as they
+are. Writing a third-clause test that passes by arming the watchdog by hand, in a package whose own constructors
+decline to arm it, would close a row by testing a configuration no process uses.
+
+---
+
 ## 5. Verification state to the letter
 
 - `cd omega-build && npm run deps && npm run dev && npx grunt && npx grunt release` → **exit 0** for the whole chain (Ladder A).
@@ -382,9 +441,11 @@ parts, and the queue has no state meaning closed (§5).
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
-  is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. No `VER-NN` row moves: §4.6's "Not yet" list is the
-  list of what those rows ask about.
-- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 487 `path#pointer`, 1306 doc-and-script
+  is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7 the same invocation prints four `ok`
+  package lines where §4.6 recorded three, and `gofmt -l connector` still prints nothing. No `VER-NN` row moves on
+  either increment: §4.6's "Not yet" list is the list of what those rows ask about, and §4.7 gives the reason
+  `VER-49` keeps its row now that two of the three clauses its closer names have a test.
+- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 491 `path#pointer`, 1312 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -623,16 +684,19 @@ place, and neither is a status edit:
 **Connector, in the order the user set on 2026-11-05.** M1 is §4.6's four packages — the last thing that could be
 written before any behaviour existed. What each next milestone has to make true:
 
-1. **M2 — both processes as far as they are testable without Xray.** `cmd/nexora-connector`: the dispatcher over the
-   generated surface (closed method table, `UnknownMethod` with no fallthrough, `deniedByDefault`, and nothing
-   dispatchable before negotiation except `connector.hello` — the rule in
-   `packages/schema/protocol/command-allowlist.json`), the per-sender budgets answering `Busy` *before* dispatch, and
-   chunk reassembly. `cmd/nexora-host`: the framing peer against the limits in
-   `docs/architecture/25-native-messaging-protocol.md` — refusing an oversized write before it reaches the writer,
-   discarding a late answer by `id`, treating three missed heartbeats as a lost peer and never as a shutdown signal —
-   sender identity per ADR-0004, and spawn/adopt of the connector over the local pipe whose separate version is rule 2
-   of `docs/adr/0005-two-process-connector.md`. `VER-49`, `VER-13`, `VER-52` and
-   `VER-55` all ask about that behaviour, so none of them closes on M1.
+1. **M2 — both processes as far as they are testable without Xray.** Its framing half has begun: §4.7's
+   `connector/internal/peer/` is the endpoint that refuses an oversized write before it reaches the writer, bounds
+   the outstanding-request and in-flight-byte budgets, discards a late answer by `id`, ends the stream on an illegal
+   inbound frame, and treats a closed port as the client going away rather than as a shutdown signal. What that
+   package does *not* yet have an honest way to do is the heartbeat clause, for the reason §4.7 gives and §9 now
+   asks. Remaining, in the order they build on each other: `cmd/nexora-host` — sender identity per ADR-0004 and
+   spawn/adopt of the connector over the local pipe whose separate version is rule 2 of
+   `docs/adr/0005-two-process-connector.md`; `internal/dispatch` — the dispatcher over the generated surface (closed
+   method table, `UnknownMethod` with no fallthrough, `deniedByDefault`, and nothing dispatchable before negotiation
+   except `connector.hello` — the rule in `packages/schema/protocol/command-allowlist.json`), the per-sender budgets
+   answering `Busy` *before* dispatch, and chunk reassembly; then `cmd/nexora-connector` as the process that runs it.
+   `VER-49`, `VER-13`, `VER-52` and `VER-55` all ask about that behaviour. §4.7 records why `VER-49` in particular
+   does not close on the peer alone; the other three ask about parts that do not exist yet.
 2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
    leaves to a human.
 
@@ -640,9 +704,11 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`**, and it is equal to `nexora/master` at the last sha the bullet below names
-  (`1004c4e`) — the connector commit is pushed, not pending. Local `master` still points at `f38f27b`; every push since
-  has been a fast-forward of `nexora/architecture` onto `nexora/master`, so the local branch pointer was never moved.
+- Branch: **`nexora/architecture`**, at `f1a3829` plus the peer commit §4.7 records. `nexora/master` was last
+  fast-forwarded to the sha the bullet below names (`1004c4e`), so those two are on this branch and not there: a push
+  needs its own confirmation each time, and this file states it rather than assuming it was given. Local `master`
+  still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
+  so the local branch pointer was never moved.
   Main branch for PRs upstream: `master`.
 - Remotes: `origin` = upstream ZeroOmega (**never push**), `nexora` = `git@github.com:k2dms/NEXORA.git`.
 - **Committed and pushed** (2026-11-05: `c367db2..431ea0a`, a clean fast-forward to `nexora/master`, no MR needed),
@@ -754,6 +820,7 @@ written before any behaviour existed. What each next milestone has to make true:
 | 5 | inbound-per-tag vs single-inbound-with-routing (one Xray inbound per profile vs one with `routing` and `core.select`) | `27-…`, `core.select` semantics |
 | 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
 | 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
+| 8 | What carries the heartbeat? `packages/schema/protocol/framing.json#/liveness` gives the interval (25 s), the miss count (3) and a **direction** (`host-to-extension`), and `packages/schema/protocol/envelope.schema.json#/properties/type` has four values — `request`, `response`, `event`, `progress` — none of them a beat. So either the beat is an envelope frame the data has not named (which one, given the closed object and the four type rules), or `nexora-host` keeps the port open without writing and only the extension counts, or the beat belongs to the local pipe instead and the direction value is wrong. Until one of those is chosen, no Go peer can claim the third clause of `VER-49`'s closer, and the peer in §4.7 counts *any* inbound frame as a beat arrived — a proxy, not the contract | `VER-49`, §11 of `docs/architecture/25-native-messaging-protocol.md`, the watchdog in `connector/internal/peer/` |
 
 ---
 
@@ -770,6 +837,6 @@ written before any behaviour existed. What each next milestone has to make true:
 ---
 
 *End of handoff log. The remaining work order is §6 task #11 — the end-to-end pass no document in this corpus can do
-for itself — plus the decisions in §7 and the seven questions in §9, which are not work an agent may finish. §4.5 is
+for itself — plus the decisions in §7 and the eight questions in §9, which are not work an agent may finish. §4.5 is
 the inventory that says why nothing else is owed. Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

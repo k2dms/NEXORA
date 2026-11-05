@@ -658,7 +658,7 @@
     },
     {
       "id": "VER-49",
-      "subject": "framing limits are enforced by nothing yet: sender-side rejection before write, the oversize discard path, and heartbeat behaviour",
+      "subject": "framing enforcement, clause by clause: the sender-side rejection before write and the late-answer discard have tests, the three-missed-heartbeat verdict does not and cannot yet",
       "state": "no-code",
       "owner": "connector",
       "closesBy": { "kind": "assertion", "ref": "the framing peer refuses an oversized write, discards a late answer by id, and treats three missed heartbeats as a lost peer" },
@@ -669,7 +669,7 @@
         { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Late-answer discard by `id`" },
         { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Heartbeat / missed-heartbeat behaviour" }
       ],
-      "why": "The framing values are asserted today (that is the green half); a limit that only exists in a document is a limit the peer has never seen enforced. No live row covers enforcement -- the document cited LIVE-05 and LIVE-06 here, both transport rows, which was wrong -- so the closers are a codec test that refuses an oversized write, a request-table test for the late answer, and a liveness test driving the 25 s heartbeat and the three-miss deadline."
+      "why": "The framing values are asserted today (that is the green half); a limit that only exists in a document is a limit the peer has never seen enforced. No live row covers enforcement -- the document cited LIVE-05 and LIVE-06 here, both transport rows, which was wrong -- so the closers are a codec test that refuses an oversized write, a request-table test for the late answer, and a liveness test driving the 25 s heartbeat and the three-miss deadline. As of 2026-11-05 the first two clauses have those tests (connector/internal/peer/ -- docs/PROJECT-STATE.md §4.7); the row stays open on the third, and not for a lack of code: protocol/framing.json#/liveness gives the heartbeat a direction, host-to-extension, so on the hop that has a heartbeat the Go endpoint is the one sending the beats and the extension is the one counting misses, and protocol/envelope.schema.json#/properties/type has four values none of which carries a beat. Which endpoint arms the deadline, and what arrives on the wire to be missed, is docs/PROJECT-STATE.md §9's eighth question."
     },
     {
       "id": "VER-50",

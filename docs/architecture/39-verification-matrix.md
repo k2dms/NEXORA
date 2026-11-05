@@ -277,7 +277,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-46 | no two-plane fixture shows a trace id surviving the boundary; no migration run keeps the correlation history | `connector` · LIVE-23 | 1 · 1 |
 | VER-47 | the diagnostics export uploading nothing — no review or grep of the options-page bundle has happened | `extension` · LIVE-10 | 1 · 1 |
 | VER-48 | no run shows a record written, masked and rotated, with real `seq` gaps and a ring that evicts | `connector` · assertion | 1 · 1 |
-| VER-49 | framing limits enforced by nothing: sender-side rejection before write, the oversize discard path, heartbeat | `connector` · assertion: codec, request-table and liveness tests | 1 · 5 |
+| VER-49 | framing enforcement clause by clause: the oversized-write refusal and the late-answer discard are tested, the three-missed-heartbeat verdict is not | `connector` · assertion: codec, request-table and liveness tests | 1 · 5 |
 | VER-50 | `server.test` results never replayed from cache — static half green, runtime half never happened | `connector` · LIVE-05 | 1 · 1 |
 | VER-51 | the probe budget independent of the UI, the popup performing no side-effecting command on mount, `force` bypassing backoff only | `extension` · LIVE-17 | 1 · 1 |
 | VER-52 | the sender policy's refusal, its amplification guard, and a second registration not doubling a budget | `connector` · LIVE-16 | 1 · 4 |
