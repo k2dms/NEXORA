@@ -1,0 +1,41 @@
+# Line endings and binary classification are declared in-repo, not in each
+# developer's git config (this host has core.autocrlf=true, which silently
+# rewrites trailing newlines and indentation -- and indentation is semantic in
+# .jade). See docs/audit/02-toolchain-decay-and-risk.md.
+
+* text=auto eol=lf
+
+# Shell and PowerShell scripts must never get CRLF.
+*.sh    text eol=lf
+*.ps1   text eol=lf
+
+# Legacy source: CoffeeScript and Jade are indentation-significant.
+*.coffee      text eol=lf
+*.jade        text eol=lf
+*.json        text eol=lf
+*.less        text eol=lf
+*.md          text eol=lf
+*.po          text eol=lf
+*.pot         text eol=lf
+Gruntfile.coffee text eol=lf
+
+# Future Go connector sources, declared before any Go exists.
+*.go      text eol=lf
+go.mod    text eol=lf
+go.sum    text eol=lf
+
+# Built extension artifacts and assets.
+*.png     binary
+*.ico     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.webp    binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.zip     binary
+*.crx     binary
+*.xpi     binary
+*.wasm    binary
+*.pdf     binary

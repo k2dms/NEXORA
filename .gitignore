@@ -3,3 +3,12 @@ bower_components
 package-lock.json
 *-release.zip
 *.swp
+
+# Live-verification secrets. Only .env.example is tracked.
+.env
+.env.*
+!.env.example
+
+# Scratch and build staging: the legacy grunt chain writes tmp/{chromium,firefox} during
+# `grunt release`, and this iteration writes measurement scripts there. Neither is a deliverable.
+tmp/
