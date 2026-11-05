@@ -5,8 +5,8 @@
 > architectural claim ("the chain still builds", "the test floor is X") has a measured anchor instead of
 > an assumption. Raw logs live next to this file in `docs/audit/raw/`.
 
-Date of all probes: **2026-11-04**. Branch: `nexora/architecture`. Tag audited: ZeroOmega v3.5.2 (`release
-v3.5.2` is HEAD's closest release commit).
+Date of probes 1–3: **2026-11-04**; probes 4–5 ran on **2026-11-05** (§11). Branch: `nexora/architecture`. Tag
+audited: ZeroOmega v3.5.2 (`release v3.5.2` is HEAD's closest release commit).
 
 ---
 
@@ -31,13 +31,17 @@ kind. **VERIFIED**. It is why the probe ran `grunt test` directly instead of `np
 
 Three probe rounds, executed **before** any edit, then once more after the minimal fix. Each round wrote a
 per-step table (`exit=<code>|<elapsed>`) plus the full captured output. No `--force` was used except where
-explicitly labelled as a diagnostic.
+explicitly labelled as a diagnostic. Two more rounds ran on 2026-11-05, after every deliverable was on disk:
+probe-4 re-ran the whole chain plus every gate as the iteration's end-to-end check (§11), and probe-5 settled
+the transport question probe-3 left inferred (§7).
 
 | Round | What it did | Raw log |
 |---|---|---|
 | probe-1 | `npm install --no-audit --no-fund` in `omega-build`, `omega-pac`, `omega-target`, `omega-web`, `omega-target-chromium-extension`; then `npm run build` and `npm run release` in `omega-build` | `docs/audit/raw/probe-1-legacy-toolchain.txt` (326 lines), `probe-1-table.txt` |
 | probe-2 | `npm run dev` (the `npm link` chain), then grunt per project, per-project `test`, `--force` diagnostics, `grunt release`, `ls dist` | `docs/audit/raw/probe-2-legacy-toolchain.txt` (1036 lines), `probe-2-table.txt` |
 | probe-3 | the same chain after the two lint demotions, ending in `npm run build` + `npm run release` from `omega-build` | `docs/audit/raw/probe-3-ladder-a-green.txt` (423 lines) |
+| probe-4 | the whole Ladder A chain again on 2026-11-05 — `npm run deps`, `npm run dev`, `grunt`, `grunt release` — then both legacy suites at the pinned floors, all five gates, and the artifact assertions re-measured from the zips this run wrote | `docs/audit/raw/probe-4-e2e-re-verification.txt` |
+| probe-5 | `omega-web/bower_components/` moved aside and reinstalled, with and without a `git:// → https://` rewrite, then the same with an attempted cold cache | `docs/audit/raw/probe-5-bower-cold-install.txt` |
 
 Step table verbatim, probe-1 (`probe-1-table.txt`): all five installs `exit=0`; `build:omega-*` steps were
 not attempted individually (`missing`); `hub-build|exit=3|1s`, `hub-release|exit=3|1s`.
@@ -146,6 +150,22 @@ Real test inventory in the whole repo: **6 files in omega-pac, 1 file in omega-t
 test files. **VERIFIED** (`find` counts: omega-pac/test 6 files 1533 lines, omega-target/test 1 file 207
 lines).
 
+**Reproduced 2026-11-05 (probe-4), together with the two ways `npm test` dies before a test runs.** With
+`omega-build/node_modules/.bin` on `PATH` and `TZ=Europe/London` exported, `grunt test` gives **142 passing
+(95 ms) / 1 failing** in `omega-pac` — the same `omega-pac/test/profiles.coffee:52` SOCKS5 assertion, the same
+`Warning: Task "mochaTest:test" failed.` — and **8 passing (6 s) / 5 failing** in `omega-target`, the same two
+`OptionsSync` assertions and three 2 000 ms timeouts. Both exit 3. **VERIFIED** (`probe-4` §5c, §5d). The floor
+holds, so it is a floor and not a coincidence of one afternoon.
+
+Neither project's own `npm test` reaches the suite. In `omega-pac` the POSIX prefix is eaten by `cmd.exe`
+(`docs/audit/02-toolchain-decay-and-risk.md` §4). In `omega-target`, `npm test` is plainly `grunt test` and it
+still exits 1 with `"grunt" не является внутренней или внешней командой`: the project declares
+`omega-target/package.json:11` `grunt ^0.4.5`, which ships no `bin`, and `grunt-cli` is a dependency of the hub
+only — so there is no `omega-target/node_modules/.bin/grunt` shim for npm to put on `PATH`. **VERIFIED**
+(`probe-4` §5b; `ls omega-target/node_modules/.bin` shows no grunt entry). This is the second reason the CI job
+exports the hub's `.bin` directory instead of calling `npx grunt` in each leaf, and it means the sentence
+"`npm test` is green in `omega-web`" from §5 above must be read as *vacuous*, never as *passing*.
+
 ## 6. Artifact finding — exit code 0 is not a correct artifact
 
 With `--force` having produced the bundles, `grunt release` **exited 0** and wrote
@@ -177,6 +197,17 @@ instead of packaging the build-tree manifest. **INFERRED** — the exact per-fil
 Consequence recorded as a rule: **no build gate may trust an exit code.** `verify.yml` asserts file count,
 `js/omega_pac.min.js` presence and size.
 
+**Re-measured by probe-4 on 2026-11-05 — and the hash does not reproduce even on this machine.** A fresh
+`grunt release` gave the same content: 353 entries in each zip, 1 903 305 and 1 903 342 bytes on disk, 252
+`lib/` entries, 7 `_locales`, `js/omega_pac.min.js` at 742 272 B, and the same top-level path set. The sha256
+values above did not: `73eee79d015ed404dc4bfdaa6d634ae0626a0612b2d603cb3412e6e47be68a4f` (chromium) and
+`5ab2ca82a076ac83bbb1396630be6b7732a080fc3c25109b15a9caac92f9a887` (firefox). **VERIFIED** (`probe-4` §7a, §7b).
+`unzip -l` on the new archive dates every entry `2026-11-05 14:44`, so the movement is attributed to the stored
+build timestamps — **INFERRED**, because probe-4 overwrote the 2026-11-04 zips and no per-entry diff between the
+two builds exists. What the difference proves on its own: a recorded artifact hash is an observation of one
+build, never a floor. `verify.yml` therefore prints the hash it computed beside these values and does not fail
+on a mismatch.
+
 ## 7. Bower
 
 `bower install` **works on this host**: probe-3 shows `Running "bower:install" (bower) task` /
@@ -188,13 +219,42 @@ exist here. `omega-web/grunt/aliases.coffee:9` keeps `'bower'` in the `default` 
 
 The two `git://` dependencies in `omega-web/bower.json:37` (`angular-spectrum-colorpicker`) and
 `omega-web/bower.json:43` (`zero-dependencies`) resolved anyway. **VERIFIED** — the probe observed the
-success; the mechanism (system git still serving that protocol for these fetches) is **INFERRED**.
+success; the mechanism (system git still serving that protocol for these fetches) was **INFERRED**, and the
+inference is **false**, twice over. Measured 2026-11-05 while writing `.github/workflows/verify.yml`: `git
+ls-remote git://github.com/zero-peak/zero-dependencies.git HEAD` times out from this host
+(`fatal: unable to connect to github.com: … errno=timed out`, exit 128). The deduction made next — that
+probe-3 therefore succeeded only because `omega-web/bower_components/` was already installed — is what probe-5
+falsified.
 
-Reproducibility elsewhere is **UNVERIFIED**: `package-lock.json` is gitignored (`.gitignore:3`), there is no
-root lockfile, Bower is unpinned by the same logic, and no clean machine or container was tested.
-`tools/verify-vendor.mjs` is the in-repo guard: it derives every `lib/...` reference from the jade/html/
-coffee/overlay sources and fails if a path is missing under `lib/`. **VERIFIED** (it runs; it does not prove
-a clean machine can *produce* `lib/`).
+**probe-5: the cold install works, and no `git://` URL is ever fetched.** With `bower_components` moved aside
+(kept, not deleted), `bower install` exits **0** and writes all 26 components, `angular-spectrum-colorpicker`
+resolving to `e22ff9184a` and `zero-dependencies` to `4de5f14a04` — the same commits the https `ls-remote`
+reports. The string `git://` occurs **zero times** in the capture: bower rewrites the declared endpoint to
+`https://github.com/<owner>/<repo>.git` before it shells out to git, so the dead transport in `bower.json` is
+never handed to a program that cannot use it. Adding
+`url."https://github.com/".insteadOf git://github.com/` to the process's git config changes nothing about the
+outcome (identical resolution lines), and `git ls-remote` of the raw URL still fails — the rewrite helps a
+caller that passes the literal URL to git, which bower is not. **VERIFIED**
+(`docs/audit/raw/probe-5-bower-cold-install.txt`).
+
+Two things follow. The CI step that sets the rewrite stays, but its description moves from "the build needs it"
+to "defence in depth, measured as unnecessary for Bower" — the step's own comment in
+`.github/workflows/verify.yml` now says so, and §11 records the measurement. And the
+reproducibility question narrows honestly rather than closing: 21 of the 26 components resolved from this
+host's Bower cache at `C:\Users\dms\AppData\Local\bower` — the five that came off the network include both
+`git://`-declared deps, which is the part that was in doubt — so an empty-cache runner still has 21 fetches
+nobody has observed here (see the registry). `--config.storage.cache=<fresh dir>` did not relocate the store,
+which is why probe-5 is a cold `bower_components` and not a cold runner.
+
+This does **not** change the verdict of §7 — the task works here and vendoring is still not needed. Full
+measurements: `docs/audit/02-toolchain-decay-and-risk.md` §1.1.
+
+Reproducibility on *another* machine is **UNVERIFIED**, and probe-5 narrowed it rather than closing it: a cold
+`bower_components` installs here, while `package-lock.json` stays gitignored (`.gitignore:3`), there is no root
+lockfile, Bower is unpinned by the same logic, 21 of its components came off this host's cache, and no clean
+machine or container was tested. `tools/verify-vendor.mjs` is the in-repo guard: it derives every `lib/...`
+reference from the jade/html/coffee/overlay sources and fails if a path is missing under `lib/`. **VERIFIED**
+(it runs; it does not prove a clean machine can *produce* `lib/`).
 
 ## 8. What this iteration changed in product files
 
@@ -205,11 +265,17 @@ Exactly two files, one line each, both in `grunt/` configuration (never in `src/
 
 No source line was re-wrapped; no runtime behaviour changed; each is independently revertable. **VERIFIED**.
 
-**Pending decision** (task #10): the `TZ=` fragility. `omega-pac/test/conditions.coffee:468` builds
-`new Date("01 Feb 2016 #{time}")` deliberately in local time for `TimeCondition`/`WeekdayCondition` under
-lolex, and the honest fix is an explicit UTC in the test — which changes test semantics and is therefore
-**not** done here. The alternative under consideration is a two-line wrapper in `omega-pac/Gruntfile.coffee:1`
-(`process.env.TZ ?= 'Europe/London'` next to the existing `require`). **Not applied in this iteration.**
+**Decision taken 2026-11-05** (task #10; this paragraph was the pending item): the `TZ=` fragility.
+`omega-pac/test/conditions.coffee:468` builds `new Date("01 Feb 2016 #{time}")` deliberately in local time for
+`TimeCondition`/`WeekdayCondition` under lolex, and the honest fix is an explicit UTC in the test — which changes
+test semantics and is therefore still **not** done. The alternative floated below, a two-line wrapper in
+`omega-pac/Gruntfile.coffee:1` (`process.env.TZ ?= 'Europe/London'` next to the existing `require`), was
+considered and **rejected**: it would apply the test's zone to every task in the project, `build` included.
+What exists instead is runner-side — `.github/workflows/verify.yml` exports `TZ` for the step that runs
+`grunt test`, so no legacy file changes and no product behaviour moves (London is UTC+0 for the dates the suite
+builds, so the pinned floor does not shift). The prefix is no longer a deduction either: `cmd.exe //c "npm test"`
+in `omega-pac` exits **1** with `"TZ" не является внутренней или внешней командой`, measured 2026-11-05.
+Reasoning and rejected alternatives: `docs/audit/02-toolchain-decay-and-risk.md` §4.
 
 ## 9. Explicit "not fixed" list
 
@@ -247,13 +313,85 @@ failing areas (legacy tests, clean-machine reproducibility) are named rather tha
 isolated Node LTS for legacy builds) and ladder C (contract-only baseline) are **not needed and not
 applied**.
 
+**Re-verified end to end on 2026-11-05 (§11).** Everything a shell on this host can check reproduced from a
+clean rebuild — the four-step chain, both pinned test floors to the individual test, all five gates, and every
+artifact content assertion. One thing did not reproduce: the recorded sha256 of the two zips, which moves on a
+same-machine rebuild (§6). One thing that was inference became measurement: Bower resolves the declared `git://`
+endpoints over https by itself, so a cold install works without any transport rewrite (§7). One thing this
+iteration still has not done: run anything in a browser, or on a runner.
+
+## 11. probe-4 and probe-5 — the iteration's own end-to-end check, 2026-11-05
+
+Task #11 of the work order is the last deliverable, and it is a re-verification rather than a new claim: rebuild
+the legacy chain, re-measure the artifact, re-run every gate, and leave the tree clean. Raw capture:
+`docs/audit/raw/probe-4-e2e-re-verification.txt` (chain, floors, gates, artifacts) and
+`docs/audit/raw/probe-5-bower-cold-install.txt` (transport).
+
+| What was re-checked | Expected, from this report | Measured 2026-11-05 |
+|---|---|---|
+| `npm run deps` → `dev` → `grunt` → `grunt release` from `omega-build` | exit 0 each (probe-3) | exit 0 each, **VERIFIED** |
+| `omega-pac` floor | 142 passing / 1 failing | 142 passing (95 ms) / 1 failing, same `omega-pac/test/profiles.coffee:52` assertion, **VERIFIED** |
+| `omega-target` floor | 8 passing / 5 failing | 8 passing (6 s) / 5 failing, same 2 assertions + 3 timeouts, **VERIFIED** |
+| Contract layer | 1217 checks green | green, `13 schemas / 19 command docs / 20 examples / 24 rejected / 112 frames`, **VERIFIED** |
+| Citation, secret, vendor and backup gates | green | green; the scanner now counts 409 tracked files because `verify.yml` is one of them, **VERIFIED** |
+| Artifact content | 353 / 5 999 353 / 252 `lib/` / 7 `_locales` / 742 272 B bundle | identical on every count, **VERIFIED** |
+| Artifact hash | recorded 2026-11-04 | **different** — `73eee79d…` / `5ab2ca82…`, **VERIFIED**; see §6 |
+| Working tree after the build | no build output tracked | no build output tracked, `dist/` and `tmp/` ignored, **VERIFIED** |
+| `npm test` in each leaf project | POSIX prefix fails in `omega-pac` | fails in `omega-target` too, for a second reason (`grunt` has no bin shim there) — §5 |
+| Cold Bower install | unknown; probe-3 was warm | works, exit 0, 26 components, no `git://` fetch at all — §7 |
+
+Four documentation consequences, all applied in the same sitting as this section, because each is a claim this
+report made less accurately than the measurement now allows:
+
+1. §7's explanation of *why* probe-3's Bower step succeeded was wrong (it credited the pre-installed tree, and
+   before that "system git still serving the protocol"); the corrected mechanism is bower's own endpoint
+   normalisation.
+2. §6's two recorded sha256 values are labelled as one-build observations rather than a floor, matching what
+   `verify.yml` already does with them.
+3. `.github/workflows/verify.yml`'s transport step is described in its own comment as defence in depth, not as
+   a prerequisite.
+4. `docs/architecture/20-target-repository-layout.md` §6 and §9 cited this file by line number; a probe round
+   appends lines, so those cites are now `§6`/`§11` references and `docs/audit/99-baseline-report.md` joined
+   `MUTABLE_CITATION_TARGETS` in `tools/check-doc-evidence.mjs`, the same way `docs/PROJECT-STATE.md` did.
+
+**What task #11 asked for and this section does not provide.** The plan's end-to-end item continues into a
+browser: load `dist/chromium-release.zip` unpacked, read `chrome://extensions` for errors, walk the six
+options states, import `docs/verification/backup-from-3.5.2.json`, switch profile and confirm through
+`chrome.proxy.settings.get`, then export from the running extension and diff that export against the shipped
+fixture. None of that happened — no browser was launched in this iteration, and the fixtures remain
+exporter-shaped rather than genuine `.bak` files (`docs/verification/live-matrix.md` LIVE-14, and §4 of
+`docs/verification/README.md` for what each row would need first). Under
+`docs/verification/live-env-contract.md`, an unexecuted row is `SKIPPED`, never `PASSED`, so `LIVE-01…24` are
+untouched by this section. The other half this report cannot close is a GitHub runner: `.github/workflows/verify.yml`
+has still never run there, and the registry below keeps that open.
+
 ## UNVERIFIED registry
 
 - Whether the blank-options-page consequence of the 352-file zip was observed in a real browser (reasoned,
   not photographed).
 - Root cause of the three `OptionsSync #requestPush` 2 000 ms timeouts.
 - Whether the 354-vs-353 file difference is exactly the `manifest` task substitution (per-file diff not computed).
-- Clean-machine reproducibility of `npm install` + `bower install` (no lockfiles in git, one host only).
-- Whether `git://` Bower deps resolve on GitHub-protocol-restricted networks in the future.
-- That the `minifyify@4.4.0` `EBADENGINE` warning is harmless on every Node ≥ 20 (it was harmless on 24.22.1).
-- Determinism of the two zips across machines (byte-identical rebuilds were not attempted; no lockfile).
+- Clean-machine reproducibility of `npm install` + `bower install`. **Narrowed 2026-11-05**: the Bower half is
+  now measured on a cold `bower_components` (§7) and works, so what remains is the npm side on a machine with no
+  `node_modules`, no lockfile in git and an empty Bower cache (21 of 26 components were served from this host's
+  cache).
+- ~~Whether `git://` Bower deps resolve on GitHub-protocol-restricted networks.~~ **Closed 2026-11-05, twice.**
+  The first closure ("they do not resolve from this host; the https `insteadOf` rewrite is the mitigation") was
+  itself wrong: raw `git ls-remote git://…` does time out here, but bower never uses that transport — it resolves
+  the declared endpoint as `https://github.com/…\.git`, and a cold install of both deps succeeds with no rewrite
+  set (§7). The question that survives is the narrower one immediately above.
+- That the `minifyify@4.4.0` `EBADENGINE` warning is harmless on every Node ≥ 20 (it was harmless on 24.22.1, and
+  probe-4 re-ran the whole chain under the same warning).
+- ~~Determinism of the two zips across machines.~~ **Answered, and worse than expected: not on one machine.**
+  A 2026-11-05 rebuild of the same tree reproduced every content assertion but produced different sha256 values
+  (§6). The archive stores per-entry build timestamps, so no recorded hash is a floor; `verify.yml` prints the
+  hash beside these values rather than asserting them. Whether the *uncompressed content* of the two builds is
+  byte-identical is **UNVERIFIED** — probe-4 overwrote the 2026-11-04 zips before anyone thought to keep them,
+  which is the lesson to carry into Phase 2: keep the previous artifact when re-measuring an artifact.
+- Whether any of `LIVE-01…24` passes: no browser was launched in this iteration (§11). Under
+  `docs/verification/live-env-contract.md` those rows are `SKIPPED`, which is not this report claiming success.
+- That `.github/workflows/verify.yml` behaves as written on a GitHub runner. Every `run:` block was executed on
+  this host, including `check_zip` against the real artifacts and `run_floor` against the real `omega-pac`
+  suite, and each guard was re-run against a synthetic violation to prove it can fail — but no `actions/*` step,
+  runner context or `GITHUB_*` input was exercised. Its first green run is what closes the `VER-*` rows of
+  `docs/architecture/39-verification-matrix.md`, and that run has not happened.

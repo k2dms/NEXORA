@@ -1,0 +1,83 @@
+probe-5 -- cold Bower install and the git:// transport, 2026-11-05
+================================================================================
+The question probe-4 could not answer: `bower install` inside `npm run deps` was a no-op,
+because omega-web/bower_components was already installed. This probe removes that directory
+(kept, not deleted) and installs again, with and without the transport rewrite
+.github/workflows/verify.yml configures on the runner. omega-web/bower.json declares:
+
+    37:    "angular-spectrum-colorpicker": "git://github.com/suziwen/angular-spectrum-colorpicker.git#main",
+    43:    "zero-dependencies": "git://github.com/zero-peak/zero-dependencies.git#main",
+
+--------------------------------------------------------------------------------
+Pre-check: can git itself still speak the declared transport on this host?
+
+  $ git ls-remote git://github.com/zero-peak/zero-dependencies.git HEAD
+  fatal: unable to connect to github.com:
+  github.com[0: 140.82.121.3]: errno=timed out
+  exit=128                      (the URL never reaches the protocol; the connect times out)
+
+  $ env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0='url.https://github.com/.insteadOf' \
+        GIT_CONFIG_VALUE_0='git://github.com/' \
+        git ls-remote git://github.com/zero-peak/zero-dependencies.git HEAD
+  4de5f14a046f74d6cbf830c01b1736d0270d7154        HEAD
+  exit=0
+
+--------------------------------------------------------------------------------
+@@@ A-cold-without-rewrite   (mv bower_components aside, `bower install`, no git config)
+
+bower angular-spectrum-colorpicker#main       not-cached https://github.com/suziwen/angular-spectrum-colorpicker.git#main
+bower angular-spectrum-colorpicker#main          resolve https://github.com/suziwen/angular-spectrum-colorpicker.git#main
+bower zero-dependencies#main                  not-cached https://github.com/zero-peak/zero-dependencies.git#main
+bower zero-dependencies#main                     resolve https://github.com/zero-peak/zero-dependencies.git#main
+bower blob#*                                  not-cached https://github.com/eligrey/Blob.js.git#*
+bower angular-ui-utils#bower-validate         not-cached https://github.com/angular-ui/ui-utils.git#bower-validate
+bower jqueryui-touch-punch#*                  not-cached https://github.com/furf/jquery-ui-touch-punch.git#*
+...
+bower angular-spectrum-colorpicker#main          resolved https://github.com/suziwen/angular-spectrum-colorpicker.git#e22ff9184a
+bower zero-dependencies#main                     resolved https://github.com/zero-peak/zero-dependencies.git#4de5f14a04
+bower angular-spectrum-colorpicker#main          install angular-spectrum-colorpicker#e22ff9184a
+bower zero-dependencies#main                     install zero-dependencies#4de5f14a04
+...
+@@@ A-cold-without-rewrite exit=0
+entries after: 26
+FileSaver angular angular-animate angular-bootstrap angular-i18n angular-ladda angular-loader
+angular-sanitize angular-spectrum-colorpicker angular-ui-router angular-ui-sortable
+angular-ui-utils blob bootstrap jquery jquery-ui jqueryui-touch-punch jsondiffpatch ladda
+ngprogress script.js shepherd.js spectrum spin.js tether zero-dependencies
+
+THE HEADLINE: the string `git://` occurs zero times in the whole capture. Bower rewrites the
+declared endpoint to https://github.com/<owner>/<repo>.git before it shells out to git, so the
+dead transport in bower.json is never handed to git at all. Both deps resolved to the same
+commits the https pre-check reports (4de5f14a04, e22ff9184a). A cold install therefore
+succeeds on this host WITHOUT any rewrite -- which is what the runner will also do.
+
+@@@ B-cold-with-https-rewrite   (same, with GIT_CONFIG insteadOf set for the process)
+@@@ B-cold-with-https-rewrite exit=0
+entries after: 26
+Identical outcome, identical resolution lines. The rewrite changes nothing for bower; it only
+matters for a caller that passes the literal git:// URL to git.
+
+@@@ C-cold-cache-attempt   (bower install --config.storage.cache=<fresh empty dir>)
+@@@ C-cold-cache-no-rewrite exit=0
+entries after: 26
+from the network (not-cached): 5   from a cache: 24
+The flag did not relocate the store: bower's cache on this host is
+C:\Users\dms\AppData\Local\bower, and 21 components still resolved from it. So this is a cold
+`bower_components`, not a cold runner. What it does prove is the part that was in doubt -- the
+five endpoints fetched from the network include both `git://`-declared deps.
+
+@@@ restore
+restored entries: 26
+The kept tree went back unchanged; the iteration's artifact assertions were measured against
+a build made from it (probe-4 §7a).
+
+--------------------------------------------------------------------------------
+Consequences, recorded in docs/audit/99-baseline-report.md §11 and
+docs/audit/02-toolchain-decay-and-risk.md §1.1:
+  * the 2026-11-04 statement "resolved anyway, mechanism INFERRED" was wrong twice over: the
+    mechanism is bower's own endpoint normalisation, and it is now measured, not inferred;
+  * probe-3's green was NOT explained by the pre-installed tree alone -- a cold tree installs;
+  * the transport rewrite in verify.yml stays, but as defence in depth, not as the thing that
+    makes the build possible;
+  * still unverified: whether a runner with an empty Bower cache resolves all 26 components
+    (21 of them were served from this host's cache).

@@ -249,6 +249,6 @@ Still open after these contracts, stated plainly:
 | 4 | Reachability of the `syncOptions:'disabled'` quota branch (§4.1 refinement) | proven for the code paths in this tree; a storage backend that throws `QuotaExceededError` directly would still reach it |
 | 5 | Whether the store-published builds (Chrome/Edge/AMO) contain the same manifests and code as this tree | artifacts not downloaded; see `docs/audit/10` |
 | 6 | Real-world existence of `Authorization`-bearing subscription feeds among users | plausible by construction, unmeasured |
-| 7 | Behaviour of `Options.reset` + `upgrade` against a genuine 3.5.2 `.bak` file | `docs/verification/backup-from-3.5.2.json` does not exist yet (PROJECT-STATE §4.5); `LIVE-14` is the closing test |
+| 7 | Behaviour of `Options.reset` + `upgrade` against a genuine 3.5.2 `.bak` file | `docs/verification/backup-from-3.5.2.json` exists but is exporter-shaped with example values — no browser ran in this iteration — so the genuine-`.bak` case is still open; `LIVE-14` closes it, and `tools/check-legacy-backup.mjs` already runs the compile half against the real engine |
 | 8 | Whether an unhandled rejection results from a failed push (`omega-target/src/options_sync.coffee:171-172`) | no worker console was observed |
 | 9 | `status`/`serverIds` ownership split between extension and Connector | open decision, PROJECT-STATE §9.4 |

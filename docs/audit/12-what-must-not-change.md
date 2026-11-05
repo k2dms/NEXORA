@@ -303,8 +303,9 @@ NEXORA-only field guarded by a *new* scalar must not reuse this legacy `schemaVe
 (`packages/schema/envelope-keys.schema.json:16-18` puts the NEXORA version on a separate key,
 `-nexora.schemaVersion`, precisely to leave `schemaVersion: 2` untouched).
 
-**Machine check (Phase 2).** grep assertion `legacy-schemaVersion-const-2`; `LIVE-xx` import of a real
-3.5.2 `.bak` (`docs/verification/backup-from-3.5.2.json`) asserting a clean load with `schemaVersion`
+**Machine check (Phase 2).** grep assertion `legacy-schemaVersion-const-2`; `LIVE-14`'s import of a genuine
+3.5.2 `.bak` (the shipped `docs/verification/backup-from-3.5.2.json` is exporter-shaped, so the real file is
+still owed) asserting a clean load with `schemaVersion`
 still 2 and zero data loss.
 
 ---

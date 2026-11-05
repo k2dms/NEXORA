@@ -1,0 +1,198 @@
+probe-4 -- end-to-end re-verification of the iteration, 2026-11-05
+================================================================================
+Branch `nexora/architecture` at 9bc08c3, host as recorded in
+docs/audit/99-baseline-report.md §1. Driver: a scratch script that ran every step, recorded
+its own exit code, and stopped for nothing (full capture: 641 lines). This file keeps the
+measured lines; the npm audit/vulnerability noise is omitted, the warnings that carry a
+finding are not. The two Bower questions this run could not answer are in
+docs/audit/raw/probe-5-bower-cold-install.txt.
+
+@@@ host
+v24.22.1
+11.19.1
+9bc08c3
+nexora/architecture
+uname: MINGW64_NT-10.0-26300 HOME-PC 3.6.10-5a1665c8.x86_64 2026-09-28 10:40 UTC x86_64 Msys
+@@@ host exit=0
+
+@@@ 1-deps   cd omega-build && npm run deps
+> npm install && (cd ../omega-pac && npm install) && (cd ../omega-target && npm install)
+>   && (cd ../omega-web && npm install && bower install) && (cd ../omega-target-chromium-extension/ && npm install)
+up to date, audited 63 packages in 1s
+up to date, audited 579 packages in 4s
+up to date, audited 544 packages in 2s
+up to date, audited 266 packages in 3s
+up to date, audited 583 packages in 2s
+npm warn EBADENGINE Unsupported engine { package: 'minifyify@4.4.0',
+npm warn EBADENGINE   required: { node: '0.10.x' }, current: { node: 'v24.22.1' } }   (x3)
+npm warn install-scripts   tldjs@1.8.0 (postinstall: node ./bin/postinstall.js)
+The `bower install` in that chain printed nothing and exited 0: every component was already
+in omega-web/bower_components, so a no-op install proves nothing about the transport. probe-5
+removes the tree and installs again.
+@@@ 1-deps exit=0
+
+@@@ 2-dev   cd omega-build && npm run dev     (the npm link chain, four projects)
+> (cd ../omega-pac && npm run dev) && (cd ../omega-target && npm run dev)
+>   && (cd ../omega-web && npm run dev) && (cd ../omega-target-chromium-extension/ && npm run dev)
+> omega-pac@0.0.1 dev
+> npm link
+@@@ 2-dev exit=0
+
+@@@ 3-build   cd omega-build && npm run build   (grunt hub)
+> grunt
+Running "hub:omega-pac:default" (hub) task
+...
+File "build/_locales/en/messages.json" created.
+File "build/_locales/zh/messages.json" created.
+File "build/_locales/cs/messages.json" created.
+File "build/_locales/fa/messages.json" created.
+File "build/_locales/ru/messages.json" created.
+File "build/_locales/zh_CN/messages.json" created.
+File "build/_locales/zh_TW/messages.json" created.
+>> (node:17732) [DEP0128] DeprecationWarning: Invalid 'main' field in
+>> '\\?\E:\NEXORA\omega-target-chromium-extension\node_modules\po2json\package.json' of './lib/po2json'.
+Done, without errors.
+@@@ 3-build exit=0
+
+@@@ 4-release   cd omega-build && npm run release
+> cd ../omega-target-chromium-extension && grunt  release
+Running "manifest" task
+Running "compress:chromium" (compress) task
+Created ../dist/chromium-release.zip (1903305 bytes)
+Running "compress:firefox" (compress) task
+Created ../dist/firefox-release.zip (1903342 bytes)
+Done, without errors.
+@@@ 4-release exit=0
+
+@@@ 5a   cd omega-pac && npm test            (TZ=Europe/London exported by the probe shell)
+> omega-pac@0.0.1 test
+> TZ=Europe/London grunt test
+"TZ" не является внутренней или внешней командой, исполняемой программой или пакетным файлом.
+@@@ 5a exit=1     -- cmd.exe eats the POSIX prefix; the text above is that error, decoded from CP866
+
+@@@ 5b   cd omega-target && npm test
+> omega-target@0.0.1 test
+> grunt test
+"grunt" не является внутренней или внешней командой, исполняемой программой или пакетным файлом.
+@@@ 5b exit=1     -- omega-target/node_modules/.bin has no grunt shim (grunt 0.4.5 declares no bin)
+
+@@@ 5c   grunt test in omega-pac, hub grunt-cli on PATH, TZ=Europe/London
+  142 passing (95ms)
+  1 failing
+      AssertionError: expected 'SOCKS5 127.0.0.1:8888' to equal
+                     'SOCKS5 127.0.0.1:8888; SOCKS 127.0.0.1:8888'
+      at context.<anonymous> (E:\NEXORA\omega-pac\test\profiles.coffee:52:40)
+Warning: Task "mochaTest:test" failed. Use --force to continue.
+@@@ 5c exit=3     -- the pinned floor, reproduced
+
+@@@ 5d   grunt test in omega-target, hub grunt-cli on PATH
+  8 passing (6s)
+  5 failing     (OptionsSync: 2 assertions + 3 x "Error: timeout of 2000ms exceeded")
+Warning: Task "mochaTest:test" failed. Use --force to continue.
+@@@ 5d exit=3     -- the pinned floor, reproduced
+
+@@@ 6a   npm --prefix packages/schema run verify
+checks run: 1217
+  note: compiled 13 schemas
+OK: 13 schemas compile, 19 command docs conform, 20 examples valid, 24 invalid examples
+   rejected, 112 protocol frames replayed.
+@@@ 6a exit=0
+
+@@@ 6b   node tools/check-doc-evidence.mjs
+checked 2251 path:line citations, 487 path#pointer citations and 1233 doc-name references in docs/
+OK: every citation resolves to a real, non-blank line and every pointer resolves.
+@@@ 6b exit=0
+
+@@@ 6c/6d   node tools/check-no-secrets.mjs --selftest ; node tools/check-no-secrets.mjs
+SELFTEST OK: 13 cases (positives fire, references and fixtures stay quiet).
+OK: no secret-shaped content in 409 files (170 vendored/minified files skipped).
+@@@ 6c exit=0 / 6d exit=0
+
+@@@ 6e   node tools/verify-vendor.mjs
+scanned 132 files, 58 distinct lib/ references
+  resolved: 55
+  dynamic (not path-checkable): 3
+    ~ lib/angular-i18n/angular-locale_  <- omega-web\src\coffee\options.coffee
+    ~ lib/heap  <- omega-target-chromium-extension\index.js, ...omega_target_chromium_extension.min.js
+    ~ lib/themes/  <- omega-web\src\omega\controllers\master.coffee
+OK: every statically referenced vendor asset is present.
+@@@ 6e exit=0
+
+@@@ 6f   node tools/check-legacy-backup.mjs --selftest
+  caught: a rule that names a profile the envelope does not contain (+auto switch:
+          http://www.example.com/ resolves to +gone, which is not in this envelope)
+  caught: a key the legacy loader cannot see at all (key "proxy" is invisible to Profiles.each
+          (the prefix rule))
+  caught: an envelope with a profile type the engine does not know
+          (+weird (NotAProfileType) did not compile: Unknown profile type: NotAProfileType)
+  caught: an envelope with no schemaVersion (no schemaVersion -- the legacy export always writes one)
+SELFTEST OK: 4/4 broken envelopes rejected.
+@@@ 6f exit=0
+
+@@@ 6g   node tools/check-legacy-backup.mjs
+docs/verification/backup-from-3.5.2.json
+  profiles=4 compiled=3 refused-by-engine=1 rules=2 evaluations=15
+docs/verification/backup-3.5.2-all-profile-types.json
+  profiles=7 compiled=6 refused-by-engine=1 rules=11 evaluations=30
+OK: 2 shipped backups load and compile in the legacy engine (omega-pac/index.js).
+@@@ 6g exit=0
+
+@@@ 7a   artifact content assertions, re-measured from the zips this run produced
+dist/chromium-release.zip bytes=1903305 entries=353
+dist/firefox-release.zip bytes=1903342 entries=353
+chromium lib/ entries=252
+chromium _locales dirs=7
+   742272  2026-11-05 14:44   js/omega_pac.min.js
+@@@ 7a exit=0     -- every content assertion in docs/audit/99-baseline-report.md §6 holds
+
+@@@ 7b   sha256sum dist/chromium-release.zip dist/firefox-release.zip
+73eee79d015ed404dc4bfdaa6d634ae0626a0612b2d603cb3412e6e47be68a4f  dist/chromium-release.zip
+5ab2ca82a076ac83bbb1396630be6b7732a080fc3c25109b15a9caac92f9a887  dist/firefox-release.zip
+recorded 2026-11-04: b93d5100e4c05ccf7af365dfc1742344360579f482df72e4e9ce00f5ba964ba8
+                      b2309ce3bd0c2be246f0c228ffde1290fa1756c10ad93d90f17380249b4a728f
+SAME MACHINE, SAME TREE, DIFFERENT HASH. The zip stores each entry's build timestamp (the
+listing above reads 2026-11-05 14:44 for every entry), so a rebuild cannot repeat the hash.
+Content assertions are the gate; the hash is an observation. See
+docs/audit/99-baseline-report.md §11.
+@@@ 7b exit=0
+
+@@@ 7c   top-level path set of each zip
+dist/chromium-release.zip: AUTHORS COPYING _locales css img indexedDB.js js lib
+  localstorage-polyfill.js log.js manifest.json options.html partials popup
+  popup-iframe.html popup-iframe.js popup.html x-background.js
+dist/firefox-release.zip:  AUTHORS COPYING _locales css img indexedDB.js js lib
+  localstorage-polyfill.js log.js manifest.json options.html partials popup
+  popup-iframe.html popup-iframe.js popup.html x-background.js
+@@@ 7c exit=0
+
+@@@ 7d   git status --short after the whole chain
+ M docs/PROJECT-STATE.md
+ M docs/README.md
+ M docs/adr/0001-adr-practice.md
+ M docs/architecture/20-target-repository-layout.md
+ M docs/architecture/21-system-context.md
+ M docs/architecture/25-native-messaging-protocol.md
+ M docs/architecture/26-command-surface.md
+ M docs/architecture/27-config-compilation-pipeline.md
+ M docs/architecture/29-subscriptions-and-servers.md
+ M docs/audit/02-toolchain-decay-and-risk.md
+ M docs/audit/09-subscriptions-import-export-sync.md
+ M docs/audit/10-manifest-packaging-distribution.md
+ M docs/audit/12-what-must-not-change.md
+ M docs/audit/99-baseline-report.md
+ M docs/verification/live-matrix.md
+ M packages/schema/scripts/verify.mjs
+ M tools/check-doc-evidence.mjs
+?? docs/architecture/39-verification-matrix.md
+?? docs/architecture/40-open-decisions.md
+?? docs/verification/README.md
+?? packages/schema/open-decisions.json
+?? packages/schema/verification.json
+?? tools/check-legacy-backup.mjs
+Nothing from the build appears: dist/ and tmp/ are ignored, node_modules/, bower_components/
+and package-lock.json were already ignored. The list above is the iteration's own work, and it
+is the "no build noise" half of this probe.
+@@@ 7d exit=0
+
+@@@ probe-4 complete: chain green, floors reproduced to the test, gates green,
+artifact content green, artifact hash not reproducible, working tree clean of build noise.

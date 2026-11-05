@@ -279,14 +279,16 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Rewrite the dead git:// transport that two Bower deps use
+      - name: Rewrite the dead git:// transport that two Bower deps name (defensive; Bower normalises it itself)
         run: |
-          # omega-web/bower.json:37 and :43 name git://github.com/... . GitHub switched its Git servers off
-          # for that transport in 2022, and `git ls-remote git://github.com/zero-peak/zero-dependencies.git`
-          # times out from this repository's host too -- the probe saw bower succeed because the components
-          # were already installed, which is why clean-runner reproducibility was UNVERIFIED
-          # (docs/audit/99-baseline-report.md §7). The rewrite is runner config, not a repository change:
-          # bower.json keeps its URL and bower shells out to git, so the fetch goes over https.
+          # omega-web/bower.json:37 and :43 name git://github.com/... . GitHub switched its Git servers off for
+          # that transport in 2022, and `git ls-remote git://github.com/zero-peak/zero-dependencies.git` times
+          # out from this repository's host. Measured further on 2026-11-05 (probe-5): with bower_components
+          # removed, `bower install` still resolves both deps -- over https -- because bower rewrites the
+          # declared endpoint before it shells out to git, so `git://` appears zero times in the install log and
+          # the insteadOf config changes nothing about the outcome. Kept as defence in depth for any later step
+          # or tool that passes the literal URL to git; not a prerequisite for this chain. Runner config only, so
+          # bower.json keeps its text (docs/audit/99-baseline-report.md §7, §11).
           git config --global url."https://github.com/".insteadOf git://github.com/
 
       - name: Install the five legacy roots (the set omega-build/package.json:12 installs)
