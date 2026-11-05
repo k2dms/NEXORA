@@ -284,8 +284,8 @@ has that the eight before it did not: one of those re-read citations had *never*
 that cites "the compiler's dependency on install state" pointed at the footer of doc 27 — a `See also` line, non-blank,
 so green for two slices, and not the claim. The guard checks that a number lands on text; it cannot check what the text
 says, so §8's decision 19 keeps the finding instead.
-§4.16 moves the set a tenth time — **2282 / 517 / 1379** — and the move is almost entirely the doc-name kind: measured
-per file against the commit before, this file is `+1 / +1 / +6`, doc 23 `+0 / +0 / +1`, doc 27 `+0 / +0 / +2`, doc 40
+§4.16 moves the set a tenth time — **2282 / 517 / 1380** — and the move is almost entirely the doc-name kind: measured
+per file against the commit before, this file is `+1 / +1 / +7`, doc 23 `+0 / +0 / +1`, doc 27 `+0 / +0 / +2`, doc 40
 `+0 / +0 / +3`, and the two documents this slice rewords hardest — `docs/README.md` and
 `docs/architecture/26-command-surface.md` — move `+0 / +0 / +0`, because a sentence corrected in place to stop claiming
 that no compiler exists neither adds nor drops an address. The one `path:line` and the one pointer are the two the
@@ -1021,7 +1021,7 @@ that slice's note about `git ls-files` repeating itself in the expected directio
 **Gates.** `gofmt -l connector` prints nothing, `go -C connector vet ./...` is clean, and
 `go -C connector test -count=1 ./...` prints the same eight `ok` lines §4.15 recorded — the ninth will arrive with a
 package that is not this one. `npm --prefix packages/schema run verify` → 1217 checks, green.
-`node tools/check-doc-evidence.mjs` → 2282 `path:line`, 517 pointers, 1379 doc names.
+`node tools/check-doc-evidence.mjs` → 2282 `path:line`, 517 pointers, 1380 doc names.
 What is still not here, and is the shape of the next slice: nothing reads a handle out of the keystore, so a compiled
 config is a document with `keystore://` strings in its credential positions and has never been written to disk; stage
 7's probe needs a running Core; and no command surface calls `Compile`, so `config.apply` still has no answer to give.
@@ -1090,7 +1090,7 @@ config is a document with `keystore://` strings in its credential positions and 
   repository able to produce a `configHash` and therefore the reason `VER-78` exists to name which byte string it is a
   hash of. §4.16 fills that package in — stages 1 to 4, the document half of 5 and stage 7's inspection — and moves no
   `ok` line, because the eight are packages and §4.16 is thirty-eight more test functions inside the eighth.
-- `node tools/check-doc-evidence.mjs` → **green** (2282 `path:line`, 517 pointers, 1379 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2282 `path:line`, 517 pointers, 1380 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -1616,13 +1616,18 @@ of §6's queue was written.
 ---
 
 *End of handoff log. The remaining work order is §6's, and §4.15 changed its shape without changing its two stoppers.
-The Connector queue now runs: the compile pipeline's stages 1 to 4 — resolve, split, allocate, embed — over the
-serializer §4.15 landed, then stage 7's validation and probe, then the Core supervisor and the keystore reads that
-`keystore://<ref>` position needs, then the golden configs `VER-28` and `VER-78` anchor on. `internal/chunk` and
+The Connector queue now runs: the keystore read that turns a `keystore://<ref>` position into a credential and the
+writer that puts the materialized bytes under the state directory — §4.16 compiled a config for the first time and both
+of those are why it has still never been applied — then the Core supervisor, then stage 7's probe, which needs a binary
+`docs/adr/0013-omega-conditions-compiles-into-xray-routing.md` §Evidence records as absent from this host. Stages 1 to 4, the
+document half of 5, the serializer of §4.15 and three of doc 27 §3's six golden configs are now written (§4.16), so
+`VER-28` and `VER-78` describe three fixtures rather than none and stay open for the two reasons §4.16 names.
+`internal/chunk` and
 `cmd/nexora-host` stay where they were: the first is stopped by `ODEC-34`, and the second by `ODEC-35` — a decision with
 three surviving answers, which is the first time this queue has been blocked by an ADR rather than by a gap in the data.
 `ODEC-36` is the third stopped thing and the cheapest: it gates a row, not a package, and a field with a description
-closes it. Plus the decisions in §7 and the nine questions in
+closes it. A fourth has appeared beside it — `ODEC-37`, the four byte positions the corpus names and never spells, which
+`§4.16`'s goldens found by refusing to guess and which only Xray's own accepted config can settle. Plus the decisions in §7 and the nine questions in
 §9, which are not work an agent may finish; the note under that table says why one ninth stopped being a question and
 what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
