@@ -6,8 +6,8 @@
 > falsified the original plan, the exact inventory of what exists on disk, and the precise next steps.
 > Written 2026-11-04. English because it is the repository language.
 
-Status of this branch: **Phase 0 (audit) + Phase 1 (architecture) in progress. No product code is
-written yet, and none should be in this iteration.** Nothing on this branch is committed yet.
+Status of this branch: **Phase 0 (audit) + Phase 1 (architecture) in progress, committed and pushed. No
+product code is written yet, and none should be in this iteration.** §7 records the commits and the ref.
 
 ---
 
@@ -143,7 +143,7 @@ Rule: nothing under `nexora/**` may import from `omega-*`, except types derived 
 
 ---
 
-## 4. On disk right now (inventory, all uncommitted)
+## 4. On disk right now (inventory, all committed and pushed)
 
 ### 4.1 Infrastructure — done
 
@@ -190,7 +190,7 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 the `DEFERRED:` notes the earlier drafts printed are gone: `26-command-surface.md`,
 `37-ui-architecture.md` and `38-compatibility-matrix.md`
 exist now, so their cross-checks are real assertions. `node tools/check-doc-evidence.mjs` → **green: 2261
-`path:line` citations, 458 `path#pointer` citations, 1003 doc-name references**, with three still-planned
+`path:line` citations, 458 `path#pointer` citations, 1004 doc-name references**, with three still-planned
 documents listed on every run (`39-verification-matrix.md`, `40-open-decisions.md`, `docs/verification/README.md`).
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
@@ -261,7 +261,7 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
   exists, and no npm `test` script is declared; `verify.yml` must print `NOTE: <project> has 0 test files`).
 - `node tools/check-no-secrets.mjs --selftest` → 13/13 green.
 - `npm --prefix packages/schema run verify` → **green** (1184 checks; see §4.4).
-- `node tools/check-doc-evidence.mjs` → **green** (2261 `path:line`, 458 `path#pointer`, 1003 doc-name
+- `node tools/check-doc-evidence.mjs` → **green** (2261 `path:line`, 458 `path#pointer`, 1004 doc-name
   references; three planned documents named on every run). `node tools/verify-vendor.mjs` runs against the
   working tree.
 
@@ -327,13 +327,13 @@ diff against the original `.bak`, run both test suites, run the schema verify, r
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`**. `master` untouched. Main branch for PRs upstream: `master`.
+- Branch: **`nexora/architecture`**, now equal to local and remote `master`. Main branch for PRs upstream: `master`.
 - Remotes: `origin` = upstream ZeroOmega (**never push**), `nexora` = `git@github.com:k2dms/NEXORA.git`.
-- **Nothing is committed yet.** Planned commits, in order, each one logical piece (plan §8.5):
-  (a) infrastructure — `.gitattributes`, `.env.example`, `.gitignore`, `.npmrc`×5, `tools/*`;
-  (b) `docs/audit/*`; (c) `packages/schema/*` with green `npm run verify`; (d) `docs/adr/*` + `docs/architecture/*`;
-  (e) `docs/verification/*`; (f) baseline fixes (coffeelint demotion, `verify.yml`, optional TZ change) — kept
-  separate so it can be reverted without losing documents.
+- **Committed and pushed** (2026-11-05: `c367db2..431ea0a`, a clean fast-forward to `nexora/master`, no MR needed),
+  in the planned groups — (a) infrastructure: `.gitattributes`, `.env.example`, `.gitignore`, `.npmrc`×5, `tools/*`;
+  (b) `packages/schema/*` plus the `check-no-secrets.mjs` fixture-path scoping its own negative example required;
+  (c) `docs/audit/*`; (d) `docs/adr/*` + `docs/architecture/*` + `docs/README.md`; (e) `docs/verification/*` and
+  this file; (f) the two coffeelint demotions, separate so they can be reverted without touching the documents.
 - **Every push requires separate explicit confirmation.** No `--force`, no `--no-verify`, no amend of published commits.
 - Never `git add --renormalize .` (the repo has `core.autocrlf=true` on this host; mass re-normalization is exactly
   the forbidden mass diff). If line endings must change, isolated commit, endings only.
