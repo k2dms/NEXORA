@@ -269,7 +269,7 @@ user later changes policy: `!packages/**/package-lock.json`. Pending user decisi
 Nothing the Phase 0/1 plan asks for on disk is absent any more. `.github/workflows/verify.yml` landed on
 2026-11-05 — three jobs (`contracts`, `legacy-chain`, and `connector` present but switched off with
 `if: ${{ false }}`), a three-row matrix, and the `VER-02`/`03`/`04`/`06`/`08`/`10`/`11` guards as executable steps —
-and it ran there the same day: three executions, red, red, green, each of the two failures a defect in the workflow
+and it ran there the same day: four executions, red, red, green, green, each of the two failures a defect in the workflow
 itself rather than in the tree, all of them recorded line by line in `docs/audit/99-baseline-report.md` §12. Before
 those runs every `run:` block had been executed on this host and proved able to fail against a synthetic violation,
 which is a claim about the shell logic; the runs are what made it a claim about CI
@@ -290,10 +290,13 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
   reused this host's `node_modules` (five `up to date` lines), so it re-verified the chain rather than resolution.
 - Artifact assertions: 353 files / 5 999 353 B / 252 `lib/` entries / 7 `_locales`, and `js/omega_pac.min.js` present at 742 272 B —
   every one of them reproduced from the 2026-11-05 rebuild, top-level path set included. On a clean image the *shape*
-  figures reproduce and the *byte* figures do not: three runner builds of one commit gave 353 entries, 252 `lib/`,
+  figures reproduce and the *byte* figures differ from this host's, then agree with each other: six runner builds — the
+  three images of each green run — gave 353 entries, 252 `lib/`,
   7 `_locales` and the bundle, at 5 974 389 B / 5 974 444 B (ubuntu) and 5 974 401 B / 5 974 456 B (windows) with a
-  735 547 B bundle — the totals and the bundle size are properties of a CRLF checkout, which is why the workflow
-  prints them as NOTEs (`docs/audit/99-baseline-report.md` §12).
+  735 547 B bundle, the same four totals in both runs — so the totals and the bundle size are properties of a CRLF
+  checkout against this host, and of the runner image against a different image, which is why the workflow
+  prints them as NOTEs (`docs/audit/99-baseline-report.md` §12). What no two builds ever shared is the hash: twelve
+  distinct sha256 values across those six builds.
 - `sha256 dist/chromium-release.zip` = `b93d5100e4c05ccf7af365dfc1742344360579f482df72e4e9ce00f5ba964ba8`
 - `sha256 dist/firefox-release.zip` = `b2309ce3bd0c2be246f0c228ffde1290fa1756c10ad93d90f17380249b4a728f`
   (2026-11-05 values: `73eee79d015ed404dc4bfdaa6d634ae0626a0612b2d603cb3412e6e47be68a4f` and
@@ -315,14 +318,16 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
 - `node tools/check-no-secrets.mjs --selftest` → 13/13 green.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `node tools/check-doc-evidence.mjs` → **green** (2260 `path:line`, 487 `path#pointer`, 1287 doc-and-script
-  names; `PLANNED_DOCS` empty; probe-4 re-ran all of it on 2026-11-05 and §4.4 has the same figures. The three
-  runner executions printed `2252 / 487 / 1253`, the corpus as it stood at `ceedabf` — `docs/audit/99-baseline-report.md`
-  §12).
+  names; `PLANNED_DOCS` empty; probe-4 re-ran all of it on 2026-11-05 and §4.4 has the same figures. These three
+  figures are not local to this host: `42025558933` printed exactly `2260 / 487 / 1287` on the commit that records
+  them, where the three earlier executions printed `2252 / 487 / 1253` for the corpus as it stood at `ceedabf` —
+  `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
+  set and never pinned.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
-- `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners three times on
-  2026-11-05: red, red, green** (`docs/audit/99-baseline-report.md` §12). What the green run answered is the question
+- `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners four times on
+  2026-11-05: red, red, green, green** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
   §4.5 and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 used to leave open — a clean image can install and build
   this tree: all five roots from an empty `node_modules`, no lockfile in git, both pinned test floors reproduced,
   every artifact content figure reproduced, and the 252 `lib/` entries produced without this host's Bower cache
@@ -496,10 +501,10 @@ what keeps ADR-0018 rule 3's single driver intact. (4) A rebuild on the same mac
 every artifact content assertion and moves both sha256 values, because the zip stores per-entry timestamps (§5).
 What is still true: its `run:` blocks were validated by extracting and executing them here first, then re-running
 each guard against a synthetic violation so the guard is proved able to fail (§7.3 of
-`docs/audit/02-toolchain-decay-and-risk.md`) — and the three runs that followed showed how much that was worth,
+`docs/audit/02-toolchain-decay-and-risk.md`) — and the four runs that followed showed how much that was worth,
 because they found two defects no host shell could: a Windows `$GITHUB_WORKSPACE` that is not a POSIX path, and a
 byte total that belonged to one checkout rather than to the build. Both were reproduced here before being fixed, and
-both are green on the third run. What no run has done is open a browser; `LIVE-01…24` are still `SKIPPED`, and the
+both are green on the last two runs. What no run has done is open a browser; `LIVE-01…24` are still `SKIPPED`, and the
 rows in `docs/architecture/39-verification-matrix.md` keep the states the data gives them for the reason §12 states.
 
 **#11 End-to-end verification and report — done for everything a shell on this host can run, and not further.**
@@ -525,7 +530,7 @@ That is a boundary, not an oversight.
 
 **The item that belonged here and nowhere else — the first execution of `.github/workflows/verify.yml` on a runner —
 is done.** It needed a push, so it was gated on the confirmation rule in §7; it happened on 2026-11-05, three times,
-and `docs/audit/99-baseline-report.md` §12 carries the measured output, with the raw capture of all three runs — job
+and `docs/audit/99-baseline-report.md` §12 carries the measured output, with the raw capture of all four runs — job
 conclusions, every `##[error]` annotation, and each quoted line beside the number of times the runner printed it — at
 `docs/audit/raw/probe-8-runner-runs.txt`. That is the raw record this file's own convention asks for. #10 is therefore
 no longer "written and locally step-verified"; it is written, run, twice failing and once green. Two items take its
@@ -551,12 +556,14 @@ place, and neither is a status edit:
   (b) `packages/schema/*` plus the `check-no-secrets.mjs` fixture-path scoping its own negative example required;
   (c) `docs/audit/*`; (d) `docs/adr/*` + `docs/architecture/*` + `docs/README.md`; (e) `docs/verification/*` and
   this file; (f) the two coffeelint demotions, separate so they can be reverted without touching the documents.
-- **Four more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
+- **Five more pushes to `nexora/master` the same day, all fast-forwards, each separately confirmed:**
   `431ea0a..f38f27b` (the state record above), `f38f27b..4307ff6` (the workflow, and the queue and the register as
-  data, and the end-to-end re-verification), `4307ff6..a7627ae` and `a7627ae..ceedabf` (the two CI fixes). Each push
+  data, and the end-to-end re-verification), `4307ff6..a7627ae` and `a7627ae..ceedabf` (the two CI fixes), and
+  `ceedabf..890fde6` (this §12 record, with `docs/audit/raw/probe-8-runner-runs.txt`). Each push
   ran `.github/workflows/verify.yml`: `4307ff6` produced red, `a7627ae` produced red, `ceedabf` produced green, and
-  the run ids — `42015170195`, `42017987418`, `42020617681` — with their measured lines are recorded in
-  `docs/audit/99-baseline-report.md` §12. No `--force`, no `--no-verify`, no amend of anything already published: the
+  `890fde6` produced green again — run ids `42015170195`, `42017987418`, `42020617681`, `42025558933`, with their
+  measured lines recorded in `docs/audit/99-baseline-report.md` §12. No `--force`, no `--no-verify`, no amend of
+  anything already published: the
   commit that first tripped the label guard stayed on `master` with its label, and the document moved to match the
   guard instead.
 - **Every push requires separate explicit confirmation.** No `--force`, no `--no-verify`, no amend of published commits.
