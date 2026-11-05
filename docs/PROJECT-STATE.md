@@ -565,8 +565,10 @@ place, and neither is a status edit:
   data, and the end-to-end re-verification), `4307ff6..a7627ae` and `a7627ae..ceedabf` (the two CI fixes),
   `ceedabf..890fde6` and `890fde6..c81ae7e` (this §12 record, with `docs/audit/raw/probe-8-runner-runs.txt`), and
   `c81ae7e..HEAD` — the same record carried to the fifth run: §12's table, the regenerated capture, the run-count
-  wording in the docs index, audit docs 00, 02 and 99, architecture docs 20, 21 and 39, the verification README, the
-  workflow's own header comment, and the VER-11 subject in the queue data. Each push
+  wording in the docs index, audit docs 00, 02 and 99, architecture docs 20, 21 and 39, the verification README and
+  the workflow's own header comment. The queue data's VER-11 subject and the VER-11 row of architecture doc 39 had
+  already moved in the push before this one; what moves here is doc 21's no-protocol-code row, which now names the
+  VER-03 step. Each push
   ran `.github/workflows/verify.yml`: `4307ff6` produced red, `a7627ae` produced red, and `ceedabf`, `890fde6` and
   `c81ae7e` each produced green — run ids `42015170195`, `42017987418`, `42020617681`, `42025558933`, `42027072602`,
   with their measured lines recorded in `docs/audit/99-baseline-report.md` §12. This push triggers a sixth execution,
