@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/connector-settings.schema.json",
+  "title": "NEXORA connector settings",
+  "description": "User-facing Connector preferences stored under -nexora.settings. Deliberately narrow: this document holds intentions ('want core auto-start'), never observations ('core is running'), which belong to connector.status and must not be cached here. Anything secret is a keystore reference or lives in another namespace.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "core",
+    "ports",
+    "telemetry",
+    "proxy"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Version of this document, migrated independently of -nexora.schemaVersion so a settings change does not force an envelope migration (docs/architecture/35-schema-versioning-migration.md §4)."
+    },
+    "core": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "autoStart",
+        "installChannel"
+      ],
+      "properties": {
+        "autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start Xray when the Connector comes up. When false, applying a ConnectorProfile still triggers an on-demand start, because a profile the user selected is intent."
+        },
+        "installChannel": {
+          "enum": [
+            "pinned",
+            "manual"
+          ],
+          "default": "pinned",
+          "description": "'pinned' runs whatever packages/pins.schema.json attests. 'manual' refuses to run anything the Connector did not fetch (docs/architecture/33). There is no 'any version found on disk': a binary chosen by path is a binary chosen by whoever wrote that path."
+        },
+        "installRoot": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200,
+          "default": null,
+          "description": "Override of the pin's installRoot. Null means use the pin. Paths are not secrets but are not logged either (docs/architecture/32)."
+        }
+      },
+      "description": "Which Core binary may run and how it gets started. Preferences only; observed state comes from connector.status."
+    },
+    "ports": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "range",
+        "host"
+      ],
+      "properties": {
+        "range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "description": "The only ports a NEXORA-managed Xray may bind. Narrower ranges fail more often on shared machines; wider ones collide with software the user already runs.",
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65024
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535
+            }
+          }
+        },
+        "host": {
+          "const": "127.0.0.1",
+          "description": "Loopback, not configurable (ADR-0006). A setting that could open the inbound to the LAN is a SOCKS proxy for the whole network with no authentication; core.start refuses to start such a config and this schema refuses to describe one."
+        },
+        "persistAssignments": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reuse the previous port for the same profile so a Connector restart does not invalidate a chrome.proxy setting the browser already has."
+        }
+      },
+      "description": "The loopback port policy the Compiler allocates from. Host is fixed by schema to 127.0.0.1 (ADR-0006)."
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "logLevel",
+        "retentionDays"
+      ],
+      "properties": {
+        "logLevel": {
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug"
+          ],
+          "default": "info",
+          "description": "'debug' additionally logs compiled config structure with every secret field replaced."
+        },
+        "retentionDays": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90,
+          "default": 7,
+          "description": "Ring-buffer age, not a archive. 0 keeps the current session only."
+        },
+        "diagnosticsIncludeByDefault": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "default": [
+            "connector-log",
+            "core-log",
+            "config-snapshot",
+            "health",
+            "versions"
+          ],
+          "description": "Sections diagnostics.get includes when the caller does not ask for specific ones. Names are the command's own include enum (protocol/commands/diagnostics.get.json) and scripts/verify.mjs asserts every name here exists there -- a settings document that invents a section produces a Diagnostics dump with a silently missing half.",
+          "items": {
+            "enum": [
+              "core-log",
+              "connector-log",
+              "events",
+              "config-snapshot",
+              "health",
+              "inbounds",
+              "versions",
+              "pins",
+              "routing-decisions",
+              "failure-policy"
+            ]
+          }
+        }
+      },
+      "description": "Log verbosity, retention and what diagnostics.get includes by default."
+    },
+    "proxy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failClosedDefault"
+      ],
+      "properties": {
+        "failClosedDefault": {
+          "const": "block",
+          "description": "The global default. Per-profile failOpen is an override the user must confirm; it cannot be expressed as a global setting here, because a product whose default is fail-open has no failure policy."
+        },
+        "notificationLevel": {
+          "enum": [
+            "silent",
+            "badge",
+            "notification"
+          ],
+          "default": "notification",
+          "description": "'silent' is permitted only for health changes, never for a blocked state: ADR-0009 requires the block to be visible."
+        }
+      },
+      "description": "Browser-side behaviour on failure. The fail-closed default is not overridable here by design."
+    }
+  },
+  "allOf": [
+    {
+      "description": "Port range must be sane and small enough that the Connector can prove it holds nothing outside loopback.",
+      "if": {
+        "properties": {
+          "ports": {
+            "required": [
+              "range"
+            ]
+          }
+        },
+        "required": [
+          "ports"
+        ]
+      },
+      "then": {
+        "properties": {
+          "ports": {
+            "properties": {
+              "range": {
+                "properties": {
+                  "max": {
+                    "maximum": 65535
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

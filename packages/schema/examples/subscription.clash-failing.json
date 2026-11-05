@@ -1,0 +1,35 @@
+{
+  "id": "4e5f6a7b-8c9d-4e0f-91a2-b3c4d5e6f708",
+  "displayName": "Clash config feed (lossy import, currently failing)",
+  "url": "https://feeds.example.net/clash/provider.yaml",
+  "format": "clash-yaml",
+  "limits": {
+    "maxBytes": 4194304,
+    "maxRedirects": 2,
+    "timeoutMs": 30000,
+    "maxServers": 1024
+  },
+  "keepLastGood": true,
+  "schedule": {
+    "intervalSeconds": 86400,
+    "jitterPercent": 30,
+    "backoffMultiplier": 2,
+    "maxIntervalSeconds": 604800
+  },
+  "status": {
+    "lastAttemptAt": "2026-11-04T03:10:00Z",
+    "lastSuccessAt": "2026-11-01T03:00:00Z",
+    "lastSha256": "0011223344556677889900aabbccddeeff0011223344556677889900aabbccdd",
+    "serverCount": 7,
+    "consecutiveFailures": 4,
+    "nextAttemptAt": "2026-11-06T03:10:00Z",
+    "lastError": {
+      "code": "NetworkUnreachable",
+      "at": "2026-11-04T03:10:00Z",
+      "detail": "connect timeout after 30000 ms; last good list retained"
+    }
+  },
+  "serverIds": [],
+  "createdAt": "2026-09-14T10:00:00Z",
+  "updatedAt": "2026-11-04T03:10:00Z"
+}

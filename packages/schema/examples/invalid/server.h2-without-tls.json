@@ -1,0 +1,16 @@
+{
+  "id": "a1a1a1a1-1111-4111-8111-111111111105",
+  "displayName": "MUST BE REJECTED: h2 transport without TLS",
+  "protocol": "vless",
+  "address": "bad.example.net",
+  "port": 443,
+  "userIdRef": "keystore://server/a1a1a1a1/user-id",
+  "network": "h2",
+  "security": "none",
+  "flow": "",
+  "h2": { "path": "/" },
+  "tag": "srv-a1a1a1a1",
+  "source": "manual",
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

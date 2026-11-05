@@ -1,0 +1,26 @@
+{
+  "id": "8b1d4e70-2a3c-4f51-8b62-7e9d0c1a3f55",
+  "displayName": "Amsterdam 2 - VLESS REALITY XHTTP",
+  "protocol": "vless",
+  "address": "nl2.example.net",
+  "port": 443,
+  "userIdRef": "keystore://server/8b1d4e70/user-id",
+  "network": "xhttp",
+  "security": "reality",
+  "flow": "",
+  "reality": {
+    "publicKey": "hv2uW3Yx7Z9aBcDeFgHiJkLmNoPqRsTuVwXyZ012345",
+    "shortId": "1a2b3c",
+    "spiderX": "/",
+    "fingerprint": "chrome",
+    "serverName": "www.microsoft.com"
+  },
+  "xhttp": {
+    "mode": "auto",
+    "path": "/websocket"
+  },
+  "tag": "srv-8b1d4e70",
+  "source": "manual",
+  "createdAt": "2026-11-04T09:05:00Z",
+  "updatedAt": "2026-11-04T09:05:00Z"
+}

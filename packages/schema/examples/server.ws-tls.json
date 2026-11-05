@@ -1,0 +1,23 @@
+{
+  "id": "e2b7c4a9-6d15-4f83-9a27-3c5e7b9d1f42",
+  "displayName": "Riga 1 - VLESS WebSocket TLS",
+  "protocol": "vless",
+  "address": "lv1.example.net",
+  "port": 2087,
+  "userIdRef": "keystore://server/e2b7c4a9/user-id",
+  "network": "ws",
+  "security": "tls",
+  "tls": {
+    "serverName": "lv1.example.net",
+    "alpn": ["http/1.1"]
+  },
+  "ws": {
+    "path": "/vless-ws",
+    "host": "lv1.example.net",
+    "headersRef": "keystore://server/e2b7c4a9/headers"
+  },
+  "tag": "srv-e2b7c4a9",
+  "source": "import",
+  "createdAt": "2026-11-04T09:15:00Z",
+  "updatedAt": "2026-11-04T09:15:00Z"
+}

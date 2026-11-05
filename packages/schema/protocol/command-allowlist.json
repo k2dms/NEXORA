@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/protocol/command-allowlist.json",
+  "title": "Connector command allowlist",
+  "description": "The complete set of methods the host will dispatch. Anything else is UnknownMethod with no fallthrough (ADR-0007). This file, protocol/commands/*.json and docs/architecture/26-command-surface.md MUST name the same nineteen commands; scripts/verify.mjs fails the build if they diverge, which is what makes 'typed commands, strict allowlist' a checked property instead of an intention. No field here permits a shell command, a path, or a URL chosen by the caller.",
+  "$comment": "This document doubles as its own meta-schema: type object with the properties below, validated structurally by scripts/verify.mjs.",
+  "type": "object",
+  "protocolVersion": 1,
+  "deniedByDefault": true,
+  "unknownMethodBehavior": "UnknownMethod",
+  "dispatchRule": "The host resolves the method string against this list before touching any state; the resolution is a total function with exactly one failure case.",
+  "commands": [
+    { "name": "connector.hello", "class": "read", "availableBeforeHello": true, "privileged": false },
+    { "name": "connector.version", "class": "read", "availableBeforeHello": false, "privileged": false },
+    { "name": "connector.status", "class": "read", "availableBeforeHello": false, "privileged": false },
+    { "name": "connector.health", "class": "read", "availableBeforeHello": false, "privileged": false },
+    { "name": "connector.events.subscribe", "class": "mutate", "availableBeforeHello": false, "privileged": false },
+    { "name": "core.start", "class": "converge", "availableBeforeHello": false, "privileged": true },
+    { "name": "core.stop", "class": "converge", "availableBeforeHello": false, "privileged": true },
+    { "name": "core.restart", "class": "converge", "availableBeforeHello": false, "privileged": true },
+    { "name": "core.status", "class": "read", "availableBeforeHello": false, "privileged": false },
+    { "name": "core.select", "class": "mutate", "availableBeforeHello": false, "privileged": true },
+    { "name": "config.apply", "class": "replace", "availableBeforeHello": false, "privileged": true },
+    { "name": "config.snapshot", "class": "read", "availableBeforeHello": false, "privileged": false },
+    { "name": "profile.import", "class": "replace", "availableBeforeHello": false, "privileged": true },
+    { "name": "profile.remove", "class": "mutate", "availableBeforeHello": false, "privileged": true },
+    { "name": "profile.validate", "class": "read", "availableBeforeHello": false, "privileged": false },
+    { "name": "subscription.refresh", "class": "mutate", "availableBeforeHello": false, "privileged": true },
+    { "name": "server.test", "class": "probe", "availableBeforeHello": false, "privileged": true },
+    { "name": "diagnostics.get", "class": "read", "availableBeforeHello": false, "privileged": true },
+    { "name": "keystore.purge", "class": "mutate", "availableBeforeHello": false, "privileged": true }
+  ]
+}

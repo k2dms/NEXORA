@@ -1,0 +1,126 @@
+{
+  "title": "Why each invalid example must be rejected",
+  "description": "scripts/verify.mjs asserts two things per case: that the mapped schema rejects the document, and that the rejection names the keyword below. Without the second assertion a fixture could 'pass' by tripping an unrelated rule and the intended trap would stay untested.",
+  "cases": {
+    "server.vision-over-ws": {
+      "schema": "server",
+      "keyword": "if",
+      "mustReject": "xtls-rprx-vision is only defined over raw TCP. Compiling it anyway yields a config Xray accepts and ignores, i.e. a server the user believes is XTLS-protected that is not (docs/architecture/23)."
+    },
+    "server.reality-with-privatekey": {
+      "schema": "server",
+      "keyword": "additionalProperties",
+      "mustReject": "A client configuration must never contain the REALITY private key. It belongs to the server operator; sync it to a laptop and every machine with the profile can mint handshakes (docs/architecture/32)."
+    },
+    "server.inline-headers": {
+      "schema": "server",
+      "keyword": "additionalProperties",
+      "mustReject": "Header maps may carry Authorization or Cookie, so they are keystore references only. This is SEC-1 (omega-target/src/options.coffee:27 strips 'headers' from nothing) closed at the schema boundary."
+    },
+    "server.security-none-with-tls": {
+      "schema": "server",
+      "keyword": "not",
+      "mustReject": "A tls block under security none is either a mistake or a smuggled SNI; either way the compiler would emit settings Xray never reads."
+    },
+    "server.h2-without-tls": {
+      "schema": "server",
+      "keyword": "if",
+      "mustReject": "h2 requires TLS by definition; an h2-over-cleartext config is not a thing Xray will run."
+    },
+    "server.missing-user-id-ref": {
+      "schema": "server",
+      "keyword": "required",
+      "mustReject": "A VLESS server without a user id cannot authenticate. Required rather than nullable so no code path can present a half-built server as ready."
+    },
+    "profile.no-servers": {
+      "schema": "profile",
+      "keyword": "minItems",
+      "mustReject": "An empty ConnectorProfile compiles to an inbound with no outbound behind it -- a guaranteed dead profile that still occupies the switcher."
+    },
+    "profile.fixed-without-default": {
+      "schema": "profile",
+      "keyword": "if",
+      "mustReject": "mode fixed means exactly one server; without defaultServerId there is nothing to pin."
+    },
+    "profile.failopen-without-confirm": {
+      "schema": "profile",
+      "keyword": "required",
+      "mustReject": "failOpen is the one setting that lets traffic escape when the Core dies, so it requires the user's confirmation token (ADR-0009)."
+    },
+    "subscription.http-url": {
+      "schema": "subscription",
+      "keyword": "pattern",
+      "mustReject": "A plaintext subscription feed can be rewritten in flight into a config that points every profile at an attacker's server."
+    },
+    "subscription.url-userinfo": {
+      "schema": "subscription",
+      "keyword": "pattern",
+      "mustReject": "Credentials in the URL are stored, synced and echoed into logs verbatim. They belong in headersRef, which is a keystore pointer."
+    },
+    "subscription.url-token": {
+      "schema": "subscription",
+      "keyword": "not",
+      "mustReject": "?token= is a credential wearing the shape of an address. This namespace is sync-eligible and url is required, so a raw token URL reaches the browser account, the Gist and WebDAV in clear -- the SEC-1 leak again, one field over. The address goes in urlRef and url keeps a sanitised display form (docs/architecture/29 §4)."
+    },
+    "subscription.keep-last-good-false": {
+      "schema": "subscription",
+      "keyword": "const",
+      "mustReject": "Discarding the working list on a failed refresh is the bug the master prompt forbids; the flag is not a user preference."
+    },
+    "subscription.oversized-limit": {
+      "schema": "subscription",
+      "keyword": "maximum",
+      "mustReject": "The guard has to be smaller than the damage. 16 MB accepted here means a feed can DoS the parser with no ceiling (SEC-2)."
+    },
+    "routing.unknown-condition": {
+      "schema": "routing",
+      "keyword": "oneOf",
+      "mustReject": "Only the twelve registry types in omega-pac/src/conditions.coffee round-trip through the legacy engine; an invented one silently matches nothing."
+    },
+    "routing.invented-outbound": {
+      "schema": "routing",
+      "keyword": "pattern",
+      "mustReject": "A rule may name only 'direct', 'block' or a derived srv-<uuid8> tag. Free-text outbounds let a policy point at a tag the compiler never emitted."
+    },
+    "routing.prefixed-profilename": {
+      "schema": "routing",
+      "keyword": "pattern",
+      "mustReject": "SwitchProfile stores bare names; Profiles.nameAsKey adds the '+'. Writing '+direct' here produces a rule that can never match."
+    },
+    "events.unknown-name": {
+      "schema": "events",
+      "keyword": "enum",
+      "mustReject": "The event set is closed so UI code cannot bind to an event that exists on one build only (docs/architecture/36)."
+    },
+    "pins.mirror-url": {
+      "schema": "pins",
+      "keyword": "pattern",
+      "mustReject": "Only the pinned upstream release host is legal. A mirror is a supply-chain decision and would defeat the whole pin (ADR-0019)."
+    },
+    "envelope.ok-without-result": {
+      "schema": "envelope",
+      "keyword": "anyOf",
+      "mustReject": "ok true without a result is an answer that says nothing happened; the client cannot tell it from a dropped reply (docs/architecture/25)."
+    },
+    "envelope.event-with-method": {
+      "schema": "envelope",
+      "keyword": "not",
+      "mustReject": "method is a request field. An event carrying one would be dispatched as a command by a naive receiver (ADR-0007)."
+    },
+    "failure-policy.global-failopen": {
+      "schema": "failure-policy",
+      "keyword": "enum",
+      "mustReject": "ADR-0009 rule 2: fail-open is a per-profile exception only. A global coreDeath.action of failOpen is a product whose default is unproxied traffic whenever Core dies, and no confirmToken in this document could make that an informed choice for profiles the user never looked at (docs/architecture/30-failure-policy.md)."
+    },
+    "failure-policy.teardown-restore": {
+      "schema": "failure-policy",
+      "keyword": "enum",
+      "mustReject": "serviceTeardown is a Connector-triggered plane, so its terminal resolution cannot be 'restore': restoring the browser's pre-NEXORA setting is the direct/system egress that forbiddenOutcomes forbids. 'restore' is legal under extensionLifecycle, where the user is the trigger."
+    },
+    "failure-policy.narrow-forbidden": {
+      "schema": "failure-policy",
+      "keyword": "contains",
+      "mustReject": "forbiddenOutcomes may be omitted, in which case the default is the full set, but it may not be narrowed: a policy that names two of the three leaks is a policy with an escape hatch written in JSON."
+    }
+  }
+}

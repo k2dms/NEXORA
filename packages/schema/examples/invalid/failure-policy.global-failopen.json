@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "coreDeath": {
+    "action": "failOpen",
+    "restartAttempts": 3,
+    "restartBackoffSeconds": [1, 5, 30],
+    "notify": true
+  },
+  "serviceTeardown": {
+    "graceSeconds": 60,
+    "then": "block",
+    "hardCapSeconds": 3600
+  },
+  "extensionLifecycle": {
+    "onDisabled": "restore",
+    "onUpdated": "restore",
+    "onBrowserStart": "reapply"
+  },
+  "block": {
+    "scheme": "socks5",
+    "host": "127.0.0.1",
+    "portRange": { "min": 20900, "max": 20999 },
+    "assertClosed": true
+  },
+  "forbiddenOutcomes": ["direct", "system", "clear-proxy-settings"]
+}

@@ -1,0 +1,76 @@
+{
+  "name": "core.select",
+  "title": "Switch the active outbound among already-loaded servers",
+  "summary": "Imperative fast path, deliberately distinct from config.apply: it changes which already-configured outbound is active for subsequent connections without writing a config and without restarting Core. Confusing the two is how a UI quick switch ends up killing every live connection.",
+  "class": "mutate",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 3000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "serverId"
+    ],
+    "properties": {
+      "serverId": {
+        "$ref": "https://schema.nexora.local/server.schema.json#/properties/id"
+      },
+      "profileId": {
+        "$ref": "https://schema.nexora.local/connector-profile.schema.json#/properties/id"
+      }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "activeServerTag",
+      "changed",
+      "configHashUnchanged"
+    ],
+    "properties": {
+      "activeServerTag": {
+        "type": "string",
+        "pattern": "^srv-[0-9a-f]{8}$"
+      },
+      "previousServerTag": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^srv-[0-9a-f]{8}$"
+      },
+      "changed": {
+        "type": "boolean"
+      },
+      "configHashUnchanged": {
+        "type": "boolean",
+        "const": true,
+        "description": "Asserts the promise: select never changes the applied config, so it never triggers a restart. If an implementation cannot guarantee this it must expose config.apply instead."
+      },
+      "liveConnectionsAffected": {
+        "type": "boolean",
+        "description": "Reported honestly. Existing connections keep their outbound; only new connections follow the switch."
+      }
+    }
+  },
+  "errors": [
+    "CoreNotRunning",
+    "InvalidProfile",
+    "UnsupportedCombination",
+    "Busy",
+    "Timeout",
+    "UnauthorizedExtension",
+    "Internal"
+  ],
+  "sideEffects": [
+    "core-config"
+  ],
+  "invariants": [
+    "serverId must already be present in the applied config; selecting an unloaded server is InvalidProfile, never an implicit config.apply.",
+    "A repeated select of the same server is a no-op with changed=false and must not bump any counter that the UI reads as activity."
+  ]
+}

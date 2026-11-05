@@ -1,0 +1,13 @@
+{
+  "id": "b2b2b2b2-2222-4222-8222-222222222203",
+  "displayName": "MUST BE REJECTED: fail-open without the user's confirmation token",
+  "kind": "connector",
+  "serverIds": ["3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01"],
+  "defaultServerId": "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01",
+  "selection": { "mode": "fixed" },
+  "failover": { "enabled": false },
+  "failurePolicy": { "coreDeath": { "action": "failOpen" } },
+  "enabled": true,
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

@@ -1,0 +1,84 @@
+{
+  "name": "profile.validate",
+  "title": "Validate without writing or applying",
+  "summary": "The UI's only safe way to tell a user 'this is wrong' before saving, and the only way to preview which rules will be unrepresentable in Xray routing. Nothing is persisted, so it is safe to call on every keystroke-debounce.",
+  "class": "read",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 10000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 1,
+    "properties": {
+      "profile": { "$ref": "https://schema.nexora.local/connector-profile.schema.json" },
+      "server": { "$ref": "https://schema.nexora.local/server.schema.json" },
+      "routingPolicy": { "$ref": "https://schema.nexora.local/routing-policy.schema.json" },
+      "profileId": { "type": "string" },
+      "compilePreview": { "type": "boolean", "default": false }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["valid"],
+    "properties": {
+      "valid": { "type": "boolean" },
+      "errors": {
+        "type": "array",
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code"],
+          "properties": {
+            "code": { "type": "string" },
+            "field": { "type": "string", "maxLength": 128 },
+            "message": { "type": "string", "maxLength": 200 }
+          }
+        }
+      },
+      "warnings": {
+        "type": "array",
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["message"],
+          "properties": { "message": { "type": "string", "maxLength": 200 }, "field": { "type": "string" } }
+        }
+      },
+      "compiledConfigHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "unrepresentable": {
+        "type": "array",
+        "maxItems": 256,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "reason"],
+          "properties": { "source": { "type": "string" }, "reason": { "type": "string" } }
+        }
+      },
+      "inboundPlan": {
+        "type": "array",
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["port"],
+          "properties": {
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "listen": { "enum": ["127.0.0.1", "::1"] },
+            "conflict": { "type": "boolean", "default": false },
+            "reason": { "type": "string", "maxLength": 120 }
+          }
+        },
+        "description": "The ports a real apply would reserve, with conflicts marked. Reporting this before applying is what keeps port contention from surfacing as an unexplained Core startup failure (docs/architecture/27)."
+      }
+    }
+  },
+  "errors": ["BadRequest", "SchemaMismatch", "InvalidProfile", "UnsupportedCombination", "Timeout", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["none"]
+}

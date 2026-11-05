@@ -1,0 +1,12 @@
+{
+  "id": "b2b2b2b2-2222-4222-8222-222222222201",
+  "displayName": "MUST BE REJECTED: connector profile with no servers",
+  "kind": "connector",
+  "serverIds": [],
+  "selection": { "mode": "ordered" },
+  "failover": { "enabled": true },
+  "failurePolicy": { "coreDeath": { "action": "block" } },
+  "enabled": true,
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

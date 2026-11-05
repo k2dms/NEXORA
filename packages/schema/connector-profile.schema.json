@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/connector-profile.schema.json",
+  "title": "NEXORA ConnectorProfile",
+  "description": "A user-selectable profile backed by the Connector: an ordered set of Servers plus the policy that picks among them. It compiles to a single chrome.proxy FixedProfile pointing at a loopback inbound (ADR-0013), which is what keeps existing Omega SwitchProfile rules referencing it working across cut-over.",
+  "type": "object",
+  "required": [
+    "id",
+    "displayName",
+    "kind",
+    "serverIds",
+    "selection",
+    "failover",
+    "failurePolicy"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUID v4 assigned by the extension at creation. It is the storage-key suffix (-nexora.profile.<id>) and the value the Connector echoes back, so it must never be regenerated on edit or survive a sync merge twice."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Label shown in the UI. Not the Omega profile name: the bridge writes '+<displayName>' into the envelope only if that name is free (docs/architecture/24)."
+    },
+    "kind": {
+      "const": "connector",
+      "description": "Discriminator, so that a future entity sharing the key namespace cannot be mistaken for a profile the legacy engine must iterate."
+    },
+    "serverIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      },
+      "description": "Order is meaningful: it is the failover ranking and the 'fastest' tie-break."
+    },
+    "defaultServerId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Membership in serverIds is checked by scripts/verify.mjs -- JSON Schema cannot compare two instance fields."
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "description": "How the active Server is chosen among serverIds. Decides transport behaviour, not request routing -- that is routingPolicyId and the browser plane.",
+      "properties": {
+        "mode": {
+          "enum": ["fixed", "ordered", "fastest", "roundRobin"],
+          "description": "fixed = defaultServerId only; ordered = walk serverIds on failure; fastest = rank by rolling health probes; roundRobin = spread."
+        },
+        "stickySeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400,
+          "default": 300,
+          "description": "How long 'fastest' keeps a ranking before re-ranking. Without it, a single slow probe would flip the active server mid-session."
+        }
+      }
+    },
+    "failover": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "description": "When a Server stops working, what the profile does about it. Owns cooldown and eviction so one dead server cannot be re-picked on every request.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "cooldownSeconds": { "type": "integer", "minimum": 5, "maximum": 3600, "default": 60 },
+        "maxConsecutiveFailures": { "type": "integer", "minimum": 1, "maximum": 20, "default": 3 },
+        "probeIntervalSeconds": { "type": "integer", "minimum": 10, "maximum": 3600, "default": 120 }
+      }
+    },
+    "failurePolicy": {
+      "$ref": "https://schema.nexora.local/failure-policy.schema.json#/$defs/ProfilePolicy",
+      "description": "Per-profile override of the global fail-closed default (ADR-0009)."
+    },
+    "routingPolicyId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Optional reference to a routing-policy document (browser-plane rules stay on the Omega profile; core-plane rules compile into Xray routing)."
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Disabled profiles keep their id and server links but compile to nothing and are hidden from the switcher. Distinct from deleting, which would break references."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set once at creation by the extension and never rewritten, so that 'added in this import' is answerable."
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last user-visible mutation. The Connector MUST NOT use it to decide anything; it exists for the UI and for sync conflict reporting."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "selection": {
+            "required": ["mode"],
+            "properties": { "mode": { "const": "fixed" } }
+          }
+        }
+      },
+      "then": { "required": ["defaultServerId"] }
+    }
+  ]
+}

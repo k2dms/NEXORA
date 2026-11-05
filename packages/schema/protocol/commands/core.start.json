@@ -1,0 +1,74 @@
+{
+  "name": "core.start",
+  "title": "Start Xray Core (converge to running)",
+  "summary": "Converge-to-desired-state: calling start on a Core that is already running with the same applied config is a successful no-op that returns the same pid. This is what makes a reconnect-driven retry safe instead of a port-conflict storm.",
+  "class": "converge",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 15000,
+  "requiresHello": true,
+  "capabilities": ["integrity.pinned-core"],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "configHash": {
+        "type": ["string", "null"],
+        "pattern": "^([0-9a-f]{64})?$",
+        "description": "If supplied and it equals the applied config, start is guaranteed not to reload. Prevents a reconnect from re-applying a config the user did not change."
+      },
+      "profileId": { "$ref": "https://schema.nexora.local/connector-profile.schema.json#/properties/id" },
+      "reason": { "type": "string", "maxLength": 40 }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["running", "alreadyRunning", "inboundPorts"],
+    "properties": {
+      "running": { "type": "boolean" },
+      "alreadyRunning": { "type": "boolean" },
+      "pid": { "type": ["integer", "null"], "minimum": 1 },
+      "configHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "coreVersion": { "type": ["string", "null"] },
+      "inboundPorts": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["listen", "port"],
+          "properties": {
+            "listen": { "enum": ["127.0.0.1", "::1"] },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "protocol": { "enum": ["http", "socks", "socks5", "dokodemo-door"] },
+            "tag": { "type": "string" }
+          }
+        }
+      },
+      "contained": {
+        "type": ["boolean", "null"],
+        "description": "True when the Core is inside a Job Object / PDEATHSIG parent-death scope. false means the Core could outlive the Connector, which is a reported condition, not a silent one."
+      },
+      "startedAt": { "type": ["string", "null"], "format": "date-time" }
+    }
+  },
+  "errors": [
+    "CoreAlreadyRunning",
+    "IntegrityMismatch",
+    "ConfigApplyFailed",
+    "QuotaExceeded",
+    "DiskFull",
+    "KeystoreUnavailable",
+    "Busy",
+    "Timeout",
+    "UnauthorizedExtension",
+    "Internal"
+  ],
+  "sideEffects": ["core-process", "disk-write", "log-write"],
+  "progressEvents": ["core.started", "integrity.mismatch"],
+  "invariants": [
+    "Every inbound listen address MUST be loopback; a non-loopback bind refuses to start (ADR-0006, verified by LIVE-03 with Get-NetTCPConnection)."
+  ]
+}

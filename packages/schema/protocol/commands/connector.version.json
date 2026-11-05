@@ -1,0 +1,27 @@
+{
+  "name": "connector.version",
+  "title": "Version strings without negotiation",
+  "summary": "Retained for command-surface parity with the brief. It answers the same questions hello answers, minus the compatibility intersection, and MUST NOT be used to decide whether commands are safe to send -- only connector.hello establishes that.",
+  "class": "read",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 2000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": { "type": "object", "additionalProperties": false },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["connectorVersion", "protocolVersion"],
+    "properties": {
+      "connectorVersion": { "type": "string" },
+      "coreVersion": { "type": ["string", "null"] },
+      "protocolVersion": { "type": "integer", "minimum": 1, "maximum": 255 },
+      "schemaVersion": { "type": "integer", "minimum": 1 },
+      "pinsVersion": { "type": ["integer", "null"], "minimum": 1 },
+      "buildId": { "type": ["string", "null"], "maxLength": 64 }
+    }
+  },
+  "errors": ["Timeout", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["none"]
+}

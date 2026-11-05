@@ -1,0 +1,516 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/server.schema.json",
+  "title": "NEXORA Server",
+  "description": "One VLESS endpoint: transport parameters plus a reference to its credentials. A Server is NOT an OmegaPac profile and MUST NOT be stored under a '+' envelope key (docs/architecture/24, ADR-0012). Credentials never appear as values here -- every secret field is a keystore reference (ADR-0010, ADR-0011).",
+  "type": "object",
+  "required": [
+    "id",
+    "displayName",
+    "protocol",
+    "address",
+    "port",
+    "network",
+    "security",
+    "userIdRef"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Stable identity; the envelope key is derived as -nexora.server.<id>."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "User-visible label. MUST NOT be used as an identifier: rename must not break ConnectorProfile references."
+    },
+    "protocol": {
+      "const": "vless",
+      "description": "Only VLESS is modelled in NEXORA. Other protocols stay expressible as legacy FixedProfile/PacProfile and are out of scope for this schema (ADR-0003)."
+    },
+    "address": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253,
+      "pattern": "^[A-Za-z0-9.\\-:\\[\\]a-f0-9]+$",
+      "description": "DNS name, IPv4 or IPv6 literal. No userinfo, no scheme, no port."
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "Remote port on address. Unrelated to the loopback inbound port, which the Connector assigns (docs/architecture/27)."
+    },
+    "userIdRef": {
+      "type": "string",
+      "pattern": "^keystore://[A-Za-z0-9._:/-]{1,96}$",
+      "description": "Reference to the VLESS user/UUID secret. The value lives in the Connector keystore only."
+    },
+    "network": {
+      "enum": [
+        "tcp",
+        "ws",
+        "grpc",
+        "xhttp",
+        "h2"
+      ],
+      "description": "Transport. Determines which transport block below is required."
+    },
+    "security": {
+      "enum": [
+        "none",
+        "tls",
+        "reality"
+      ],
+      "description": "Transport security. 'reality' is REALITY (requires publicKey); 'tls' requires the tls block."
+    },
+    "flow": {
+      "enum": [
+        "",
+        "xtls-rprx-vision"
+      ],
+      "default": "",
+      "description": "XTLS flow. Constrained below: vision is legal only over tcp with tls or reality."
+    },
+    "tls": {
+      "$ref": "#/$defs/tlsSettings",
+      "description": "TLS parameters. Required exactly when security is 'tls', forbidden when it is 'none' or 'reality' (allOf below)."
+    },
+    "reality": {
+      "$ref": "#/$defs/realitySettings",
+      "description": "REALITY parameters. Required exactly when security is 'reality'; a server cannot carry both tls and reality."
+    },
+    "ws": {
+      "$ref": "#/$defs/wsSettings",
+      "description": "WebSocket transport parameters, required when network is 'ws'."
+    },
+    "grpc": {
+      "$ref": "#/$defs/grpcSettings",
+      "description": "gRPC transport parameters, required when network is 'grpc'. REALITY is not defined over gRPC, so the allOf below rejects that pair."
+    },
+    "xhttp": {
+      "$ref": "#/$defs/xhttpSettings",
+      "description": "XHTTP transport parameters, required when network is 'xhttp'."
+    },
+    "h2": {
+      "$ref": "#/$defs/h2Settings",
+      "description": "HTTP/2 transport parameters, required when network is 'h2'; h2 mandates TLS."
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^srv-[0-9a-f]{8}$",
+      "description": "Derived Xray outbound tag. Not free text, so two servers can never collide on a tag."
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Free-text user note. Never rendered into a log line or a diagnostics dump without masking, because users paste endpoints into notes."
+    },
+    "source": {
+      "enum": [
+        "manual",
+        "subscription",
+        "import"
+      ],
+      "default": "manual",
+      "description": "Provenance. Drives whether a refresh may replace this server and whether deleting the subscription cascades; a server with no provenance cannot be safely garbage-collected."
+    },
+    "subscriptionId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Set when source is 'subscription'; drives '404 does not delete' policy (docs/architecture/29)."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set once by the extension when the Server is created; never rewritten by a subscription refresh, or the UI cannot tell a new server from a replaced one."
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last mutation of transport parameters. The Compiler compares it against the applied config mtime to decide whether a config.apply is needed."
+    }
+  },
+  "$defs": {
+    "headersRef": {
+      "type": "string",
+      "pattern": "^keystore://[A-Za-z0-9._:/-]{1,96}$",
+      "description": "Header maps may carry Authorization/Cookie, so they are keystore references, never inline objects. This is the SEC-1 fix expressed as a schema."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^/[A-Za-z0-9._~%!$&'()*+,;=:@/?-]*$"
+    },
+    "host": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253,
+      "pattern": "^[A-Za-z0-9.-]+$"
+    },
+    "tlsSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "serverName"
+      ],
+      "properties": {
+        "serverName": {
+          "$ref": "#/$defs/host"
+        },
+        "alpn": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "h3",
+              "h2",
+              "http/1.1"
+            ]
+          }
+        },
+        "fingerprint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "ClientHello fingerprint (e.g. chrome, firefox, safari). Not a secret."
+        },
+        "insecure": {
+          "const": false,
+          "description": "Certificate verification is never disabled in a NEXORA-generated config."
+        }
+      }
+    },
+    "realitySettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicKey",
+        "serverName"
+      ],
+      "properties": {
+        "publicKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "description": "Curve25519 public key, x25519 base64url. The counterpart PRIVATE key is rejected by additionalProperties:false -- a client config must never contain it (docs/architecture/32)."
+        },
+        "shortId": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{2}){0,4}$",
+          "default": "",
+          "description": "Hex, 0-8 chars."
+        },
+        "spiderX": {
+          "type": "string",
+          "maxLength": 64,
+          "default": "/"
+        },
+        "fingerprint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "serverName": {
+          "$ref": "#/$defs/host"
+        }
+      }
+    },
+    "wsSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "host": {
+          "$ref": "#/$defs/host"
+        },
+        "headersRef": {
+          "$ref": "#/$defs/headersRef"
+        }
+      }
+    },
+    "grpcSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "serviceName"
+      ],
+      "properties": {
+        "serviceName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "multiMode": {
+          "type": "boolean",
+          "default": false
+        },
+        "authority": {
+          "$ref": "#/$defs/host"
+        },
+        "headersRef": {
+          "$ref": "#/$defs/headersRef"
+        }
+      }
+    },
+    "xhttpSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "path"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "auto",
+            "str",
+            "packet-up"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "host": {
+          "$ref": "#/$defs/host"
+        },
+        "extra": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    },
+    "h2Settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "host": {
+          "$ref": "#/$defs/host"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "Vision flow is only meaningful over raw TCP with TLS or REALITY. A compiler that accepted vision-over-ws/xhttp would emit an Xray config that silently ignores flow, i.e. a server the user believes is protected by XTLS that is not. Reject instead (docs/architecture/23).",
+      "if": {
+        "required": [
+          "flow"
+        ],
+        "properties": {
+          "flow": {
+            "const": "xtls-rprx-vision"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "network",
+          "security"
+        ],
+        "properties": {
+          "network": {
+            "const": "tcp"
+          },
+          "security": {
+            "enum": [
+              "tls",
+              "reality"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "const": "tls"
+          }
+        },
+        "required": [
+          "security"
+        ]
+      },
+      "then": {
+        "required": [
+          "tls"
+        ],
+        "not": {
+          "required": [
+            "reality"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "const": "reality"
+          }
+        },
+        "required": [
+          "security"
+        ]
+      },
+      "then": {
+        "required": [
+          "reality"
+        ],
+        "not": {
+          "required": [
+            "tls"
+          ]
+        },
+        "properties": {
+          "network": {
+            "enum": [
+              "tcp",
+              "ws",
+              "xhttp",
+              "h2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "const": "none"
+          }
+        },
+        "required": [
+          "security"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "tls"
+              ]
+            },
+            {
+              "required": [
+                "reality"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "flow": {
+            "const": ""
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "network": {
+            "const": "ws"
+          }
+        },
+        "required": [
+          "network"
+        ]
+      },
+      "then": {
+        "required": [
+          "ws"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "network": {
+            "const": "grpc"
+          }
+        },
+        "required": [
+          "network"
+        ]
+      },
+      "then": {
+        "required": [
+          "grpc"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "network": {
+            "const": "xhttp"
+          }
+        },
+        "required": [
+          "network"
+        ]
+      },
+      "then": {
+        "required": [
+          "xhttp"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "network": {
+            "const": "h2"
+          }
+        },
+        "required": [
+          "network"
+        ]
+      },
+      "then": {
+        "required": [
+          "h2"
+        ],
+        "properties": {
+          "security": {
+            "const": "tls"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "const": "subscription"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "required": [
+          "subscriptionId"
+        ]
+      }
+    }
+  ]
+}

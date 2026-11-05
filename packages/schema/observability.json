@@ -1,0 +1,543 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/observability.json",
+  "title": "NEXORA observability contract",
+  "description": "The log record, the sink list, the event catalogue with its payload shapes, the diagnostics sections, the correlation rules and the retention bounds. This document exists as data for the same reason protocol/data-ownership.json and migrations.json do: five architecture documents cite `docs/architecture/36-observability.md` for facts it had not yet stated (docs/architecture/26-command-surface.md names it as the place the event catalogue is checked against, docs/architecture/27-config-compilation-pipeline.md as the place that says config.apply results are logged, docs/architecture/28-routing-model.md as the diagnostics event that fires when routing rank 5 is reached, docs/architecture/30-failure-policy.md as the owner of which block port is in force, docs/architecture/35-schema-versioning-migration.md as the owner of the correlation history a migration must not strip). A prose table in one document, re-typed into four others, ages silently. Everything here is cross-checked against the contracts it names: the event names against events.schema.json#/$defs/name, the channels against events.schema.json#/$defs/catalog/properties/channel, the section names against protocol/commands/diagnostics.get.json#/args/properties/include/items/enum, the level names against connector-settings.schema.json#/properties/telemetry/properties/logLevel, the age bounds against the same file's retentionDays, the export cap against that command's maxBytes, the stores against protocol/data-ownership.json. docs/architecture/36-observability.md is the argument; this is the list.",
+  "type": "object",
+  "protocolVersion": 1,
+  "scope": {
+    "owns": [
+      "the record every NEXORA log line is rendered from, and its bounds",
+      "the closed list of sinks masking applies to (docs/architecture/32-secrets-keystore-masking.md §8 enumerates them; this names them)",
+      "the event catalogue: one entry per registered name, with its payload shape and delivery mode",
+      "what diagnostics.get returns per section, and what it must never return",
+      "correlation: who mints a trace id, what may live inside one, what survives a restart",
+      "retention: age, count and byte caps per sink, and the rotation each one uses",
+      "the Core `log` section the Compiler emits, including the access-log decision"
+    ],
+    "doesNotOwn": [
+      "the masking algorithm and the redaction table -- docs/architecture/32-secrets-keystore-masking.md §8-§10; this document only names the sinks it applies at",
+      "the frame the event rides on -- protocol/envelope.schema.json; this document only says what its result carries",
+      "which decision the failure policy takes -- docs/architecture/30-failure-policy.md; this document reports the decision it took",
+      "the wording shown to a user -- docs/architecture/37-ui-architecture.md",
+      "whether a control was executed -- docs/verification/live-matrix.md and docs/architecture/39-verification-matrix.md"
+    ]
+  },
+  "sinks": [
+    {
+      "id": "connector-ring",
+      "plane": "connector",
+      "medium": "memory",
+      "durable": false,
+      "store": "diagnostics-ring",
+      "holds": "the most recent records of every Connector-level fact: events, decisions the failure policy took, applied hashes, redacted Core log lines",
+      "bounds": { "records": 2000, "bytes": 1048576 },
+      "maskingStage": "at append",
+      "overflow": "evict the oldest record; a dropped record is reported as a gap in seq, never as silence",
+      "readers": ["diagnostics.get"],
+      "why": "The ring is the answer to 'right now', so its byte cap is exactly protocol/framing.json#/limits/effectiveCrossBrowserBytes: a full ring is one chunk, not a chunked transfer, and the answer to what just happened should not need reassembly to read. Durable observability is a different sink with different rules, because a ring that survives is an archive and an archive is a second copy of state (docs/architecture/34-data-split.md §10 rule 5)."
+    },
+    {
+      "id": "connector-log-file",
+      "plane": "connector",
+      "medium": "disk",
+      "durable": true,
+      "store": "connector-log-file",
+      "holds": "the same records as the ring, appended before the process can die",
+      "location": "a logs directory inside the Connector's state directory, next to the applied-state file; never next to the Core binary",
+      "bounds": { "bytesPerFile": 5242880, "files": 5, "ageDays": "retention.days" },
+      "maskingStage": "before the write, in the same render pass that produces the ring copy",
+      "overflow": "rotate at the byte cap, delete at the age cap and at the file count, whichever comes first",
+      "readers": ["diagnostics.get (tail)", "the user, with a file manager"],
+      "why": "An in-memory ring cannot answer the one question that matters most: why did the Connector exit? A crash-loop is invisible without a record written by the run that died. This is the sink that makes telemetry.retentionDays mean something -- an age in days cannot apply to a buffer that dies with its process, so before this row existed, 'retentionDays: 30' and 'retentionDays: 0' described the same behaviour."
+    },
+    {
+      "id": "core-log",
+      "plane": "core",
+      "medium": "disk",
+      "durable": true,
+      "store": "core-log-file",
+      "holds": "Xray's own error log, at the path the Compiler chooses",
+      "bounds": { "bytesPerFile": 1048576, "files": 2, "note": "Xray rotates its own logs on an interval this design does not control, so the Connector enforces the count and the age and treats a missing file as 'empty', not as an error" },
+      "maskingStage": "captured whole into the connector-ring after the same value-keyed pass; the file itself is written by Xray, which is why coreLog.access is 'none' and never a user setting",
+      "readers": ["diagnostics.get (core-log section)", "the user"],
+      "why": "The Core writes files the Connector does not control the format of. Keeping that sink read-only and tail-captured is what stops a Core-side format change from becoming a NEXORA leak: the redaction pass runs on the text, and a text the pass cannot interpret is still scanned for every value the keystore holds (docs/architecture/32-secrets-keystore-masking.md §8, 'record-unit, not line-unit')."
+    },
+    {
+      "id": "browser-ring",
+      "plane": "browser",
+      "medium": "indexeddb",
+      "durable": true,
+      "store": "extension-log",
+      "holds": "the browser plane's own records: envelope writes, proxy.settings writes with their reason tag, event deliveries, migration and sync outcomes, and the last unhandled error",
+      "bounds": { "records": 2000, "bytes": 2097152, "ageDays": "retention.days" },
+      "maskingStage": "at append, with the values the browser has: none, which is why the browser sink's protection is that it was never given the value (ADR-0010)",
+      "overflow": "evict oldest; the buffer is bounded by count AND bytes because a record count alone does not bound a buffer whose records can carry a message string",
+      "readers": ["diagnostics.get (browser half)", "the options page", "the popup's last-error line"],
+      "why": "IndexedDB, not chrome.storage.local, and that is a security decision rather than a preference. Keys in chrome.storage.local are part of the envelope, so a diagnostics ring there would be synced (SEC-1's home), counted by the envelope key count a migration backs up (packages/schema/migrations.json#/run/abortOnZeroKeyCount), exported by a profile export, and migrated. A diagnostic buffer must be none of those four things. The medium is inherited from the legacy log overlay (omega-target-chromium-extension/overlay/log.js:2 creates its own idbKeyval store), which is the part of that design that was right."
+    },
+    {
+      "id": "export-file",
+      "plane": "browser",
+      "medium": "download",
+      "durable": true,
+      "store": null,
+      "holds": "the sections diagnostics.get returned, one JSONL record per line, plus a footer. It is a rendering, not a store, which is why the store is null and why the only sink whose audience is not the user's own machine gets the last masking pass.",
+      "bounds": { "bytes": 4194304, "note": "equal to diagnostics.get#/args/properties/maxBytes/maximum, so an export can never be larger than what one call was allowed to produce" },
+      "maskingStage": "a final pass over the whole artefact before the bytes are handed to the download, keyed on the live keystore contents",
+      "overflow": "truncated: true is written into the footer and shown in the UI; a truncated export is a stated limitation, not a silent one",
+      "readers": ["the user, then whoever the user sends it to"],
+      "why": "The export is the only sink whose audience is not the user's own machine, and legacy got exactly this wrong twice: the About page ships localStorage['log'] whole (omega-web/src/omega/app.coffee:90-93) and the debug page zips the IndexedDB entries with no further redaction (omega-target-chromium-extension/src/coffee/omega_debug.coffee:17-35). A sink with an external audience gets the last masking pass, and it is a user action, never automatic (docs/architecture/31-security-model.md)."
+    }
+  ],
+  "record": {
+    "description": "One flat JSON object per line, in every sink, in both planes. Flat because a nested object is where a secret hides from a field-name policy, and value-keyed masking on an unknown shape is guesswork; bounded because a record that can grow is a buffer that can grow.",
+    "format": "application/jsonl",
+    "fields": [
+      { "name": "ts", "type": "string", "required": true, "bound": "RFC 3339 with milliseconds, sender clock", "note": "Never used for ordering. Ordering comes from seq, which is the same rule protocol/envelope.schema.json#/properties/sentAt states for frames; a log sorted by clock sorts a browser's events wrong when the two clocks disagree." },
+      { "name": "level", "type": "string", "required": true, "bound": "levels.names" },
+      { "name": "plane", "type": "string", "required": true, "bound": "extension | connector | core", "note": "Vocabulary borrowed from protocol/data-ownership.json#/planes, whose third value is spelled 'browser'. The log says 'extension' because 'browser' is ambiguous between the browser process and the browser plane, and a reader of a log line wants the process." },
+      { "name": "component", "type": "string", "required": true, "maxLength": 40, "bound": "one of the components named in docs/architecture/22-component-contracts.md §0", "note": "40 is protocol/envelope.schema.json#/properties/progress/properties/stage/maxLength, so a component name that fits the log always fits the wire." },
+      { "name": "traceId", "type": "string", "required": false, "bound": "events.schema.json#/$defs/traceId" },
+      { "name": "seq", "type": "integer", "required": false, "bound": "monotonic per sink per plane", "note": "The gap detector. A ring that evicted and a ring that lost records look different only if seq says so." },
+      { "name": "event", "type": "string", "required": false, "bound": "events[].name" },
+      { "name": "method", "type": "string", "required": false, "bound": "protocol/command-allowlist.json", "note": "Present on a record about a call. Naming the allowlist rather than a free string means a log line cannot describe a method that does not exist." },
+      { "name": "code", "type": "string", "required": false, "bound": "protocol/error-taxonomy.json#/codes", "note": "An error record carries the taxonomy code, never a rendered message: the message is where an upstream library interpolates a URL with a token in it." },
+      { "name": "durMs", "type": "integer", "required": false, "bound": "0..600000" },
+      { "name": "msg", "type": "string", "required": true, "maxLength": 500, "bound": "one sentence, in the user's language only if the UI shows it; otherwise English", "note": "The only free-text field. 500 characters is the size of a sentence, not of a document: a component that wants to log a document has a hash and a reference instead. A message longer than the cap is truncated by the renderer and the truncation is counted in diagnostics.get's masked.fieldsReplaced." }
+    ],
+    "rules": [
+      "No field outside this list. A renderer that receives an unknown key drops it and counts it in diagnostics.get's masked.fieldsReplaced -- not because the key is a secret, but because a field nobody declared has nobody owning its content.",
+      "A record is written to every sink in its plane in one pass, from one object. Two renders of the same fact can disagree, and a log that disagrees with itself is worse than a short log.",
+      "The Connector writes records about its own decisions only after the decision is committed; a record written before a rollback states something that did not happen.",
+      "Nothing is logged at a call site by hand. Components append records; sinks decide what leaves the process (docs/architecture/32-secrets-keystore-masking.md §8: 'a sink cannot be forgotten -- there are a fixed number of them')."
+    ]
+  },
+  "levels": {
+    "names": ["error", "warn", "info", "debug"],
+    "source": "connector-settings.schema.json#/properties/telemetry/properties/logLevel",
+    "toCore": {
+      "error": "error",
+      "warn": "warning",
+      "info": "info",
+      "debug": "debug"
+    },
+    "rules": [
+      "The NEXORA vocabulary is 'warn' and Xray's is 'warning'. The Compiler maps; it does not pass through. A pass-through makes every config the Connector emits invalid at the one field nothing else reads, which is the worst kind of failure: the apply that succeeds and then behaves as if the default level had been used.",
+      "'debug' additionally logs the compiled config structure with every secret field replaced (connector-settings.schema.json#/properties/telemetry/properties/logLevel/description), which is why debug is the level a support conversation asks for and why the mask runs at the sink rather than at the code that builds that structure.",
+      "There is no 'trace' level and no per-component level. A level that cannot be bounded cannot be size-bounded, and per-component verbosity is a second configuration surface with no owner."
+    ]
+  },
+  "events": [
+    {
+      "name": "core.started",
+      "channel": "core",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "core.status",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pid", "appliedConfigHash", "inboundPorts"],
+        "properties": {
+          "pid": { "type": "integer", "minimum": 1 },
+          "appliedConfigHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "inboundPorts": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "type": "integer", "minimum": 1, "maximum": 65535 } }
+        }
+      },
+      "why": "core.start's result already carries inboundPorts (docs/architecture/26-command-surface.md), which is where ADR-0006's loopback-only assertion is reported. The event repeats it because a retained event is what a service worker that was evicted during the start reads instead."
+    },
+    {
+      "name": "core.exited",
+      "channel": "core",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "core.status",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pid", "reason"],
+        "properties": {
+          "pid": { "type": "integer", "minimum": 1 },
+          "exitCode": { "type": ["integer", "null"], "minimum": 0 },
+          "signal": { "type": ["string", "null"], "maxLength": 16 },
+          "reason": { "enum": ["stopped-by-connector", "crash", "killed-by-os", "unknown"] },
+          "uptimeSeconds": { "type": ["integer", "null"], "minimum": 0 }
+        }
+      },
+      "why": "'reason' is an enum rather than a sentence because the three values decide what the Supervisor does next, and a UI that parses a sentence to colour a badge will parse it differently after a translation. A crash-loop is visible here: the same pid's parent run appearing five times in the ring is the diagnosis."
+    },
+    {
+      "name": "core.restart",
+      "channel": "core",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "core.status",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["previousPid", "newPid", "appliedConfigHash"],
+        "properties": {
+          "previousPid": { "type": "integer", "minimum": 1 },
+          "newPid": { "type": "integer", "minimum": 1 },
+          "appliedConfigHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "cause": { "enum": ["user", "reconcile", "config-apply", "policy"] }
+        }
+      },
+      "why": "A restart drops tunnels, which is why core.restart requires a confirm argument (protocol/commands/core.restart.json). The event names the cause so that a restart nobody asked for is distinguishable from a restart the user asked for, which is the whole content of the complaint 'it disconnected me for no reason'."
+    },
+    {
+      "name": "core.blocked",
+      "channel": "core",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "connector.health",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["blocked", "policy", "inForcePort"],
+        "properties": {
+          "blocked": { "const": true },
+          "policy": { "enum": ["block", "failOpen"] },
+          "inForcePort": { "type": ["integer", "null"], "minimum": 1, "maximum": 65535 },
+          "profileRef": { "type": ["string", "null"], "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" }
+        }
+      },
+      "why": "The event the fixture proves exists before any retry (docs/architecture/30-failure-policy.md §4, frames seq 1 to 4 of failure-block.jsonl). inForcePort is here because ADR-0009's visibility rule cannot be met by a badge alone: a user who is told 'blocked' and can see which closed port the browser was pointed at can verify it in chrome://net-internals."
+    },
+    {
+      "name": "config.applied",
+      "channel": "config",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "config.snapshot",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["appliedConfigHash", "ruleCount", "notices"],
+        "properties": {
+          "appliedConfigHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "previousConfigHash": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+          "ruleCount": { "type": "integer", "minimum": 0, "maximum": 65535 },
+          "notices": {
+            "type": "array",
+            "maxItems": 256,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["source", "reason"],
+              "properties": {
+                "source": { "type": "string", "maxLength": 200 },
+                "reason": { "type": "string", "maxLength": 200 }
+              }
+            }
+          }
+        }
+      },
+      "why": "This is where docs/architecture/27-config-compilation-pipeline.md §7 rule 2 is honoured: the report of rules that could not be placed is logged, so `source` is the user-visible rule name and never the raw condition object -- a condition can contain a hostname the user considers private, and it certainly contains the destination of their traffic."
+    },
+    {
+      "name": "config.drift",
+      "channel": "config",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "config.snapshot",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["expectedHash", "observedHash", "detectedBy"],
+        "properties": {
+          "expectedHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "observedHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "detectedBy": { "enum": ["snapshot", "status", "reconcile", "startup"] }
+        }
+      },
+      "why": "Four detectors, named, because the remediation differs: drift seen at startup is a Core that came back with a stale file, drift seen during reconcile is a failed apply, drift seen only in a snapshot is a caller asking a question the Connector had not noticed. One word 'drift' would make all four look like the same bug."
+    },
+    {
+      "name": "server.health.changed",
+      "channel": "server",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push-then-pull",
+      "detailCommand": "connector.health",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["serverId"],
+        "properties": {
+          "serverId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" }
+        }
+      },
+      "why": "A hint, not a state. The event says which server moved and connector.health says what it moved to -- docs/architecture/30-failure-policy.md §4 forbids a cached health answer while a block is in force, so an event carrying a state value would be the cached answer arriving unasked. protocol/data-ownership.json#/movements (events-up) says the same thing from the other side: 'a missed event is never a state change'.",
+      "neverInPayload": "latency numbers: a value in an event is a value the subscriber will show without re-reading, which is how a stale probe becomes a green mark"
+    },
+    {
+      "name": "subscription.updated",
+      "channel": "subscription",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push-then-pull",
+      "detailCommand": "connector.health",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceId", "added", "removed"],
+        "properties": {
+          "sourceId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+          "added": { "type": "integer", "minimum": 0, "maximum": 8192 },
+          "removed": { "type": "integer", "minimum": 0, "maximum": 8192 },
+          "serverIdsReused": { "type": "boolean", "default": false }
+        }
+      },
+      "why": "Counts, not names. The server names in a subscription are the provider's marketing strings and often carry the account identity of the user; docs/architecture/29-subscriptions-and-servers.md §6 is the reason ids are reused across refreshes, which is what makes counts safe to log and names unnecessary."
+    },
+    {
+      "name": "subscription.failed",
+      "channel": "subscription",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "subscription.refresh",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceId", "code", "keptLastGood"],
+        "properties": {
+          "sourceId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+          "code": { "type": "string", "maxLength": 40 },
+          "attempt": { "type": "integer", "minimum": 1, "maximum": 16 },
+          "keptLastGood": { "const": true }
+        }
+      },
+      "note": "'keptLastGood' is not informational: the master requirement is that a failed refresh must not delete the last working version, so the event that announces a failure also proves the rule held. A payload without it would leave the requirement visible only to whoever read the source.",
+      "why": "The code is a taxonomy member (protocol/error-taxonomy.json#/codes), never an HTTP reason phrase: a fetch error's text is built from the URL, and a subscription URL is a credential-shaped thing (docs/architecture/29-subscriptions-and-servers.md names tokenised URLs as secret-bearing)."
+    },
+    {
+      "name": "routing.decision",
+      "channel": "routing",
+      "retained": false,
+      "sampled": true,
+      "delivery": "push",
+      "detailCommand": "diagnostics.get (routing-decisions)",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rank", "outcome"],
+        "properties": {
+          "rank": { "type": "integer", "minimum": 4, "maximum": 5, "description": "The priority row of docs/architecture/28-routing-model.md §7 that decided this connection, and only the two rows this process can see: rank 4 is a core-plane rule inside the chosen server's inbound, rank 5 is Core's own default outbound. Ranks 0 to 3 are decided inside the extension and appear in the browser ring as records, never as events, because an event registry the Connector owns cannot announce a decision the Connector never witnessed. A 5 in the log is a routing policy the compiler could not fully place -- the Compiler emits an explicit outboundTag for every policy, so reaching 5 means one did not exist -- and this field is the only way anyone ever learns it happened." },
+          "outcome": { "enum": ["proxy", "direct", "block"] },
+          "serverTag": { "type": ["string", "null"], "pattern": "^srv-[0-9a-f]{8}$", "description": "The outbound the traffic was sent to, named by the tag NEXORA minted (docs/architecture/23) rather than by an address: eight hex characters the user already sees in their own server list." },
+          "ruleIndex": { "type": ["integer", "null"], "minimum": 0, "maximum": 4096, "description": "Null when no core-plane rule matched and a default took over, which is the rank-5 case: null and 5 together are the pair worth noticing." }
+        }
+      },
+      "neverInPayload": "destination host, port, URL, SNI, client IP. A per-connection log of where a user connected is the single most sensitive artefact this product could produce, and it is produced by every proxy that enables an access log. NEXORA answers 'why did this go direct' from rank, outcome and ruleIndex, which identify the rule the user wrote without identifying the site they visited.",
+      "why": "sampled and retained:false because this is the only chatty event: protocol/commands/connector.events.subscribe.json#/args/properties/maxPerSecond exists solely for it, at a default of 10 per second and a ceiling of 50. A chatty event that is also retained is a replay storm for a service worker that has just restarted."
+    },
+    {
+      "name": "connector.connected",
+      "channel": "connector",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "connector.status",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["protocolVersion"],
+        "properties": {
+          "protocolVersion": { "type": "integer", "minimum": 1, "maximum": 255 },
+          "capabilities": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "maxLength": 40 } },
+          "adoptedExisting": { "type": "boolean", "default": false }
+        }
+      },
+      "why": "docs/architecture/21-system-context.md:114 requires the negotiation result to be written down in the connector log and surfaced in diagnostics.get; this is the event that writes it down. 'adoptedExisting' distinguishes a fresh spawn from an adopt, which is the difference between 'the Connector was already running' and 'it just came up', and the shim is allowed to do both.",
+      "note": "capabilities here is the hello announcement, so it is the same set protocol/compatibility-rules.json declares and the handshake fixture records; the parity of those two is already asserted in scripts/verify.mjs."
+    },
+    {
+      "name": "connector.disconnected",
+      "channel": "connector",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "connector.status",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason"],
+        "properties": {
+          "reason": { "enum": ["port-closed", "shim-exit", "timeout", "protocol-error", "unknown"] },
+          "lastSeq": { "type": ["integer", "null"], "minimum": 0 }
+        }
+      },
+      "why": "This event is emitted by the browser plane, not the Connector: a process cannot report its own exit through a channel it no longer owns. The browser knows the port closed; the log file knows what happened before it. lastSeq is the gap marker for the replay after reconnect (docs/architecture/30-failure-policy.md §5)."
+    },
+    {
+      "name": "keystore.unavailable",
+      "channel": "keystore",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "connector.health",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason", "affectedRefs"],
+        "properties": {
+          "reason": { "enum": ["locked", "missing", "corrupt", "session-changed", "no-entitlement"] },
+          "affectedRefs": { "type": "integer", "minimum": 0, "maximum": 8192 },
+          "refs": { "type": "array", "maxItems": 64, "items": { "type": "string", "pattern": "^keystore://[A-Za-z0-9._:/-]{1,96}$" } }
+        }
+      },
+      "why": "A count plus up to 64 references, and references are not values. docs/architecture/32-secrets-keystore-masking.md §11 owns which refusal is which; the event carries the refusal's reason so that a locked store on Windows ('session-changed': ADR-0011's DPAPI entropy is the user's logon session) is distinguishable from a store that was deleted, and only one of those two is a bug.",
+      "note": "'no-entitlement' is here for macOS, where a key readable by a different signing identity fails closed rather than returning an empty value."
+    },
+    {
+      "name": "integrity.mismatch",
+      "channel": "integrity",
+      "retained": true,
+      "sampled": false,
+      "delivery": "push",
+      "detailCommand": "connector.status",
+      "payload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["subject", "expectedHash", "observedHash", "action"],
+        "properties": {
+          "subject": { "enum": ["core-binary", "geoip", "signature", "pin-document", "geosite"] },
+          "expectedHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "observedHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "action": { "enum": ["refused-start", "refused-apply", "quarantined"] }
+        }
+      },
+      "why": "docs/architecture/26-command-surface.md names this event as the reason core.start shows a cause instead of a dead proxy, and docs/architecture/33-binary-integrity.md owns the verification chain. Two hashes in the payload is deliberate: the mismatch is the diagnosis, a single hash would be a mystery. A hash is not a secret and never has been (docs/architecture/32-secrets-keystore-masking.md §10)."
+    }
+  ],
+  "diagnosticsSections": [
+    { "name": "core-log", "plane": "core", "store": "core-log-file", "defaultIncluded": true, "maxBytes": 262144, "contains": "the tail of Xray's error log, after the value-keyed pass", "emptyMeans": "Core has never run, or runs at a level that wrote nothing" },
+    { "name": "connector-log", "plane": "connector", "store": "diagnostics-ring", "defaultIncluded": true, "maxBytes": 524288, "contains": "records from the ring, with the durable log file's tail appended when the ring has a gap; seq always present so the gap stays visible", "emptyMeans": "the ring is empty, which after a restart is expected and after three days of use is not" },
+    { "name": "events", "plane": "connector", "store": "diagnostics-ring", "defaultIncluded": false, "maxBytes": 131072, "contains": "the retained event records, with sinceSeq honoured", "emptyMeans": "nothing has changed state since the ring began" },
+    { "name": "config-snapshot", "plane": "connector", "store": "compiled-config", "defaultIncluded": true, "maxBytes": 131072, "contains": "config.snapshot's maskedConfig: structure, tags, hashes, no credential material", "emptyMeans": "never applied; a Core that is running with no snapshot is a contradiction that the section itself reports" },
+    { "name": "health", "plane": "connector", "store": "health-history", "defaultIncluded": true, "maxBytes": 65536, "contains": "one row per server: state, last probe time, latency, failure streak", "emptyMeans": "no probe has run; health answers unknown, and a UI that shows green here is lying (docs/verification/live-matrix.md LIVE-04)" },
+    { "name": "inbounds", "plane": "core", "store": "applied-state", "defaultIncluded": false, "maxBytes": 32768, "contains": "port, protocol, listen address per inbound -- the runtime half of ADR-0006", "emptyMeans": "Core is not running", "whyDefaultExcluded": "it is the section with the most chance of surprising a user: a loopback bind is the rule, and seeing the list is how you check it" },
+    { "name": "versions", "plane": "connector", "store": "applied-state", "defaultIncluded": true, "maxBytes": 8192, "contains": "extension version, Connector version, Core version, protocolVersion, negotiated capabilities", "emptyMeans": "impossible; a Connector that cannot answer this has nothing to say" },
+    { "name": "pins", "plane": "connector", "store": "connector-pin-mirror", "defaultIncluded": false, "maxBytes": 32768, "contains": "the pin document mirror, the install channel, verified hashes, installRoot", "emptyMeans": "no pin has been accepted, which means Core cannot start (docs/architecture/33-binary-integrity.md)" },
+    { "name": "routing-decisions", "plane": "connector", "store": "diagnostics-ring", "defaultIncluded": false, "maxBytes": 65536, "contains": "sampled routing.decision records: rank, outcome, serverTag, ruleIndex", "emptyMeans": "sampling produced nothing, or traffic never reached Core", "neverIn": "destination host, URL, SNI, client address" },
+    { "name": "failure-policy", "plane": "browser", "store": "extension-log", "defaultIncluded": false, "maxBytes": 32768, "contains": "the policy in force, the port the browser was pointed at, and the decision history", "emptyMeans": "no failure policy has ever fired", "answers": "docs/architecture/30-failure-policy.md §8 asks which block port is in force and why; inForceBlockPort is that answer" }
+  ],
+  "sectionStoreRule": "A section names exactly one store from protocol/data-ownership.json, and a section that reads a log-backed store inherits that store's masking stage from the sink whose store equals it (sinks[].store). Two vocabularies would be one too many: the store list is where the bytes rest, the sink list is where they leave, and a diagnostics section is a read of the first through the second.",
+  "inForceBlockPort": {
+    "question": "docs/architecture/30-failure-policy.md §8: 'Within the block range, one port is used at a time and it is chosen deterministically, not round-robin... Which port is in force, and why, belongs in the failure-policy section of docs/architecture/36-observability.md.'",
+    "range": "packages/schema/examples/failure-policy.default.json#/block/portRange",
+    "rule": "The port in force is the lowest port in the block range that the assertClosed probe found closed, evaluated once when a block is written and never re-rolled while that block is in force.",
+    "whyLowestAndOnce": [
+      "Reconnect reconciliation compares the port in force against the port the browser setting holds (docs/architecture/30-failure-policy.md §8). A port chosen from anything but a fixed rule would differ between two runs of the same inputs and would look like drift on every reconnect, turning a working block into a reported fault.",
+      "The range, not one port, exists so that a port some other local process owns can be refused rather than adopted (docs/architecture/30-failure-policy.md §7: a block aimed at a live listener turns that process into the user's proxy, receiving every hostname). Ascending order and no re-roll keeps both properties: the answer is computable from the range alone, and no listener is ever inherited.",
+      "If every port in the range is occupied the block is refused and the refusal is the reported state. There is no 'blocked anyway' and no silent widening of the range: a range the design does not control is a port the design cannot name."
+    ],
+    "reportedAs": [
+      "core.blocked's inForcePort (the event a subscriber gets without asking)",
+      "the failure-policy diagnostics section, as { inForcePort, portRange, probed, refusal }",
+      "connector.health's blocked answer, which is the state chrome.proxy.settings actually holds"
+    ],
+    "probedField": "probed lists the ports examined and the result for each, so a user who sees a refusal can tell 'another process holds 20900' from 'the range is misconfigured'"
+  },
+  "coreLog": {
+    "question": "What the Compiler writes into Xray's own `log` section, and what it must refuse to leave to a default.",
+    "section": {
+      "loglevel": "levels.toCore[settings.telemetry.logLevel]",
+      "access": "none",
+      "error": "a file inside the Connector's state directory, next to the connector log",
+      "dnsLog": false
+    },
+    "accessLogDecision": {
+      "value": "none",
+      "isUserSetting": false,
+      "why": "Xray writes an access log by default and `none` is the documented way to disable it (https://xtls.github.io/en/config/log.html, 'Special value none: disables the access log'; the server guide describes the default location as /var/log/xray/access). An access log is one line per connection with the destination and the inbound and the outbound chosen. That artefact, on a home user's disk, unbounded, and describing everywhere they browsed, is the opposite of what this product is for. docs/architecture/23-unified-server-model.md §9's illustrative compiled shapes show `\"log\": { \"loglevel\": \"warning\" }` with no access field, which is the shape that leaves the default in force -- this row is what the Compiler adds to it.",
+      "noOptInYet": "A per-connection view is what routing.decision and the routing-decisions section are for, masked and bounded. If a user ever wants Xray's own file, that is an ADR about a new privacy surface, not a settings boolean.",
+      "verification": "UNVERIFIED from this host: the xtls.github.io page could not be fetched in this session, the same way docs/audit/07-routing-engine.md:425 records for the routing page. The requirement stands regardless of which side the default falls on, because the rule is 'state it explicitly': a compiled config that relies on an upstream default inherits whatever that default becomes in the next Core release, and the pins document is allowed to move to any release."
+    },
+    "maskAddress": {
+      "value": "unset",
+      "why": "The field masks IP addresses in Xray's own logs. With access logging off and the error log carrying no destination, it would mask a file that has nothing to mask; setting it is a Phase 2 decision to be revisited if the error log turns out to name peers (docs/architecture/32-secrets-keystore-masking.md §10 lists what is deliberately not masked, and an address the user's own provider already holds is that category)."
+    },
+    "rotation": "Xray rotates its own log files on an interval NEXORA does not configure, which is why core-log is a bounded tail read rather than an owned file: the Connector caps how many files exist and how old they may get, and never grows them itself."
+  },
+  "correlation": {
+    "id": "traceId",
+    "shape": "events.schema.json#/$defs/traceId",
+    "wire": "protocol/envelope.schema.json#/properties/traceId",
+    "rules": [
+      "The extension mints a trace id for anything that begins as a user action and puts it in every request it sends for that action. The Connector mints one for anything that begins on its own -- a scheduled refresh, a probe, a Core exit -- because a run with no browser involved still has to be findable in a log.",
+      "A trace id is not the idempotency key. protocol/envelope.schema.json#/properties/id serves replay (ADR-0008) and is per request; traceId is per *episode* and is shared by every request in it, so one 'I clicked apply and nothing happened' has one id across the config.apply, the core.restart and the health probes it triggered.",
+      "The character class excludes '.', ':', '/', '@' and every character that appears in a hostname, a URL, an email or a token (events.schema.json#/$defs/traceId/description). That is not hygiene: a free-text correlation id is the one field a developer will fill with 'user@example.com:8080' and the pattern is what makes that impossible rather than merely discouraged.",
+      "Nothing may be derived from user data. A trace id is random or counter-based, never a hash of a server name or a URL: a hash of a secret is a secret the log holds forever, and the redaction table (docs/architecture/32-secrets-keystore-masking.md §8) is built from live keystore values, not from their digests."
+    ],
+    "history": {
+      "what": "the trace index: traceId -> the ordered set of records carrying it, across both planes",
+      "where": "the browser-ring and the connector-ring, and the two log files; rebuilt on read, never stored as a second copy of the records",
+      "migration": "docs/architecture/35-schema-versioning-migration.md §13 names this as the thing a run must NOT strip: a user explaining a past incident needs the correlation history, and stripping it makes the envelope claim a recovery it cannot provide.",
+      "ageing": "the index ages out with the records; a trace whose every record has rotated away is not kept as a stub, because a stub that cannot be read is a promise nobody can keep"
+    },
+    "crossPlane": "A trace id crossing to the Connector is the same string; the Connector does not prefix or re-mint. Re-minting at the boundary is how a support conversation ends with two logs that cannot be joined, and the shim is a pump, not a translator (docs/architecture/25-native-messaging-protocol.md §2)."
+  },
+  "retention": {
+    "setting": "connector-settings.schema.json#/properties/telemetry/properties/retentionDays",
+    "days": { "default": 7, "minimum": 0, "maximum": 90 },
+    "zeroMeans": "the current session only, on every sink: the ring keeps its count cap, the files are truncated at start rather than appended (connector-settings.schema.json's description of the setting says '0 keeps the current session only' and this is what that has to mean for a file)",
+    "semantics": [
+      "Age, count and bytes are three caps and the first one reached wins. A single cap is not a cap: records-per-day varies by four orders of magnitude between an idle notebook and a busy desktop.",
+      "retentionDays is a ring age, not an archive (connector-settings.schema.json says so). Nothing is summarised, nothing is rolled up, and no old record is rewritten; when it falls out it is gone.",
+      "The default of 7 inherits the legacy intent -- omega-target-chromium-extension/overlay/log.js:16 rotates by ISO day of week and comments 'keep logs max 7 day' -- but not the legacy mechanism, which bounds days and not size.",
+      "Nothing is ever deleted because it is old and the disk is full at the same time: rotation runs first and reports what it removed, so a missing log has an explanation in the log."
+    ],
+    "neverExpires": [
+      "the applied config hash and the last start/exit records (protocol/data-ownership.json#/stores applied-state) -- they are state, not history, and connector.status answers from them",
+      "the backup ledger (packages/schema/migrations.json#/journal) -- it is the journal a resume reads, and ageing it out is the same mistake as not writing it",
+      "the idempotency cache's window (protocol/data-ownership.json#/stores idempotency-cache) -- bounded by ADR-0008's replay rules, not by a retention setting"
+    ]
+  },
+  "export": {
+    "trigger": "a user action on the options page, always. No automatic upload exists and no code path may create one (docs/architecture/22-component-contracts.md §11 invariant 4).",
+    "shape": "JSONL, one record per line, in the order sink -> section -> seq",
+    "maxBytes": 4194304,
+    "footer": {
+      "fields": ["generatedAt", "extensionVersion", "connectorVersion", "coreVersion", "protocolVersion", "appliedConfigHash", "masked.fieldsReplaced", "masked.fingerprints", "truncated", "sections with their state"],
+      "why": "The footer is what makes an exported file answerable. A pile of records cannot say which build produced it, whether anything was masked, or whether a section was missing rather than empty -- and diagnostics.get already reports those four facts, so the file that carries its output carries them too (protocol/commands/diagnostics.get.json#/result)."
+    },
+    "fingerprints": "diagnostics.get's masked.fingerprints pattern (^fp-[0-9a-f]{12}$) is what lets support say 'the UUID you sent is not the one on file' without either value appearing. It is in the export footer for the same reason it is in the response: without it, the only way to check a user's paste is to ask for the secret.",
+    "naming": "NexoraDiagnostics_<iso8601>.jsonl -- a file whose name contains no username, no machine name and no extension id, because the file's destination is a bug report on a public tracker."
+  },
+  "neverLogged": [
+    { "thing": "any value the keystore holds", "reason": "ADR-0010, ADR-0011, docs/architecture/32-secrets-keystore-masking.md §3", "evidence": "omega-target/src/options.coffee:237 logs a whole options object on the sync path and the overlay replacer does not cover headers (docs/audit/11-security-findings.md SEC-1)" },
+    { "thing": "the destination of a user connection: host, port, URL, SNI", "reason": "this is the browsing history of the user; the product exists to keep it from the network, not to write it to their disk", "evidence": "coreLog.accessLogDecision" },
+    { "thing": "a subscription source URL that carries a token", "reason": "docs/architecture/29-subscriptions-and-servers.md treats tokenised feed URLs as credentials; a URL in a log is a credential in a log", "evidence": "protocol/data-ownership.json#/stores feed-cache" },
+    { "thing": "a sync token, a Gist id, or the user's GitHub login", "reason": "SEC-5's built-in sync is the one row the harness expects to fail a storage grep; it must not also fail a log grep", "evidence": "docs/verification/live-matrix.md LIVE-22" },
+    { "thing": "a file path under the user's home directory beyond the Connector's own state directory", "reason": "connector-settings.schema.json#/properties/core/properties/installRoot/description already says paths are not secrets but are not logged either; a custom installRoot is the user choosing a directory they did not name in a bug report", "evidence": "packages/schema/connector-settings.schema.json#/properties/core/properties/installRoot" },
+    { "thing": "argv and environment of any process", "reason": "the master constraint is that secrets come from the environment and never reach a log; capturing the environment is how that constraint is defeated in one line", "evidence": "docs/adr/0020-test-strategy.md, .env.example" },
+    { "thing": "a stack trace containing a request URL", "reason": "omega-web/src/coffee/log_error.coffee:6 appends err.stack to a log the About page then ships whole (omega-web/src/omega/app.coffee:90-93); the frames of a fetch failure contain the URL that failed", "evidence": "docs/audit/11-security-findings.md SEC-7" }
+  ],
+  "forbidden": [
+    { "rule": "A log line that is not a record.", "why": "A free-text line has no field names, so a name-keyed policy cannot see it, and the value-keyed pass still runs -- but nothing tells you which field a secret was in when it was a sentence.", "evidence": "omega-target-chromium-extension/overlay/log.js:64-65 passes a bare string through unmoved, and docs/architecture/32-secrets-keystore-masking.md §8 counts that as defect three" },
+    { "rule": "A sink that is not in this list.", "why": "Masking at the sink works because the sinks are enumerable. A sixth sink is an unmasked one with a plausible name.", "evidence": "docs/architecture/32-secrets-keystore-masking.md §8 ('a sink cannot be forgotten -- there are a fixed number of them')" },
+    { "rule": "An unbounded buffer of any kind, in any plane.", "why": "The legacy log is unbounded (docs/audit/11-security-findings.md SEC-7) and its export path has no cap, so a long-running install turns its own diagnostics into a disk problem and a leak at the same time.", "evidence": "protocol/data-ownership.json#/stores extension-log row, bound field" },
+    { "rule": "Xray's access log enabled by omission.", "why": "Relying on an upstream default for a privacy control is not a control; the pins document lets the Core version move, and the default moves with it.", "evidence": "coreLog.accessLogDecision" },
+    { "rule": "A per-connection log in either plane, at any level, including debug.", "why": "debug is a verbosity setting, not a licence to record destinations; a user who turns on debug to diagnose a transport must not be creating a browsing-history file.", "evidence": "docs/architecture/22-component-contracts.md §11 non-goals" },
+    { "rule": "Anything uploaded, staged for upload, or sent to a third-party collector.", "why": "There is no telemetry backend in this design, so 'anonymous usage statistics' would be a second data path with no owner and no contract.", "evidence": "docs/architecture/22-component-contracts.md §11 invariant 4" },
+    { "rule": "A diagnostics failure that breaks proxying.", "why": "Diagnostics is a reader of state, never a dependency of a decision. A ring whose append throws must not reach the code that writes chrome.proxy.settings.", "evidence": "docs/architecture/22-component-contracts.md §11 'Mode of failure'" },
+    { "rule": "An event whose payload carries a state a read command also reports.", "why": "Two answers to the same question drift, and the event is the one nobody invalidates; docs/architecture/30-failure-policy.md §4 forbids exactly this for cached health during a block.", "evidence": "protocol/data-ownership.json#/movements events-up" },
+    { "rule": "A trace id built from anything the user typed or connected to.", "why": "The pattern in events.schema.json#/$defs/traceId exists to keep hostnames out of the one field every log line copies; deriving it from a hostname is the same leak wearing a different hat.", "evidence": "packages/schema/events.schema.json#/$defs/traceId/pattern" },
+    { "rule": "A log record written before the effect it describes is committed.", "why": "A record of a rolled-back apply states something that did not happen, and the reader of a log has no way to check.", "evidence": "docs/architecture/35-schema-versioning-migration.md §8's recovery procedure, which reads the log to decide what already happened" }
+  ],
+  "openDecisions": [
+    "Whether the browser-ring is included in a profile export. It is not part of the envelope and not sync-eligible, so including it is a deliberate size and privacy decision rather than an oversight -- docs/architecture/34-data-split.md §12.",
+    "Whether Xray's maskAddress should be set once the error log is observed to name peers in real runs -- needs a live capture, docs/verification/live-matrix.md.",
+    "Whether routing.decision sampling should be user-configurable or fixed at the subscribe default of 10 per second. A user-tunable rate is a user-tunable amount of their own traffic history in a buffer, which is a different conversation from a verbosity slider."
+  ]
+}

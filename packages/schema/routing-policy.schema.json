@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/routing-policy.schema.json",
+  "title": "NEXORA RoutingPolicy",
+  "description": "The two-plane routing model (docs/architecture/28). browserRules keep the exact legacy SwitchProfile shape -- {condition:{conditionType,...}, profileName} -- which is what makes the claim 'existing user rules survive cut-over' checkable rather than aspirational. coreRules are compiled into Xray routing.",
+  "type": "object",
+  "required": [
+    "id",
+    "displayName",
+    "browserPlane",
+    "corePlane"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/uuid",
+      "description": "UUID v4 referenced from ConnectorProfile.routingPolicyId and from the envelope key -nexora.routing.<id>."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Label for the routing editor. Mutable and never used as an identifier."
+    },
+    "browserPlane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "defaultProfileName",
+        "rules"
+      ],
+      "description": "Rules evaluated in the browser by the existing PAC/FF-listener path. Exactly one plane decides a request's fate (docs/architecture/28); this one decides which Omega profile a request goes to.",
+      "properties": {
+        "defaultProfileName": {
+          "$ref": "#/$defs/profileName"
+        },
+        "rules": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "condition",
+              "profileName"
+            ],
+            "properties": {
+              "condition": {
+                "$ref": "#/$defs/condition"
+              },
+              "profileName": {
+                "$ref": "#/$defs/profileName"
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 200
+              }
+            }
+          }
+        }
+      }
+    },
+    "corePlane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domainStrategy",
+        "rules"
+      ],
+      "description": "Rules compiled into the Xray routing section. Decides which outbound a request that already reached the Core uses; it cannot send traffic outside the Core, and it never sees a URL.",
+      "properties": {
+        "domainStrategy": {
+          "enum": [
+            "AsIs",
+            "IPIfNonMatch",
+            "IPOnDemand"
+          ],
+          "default": "IPIfNonMatch",
+          "description": "Xray's top-level domain resolution strategy for these rules (docs/architecture/27). The three values are exactly the ones the official routing documentation admits -- https://xtls.github.io/en/config/routing.html states domainStrategy: \"AsIs\" | \"IPIfNonMatch\" | \"IPOnDemand\" -- so any other spelling is not a strategy Xray can read; an unknown value makes Core reject the whole config, which surfaces as ConfigApplyFailed rather than as a routing miss. This enum is pinned to the Xray release named in examples/pins.xray.json (v24.11.11) and MUST be re-checked against that release tag before Phase 2 ships a Core bump. scripts/verify.mjs asserts this enum against the documented set and against every routing example shipped here."
+        },
+        "sniffing": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "protocols": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "http",
+                  "tls",
+                  "quic",
+                  "fakedns",
+                  "mp4",
+                  "mkv",
+                  "ps",
+                  "www"
+                ]
+              }
+            },
+            "routeOnly": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "rules": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": {
+            "$ref": "#/$defs/coreRule"
+          }
+        },
+        "unrepresentable": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "reason"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          "description": "Browser-plane conditions the compiler could not express in Xray routing. The compiler MUST report rather than drop (ADR-0013)."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "profileName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^(?!\\+).+$",
+      "description": "Bare profile name, exactly as stored in SwitchProfile.rule.profileName (omega-pac/src/profiles.coffee:405). The envelope '+' prefix is added by Profiles.nameAsKey and MUST NOT be written here: a rule that stores '+direct' resolves to a profile named '+direct' and silently stops matching, which is how a routing rule becomes a no-op."
+    },
+    "coreOutbound": {
+      "type": "string",
+      "pattern": "^(direct|block|srv-[0-9a-f]{8})$",
+      "description": "An Xray outbound tag. Only derived tags are allowed, so a policy cannot name an outbound the compiler did not emit."
+    },
+    "condition": {
+      "description": "A legacy OmegaPac condition. The twelve conditionType keys below are the registry in omega-pac/src/conditions.coffee:227-687; field names are taken from each handler's own code, so a NEXORA document round-trips through Conditions.fromStr/toStr unchanged.",
+      "required": [
+        "conditionType"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "conditionType": {
+              "const": "TrueCondition"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "conditionType": {
+              "const": "FalseCondition"
+            },
+            "pattern": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "conditionType": {
+              "enum": [
+                "UrlRegexCondition",
+                "UrlWildcardCondition"
+              ]
+            },
+            "pattern": {
+              "$ref": "#/$defs/patternStr"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "conditionType": {
+              "enum": [
+                "HostRegexCondition",
+                "HostWildcardCondition",
+                "BypassCondition",
+                "KeywordCondition"
+              ]
+            },
+            "pattern": {
+              "$ref": "#/$defs/patternStr"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "required": [
+            "ip",
+            "prefixLength"
+          ],
+          "properties": {
+            "conditionType": {
+              "const": "IpCondition"
+            },
+            "ip": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 45
+            },
+            "prefixLength": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 128
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "required": [
+            "minValue",
+            "maxValue"
+          ],
+          "properties": {
+            "conditionType": {
+              "const": "HostLevelsCondition"
+            },
+            "minValue": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 127
+            },
+            "maxValue": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 127
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "conditionType": {
+              "const": "WeekdayCondition"
+            },
+            "days": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{7}$",
+              "description": "Seven-letter Mon-Sun flag string, legacy WeekdayCondition.days"
+            },
+            "startDay": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "endDay": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "days"
+              ],
+              "properties": {
+                "days": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z]{7}$"
+                },
+                "startDay": false,
+                "endDay": false
+              }
+            },
+            {
+              "required": [
+                "startDay",
+                "endDay"
+              ],
+              "properties": {
+                "startDay": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 6
+                },
+                "endDay": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 6
+                },
+                "days": false
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        {
+          "required": [
+            "startHour",
+            "endHour"
+          ],
+          "properties": {
+            "conditionType": {
+              "const": "TimeCondition"
+            },
+            "startHour": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "endHour": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "patternStr": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "coreRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outbound"
+      ],
+      "minProperties": 2,
+      "properties": {
+        "domain": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 512,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "ip": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 512,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "port": {
+          "type": "string",
+          "pattern": "^\\d+(-\\d+)?$",
+          "default": "0-65535"
+        },
+        "network": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "tcp",
+              "udp"
+            ]
+          }
+        },
+        "protocol": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "http",
+              "tls",
+              "bittorrent",
+              "quic",
+              "fakedns",
+              "ws"
+            ]
+          }
+        },
+        "invert": {
+          "type": "boolean",
+          "default": false
+        },
+        "outbound": {
+          "$ref": "#/$defs/coreOutbound"
+        }
+      }
+    }
+  }
+}

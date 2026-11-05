@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/compatibility.json",
+  "title": "NEXORA compatibility matrix",
+  "description": "What NEXORA promises to an existing ZeroOmega v3.5.2 installation and to the browsers that installation runs in, as data. Nine documents cite `docs/architecture/38-compatibility-matrix.md` for a promise they could not make themselves: docs/architecture/21-system-context.md sends it the browser floor, docs/architecture/22-component-contracts.md both its dangling-`serverId` deferral and its 'works with no Connector' invariant, docs/architecture/23-unified-server-model.md the obligation to say out loud that Trojan and WireGuard subscriptions are lossy by construction, docs/architecture/24-options-envelope-compat.md the `password`-in-sync decision and the legacy `+`-key behaviour, docs/architecture/28-routing-model.md the routing conditions a user must not lose, docs/architecture/31-security-model.md every browser and OS support claim behind its permission table, docs/architecture/34-data-split.md the `chrome.storage.session` floor and the `unlimitedStorage` measurement, docs/architecture/20-target-repository-layout.md the parity rows a manifest change must close before it may be proposed, and docs/verification/live-matrix.md sends LIVE-15's Firefox half here. A matrix in prose is a list of adjectives; a matrix here is a row per promise, and each row carries the legacy line that proves the promise is about something real. Everything in this file is re-measured from the inherited tree by scripts/verify.mjs on every run: the two manifests, the profile-type registry, the option-key list, the browser-API surface (including the APIs the legacy code never calls, which is what licenses a permission's removal), and every `path:line` citation below. docs/architecture/38-compatibility-matrix.md is the argument; this is the list.",
+  "protocolVersion": 1,
+  "scope": {
+    "owns": [
+      "the browser and OS floor: the version strings the shipped manifests carry today, and the rule that sets the shipped floor (browserFloors, apiSurface)",
+      "the permission delta between the inherited manifests and what NEXORA asks for (manifestDeltas)",
+      "the legacy data shapes that must survive cut-over: profile types, the `+` key, the `-` option keys, backup files, sync backends (profileTypes, optionKeys, backups, syncBackends)",
+      "the verdict vocabulary -- what 'compatible' may mean in a row of this matrix (verdicts)",
+      "the rows themselves: one promise per subject, each with the legacy evidence and the measurement still owed (matrix)"
+    ],
+    "doesNotOwn": [
+      "the negotiation of protocol versions or capability names -- packages/schema/protocol/compatibility-rules.json owns those, and its name notwithstanding it is the wire contract, not the product promise; this file says which browsers and which user data the wire contract has to survive",
+      "the condition vocabulary and what the compiler can express of it -- packages/schema/routing-policy.schema.json#/$defs/condition lists the twelve types and docs/architecture/28-routing-model.md decides which plane each one runs in; a row here says only what the user keeps or loses",
+      "the subscription link kinds and their loss tables -- docs/architecture/29-subscriptions-and-servers.md §5 owns those; this file borrows its verdict",
+      "the keystore backend per operating system -- docs/adr/0011-windows-keystore-dpapi.md and docs/architecture/32-secrets-keystore-masking.md; a row here only says which OS is in scope",
+      "the Core binary hashes -- packages/schema/pins.schema.json and docs/architecture/33-binary-integrity.md",
+      "whether a check was executed -- docs/verification/live-matrix.md and docs/architecture/39-verification-matrix.md; `owed` names the measurement, it never claims it happened"
+    ]
+  },
+  "browserFloors": {
+    "chromiumManifest": "omega-target-chromium-extension/overlay/manifest.json",
+    "firefoxManifest": "omega-target-chromium-extension/overlay/manifest-firefox.json",
+    "minimumChromeVersion": "88",
+    "minimumChromeVersionAt": ["omega-target-chromium-extension/overlay/manifest.json:29", "omega-target-chromium-extension/overlay/manifest-firefox.json:29"],
+    "geckoStrictMinVersion": "112.0",
+    "geckoStrictMinVersionAt": "omega-target-chromium-extension/overlay/manifest-firefox.json:52",
+    "geckoId": "suziwen1@gmail.com",
+    "manifestVersion": 3,
+    "extensionVersion": "3.5.2",
+    "bothDeclareMinimumChrome": "The Firefox manifest carries `minimum_chrome_version` too, and nothing reads it there -- it is one file copied twice, which is exactly how a floor stops being a decision.",
+    "rule": "The shipped floor is the highest API floor among the calls the extension actually makes, not the number that happens to be in the manifest. An API whose floor this repository cannot measure is listed in apiSurface.unguarded and blocks the row that carries it from ever reading `survives-unchanged`.",
+    "why": "A floor is a promise to a user on an old browser. The inherited tree states 88 and calls `chrome.storage.session`, an API newer than 88, with no guard -- so the promise and the code already disagree on day one. NEXORA inherits that disagreement unless a number and a measurement replace it."
+  },
+  "manifestDeltas": {
+    "permissions": {
+      "chromium": ["proxy", "tabs", "alarms", "storage", "unlimitedStorage", "webRequest", "webRequestAuthProvider", "contextMenus"],
+      "firefox": ["proxy", "tabs", "alarms", "storage", "unlimitedStorage", "webRequest", "webRequestBlocking", "contextMenus"],
+      "onlyChromium": ["webRequestAuthProvider"],
+      "onlyFirefox": ["webRequestBlocking"],
+      "hostPermissions": ["<all_urls>"]
+    },
+    "divergentFields": [
+      {
+        "field": "action.default_popup",
+        "chromium": "popup-iframe.html",
+        "firefox": "popup/index.html",
+        "note": "omega-target-chromium-extension/overlay/x-background.js:26 sets the same iframe path at runtime and x-background.js:29-31 switches to the direct path on Android, so the popup has three entry points and one manifest cannot show it."
+      },
+      {
+        "field": "background",
+        "chromium": "service_worker",
+        "firefox": "scripts",
+        "note": "Same module, two manifest spellings -- omega-target-chromium-extension/overlay/manifest.json:26 against omega-target-chromium-extension/overlay/manifest-firefox.json:26."
+      },
+      {
+        "field": "options_page",
+        "chromium": "options.html",
+        "firefox": null,
+        "note": "Chromium declares both options_page (manifest.json:30) and options_ui.page (manifest.json:32); Firefox declares only options_ui.page. The two Chromium keys disagree with each other only in name, and both must keep resolving after any cut-over (docs/architecture/20-target-repository-layout.md)."
+      },
+      {
+        "field": "browser_specific_settings",
+        "chromium": null,
+        "firefox": "gecko id + strict_min_version",
+        "note": "The only place the Firefox floor is written down."
+      }
+    ],
+    "nexoraAdds": [
+      {
+        "permission": "nativeMessaging",
+        "why": "It is the Connector's only door (ADR-0004) and the inherited manifests do not have it: `nativeMessaging` appears in neither permission list above, which is the measurement, not an assumption.",
+        "verifiedAt": "packages/schema/protocol/framing.json"
+      }
+    ],
+    "rule": "A permission may be dropped only when the API it gates is in apiSurface.absent or when a measured cohort says nobody uses it. `unlimitedStorage` is in the second case and is therefore a row (COMP-14), not a change.",
+    "why": "The permission list is the only user-visible statement of what the extension can see. Two lists that differ by one item per browser, plus one row of prose saying 'optional when measured', is the honest shape of it."
+  },
+  "apiSurface": {
+    "corpus": ["omega-web/src", "omega-target/src", "omega-target-chromium-extension/src", "omega-target-chromium-extension/overlay", "omega-pac/src"],
+    "used": [
+      { "api": "chrome.action", "cite": "omega-target-chromium-extension/src/module/tabs.coffee:92" },
+      { "api": "chrome.contextMenus", "cite": "omega-target-chromium-extension/src/coffee/background_preload.coffee:10" },
+      { "api": "chrome.alarms", "cite": "omega-target-chromium-extension/src/module/options.coffee:295" },
+      { "api": "chrome.webRequest", "cite": "omega-target-chromium-extension/src/module/web_request_monitor.coffee:23" },
+      { "api": "chrome.webRequest.onAuthRequired", "cite": "omega-target-chromium-extension/src/module/proxy/proxy_auth.coffee:19" },
+      { "api": "chrome.proxy.settings", "cite": "omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:14" },
+      { "api": "chrome.tabs", "cite": "omega-target-chromium-extension/src/coffee/background_preload.coffee:51" },
+      { "api": "chrome.windows", "cite": "omega-web/src/popup/network/js/tab.js:143" },
+      { "api": "chrome.storage.local", "cite": "omega-target-chromium-extension/src/coffee/background.coffee:45" },
+      { "api": "chrome.storage.sync", "cite": "omega-target-chromium-extension/src/coffee/background.coffee:44" },
+      { "api": "chrome.storage.session", "cite": "omega-target-chromium-extension/src/module/options.coffee:106" },
+      { "api": "chrome.storage.onChanged", "cite": "omega-target-chromium-extension/src/module/storage.coffee:80" },
+      { "api": "chrome.runtime.getManifest", "cite": "omega-target-chromium-extension/src/coffee/background.coffee:38" },
+      { "api": "chrome.i18n.getMessage", "cite": "omega-target-chromium-extension/src/coffee/background.coffee:66" },
+      { "api": "browser.proxy.onRequest", "cite": "omega-target-chromium-extension/src/module/proxy/proxy_impl_firefox.coffee:26" },
+      { "api": "browser.proxy.register", "cite": "omega-target-chromium-extension/src/module/proxy/proxy_impl_script.coffee:88" },
+      { "api": "browser.runtime.getBrowserInfo", "cite": "omega-target-chromium-extension/src/module/proxy/proxy_impl_script.coffee:37" },
+      { "api": "browser.permissions", "cite": "omega-target-chromium-extension/src/module/options.coffee:79" },
+      { "api": "browser.extension.isAllowedIncognitoAccess", "cite": "omega-target-chromium-extension/src/module/proxy/proxy_impl_firefox.coffee:33" }
+    ],
+    "absent": ["chrome.notifications", "chrome.management", "chrome.idle", "chrome.bookmarks", "chrome.history", "chrome.downloads", "chrome.system", "chrome.storage.managed", "chrome.browsingData", "chrome.scripting", "chrome.sidePanel", "chrome.commands", "chrome.devtools", "chrome.cookies", "chrome.debugger", "chrome.tts", "chrome.offscreen", "chrome.identity"],
+    "absentRule": "Every name in `absent` is re-grepped over `corpus` on each run and must have zero hits. The list is not decoration: it is the only evidence that a permission can be removed and that a support claim can be dropped. An API that appears in the corpus stops being absent, and the assertion fails rather than let the claim age quietly.",
+    "guardedExamples": [
+      "omega-target-chromium-extension/src/module/proxy/proxy_auth.coffee:16 -- `if not chrome.webRequest.onAuthRequired` then log and disable, so an optional API is feature-detected",
+      "omega-target-chromium-extension/src/module/storage.coffee:39 -- `if browser?.storage?[@areaName]`, so a storage area that a browser lacks is probed before use"
+    ],
+    "unguarded": [
+      {
+        "api": "chrome.storage.session",
+        "cites": ["omega-target-chromium-extension/src/module/options.coffee:106", "omega-target-chromium-extension/src/module/options.coffee:140"],
+        "floor": null,
+        "why": "Its real availability floor is a platform fact, not a repository fact -- the same class of unknown as docs/architecture/34-data-split.md's quota ceiling. The two lines dereference it directly under a manifest that promises 88.",
+        "nexora": "Either guard it the way the same tree guards `onAuthRequired`, or raise the floor to a measured number. COMP-10 carries the choice and it is not `survives-unchanged`."
+      }
+    ],
+    "proxyModesUsed": ["direct", "pac_script", "fixed_servers"],
+    "proxyModesNote": "The three strings at omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:19, :21 and :45, plus `clear()` for SystemProfile at :14. `system` and `advance-mode` are never written, so a support claim about them would be a claim about code that does not exist.",
+    "why": "The API surface is what a browser version promise is made of. Listing it once, with a line each, and re-measuring the absence half, turns 'NEXORA supports Firefox 112 and up' from a sentence into a check."
+  },
+  "profileTypes": {
+    "registryAt": "omega-pac/src/profiles.coffee:253",
+    "aliasResolutionAt": "omega-pac/src/profiles.coffee:247",
+    "unknownTypeThrowsAt": "omega-pac/src/profiles.coffee:250",
+    "types": [
+      { "name": "SystemProfile", "cite": "omega-pac/src/profiles.coffee:256", "disposition": "kept-in-browser-plane", "note": "Compiles to `chrome.proxy.settings.clear()` (omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:14) and refuses to be used inside a PAC script (omega-pac/src/profiles.coffee:258). Firefox's script backend cannot express it at all (omega-target-chromium-extension/src/module/proxy/proxy_impl_script.coffee:24)." },
+      { "name": "DirectProfile", "cite": "omega-pac/src/profiles.coffee:259", "disposition": "kept-in-browser-plane", "note": "`includable`, compiles to the PAC result string at omega-pac/src/profiles.coffee:262." },
+      { "name": "FixedProfile", "cite": "omega-pac/src/profiles.coffee:263", "disposition": "kept-in-browser-plane", "note": "Per-scheme proxies (`schemes` at omega-pac/src/profiles.coffee:46), a bypass list seeded with 127.0.0.1/localhost (omega-pac/src/profiles.coffee:265) and per-scheme credentials read at omega-pac/src/profiles.coffee:290. NEXORA never stores that credential: doc 32 owns where a secret goes, and COMP-07 says what happens to a profile that already has one." },
+      { "name": "PacProfile", "cite": "omega-pac/src/profiles.coffee:350", "disposition": "kept-in-browser-plane", "note": "Defaults to a DIRECT-returning script at omega-pac/src/profiles.coffee:353; a `file:` pacUrl is special-cased at omega-pac/src/profiles.coffee:91 and made mandatory at omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:26." },
+      { "name": "SwitchProfile", "cite": "omega-pac/src/profiles.coffee:394", "disposition": "kept-then-compiled", "note": "The user's rule list. Its `rules[].condition` shape is what `packages/schema/routing-policy.schema.json#/$defs/browserRules` keeps byte-compatible, and what the compiler tries to express in Core routing (docs/architecture/28-routing-model.md). COMP-05 is the row that says what a user loses when a condition cannot be expressed." },
+      { "name": "RuleListProfile", "cite": "omega-pac/src/profiles.coffee:446", "disposition": "kept-in-browser-plane", "note": "Two source formats parse it: AutoProxy at omega-pac/src/rule_list.coffee:7 and Switchy at omega-pac/src/rule_list.coffee:54." }
+    ],
+    "aliases": [
+      { "name": "AutoDetectProfile", "target": "PacProfile", "cite": "omega-pac/src/profiles.coffee:393" },
+      { "name": "VirtualProfile", "target": "SwitchProfile", "cite": "omega-pac/src/profiles.coffee:445" },
+      { "name": "SwitchyRuleListProfile", "target": "RuleListProfile", "cite": "omega-pac/src/profiles.coffee:520" },
+      { "name": "AutoProxyRuleListProfile", "target": "RuleListProfile", "cite": "omega-pac/src/profiles.coffee:521" }
+    ],
+    "aliasRule": "An alias is a name in the user's stored data, not a deprecated code path. `_handler` walks the chain (omega-pac/src/profiles.coffee:247-248) and an unknown name throws at :250, so a NEXORA reader that resolves only the six canonical types breaks every profile written by a SwitchyOmega-era import.",
+    "builtinProfiles": ["+direct", "+system"],
+    "builtinAt": "omega-pac/src/profiles.coffee:34",
+    "keyConvention": {
+      "prefix": "+",
+      "builtAt": "omega-pac/src/profiles.coffee:96",
+      "iteratedAt": "omega-pac/src/profiles.coffee:113",
+      "dispatchedAt": "omega-target/src/options.coffee:92",
+      "rule": "A profile key is `'+' + name`; every storage iteration tests the first character code. NEXORA may not invent a second namespace for profiles, because `each` would then skip the new ones and the user would see a profile vanish after an upgrade.",
+      "i18nTrap": "Display names go through `chrome.i18n.getMessage('profile_' + name) || name` (omega-target-chromium-extension/src/coffee/background.coffee:66), so a profile a user names `options_apply` acquires a translation the user did not write. NEXORA renders names verbatim -- packages/schema/presentation.json#/i18n/namesAreData -- and that is a compatibility change in the user's favour, recorded as COMP-17."
+    },
+    "why": "The profile type registry is the format of the user's data. Six names and four aliases is the whole of it, and it is small enough to be a contract rather than a memory."
+  },
+  "optionKeys": {
+    "prefix": "-",
+    "file": "omega-target/src/default_options.coffee",
+    "scalarKeys": ["-enableQuickSwitch", "-refreshOnProfileChange", "-startupProfileName", "-quickSwitchProfiles", "-revertProxyChanges", "-confirmDeletion", "-showInspectMenu", "-addConditionsToBottom", "-showResultProfileOnActionBadgeText", "-showExternalProfile", "-downloadInterval"],
+    "schemaVersionKey": "schemaVersion",
+    "schemaVersionValue": 2,
+    "acceptedVersions": [1, 2],
+    "upgradeAt": "omega-target/src/options.coffee:327",
+    "rejectAt": "omega-target/src/options.coffee:353",
+    "namespaces": [
+      { "prefix": "+", "means": "a profile", "cite": "omega-target/src/options.coffee:92" },
+      { "prefix": "-", "means": "a scalar option", "cite": "omega-target/src/default_options.coffee:3" },
+      { "prefix": "omega.local.", "means": "state, not options", "cite": "omega-target-chromium-extension/src/coffee/background.coffee:234" },
+      { "prefix": "bare", "means": "no NEXORA key may use one", "cite": "omega-target/src/options.coffee:90" }
+    ],
+    "bareKeyWarning": "`-customCss` is read as a bare `key[0] == '-'` test at omega-target/src/options.coffee:90 and `-builtinProfiles` at :464, so a NEXORA option key that begins with any other character collides with nothing, and one that begins with `+` becomes a profile by accident. `packages/schema/envelope-keys.schema.json` is where NEXORA's own keys are constrained.",
+    "why": "Eleven scalars, one version stamp and two prefixes is the entire top-level format. Anything that promises compatibility without naming them is promising compatibility with an abstraction."
+  },
+  "backups": {
+    "fileNameShape": "ZeroOmegaOptions-<ISO-8601>.bak",
+    "fileNameAt": "omega-web/src/omega/controllers/io.coffee:72",
+    "exportedShape": "The whole options map, JSON-stable-stringified: schemaVersion, every `-` key, every `+` profile, nothing else (omega-web/src/omega/controllers/io.coffee:69).",
+    "noWrapper": "There is no envelope, no `__type`, no per-item type tag and no checksum field in a `.bak`. A NEXORA importer that requires one rejects every backup the user already has.",
+    "parseAt": "omega-target/src/options.coffee:360",
+    "base64At": "omega-target/src/options.coffee:362",
+    "invalidAt": "omega-target/src/options.coffee:370",
+    "base64Note": "A body that does not start with `{` is decoded as base64 before parsing (omega-target/src/options.coffee:365), so one parser accepts two spellings of the same file; a failure of either spelling reaches the same `Invalid options!` (omega-target/src/options.coffee:370).",
+    "onlineRestoreAt": "omega-web/src/omega/controllers/io.coffee:114",
+    "onlineRestoreRule": "The legacy screen fetches an arbitrary HTTPS body and resets the whole store with it (omega-web/src/omega/controllers/io.coffee:104-114). NEXORA does not inherit that path: import is `profile.import` with validation before apply and a pre-migration snapshot first (ADR-0014), and docs/architecture/34-data-split.md records the legacy behaviour as a finding.",
+    "destructiveLegacyAt": "omega-target-chromium-extension/src/coffee/background.coffee:42",
+    "destructiveLegacyRule": "An `update` install event whose previous version is below 3.3.0 clears `chrome.storage.sync`, `chrome.storage.local` and IndexedDB (omega-target-chromium-extension/src/coffee/background.coffee:44-46). COMP-19 exists because NEXORA must not reuse that shape for its own cut-over: constraint 12 of the brief and ADR-0014 both forbid an upgrade that deletes.",
+    "why": "The backup file is the only portable copy of the user's configuration and it is a bare map. Every compatibility argument either starts from that shape or quietly fails on a real file."
+  },
+  "syncBackends": [
+    {
+      "name": "gist",
+      "implAt": "omega-target-chromium-extension/src/module/sync/sync_impl_gist.coffee:6",
+      "host": "https://api.github.com",
+      "hostAt": "omega-target-chromium-extension/src/module/sync/sync_impl_gist.coffee:10",
+      "filename": "ZeroOmega.json",
+      "filenameAt": "omega-target-chromium-extension/src/module/sync/sync_impl_gist.coffee:4",
+      "credential": "Bearer token, omega-target-chromium-extension/src/module/sync/sync_impl_gist.coffee:25"
+    },
+    {
+      "name": "webdav",
+      "implAt": "omega-target-chromium-extension/src/module/sync/sync_impl_webdav.coffee:7",
+      "path": "zeroomega-",
+      "pathAt": "omega-target-chromium-extension/src/module/sync/sync_impl_webdav.coffee:4",
+      "commitFile": "zeroomega-commit.txt",
+      "commitFileAt": "omega-target-chromium-extension/src/module/sync/sync_impl_webdav.coffee:3",
+      "credential": "username + token, sent to an origin the user typed"
+    },
+    {
+      "name": "chrome-storage-sync",
+      "implAt": "omega-target-chromium-extension/src/coffee/background.coffee:237",
+      "configKey": "zeroOmegaSync",
+      "configKeyAt": "omega-target/src/options_sync.coffee:10",
+      "credential": "a GitHub token stored in the same synced blob -- the finding doc 24 §4 and COMP-09 are about"
+    }
+  ],
+  "syncBackendsAbsent": ["Dropbox", "OneDrive", "box.com", "Google Drive"],
+  "syncBackendsAbsentRule": "Re-grepped over `corpus` each run, like the absent APIs. A support page that lists Dropbox sync is describing a backend this tree has never had. `FileSaver` is deliberately NOT in this list: it is in the corpus (omega-web/src/coffee/options.coffee:6) and is a save-to-disk library rather than a sync backend, which is exactly the mistake this list exists to prevent.",
+  "verdicts": {
+    "values": ["survives-unchanged", "imports-with-report", "refused-with-reason", "deferred-needs-measurement"],
+    "survives-unchanged": "The behaviour is inherited as it is, the evidence line still says what this file claims it says, and no measurement is outstanding. This is the only verdict that lets a support sentence be written without a caveat.",
+    "imports-with-report": "The user's data still arrives, and whatever NEXORA cannot express is named at import time rather than dropped -- the shape ADR-0013 requires for routing conditions and docs/architecture/29-subscriptions-and-servers.md §5 requires for feeds.",
+    "refused-with-reason": "NEXORA will not do it, the user is told in a named UI state, and the refusal is a design consequence rather than an omission. A refusal without a state is a bug (docs/architecture/37-ui-architecture.md §4).",
+    "deferred-needs-measurement": "The promise cannot be made yet because a number is missing and that number is not in this repository. The row names who measures it. This verdict is not a synonym for 'yes' -- docs/PROJECT-STATE.md §0 constraint 11 forbids shipping a control whose answer is still owed.",
+    "rule": "Every matrix row carries exactly one verdict, and the set is closed: a row whose verdict is outside `values` says nothing about what happens to the user.",
+    "why": "'Compatible' is the word that gets a product into trouble. Four named outcomes, each with different obligations, is the smallest vocabulary that lets a row be checked."
+  },
+  "matrix": [
+    { "id": "COMP-01", "subject": "A ZeroOmega v3.5.2 backup file re-opens unchanged", "verdict": "imports-with-report", "evidence": ["omega-web/src/omega/controllers/io.coffee:69", "omega-target/src/options.coffee:360", "omega-target/src/default_options.coffee:2"], "owed": "LIVE-14: a real .bak produced by 3.5.2 through the NEXORA importer, both JSON and base64 spellings" },
+    { "id": "COMP-02", "subject": "`schemaVersion: 2` stays the value the legacy engine writes and reads", "verdict": "survives-unchanged", "evidence": ["omega-target/src/options.coffee:344", "omega-target/src/options.coffee:349", "packages/schema/migrations.json#/versionStamps/legacy"], "owed": "none -- packages/schema/scripts/verify.mjs asserts the pair and the value every run" },
+    { "id": "COMP-03", "subject": "All six profile types and all four aliases are still loadable after cut-over", "verdict": "survives-unchanged", "evidence": ["omega-pac/src/profiles.coffee:253", "omega-pac/src/profiles.coffee:247", "omega-pac/src/profiles.coffee:393"], "owed": "LIVE-14, run with one profile per type and one per alias" },
+    { "id": "COMP-04", "subject": "The `+` key remains the only profile namespace", "verdict": "survives-unchanged", "evidence": ["omega-pac/src/profiles.coffee:96", "omega-pac/src/profiles.coffee:113", "omega-target/src/options.coffee:92"], "owed": "none -- the assertion reads the iteration and the builder" },
+    { "id": "COMP-05", "subject": "A user's own switch rules survive as browser-plane rules even when the compiler cannot express them in Core", "verdict": "imports-with-report", "evidence": ["packages/schema/routing-policy.schema.json#/$defs/condition", "omega-pac/src/conditions.coffee:227", "docs/adr/0013-omega-conditions-compiles-into-xray-routing.md"], "owed": "a compile test per condition type; docs/architecture/28-routing-model.md owns which types compile and docs/architecture/39-verification-matrix.md names the row" },
+    { "id": "COMP-06", "subject": "Legacy FixedProfile credentials keep working for legacy profiles", "verdict": "imports-with-report", "evidence": ["omega-pac/src/profiles.coffee:290", "omega-target-chromium-extension/src/module/proxy/proxy_auth.coffee:40", "omega-target-chromium-extension/src/module/proxy/proxy_auth.coffee:64"], "owed": "COMP-07's cohort measurement; NEXORA profiles never carry one (docs/architecture/32-secrets-keystore-masking.md §5)" },
+    { "id": "COMP-07", "subject": "`webRequest`/`webRequestAuthProvider` (Chromium) and `webRequestBlocking` (Firefox) stay granted", "verdict": "deferred-needs-measurement", "evidence": ["omega-target-chromium-extension/overlay/manifest.json:46", "omega-target-chromium-extension/overlay/manifest-firefox.json:45", "omega-target-chromium-extension/src/module/proxy/proxy_auth.coffee:19"], "owed": "a count of live installations holding an authenticated legacy proxy -- docs/architecture/31-security-model.md's permission table is where the answer lands" },
+    { "id": "COMP-08", "subject": "vmess, trojan, ss and WireGuard share links are not silently dropped", "verdict": "refused-with-reason", "evidence": ["docs/architecture/23-unified-server-model.md §7", "packages/schema/subscription-source.schema.json#/properties/format"], "owed": "a feed carrying a vmess or trojan line, imported: the refusal must appear as a named state, not a toast (docs/architecture/37-ui-architecture.md §4), and docs/architecture/39-verification-matrix.md names the row" },
+    { "id": "COMP-09", "subject": "`pinCert` and `minVersion` carried by a feed are reported, not ignored", "verdict": "refused-with-reason", "evidence": ["docs/architecture/29-subscriptions-and-servers.md §13", "packages/schema/server.schema.json#/properties"], "owed": "the field set is doc 23's; the row exists so the loss table is not the only place it is written" },
+    { "id": "COMP-10", "subject": "`chrome.storage.session` is guarded or the floor is raised", "verdict": "deferred-needs-measurement", "evidence": ["omega-target-chromium-extension/src/module/options.coffee:106", "omega-target-chromium-extension/src/module/options.coffee:140", "omega-target-chromium-extension/overlay/manifest.json:29"], "owed": "LIVE-15: the real availability floor per engine, measured in a browser. Until then no NEXORA document may print a Chromium or Firefox floor as settled." },
+    { "id": "COMP-11", "subject": "Firefox keeps its own popup path, proxy backend and permission spelling", "verdict": "imports-with-report", "evidence": ["omega-target-chromium-extension/overlay/manifest-firefox.json:23", "omega-target-chromium-extension/src/module/proxy/proxy_impl_firefox.coffee:26", "omega-target-chromium-extension/src/module/proxy/proxy_impl_script.coffee:24"], "owed": "LIVE-15 in full, including private-mode storage -- `SystemProfile` has no Firefox script-backend equivalent, so the divergence is a product fact, not a detail" },
+    { "id": "COMP-12", "subject": "The Connector is Windows-only in this phase", "verdict": "refused-with-reason", "evidence": ["docs/adr/0011-windows-keystore-dpapi.md", "docs/architecture/33-binary-integrity.md §17", "packages/schema/examples/pins.xray.json#/installRoot"], "owed": "a Linux and macOS ADR each, before any platform sentence is written outside this row" },
+    { "id": "COMP-13", "subject": "A legacy sync provider (Gist, WebDAV) is not replaced by a new one", "verdict": "survives-unchanged", "evidence": ["omega-target-chromium-extension/src/module/sync/sync_impl.coffee:1", "omega-target-chromium-extension/src/module/sync/sync_impl_webdav.coffee:17", "omega-target-chromium-extension/src/module/sync/sync_impl_gist.coffee:10"], "owed": "the same two backends driven against a real remote -- docs/architecture/39-verification-matrix.md names the row" },
+    { "id": "COMP-14", "subject": "`unlimitedStorage` stays granted", "verdict": "deferred-needs-measurement", "evidence": ["omega-target-chromium-extension/overlay/manifest.json:44", "docs/architecture/34-data-split.md §9"], "owed": "envelope-size measurements across real profiles; docs/architecture/34-data-split.md §9 lists the three conditions removal needs" },
+    { "id": "COMP-15", "subject": "The extension works with no Connector installed", "verdict": "survives-unchanged", "evidence": ["docs/architecture/22-component-contracts.md §13", "omega-target-chromium-extension/src/coffee/omega_target_web.coffee:41"], "owed": "a run with no Connector registered: the popup still switches legacy profiles and names why NEXORA profiles are unavailable -- docs/architecture/39-verification-matrix.md names the row, and docs/architecture/37-ui-architecture.md §8 keeps the cold-start ladder that makes it true" },
+    { "id": "COMP-16", "subject": "A dangling `serverId` in a profile is refused with a named reason, not silently ignored", "verdict": "imports-with-report", "evidence": ["docs/architecture/22-component-contracts.md §6", "packages/schema/connector-profile.schema.json#/properties/serverIds"], "owed": "the registry-side check is Phase 2 and docs/architecture/39-verification-matrix.md names the row; this row is the promise it must keep" },
+    { "id": "COMP-17", "subject": "Profile names are rendered verbatim instead of looked up in the translation catalog", "verdict": "refused-with-reason", "evidence": ["omega-target-chromium-extension/src/coffee/background.coffee:66", "omega-web/src/omega/filters.coffee:25", "packages/schema/presentation.json#/i18n/namesAreData"], "owed": "none -- it is a deliberate change of a legacy behaviour, and the sentence above is the disclosure" },
+    { "id": "COMP-18", "subject": "`password` is stripped from the synced blob", "verdict": "deferred-needs-measurement", "evidence": ["docs/architecture/24-options-envelope-compat.md §4", "omega-target/src/options_sync.coffee:10", "omega-target-chromium-extension/src/module/sync/sync_impl_gist.coffee:25"], "owed": "docs/architecture/40-open-decisions.md -- the decision is open because stripping changes what other devices see" },
+    { "id": "COMP-19", "subject": "No NEXORA upgrade path clears a store the way the legacy one does", "verdict": "refused-with-reason", "evidence": ["omega-target-chromium-extension/src/coffee/background.coffee:44", "docs/adr/0014-schema-version-3-and-backup-before-migrate.md"], "owed": "none -- ADR-0002 and constraint 12 make this a prohibition rather than a measurement" },
+    { "id": "COMP-20", "subject": "The legacy popup's iframe path and the direct path both keep resolving", "verdict": "survives-unchanged", "evidence": ["omega-target-chromium-extension/overlay/x-background.js:26", "omega-target-chromium-extension/overlay/x-background.js:30", "omega-target-chromium-extension/overlay/manifest.json:23"], "owed": "the artifact-content assertion of docs/architecture/20-target-repository-layout.md §5, which a manifest edit must re-record before it may be proposed" }
+  ],
+  "matrixRules": {
+    "oneVerdict": "Every row carries one verdict from verdicts.values; a row with none is a paragraph, not a matrix row.",
+    "evidenceResolves": "Every citation in `evidence` is re-checked on each run: a `path:line` into the inherited tree must exist and be non-blank, and a `path#/pointer` must resolve inside the package. A row whose evidence disappears is a broken promise, found here rather than in a browser.",
+    "owedIsNamed": "A row whose verdict is `deferred-needs-measurement` names the measurement and the document that lands the answer. `owed: none` is legal only for a row some assertion already closes.",
+    "noShipWithoutVerdict": "A row that a NEXORA control depends on may not read `deferred-needs-measurement` at cut-over -- docs/PROJECT-STATE.md §0 constraint 11 and docs/architecture/37-ui-architecture.md §9 are what that means in practice.",
+    "why": "The three rules are the difference between a matrix and a wishlist: each promise is falsifiable, each gap says who closes it, and each number in it is re-measured."
+  },
+  "nonGoals": [
+    "Security properties -- docs/architecture/31-security-model.md decides those; a row here says only whether the legacy shape survives.",
+    "The failure ladder when the Connector dies -- docs/architecture/30-failure-policy.md.",
+    "Log and event compatibility -- docs/architecture/36-observability.md.",
+    "The order of envelope migrations -- docs/architecture/35-schema-versioning-migration.md and packages/schema/migrations.json."
+  ]
+}

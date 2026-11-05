@@ -1,0 +1,58 @@
+{
+  "name": "connector.health",
+  "title": "Aggregate Connector health",
+  "summary": "One answer to 'is the machinery up', made of named checks so the UI can say which part is not. It is an internal-consistency view; server.test is the only thing that can claim traffic actually egresses through the Core.",
+  "class": "read",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 5000,
+  "requiresHello": true,
+  "capabilities": ["health.probes"],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "profileId": { "$ref": "https://schema.nexora.local/server.schema.json#/properties/id" }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["state", "checks"],
+    "properties": {
+      "state": {
+        "enum": ["ok", "degraded", "blocked", "unreachable", "unknown"],
+        "description": "'blocked' means the fail-closed policy is actively rejecting traffic -- working as designed, not healthy."
+      },
+      "checks": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 16,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "state"],
+          "properties": {
+            "name": {
+              "enum": [
+                "core-process",
+                "loopback-inbound",
+                "keystore",
+                "config-hash",
+                "binary-integrity",
+                "contained",
+                "clock-skew"
+              ]
+            },
+            "state": { "enum": ["pass", "fail", "skipped", "unknown"] },
+            "detail": { "type": "string", "maxLength": 160 },
+            "code": { "type": "string" }
+          }
+        }
+      },
+      "collectedAt": { "type": "string", "format": "date-time" }
+    }
+  },
+  "errors": ["Timeout", "HealthCheckFailed", "KeystoreUnavailable", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["none"]
+}

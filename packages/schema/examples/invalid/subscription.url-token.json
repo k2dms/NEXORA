@@ -1,0 +1,18 @@
+{
+  "id": "2b3c4d5e-6f70-4182-93a4-b5c6d7e8f903",
+  "displayName": "Provider feed (token stored in the clear)",
+  "url": "https://feeds.example.net/sub/abc123?token=sk-live-0123456789abcdef",
+  "format": "vless-base64",
+  "limits": {
+    "maxBytes": 2097152,
+    "maxRedirects": 3,
+    "timeoutMs": 20000
+  },
+  "keepLastGood": true,
+  "schedule": {
+    "intervalSeconds": 21600
+  },
+  "status": {
+    "consecutiveFailures": 0
+  }
+}

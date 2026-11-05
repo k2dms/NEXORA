@@ -1,0 +1,53 @@
+{
+  "name": "connector.events.subscribe",
+  "title": "Subscribe to Connector events",
+  "summary": "Needed because a service worker is evicted between interactions: without retained replay, the Dashboard would show yesterday's Core state as current. The subscription is per-port, so it dies with the port and must be re-issued after reconnect.",
+  "class": "mutate",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 5000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["names", "replayRetained"],
+    "properties": {
+      "names": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 14,
+        "uniqueItems": true,
+        "items": { "$ref": "https://schema.nexora.local/events.schema.json#/$defs/name" }
+      },
+      "replayRetained": { "type": "boolean" },
+      "sinceSeq": { "type": ["integer", "null"], "minimum": 0 },
+      "maxPerSecond": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50,
+        "default": 10,
+        "description": "Client-side rate limit for 'routing.decision' so a chatty sampled event cannot flood an evicted-and-restarted worker."
+      }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["subscriptionId", "accepted"],
+    "properties": {
+      "subscriptionId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,36}$" },
+      "accepted": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+      "rejected": {
+        "type": "array",
+        "maxItems": 14,
+        "uniqueItems": true,
+        "items": { "type": "string" },
+        "description": "Names this build does not emit. Reported, not silently dropped, so an old Connector cannot make a new UI look inert."
+      },
+      "replayedCount": { "type": "integer", "minimum": 0 }
+    }
+  },
+  "errors": ["SchemaMismatch", "UnknownMethod", "Timeout", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["none"]
+}

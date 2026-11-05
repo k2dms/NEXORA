@@ -1,0 +1,62 @@
+{
+  "name": "core.restart",
+  "title": "Restart Xray Core",
+  "summary": "Restart is a last resort, not a reload mechanism: config.apply restarts by itself when the compiled hash changed. Exposed because some failures (stuck listener, poisoned DNS cache) are only cleared by a new process.",
+  "class": "converge",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 20000,
+  "requiresHello": true,
+  "capabilities": ["integrity.pinned-core"],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["confirm"],
+    "properties": {
+      "confirm": {
+        "const": true,
+        "description": "A restart drops live connections. Requiring an explicit flag keeps a UI bug from turning a retry loop into a connection-killing loop."
+      },
+      "reason": { "type": "string", "minLength": 3, "maxLength": 80 }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["running", "pid"],
+    "properties": {
+      "running": { "type": "boolean" },
+      "pid": { "type": ["integer", "null"], "minimum": 1 },
+      "previousPid": { "type": ["integer", "null"], "minimum": 1 },
+      "configHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "downtimeMs": { "type": "integer", "minimum": 0 },
+      "inboundPorts": {
+        "type": "array",
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["listen", "port"],
+          "properties": {
+            "listen": { "enum": ["127.0.0.1", "::1"] },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+          }
+        }
+      }
+    }
+  },
+  "errors": [
+    "IntegrityMismatch",
+    "ConfigApplyFailed",
+    "CoreExited",
+    "CoreAlreadyRunning",
+    "Busy",
+    "DiskFull",
+    "KeystoreUnavailable",
+    "Timeout",
+    "UnauthorizedExtension",
+    "Internal"
+  ],
+  "sideEffects": ["core-process", "disk-write", "log-write"],
+  "progressEvents": ["core.restart", "core.started", "core.exited"]
+}

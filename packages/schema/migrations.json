@@ -1,0 +1,332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/migrations.json",
+  "title": "Envelope migration ledger",
+  "description": "The ordering half of ADR-0014, as data. Legacy has exactly one migration mechanism and it is a single in-place branch inside the load path (`omega-target/src/options.coffee:327-353`): `1 -> 2` and then a hard reject of anything else, with no ordering, no per-step verification, no resume and no backup. What makes the reject load-bearing is not the rejection: it is what the caller does with it. `loadOptions` cannot tell `Invalid schemaVersion` from a corrupt envelope, so it logs, takes its fallback branch (`omega-target/src/options.coffee:244`), and then writes defaults over the user's storage (`omega-target/src/options.coffee:254`), after which it reloads (`omega-target/src/options.coffee:258`). An unreadable version is therefore erased, not refused -- which is why the version pair below is the first thing this file states and why every rule in it is checked by scripts/verify.mjs rather than remembered in prose. A step list in a document drifts from the runner that runs it; a step list here cannot, because the harness reads both the registry of envelope keys and the legacy source this file promises not to break.",
+  "protocolVersion": 1,
+  "versionStamps": {
+    "legacy": {
+      "key": "schemaVersion",
+      "mustRemain": 2,
+      "shippedAt": "omega-target/src/default_options.coffee:2",
+      "readBy": "omega-target/src/options.coffee:349-353",
+      "owner": "the legacy engine, which NEXORA keeps running (ADR-0002, ADR-0013)",
+      "whyFrozen": "Options.upgrade resolves only version 2 and rejects every other value, and its caller erases on rejection. Bumping this key is not a migration, it is a deletion that happens to succeed.",
+      "nexoraMayWrite": false
+    },
+    "nexora": {
+      "key": "-nexora.schemaVersion",
+      "head": 3,
+      "declaredIn": "packages/schema/envelope-keys.schema.json#/properties/schemaVersionKey",
+      "owner": "the NEXORA migration runner, and nothing else",
+      "whySeparate": "One scalar the legacy engine reads and rejects, and one scalar NEXORA owns, is the only way an additive migration can be idempotent and resumable while the old engine stays in the load path. The alternative -- a second `if` branch in Options.upgrade -- inherits the erase-on-unknown behaviour it is trying to extend.",
+      "nexoraMayWrite": true
+    },
+    "pairing": {
+      "rule": "A run reads both, writes only the NEXORA one, and MUST prove after every step that the bare stamp still reads 2. A step that cannot prove it stops the run before it writes.",
+      "why": "The two keys are one contract viewed from two engines. A reviewer has to see them together or the additive property silently becomes a version bump."
+    }
+  },
+  "otherVersionSpaces": [
+    {
+      "name": "connector-settings document",
+      "key": "schemaVersion",
+      "carriedBy": "packages/schema/connector-settings.schema.json#/properties/schemaVersion",
+      "value": 1,
+      "rule": "MUST NOT be bumped by an envelope migration. A settings change is a defaulting question, not a storage-shape question."
+    },
+    {
+      "name": "failure-policy document",
+      "key": "version",
+      "carriedBy": "packages/schema/failure-policy.schema.json#/properties/version",
+      "value": 1,
+      "rule": "Same. `docs/architecture/30-failure-policy.md` owns what a changed policy means at runtime; this file owns only the fact that it does not force an envelope step."
+    },
+    {
+      "name": "pins document",
+      "key": "pinsVersion",
+      "carriedBy": "packages/schema/pins.schema.json#/properties/pinsVersion",
+      "value": null,
+      "rule": "An integer, deliberately unbounded: a pin document is replaced from the network, not migrated from storage, so its version advances without a runner."
+    },
+    {
+      "name": "native messaging protocol",
+      "key": "protocolVersion",
+      "carriedBy": "packages/schema/protocol/compatibility-rules.json#/protocolVersion",
+      "value": 1,
+      "rule": "Negotiated at `connector.hello`, never inferred from the envelope. A Connector that is older than the envelope is a compatibility problem, not a migration input."
+    }
+  ],
+  "run": {
+    "trigger": "The shell's startup check decides a migration is needed and asks; the runner never decides for itself (docs/architecture/22-component-contracts.md section 10, Non-goals).",
+    "ordered": true,
+    "idempotent": "Every step's verify is the idempotence test: it re-reads storage and reports 'already applied' as success without writing.",
+    "resumableBy": "Re-verify from step one. A half-applied run is recovered by restoring the backup the run wrote and replaying the steps whose verify fails -- so the backup ledger is the journal and no undeclared cursor key exists.",
+    "dryRun": true,
+    "perStep": ["up", "verify"],
+    "backupBeforeFirstWrite": "blocking",
+    "restoreOnFailure": "mandatory; a failed step leaves the envelope at the previous verified state, never half-applied",
+    "onRestoreFailure": "A visible 'restore required' state. The extension MUST NOT keep running on a partial envelope (ADR-0009's reasoning applies to configuration exactly as it applies to traffic).",
+    "abortOnZeroKeyCount": true,
+    "quotaFailureHandling": "Abort before any write. MUST NOT proceed 'with the local copy only', and MUST NOT delete an older backup to make room for a newer one.",
+    "singleRunner": "One run at a time, per browser profile: the options page owns the run, and a second tab finds it in progress rather than starting another.",
+    "syncMustBeSettled": "A run MUST NOT start while the sync state is `conflict` or a push is pending, because the conflict path itself removes local storage and rewrites it from the remote (`omega-target/src/options.coffee:1190-1199`)."
+  },
+  "journal": {
+    "usesBackupLedger": true,
+    "whyNoCursorKey": "A cursor would have to be declared in the envelope-key registry before it could exist (ADR-0012 rule 6, ADR-0014 rule 8), and it would be a second, authoritative copy of 'what state is this envelope in' -- which is exactly the kind of fact that disagrees with itself. The envelope plus its backup records already answer the question, and the steps are idempotent, so the cursor buys only the cost of being wrong.",
+    "ordering": "The backup key suffix is a UTC ISO-8601 timestamp (`packages/schema/envelope-keys.schema.json#/properties/backupKeyPattern`), so lexical order over `-nexora.backup.*` is chronological order and the newest record is addressable without a separate index.",
+    "fieldsReadOnResume": [
+      "backupId",
+      "createdAt",
+      "fromSchemaVersion",
+      "toSchemaVersion",
+      "keyCount",
+      "contentSha256",
+      "restoredAtLeastOnce"
+    ],
+    "fieldsCarriedBy": "packages/schema/envelope-backup.schema.json#/required"
+  },
+  "onNewerEnvelope": {
+    "policy": "read-only",
+    "writesAllowed": false,
+    "error": "SchemaMismatch",
+    "errorNote": "The name is borrowed from the protocol taxonomy deliberately: `SchemaMismatch` is defined as a payload validated against a schema version the receiver does not implement, which is exactly this condition, and one vocabulary for 'this build is behind' across storage and transit is better than two. No frame is involved and no Connector is asked.",
+    "rule": "An envelope whose `-nexora.schemaVersion` is above this file's head is a build that is behind, not data that is broken. The extension MUST present it, MUST NOT migrate it downward, MUST NOT repair keys it does not recognise, and MUST NOT push it back to a sync backend.",
+    "why": "This is the mirror of the legacy erase-on-unknown path, and the reason the ledger exists at all: the safe response to a version you do not understand is to hold still. Repairing forward is what turns one new build's mistake into every old build's data loss.",
+    "legacyCounterexample": "omega-target/src/options.coffee:244-258 -- the fallback branch that removes every key and writes defaults"
+  },
+  "retention": {
+    "keepCompleted": 1,
+    "mayPruneOnlyKeysMatching": "-nexora.backup.*",
+    "pruneCondition": "after a run whose every step verified and whose restore path was exercised at least once in that run",
+    "neverPrune": ["a backup from an unfinished run", "the newest backup", "any key outside the backup namespace"],
+    "why": "ADR-0014's consequence is that storage roughly doubles during a migration and that the retention rule is 'a reviewable number'. The number is 1 completed snapshot kept, because a snapshot you cannot point at is not a recovery plan and the one that matters is the newest."
+  },
+  "steps": [
+    {
+      "id": "stamp",
+      "order": 1,
+      "from": 2,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": ["-nexora.schemaVersion"],
+      "removes": [],
+      "reads": ["schemaVersion"],
+      "up": "Write the NEXORA stamp at 3. The bare stamp is not touched.",
+      "verify": "Read back: `-nexora.schemaVersion` is 3 and `schemaVersion` is still 2. Both halves or the step failed.",
+      "idempotence": "The verify is the test: a second run finds 3 and reports already-applied.",
+      "reversibleBy": "Delete the key. Nothing else has been written yet, which is why this step is first.",
+      "notes": "Written before any other step so that a crash later leaves an envelope that says which run it was in."
+    },
+    {
+      "id": "settings",
+      "order": 2,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": ["-nexora.settings"],
+      "removes": [],
+      "reads": ["-revertProxyChanges", "-downloadInterval"],
+      "up": "Create the settings document from the shipped default, seeding the download interval and the revert-on-change behaviour from the two legacy scalars the user already set.",
+      "verify": "The key exists, validates against `packages/schema/connector-settings.schema.json`, and its `schemaVersion` is the value this file declares for that document.",
+      "idempotence": "Skip when the key already validates.",
+      "reversibleBy": "Delete the key; the legacy scalars it was seeded from are untouched.",
+      "notes": "Seeding, not replacing: the legacy keys keep working until the cut-over (ADR-0013)."
+    },
+    {
+      "id": "failure-policy",
+      "order": 3,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": ["-nexora.failurePolicy"],
+      "removes": [],
+      "reads": [],
+      "up": "Create the global failure policy at its default (fail-closed). Legacy has no counterpart to migrate from: there is no fail-open concept in the shipped engine at all, which is exactly why the policy starts closed.",
+      "verify": "Validates against `packages/schema/failure-policy.schema.json`, and no `failOpen` exception is present that has no confirmation record.",
+      "idempotence": "Skip when the key already validates.",
+      "reversibleBy": "Delete the key.",
+      "notes": "The confirmation token is evidence about a user action on this machine, so a migration, an import and a sync restore all strip it and the exception re-asks (`docs/architecture/30-failure-policy.md` section 9)."
+    },
+    {
+      "id": "pins",
+      "order": 4,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": ["-nexora.pins"],
+      "removes": [],
+      "reads": [],
+      "up": "Create the Core pin document from the shipped default. Intent only: no download, no install, no hash written into the envelope.",
+      "verify": "Validates against `packages/schema/pins.schema.json`, keeps `verifySignature` true and `silentSelfUpdate` false, and names a retained previous version.",
+      "idempotence": "Skip when the key already validates.",
+      "reversibleBy": "Delete the key.",
+      "notes": "`docs/architecture/33-binary-integrity.md` owns what a pin means at install time; this step only puts the document where the envelope can sync it."
+    },
+    {
+      "id": "subscription-sources",
+      "order": 5,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": ["-nexora.subscription.<id>"],
+      "removes": [],
+      "reads": ["+<profile>", "__ruleListOf_<profile>"],
+      "up": "For each legacy `RuleListProfile` that carries a `sourceUrl`, create a SubscriptionSource holding the display URL and the download interval. `urlRef` and `headersRef` stay absent: a value present in a legacy profile today is not a reference, and minting one would claim a keystore entry that was never written.",
+      "verify": "One source per source-bearing legacy profile, each validating against `packages/schema/subscription-source.schema.json`, and the legacy profile and its `__ruleListOf_` attachment still byte-identical.",
+      "idempotence": "Matched by the deterministic id this file's id rule gives the legacy profile name, so a replay finds the same key.",
+      "reversibleBy": "Delete the created keys.",
+      "notes": "Answers `docs/architecture/29-subscriptions-and-servers.md` section 13 question 5: the runner creates the *source*, the user creates the *subscription with a credential*, and the Connector creates nothing. The last-good rulebook that the legacy attachment holds stays the live one until a refresh succeeds."
+    },
+    {
+      "id": "profiles",
+      "order": 6,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": ["-nexora.profile.<id>"],
+      "removes": [],
+      "reads": ["+<profile>"],
+      "up": "Create a ConnectorProfile per legacy profile that a NEXORA routing decision could name, referencing the legacy `+name` rather than copying its body.",
+      "verify": "Every created profile resolves to exactly one legacy profile that still exists, and every legacy profile the UI can still select has a created counterpart or an explicit 'not portable' record.",
+      "idempotence": "Skip keys whose id already exists and whose reference still resolves.",
+      "reversibleBy": "Delete the created keys.",
+      "notes": "Reference, not copy: two bodies for one profile is how a user ends up editing a proxy that is not the one applied."
+    },
+    {
+      "id": "routing",
+      "order": 7,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": ["-nexora.routing.<id>"],
+      "removes": [],
+      "reads": ["+<profile>"],
+      "up": "Create the default RoutingPolicy: the legacy switch rules keep answering for traffic, and the new policy is inert until the user selects it.",
+      "verify": "Validates against `packages/schema/routing-policy.schema.json` and references only entities that exist in the envelope after step 6.",
+      "idempotence": "Skip when the key already validates.",
+      "reversibleBy": "Delete the key.",
+      "notes": "A routing policy that is created but not selected changes no traffic, which is what makes version 3 safe to install silently."
+    },
+    {
+      "id": "secret-census",
+      "order": 8,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": [],
+      "removes": [],
+      "reads": ["+<profile>"],
+      "up": "Count -- never move -- every legacy field that currently holds a credential value: inline `headers` and per-proxy `auth` inside a profile body, and the `gistToken` that lives beside the envelope in the state store rather than in it. The counts go into the run report the UI shows; the values stay exactly where they are.",
+      "verify": "The census ran and its per-field counts are in the report; no keystore write happened, because this step has no business in the keystore.",
+      "idempotence": "Read-only, so replay is free.",
+      "reversibleBy": "Nothing to reverse.",
+      "notes": "Extraction is a different version with a different blast radius: moving a value into the keystore and rewriting the field as a reference is the one downgrade that loses data (`docs/architecture/32-secrets-keystore-masking.md` section 14), so it gets its own step list and its own ADR. This step exists so that the runner can tell the user what version 4 will touch before it touches it."
+    },
+    {
+      "id": "finalize",
+      "order": 9,
+      "from": 3,
+      "to": 3,
+      "destructive": false,
+      "requiresBackup": true,
+      "writes": [],
+      "removes": [],
+      "reads": ["-nexora.schemaVersion"],
+      "up": "Re-run every prior verify in order, mark the run complete in the report, and only then allow retention to prune.",
+      "verify": "All nine verifiers pass on a fresh read, the bare stamp is still 2, and the newest backup record has `restoredAtLeastOnce` true.",
+      "idempotence": "A replay of a completed run is nine no-ops.",
+      "reversibleBy": "Not reversible, and it writes nothing, which is why it is last.",
+      "notes": "Pruning is governed by `retention` above, not by this step: a step that deletes is a different kind of step and version 3 has none."
+    }
+  ],
+  "futureVersions": [
+    {
+      "to": 4,
+      "name": "credential extraction",
+      "executed": false,
+      "adrRequired": true,
+      "shape": "Per entity: read the legacy document, hand values and intent to `profile.import` in one frame, and only then write the reference-shaped envelope -- the ordering `docs/architecture/32-secrets-keystore-masking.md` section 15 states and this file owns.",
+      "whyNotHere": "It rewrites a legacy field, so it is not additive, so ADR-0014 rule 7 says it needs its own version and its own decision. It also makes the pre-extraction backup the one snapshot that must never be restored onto a post-extraction install, which is a rule about retention rather than about a step."
+    },
+    {
+      "to": 5,
+      "name": "legacy key retirement",
+      "executed": false,
+      "adrRequired": true,
+      "shape": "Removing `+`-keyed bodies and legacy scalars once nothing reads them.",
+      "whyNotHere": "Removal is the cut-over (ADR-0013), the compatibility matrix (`docs/architecture/38-compatibility-matrix.md`) is what says when nothing reads them, and neither exists yet."
+    }
+  ],
+  "forbidden": [
+    {
+      "rule": "No NEXORA code path may compare extension versions and clear storage as a consequence.",
+      "why": "The inherited path does exactly that for any version below 3.3.0, and it detonates on the first NEXORA-to-NEXORA update rather than on the update that looks dangerous.",
+      "evidence": "omega-target-chromium-extension/src/coffee/background.coffee:44-46"
+    },
+    {
+      "rule": "No step may remove the envelope and then write its replacement.",
+      "why": "remove-then-set converts a malformed or truncated input into a deleted configuration. Write the replacement, prove it, then retire the old form in a later version.",
+      "evidence": "omega-target/src/options.coffee:113-121"
+    },
+    {
+      "rule": "No step may write the bare legacy stamp at anything but 2 while Options.upgrade is in the load path.",
+      "why": "The gate resolves only version 2; its caller treats a rejection as a corrupt envelope and rebuilds defaults over the user's data.",
+      "evidence": "omega-target/src/options.coffee:349-353"
+    },
+    {
+      "rule": "No migration may start while the sync state is conflict or a push is pending.",
+      "why": "The conflict path itself removes local storage and rewrites it from the remote, so a run in flight would be racing a wipe of the same keys.",
+      "evidence": "omega-target/src/options.coffee:1190-1199"
+    },
+    {
+      "rule": "A migration may not clear, reset or re-push the sync remote as one of its steps.",
+      "why": "Destroying the other copy is not a local operation, and a remote wipe that is a side effect of a version bump is a data-loss event the user never agreed to.",
+      "evidence": "omega-target/src/options.coffee:1237-1256"
+    },
+    {
+      "rule": "No `-nexora.backup.*` payload may appear in an export, a sync payload, a log line or a diagnostics bundle.",
+      "why": "A snapshot is a copy of everything, so it inherits the plaintext values the pre-keystore envelope held. Without this rule the backup namespace is a leak surface created by a safety mechanism.",
+      "evidence": "packages/schema/envelope-backup.schema.json#/properties/payload"
+    },
+    {
+      "rule": "A step may not write an envelope key the registry does not declare, and a runner may not add a private bookkeeping key.",
+      "why": "An undeclared key is invisible to sync, export, quota handling and the strip set, which is how state ends up in the one place no contract describes.",
+      "evidence": "packages/schema/envelope-keys.schema.json#/properties/namespaces"
+    },
+    {
+      "rule": "No destructive import mode may run without a verified snapshot on both media.",
+      "why": "`mode: replace` is a migration by another name, and the online-restore path it replaces fetched a body from any URL and reset the store with it, unauthenticated.",
+      "evidence": "omega-web/src/omega/controllers/io.coffee:104-118"
+    },
+    {
+      "rule": "A step's success may not be judged by the write promise resolving.",
+      "why": "A resolved write proves the call was accepted, not that the bytes survived: the state store rewrites its whole map as one blob and can resurrect keys a step deleted.",
+      "evidence": "omega-target/src/browser_storage.coffee:49-55"
+    },
+    {
+      "rule": "The runner may not treat the Connector as the only copy of any intent it migrated.",
+      "why": "Version stamps and intent are browser-plane bytes; a run whose state exists only on the Connector cannot be resumed, exported or rolled back by a user who removed the Connector.",
+      "evidence": "docs/adr/0010-data-split-extension-intent-connector-truth.md:66-69"
+    },
+    {
+      "rule": "The debug reset is not a migration and may not be reached from one.",
+      "why": "It clears localStorage, the log store, the sync store and the default store and then reloads the page -- a supported way to lose everything that has no backup gate at all.",
+      "evidence": "omega-target-chromium-extension/src/coffee/omega_debug.coffee:36-56"
+    }
+  ],
+  "openDecisions": [
+    "Whether `-nexora.<id>` ids for mirrored legacy profiles are derived from the profile name or minted randomly: derived ids make replay free (step 5 and 6 depend on one) and make a rename a data event; this is the one place where a content-derived identifier is about naming rather than secrecy, and it is recorded for `docs/architecture/40-open-decisions.md`.",
+    "The UI wording of the 'restore required' state and of the dryRun plan screen (`docs/architecture/37-ui-architecture.md`).",
+    "Whether the secret census counts are shown to the user or only to diagnostics (`docs/architecture/36-observability.md`)."
+  ]
+}

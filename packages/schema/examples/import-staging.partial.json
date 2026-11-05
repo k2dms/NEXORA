@@ -1,0 +1,9 @@
+{
+  "subscriptionId": "1a2b3c4d-5e6f-4a0b-9c0d-1e2f3a4b5c01",
+  "contentSha256": "d3b7a9c1e5f2084b6d8a0c2e4f6081a3b5c7d9e1f30517293b5d7f9a1c3e5b7d",
+  "chunkCount": 6,
+  "receivedChunkSeqs": [0, 1, 2, 4],
+  "createdAt": "2026-11-04T07:58:12Z",
+  "expiresAt": "2026-11-04T08:28:12Z",
+  "attempt": 1
+}

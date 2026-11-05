@@ -1,0 +1,49 @@
+{
+  "name": "core.status",
+  "title": "Core process and inbound state",
+  "summary": "Narrower than connector.status: process-level facts about Core only, including how it died. Exit information is retained across a Connector restart of the Core so 'why is my traffic stopped right now' remains answerable after the fact (docs/architecture/36).",
+  "class": "read",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 3000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": { "type": "object", "additionalProperties": false },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["running"],
+    "properties": {
+      "running": { "type": "boolean" },
+      "pid": { "type": ["integer", "null"], "minimum": 1 },
+      "coreVersion": { "type": ["string", "null"] },
+      "configHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "startedAt": { "type": ["string", "null"], "format": "date-time" },
+      "uptimeSeconds": { "type": ["integer", "null"], "minimum": 0 },
+      "contained": { "type": ["boolean", "null"] },
+      "activeServerTag": { "type": ["string", "null"], "pattern": "^(srv-[0-9a-f]{8})?$" },
+      "lastExit": {
+        "type": ["object", "null"],
+        "additionalProperties": false,
+        "required": ["at"],
+        "properties": {
+          "at": { "type": "string", "format": "date-time" },
+          "exitCode": { "type": ["integer", "null"] },
+          "signal": { "type": ["string", "null"], "maxLength": 24 },
+          "message": { "type": ["string", "null"], "maxLength": 160 }
+        }
+      },
+      "stats": {
+        "type": ["object", "null"],
+        "additionalProperties": false,
+        "properties": {
+          "uplinkBytes": { "type": "integer", "minimum": 0 },
+          "downlinkBytes": { "type": "integer", "minimum": 0 },
+          "openConnections": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  },
+  "errors": ["Timeout", "CoreNotRunning", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["none"]
+}

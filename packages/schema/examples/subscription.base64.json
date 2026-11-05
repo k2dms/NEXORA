@@ -1,0 +1,35 @@
+{
+  "id": "2b3c4d5e-6f70-4182-93a4-b5c6d7e8f901",
+  "displayName": "Provider feed (base64 VLESS list)",
+  "url": "https://feeds.example.net/sub/abc123",
+  "format": "vless-base64",
+  "headersRef": "keystore://subscription/2b3c4d5e/headers",
+  "limits": {
+    "maxBytes": 2097152,
+    "maxRedirects": 3,
+    "timeoutMs": 20000,
+    "maxServers": 512
+  },
+  "keepLastGood": true,
+  "schedule": {
+    "intervalSeconds": 21600,
+    "jitterPercent": 20,
+    "backoffMultiplier": 2,
+    "maxIntervalSeconds": 86400
+  },
+  "status": {
+    "lastAttemptAt": "2026-11-04T06:00:00Z",
+    "lastSuccessAt": "2026-11-04T06:00:00Z",
+    "lastSha256": "9d3f1c2b5a7e4d608b1c9f2a3d4e5f60718293a4b5c6d7e8f9012345678abcde",
+    "serverCount": 12,
+    "consecutiveFailures": 0,
+    "nextAttemptAt": "2026-11-04T12:02:00Z",
+    "lastError": null
+  },
+  "serverIds": [
+    "c7e5a2d1-9f30-4b12-a4e6-1c8d3b5f7a90",
+    "e2b7c4a9-6d15-4f83-9a27-3c5e7b9d1f42"
+  ],
+  "createdAt": "2026-10-01T08:00:00Z",
+  "updatedAt": "2026-11-04T06:00:00Z"
+}

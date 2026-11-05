@@ -1,0 +1,34 @@
+{
+  "name": "core.stop",
+  "title": "Stop Xray Core (converge to stopped)",
+  "summary": "Converge-to-stopped: a Core that is already stopped returns success with stopped=false rather than CoreNotRunning, so an extension retry after a lost response cannot surface a fake failure. Closing the Native Messaging port is NOT a stop request -- the Connector outlives the port (ADR-0005).",
+  "class": "converge",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 10000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "graceful": { "type": "boolean", "default": true },
+      "reason": { "type": "string", "maxLength": 40 }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["running"],
+    "properties": {
+      "running": { "type": "boolean", "const": false },
+      "wasRunning": { "type": "boolean" },
+      "exitCode": { "type": ["integer", "null"] },
+      "terminatedBy": { "enum": ["request", "parent-death", "crash", "already-stopped", null] },
+      "durationMs": { "type": ["integer", "null"], "minimum": 0 }
+    }
+  },
+  "errors": ["Busy", "Timeout", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["core-process", "log-write"],
+  "progressEvents": ["core.exited"]
+}

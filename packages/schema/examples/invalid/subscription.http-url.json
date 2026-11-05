@@ -1,0 +1,11 @@
+{
+  "id": "c3c3c3c3-3333-4333-8333-333333333301",
+  "displayName": "MUST BE REJECTED: plaintext subscription URL",
+  "url": "http://feeds.example.net/sub/abc123",
+  "format": "vless-base64",
+  "limits": { "maxBytes": 2097152, "maxRedirects": 3, "timeoutMs": 20000 },
+  "keepLastGood": true,
+  "schedule": { "intervalSeconds": 21600 },
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

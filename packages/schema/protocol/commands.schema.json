@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/protocol/commands.schema.json",
+  "title": "Meta-schema for a Connector command document",
+  "description": "Every file in protocol/commands/ is validated against this, which is what makes the allowlist a testable artifact rather than a list in a document (ADR-0007). Both the Go switch and the TypeScript client are tested against these documents in Phase 2.",
+  "type": "object",
+  "required": [
+    "name",
+    "title",
+    "class",
+    "idempotent",
+    "timeoutMs",
+    "requiresHello",
+    "capabilities",
+    "args",
+    "result",
+    "errors",
+    "sideEffects"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z]+.[a-z][A-Za-z0-9]*(.[a-z][A-Za-z0-9]*)*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 80
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 400
+    },
+    "class": {
+      "enum": [
+        "read",
+        "converge",
+        "replace",
+        "mutate",
+        "probe"
+      ],
+      "description": "read = no state change; converge = drive toward desired state, repeated calls are no-ops; replace = declarative replace-and-reconcile; mutate = creates or changes a stored entity; probe = measures something, results are inherently time-varying."
+    },
+    "idempotent": {
+      "type": "boolean",
+      "description": "If true, envelope.id is the idempotency key and a replayed request returns the stored response (ADR-0008)."
+    },
+    "replayable": {
+      "type": "boolean",
+      "default": true,
+      "description": "False for probes: timings and live results must not be served from an idempotency cache. The client MUST mark such a replayed value stale."
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 200,
+      "maximum": 600000,
+      "description": "Owned by the caller. A hung host must never hang the service worker."
+    },
+    "requiresHello": {
+      "type": "boolean",
+      "description": "True when the Connector must refuse this method until connector.hello has succeeded. MUST be the exact complement of protocol/command-allowlist.json#/commands[availableBeforeHello] for the same name; scripts/verify.mjs asserts both directions, because a method the allowlist dispatches pre-hello while its own doc demands hello is a negotiation deadlock -- connector.hello itself is the only such method."
+    },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      },
+      "description": "Capability names from protocol/compatibility-rules.json. Empty means always available once hello succeeds."
+    },
+    "args": {
+      "type": "object"
+    },
+    "result": {
+      "type": "object"
+    },
+    "errors": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      },
+      "description": "Subset of protocol/error-taxonomy.json codes this command can return. Checked by scripts/verify.mjs."
+    },
+    "sideEffects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "core-process",
+          "core-config",
+          "proxy-settings",
+          "keystore-write",
+          "keystore-delete",
+          "entity-write",
+          "entity-delete",
+          "disk-write",
+          "network-egress",
+          "log-write",
+          "none"
+        ]
+      }
+    },
+    "progressEvents": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      },
+      "description": "Event names from events.schema.json emitted while this command runs."
+    },
+    "nonIdempotencyRationale": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Required by scripts/verify.mjs whenever idempotent is false."
+    },
+    "invariants": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 20,
+        "maxLength": 400
+      },
+      "description": "Testable statements about this command. Each must have a row in docs/verification/live-matrix.md, otherwise it is a claim nothing checks."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "class": {
+            "const": "probe"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "replayable": {
+            "const": false
+          }
+        }
+      }
+    }
+  ]
+}

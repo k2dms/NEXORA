@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "core": {
+    "autoStart": true,
+    "installChannel": "pinned",
+    "installRoot": null
+  },
+  "ports": {
+    "range": { "min": 20100, "max": 20899 },
+    "host": "127.0.0.1",
+    "persistAssignments": true
+  },
+  "telemetry": {
+    "logLevel": "info",
+    "retentionDays": 7,
+    "diagnosticsIncludeByDefault": [
+      "connector-log",
+      "core-log",
+      "config-snapshot",
+      "health",
+      "versions"
+    ]
+  },
+  "proxy": {
+    "failClosedDefault": "block",
+    "notificationLevel": "notification"
+  }
+}

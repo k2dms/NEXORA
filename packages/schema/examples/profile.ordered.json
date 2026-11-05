@@ -1,0 +1,22 @@
+{
+  "id": "0a9b8c7d-6e5f-4a01-9b23-c4d5e6f70819",
+  "displayName": "Travel - ordered failover chain",
+  "kind": "connector",
+  "serverIds": [
+    "c7e5a2d1-9f30-4b12-a4e6-1c8d3b5f7a90",
+    "8b1d4e70-2a3c-4f51-8b62-7e9d0c1a3f55",
+    "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01"
+  ],
+  "defaultServerId": "c7e5a2d1-9f30-4b12-a4e6-1c8d3b5f7a90",
+  "selection": { "mode": "ordered", "stickySeconds": 300 },
+  "failover": {
+    "enabled": true,
+    "cooldownSeconds": 60,
+    "maxConsecutiveFailures": 3,
+    "probeIntervalSeconds": 120
+  },
+  "failurePolicy": { "coreDeath": { "action": "block" } },
+  "enabled": true,
+  "createdAt": "2026-11-04T09:30:00Z",
+  "updatedAt": "2026-11-04T09:30:00Z"
+}

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/protocol/compatibility-rules.json",
+  "title": "Version and capability compatibility rules",
+  "description": "Negotiation is data, not prose, because the failure mode is silent: an extension that sends commands an older Connector misreads can apply a wrong proxy configuration. The extension sends nothing until connector.hello succeeds. The `capabilities` array below is the single normative registry of capability names: protocol/commands/*.json may cite only names declared here, and the hello result recorded in protocol/fixtures/protocol/handshake.jsonl must announce exactly this set -- scripts/verify.mjs asserts equality in both directions, so a name can neither be added to the registry nor dropped from a hello without failing here.",
+  "protocolVersion": 1,
+  "minCompatibleProtocolVersion": 1,
+  "negotiation": {
+    "request": "connector.hello",
+    "announcedByExtension": "requiresProtocol (its own max supported protocol version and min acceptable connector version)",
+    "announcedByConnector": ["protocolVersion", "minCompatibleProtocolVersion", "connectorVersion", "coreVersion", "capabilities"],
+    "rule": "compatible iff extension.requiresProtocol.min <= connector.protocolVersion AND connector.minCompatibleProtocolVersion <= extension.protocolVersion; intersection empty => VersionMismatch",
+    "onIncompatible": "The Connector panel is disabled with an explicit reason. Legacy Omega profiles MUST keep working: a NEXORA entity that cannot be applied is a visible error, never a silently direct connection."
+  },
+  "commandGating": {
+    "rule": "A command whose capabilities[] is non-empty MUST NOT be sent until hello reports every listed capability.",
+    "enforcement": "scripts/verify.mjs checks that every capability cited by a command exists in this file and is announced by the recorded hello, and that the hello set and this registry are the same set; Phase 2 tests assert the client refuses to send ungated commands."
+  },
+  "capabilities": [
+    {
+      "name": "vless.tcp.tls.vision",
+      "addedIn": "1.0",
+      "description": "VLESS + TCP + TLS with xtls-rprx-vision flow."
+    },
+    {
+      "name": "vless.tcp.tls",
+      "addedIn": "1.0",
+      "description": "VLESS + TCP + TLS without flow."
+    },
+    {
+      "name": "vless.ws.tls",
+      "addedIn": "1.0",
+      "description": "VLESS over WebSocket with TLS."
+    },
+    {
+      "name": "vless.grpc.tls",
+      "addedIn": "1.0",
+      "description": "VLESS over gRPC transport with TLS (multi-mode supported)."
+    },
+    {
+      "name": "vless.xhttp.tls",
+      "addedIn": "1.0",
+      "description": "VLESS over XHTTP (auto/str/packet-up modes) with TLS."
+    },
+    {
+      "name": "vless.reality",
+      "addedIn": "1.0",
+      "description": "REALITY security: publicKey, shortId, spiderX, fingerprint."
+    },
+    {
+      "name": "chunked.import",
+      "addedIn": "1.0",
+      "description": "envelope.chunk reassembly for payloads above the frame limit."
+    },
+    {
+      "name": "health.probes",
+      "addedIn": "1.0",
+      "description": "Layered probes: dns / tcp / core-outbound / proxied-http. Required so the UI never presents a TCP result as a proxy verdict (master prompt 13)."
+    },
+    {
+      "name": "failure.block-loopback",
+      "addedIn": "1.0",
+      "description": "The fail-closed primitive: apply a FixedProfile on a closed loopback port."
+    },
+    {
+      "name": "config.snapshot",
+      "addedIn": "1.0",
+      "description": "Hash of the applied config plus a masked config, for drift detection after reconnect."
+    },
+    {
+      "name": "keystore.dpapi",
+      "addedIn": "1.0",
+      "description": "Windows DPAPI-backed keystore (ADR-0011). Absent on platforms where the keystore uses another backend."
+    },
+    {
+      "name": "diagnostics.redacted",
+      "addedIn": "1.0",
+      "description": "diagnostics.get output is masked at the sink; a Connector without this capability cannot serve the Diagnostics panel at all."
+    },
+    {
+      "name": "integrity.pinned-core",
+      "addedIn": "1.0",
+      "description": "Core binaries are validated against pins before execution; IntegrityMismatch refuses to start."
+    }
+  ],
+  "matrix": [
+    {
+      "extension": ">=3.6 <4",
+      "connector": "0.x with protocolVersion 1",
+      "outcome": "compatible",
+      "notes": "First shipped combination."
+    },
+    {
+      "extension": ">=3.6",
+      "connector": "protocolVersion 2 (future)",
+      "outcome": "compatible-forward",
+      "notes": "Extension must send only commands and capabilities it declared support for; unknown event names are ignored, unknown response fields are tolerated."
+    },
+    {
+      "extension": "protocolVersion 2 (future)",
+      "connector": "1",
+      "outcome": "VersionMismatch -> degraded",
+      "notes": "Extension refuses commands the Connector cannot answer; legacy profiles and subscriptions continue to work."
+    }
+  ],
+  "stability": {
+    "additive": "New optional fields and new capability names are backward compatible.",
+    "breaking": "Removing a field, changing a type, or redefining a command's effect requires protocolVersion + 1 and a matrix row.",
+    "errorCodes": "The taxonomy is closed: adding a code is breaking for clients that switch exhaustively, so new codes are added only with a documented fallback."
+  }
+}

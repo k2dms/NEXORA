@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "id": "resp-0002",
+  "type": "response",
+  "ok": true,
+  "inReplyTo": "req-0002",
+  "sentAt": "2026-11-04T10:00:01.200Z",
+  "traceId": "trace-import-02"
+}

@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/pins.schema.json",
+  "title": "Binary integrity pins",
+  "description": "Which Core binary the Connector is allowed to execute, and how it proves that. Xray is never bundled into the extension archive and never vendored in git (ADR-0019): it is fetched at first run and validated against this document. A mismatch is IntegrityMismatch and means refusing to start, because a binary nobody pinned is the one place a supply-chain compromise becomes a proxy that carries your users' traffic.",
+  "type": "object",
+  "required": [
+    "pinsVersion",
+    "upstream",
+    "verifySignature",
+    "silentSelfUpdate",
+    "assets"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "pinsVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version of this pins document, so the Connector can tell a stale local copy from a deliberately older pin."
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "releaseTag",
+        "assetNaming"
+      ],
+      "properties": {
+        "repository": {
+          "const": "https://github.com/XTLS/Xray-core"
+        },
+        "releaseTag": {
+          "type": "string",
+          "pattern": "^v?[0-9]+\\.[0-9]+(\\.[0-9]+)?$",
+          "description": "Exact tag, never a range or 'latest'."
+        },
+        "assetNaming": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "signaturePubkey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200,
+          "description": "Minisign trusted public key for the release signature. Null is allowed only when sha256 pinning is in force and documented as the sole control."
+        }
+      },
+      "description": "Where the binary comes from. Exactly one repository is expressible; mirrors are not."
+    },
+    "verifySignature": {
+      "type": "boolean",
+      "const": true,
+      "description": "Hash pinning alone proves nothing if the attacker controls both the asset and the list. Signature verification is required, not optional."
+    },
+    "silentSelfUpdate": {
+      "const": false,
+      "description": "Core updates happen only on explicit user action, with re-verification and the previous version retained for rollback (docs/architecture/33)."
+    },
+    "installRoot": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Per-user path resolved by the Connector, e.g. %LOCALAPPDATA%\\NEXORA\\core. Not in the extension directory, not in Program Files: no elevation, and the ACL stays user-owned."
+    },
+    "retainedPreviousVersions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5,
+      "default": 1,
+      "description": "How many prior verified cores to keep for rollback. Zero means an upgrade cannot be undone without a re-download."
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "$ref": "#/$defs/asset"
+      },
+      "description": "One entry per OS/arch the Connector may fetch. An absent platform is a refusal to run there, not a fallback."
+    }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "os",
+        "arch",
+        "file",
+        "url",
+        "sha256",
+        "sizeBytes",
+        "verifiedAt"
+      ],
+      "properties": {
+        "os": {
+          "enum": [
+            "windows",
+            "linux",
+            "darwin"
+          ]
+        },
+        "arch": {
+          "enum": [
+            "amd64",
+            "arm64",
+            "386",
+            "arm"
+          ]
+        },
+        "libc": {
+          "enum": [
+            "musl",
+            "glibc",
+            null
+          ]
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/XTLS/Xray-core/releases/download/",
+          "description": "Only the pinned upstream release host. A mirror is a supply-chain decision and is not expressible here."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signature": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 400
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1048576,
+          "maximum": 104857600
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When a human or CI actually checked this pin against upstream. A pin nobody verified is a pin that drifted."
+        },
+        "authenticodeSubject": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200,
+          "description": "Windows only. Recorded because unsigned binaries trip antivirus heuristics; the observation belongs in the pin, not in a support ticket (docs/architecture/33)."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "upstream": {
+            "properties": {
+              "signaturePubkey": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "assets": {
+            "items": {
+              "required": [
+                "signature"
+              ]
+            }
+          },
+          "verifySignature": {
+            "const": true
+          }
+        },
+        "description": "Unreachable guard: if no release key is pinned, per-asset signatures become mandatory."
+      }
+    }
+  ]
+}

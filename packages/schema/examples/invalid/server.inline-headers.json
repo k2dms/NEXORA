@@ -1,0 +1,21 @@
+{
+  "id": "a1a1a1a1-1111-4111-8111-111111111103",
+  "displayName": "MUST BE REJECTED: inline Authorization header instead of a keystore ref",
+  "protocol": "vless",
+  "address": "bad.example.net",
+  "port": 2087,
+  "userIdRef": "keystore://server/a1a1a1a1/user-id",
+  "network": "ws",
+  "security": "tls",
+  "flow": "",
+  "tls": { "serverName": "bad.example.net" },
+  "ws": {
+    "path": "/vless-ws",
+    "headers": { "Authorization": "Bearer sk-live-0123456789abcdef" }
+  },
+  "tag": "srv-a1a1a1a1",
+  "source": "subscription",
+  "subscriptionId": "a1a1a1a1-1111-4111-8111-1111111111aa",
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

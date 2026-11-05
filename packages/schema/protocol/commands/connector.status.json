@@ -1,0 +1,64 @@
+{
+  "name": "connector.status",
+  "title": "Connector and Core runtime status",
+  "summary": "Cheap, pollable snapshot for the Dashboard. Deliberately does not claim anything about whether traffic reaches the VPS -- that is server.test, which measures egress (master prompt 13).",
+  "class": "read",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 3000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "include": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": { "enum": ["core", "inbounds", "health", "config"] }
+      }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["connectorRunning"],
+    "properties": {
+      "connectorRunning": { "type": "boolean" },
+      "coreRunning": { "type": "boolean" },
+      "pid": { "type": ["integer", "null"], "minimum": 1 },
+      "uptimeSeconds": { "type": ["integer", "null"], "minimum": 0 },
+      "appliedConfigHash": {
+        "type": ["string", "null"],
+        "pattern": "^([0-9a-f]{64})?$",
+        "description": "Lowercase sha256 of the config Core is running right now, or null when nothing is applied. This is the same quantity config.snapshot#/result/appliedConfigHash reports and the same value config.apply#/result/configHash returned when that config was applied -- one number, three commands. scripts/verify.mjs asserts the identity of the hash definition across protocol/commands/*.json and that every hash a status command reports in protocol/fixtures/protocol was produced by a mutating command somewhere in the corpus (a drift-flagged frame excepted)."
+      },
+      "inboundPorts": {
+        "type": "array",
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["listen", "port", "protocol"],
+          "properties": {
+            "listen": { "enum": ["127.0.0.1", "::1"] },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "protocol": { "enum": ["http", "socks", "socks5", "dokodemo-door"] },
+            "tag": { "type": "string", "pattern": "^(inb-[0-9a-f]{8}|api)$" }
+          }
+        }
+      },
+      "lastError": {
+        "type": ["object", "null"],
+        "additionalProperties": false,
+        "required": ["code"],
+        "properties": {
+          "code": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "errors": ["Timeout", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["none"]
+}

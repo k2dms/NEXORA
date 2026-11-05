@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/envelope-keys.schema.json",
+  "title": "NEXORA options envelope key namespaces",
+  "description": "The storage-key contract for the extension options envelope. This exists as data because the constraint it encodes is enforced by legacy code, not by convention: omega-pac/src/profiles.coffee:111-118 iterates only keys whose first character is '+', so any NEXORA entity stored under '+' would silently appear in availableProfiles, quick-switch lists and the generated PAC. scripts/verify.mjs reads this file and fails if any namespace violates it.",
+  "type": "object",
+  "required": [
+    "schemaVersionKey",
+    "profilePrefix",
+    "scalarPrefix",
+    "namespaces",
+    "syncExcludedValueKeys"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersionKey": {
+      "const": "-nexora.schemaVersion",
+      "description": "The single scalar key holding the NEXORA envelope version."
+    },
+    "profilePrefix": {
+      "const": "+",
+      "description": "Reserved for OmegaPac profiles. NEXORA entities MUST NOT use it."
+    },
+    "scalarPrefix": {
+      "const": "-",
+      "description": "Every NEXORA entity lives here, one scalar key per entity, so that sync diffs and quota handling stay per-entity."
+    },
+    "namespaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "keyPattern",
+          "entity",
+          "valueSchema",
+          "syncEligible",
+          "secretBearing"
+        ],
+        "properties": {
+          "keyPattern": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entity": {
+            "type": "string",
+            "minLength": 1
+          },
+          "valueSchema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "syncEligible": {
+            "type": "boolean",
+            "description": "True means the value may travel through OptionsSync. It is only true for values that contain no secrets, enforced by secretBearing=false."
+          },
+          "secretBearing": {
+            "type": "boolean",
+            "description": "If true, syncEligible MUST be false and the value must be reduced to keystore references before storage. Cross-field rule checked by scripts/verify.mjs."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      },
+      "description": "Every NEXORA key family. scripts/verify.mjs reads this list and rejects any entry that violates the prefix, secret or schema-exists rules."
+    },
+    "legacyOwned": {
+      "type": "array",
+      "description": "Keys the existing engine owns. NEXORA MUST NOT redefine them; the compatibility matrix (docs/architecture/38) tracks their behaviour instead.",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "+profile",
+        "-proxySchema",
+        "-schemaVersion",
+        "-ruleLists",
+        "-tempRuleList",
+        "-customCss",
+        "-downloadInterval",
+        "-optionsSync",
+        "-showExternalProfile",
+        "-revertProxyChanges"
+      ]
+    },
+    "attachmentKeyPattern": {
+      "const": "^__ruleListOf_",
+      "description": "Legacy RuleListProfile attachment convention (docs/audit/12). NEXORA MUST NOT reuse this prefix."
+    },
+    "backupKeyPattern": {
+      "const": "^-nexora\\.backup\\.[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "description": "Pre-migration envelope snapshot. Required and blocking before any destructive migration step (docs/architecture/35-schema-versioning-migration.md §7)."
+    },
+    "syncExcludedValueKeys": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      },
+      "description": "Value fields stripped before a profile goes to chrome.storage.sync. Two rules bound this list, and both are machine-checked because both were violated by an earlier draft of it. (1) STRIP ONLY VALUES. A `keystore://` reference is inert on another machine, so removing it buys no confidentiality -- and `userIdRef`/`headersRef`/`publicKey` are `required` in their own schemas, so stripping them makes every synced Server fail validation on the receiving machine: a REALITY server whose public key did not travel is a handshake failure the user cannot diagnose. `keystore.purge` and the receiving extension's own keystore probe are what protect a reference that arrives without its secret. (2) THE STRIP SET MUST NOT INTERSECT `required` of any sync-eligible value schema; scripts/verify.mjs asserts the intersection is empty for every namespace it registers. The legacy list is ['lastUpdate','ruleList','pacScript','sha256'] at omega-target/src/options.coffee:27 and does NOT strip 'headers', which is SEC-1; NEXORA adds 'headers', 'auth' (the per-upstream-proxy credential map read by omega-target-chromium-extension/src/module/proxy/proxy_auth.coffee:38), 'body' (raw import payload), 'gistToken' and 'token' (SEC-5's sync-backend credential, reused by WebDAV) on top of it.",
+      "default": [
+        "lastUpdate",
+        "ruleList",
+        "pacScript",
+        "sha256",
+        "headers",
+        "auth",
+        "body",
+        "gistToken",
+        "token"
+      ]
+    },
+    "secretReferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "pattern",
+        "shape",
+        "mintedBy",
+        "neverDerivedFrom",
+        "entities",
+        "fields",
+        "display",
+        "fingerprint",
+        "atRest"
+      ],
+      "description": "The identifier and masking vocabulary for secret material, in one place. It lives in the envelope-key registry rather than in a schema of its own because every consumer of a `keystore://` string is a storage or transit key: the envelope holds references, the Connector holds values, and exactly one document has to say what a reference is allowed to look like. scripts/verify.mjs reads this block and fails if the pattern any schema property uses has drifted from `pattern`, if a concrete reference in any example or fixture violates `shape`, if a mask rule would preserve the length of a value, or if a command that writes or consumes the keystore fails to declare the errors that means.",
+      "properties": {
+        "scheme": {
+          "const": "keystore://",
+          "description": "The only URI scheme that denotes secret material."
+        },
+        "pattern": {
+          "const": "^keystore://[A-Za-z0-9._:/-]{1,96}$",
+          "description": "The type-level floor, verbatim from ADR-0011 rule 2. Every schema property whose type is a keystore reference uses this string exactly -- a looser copy accepts a value, a tighter one silently splits the vocabulary in two."
+        },
+        "shape": {
+          "const": "^keystore://(server|subscription|profile|sync|host)/[0-9a-f][0-9a-f-]{6,61}[0-9a-f]/(user-id|headers|url|token)$",
+          "description": "The convention every concrete reference follows: which entity owns the secret, that entity's identifier, and which field of it. The id segment is 8 to 63 characters of lowercase hex with dashes allowed, so a Server's UUID and a shorter hex prefix are both admissible -- and it is deliberately too short to be a digest of the secret, see neverDerivedFrom. scripts/verify.mjs checks `entities` and `fields` against this string and every example and fixture against the regex."
+        },
+        "mintedBy": {
+          "type": "string",
+          "minLength": 40,
+          "description": "Who creates a reference, and from what."
+        },
+        "neverDerivedFrom": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 10 },
+          "description": "What a reference MUST NOT be computed from. A content-addressed reference turns every synced or exported envelope into an offline dictionary against the user's credentials: the reference travels, the value does not, so anyone who guesses the value can test the guess by comparing strings."
+        },
+        "entities": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,23}$" },
+          "description": "The owner classes that may hold a secret: `server` and `subscription` are user-visible entities, `profile` is the intent document that groups them, `sync` is a sync-backend credential, `host` is installation-scoped material the Connector mints for itself."
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "description": "The closed field vocabulary inside `shape`. A permissive tail segment is how `user`, `userId` and `user-id` ended up meaning the same thing in three files.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "valueShape", "entropyClass", "maxVisibleChars", "description"],
+            "properties": {
+              "name": { "enum": ["user-id", "headers", "url", "token"] },
+              "valueShape": {
+                "enum": ["string", "object"],
+                "description": "`headers` is a map, everything else is one value. This is the only field of the vocabulary whose secret is structured, and the reason `credentials[].value` in protocol/commands/profile.import.json accepts both."
+              },
+              "entropyClass": {
+                "enum": ["high", "low"],
+                "description": "`high` means generated material whose partial display cannot rebuild it (a VLESS UUID, a feed address with a token). `low` means a human chose it, so any visible character is a clue: a passphrase's first letter and a key's length are both partial knowledge."
+              },
+              "maxVisibleChars": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 8,
+                "description": "How much of the value the UI may show for recognition, always as head-then-tail. scripts/verify.mjs forces 0 for the `low` class, so 'show the first character of the password' is not a decision a later UI can make silently."
+              },
+              "description": { "type": "string", "minLength": 30 }
+            }
+          }
+        },
+        "display": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lengthPreserving", "fillChar", "maskLiteral", "appliesAt"],
+          "description": "The rules for the only places a value-shaped thing may be shown: the extension's own input fields after the user has typed it, and any structured field a masked sink emits.",
+          "properties": {
+            "lengthPreserving": {
+              "const": false,
+              "description": "A mask that keeps the length leaks the length, which for a passphrase policy is real information. The rendered mask is a fixed-width run of `fillChar` regardless of what is behind it."
+            },
+            "fillChar": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1,
+              "description": "One character; the run is fixed-width, not per-character."
+            },
+            "maskLiteral": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 32,
+              "description": "What a destroyed value is replaced with in structured output (maskedConfig, a diagnostics section, an event payload) -- one fixed sentinel, so that 'this field existed and was masked' stays visible while the value does not. scripts/verify.mjs asserts the recorded fixtures use exactly this string."
+            },
+            "appliesAt": {
+              "const": "sink",
+              "description": "Masking happens where a value leaves a process, not where a call site remembers to ask. scripts/verify.mjs does not enforce this word, docs/architecture/32 does the arguing; what it enforces is that the sink vocabulary names every exit."
+            }
+          }
+        },
+        "fingerprint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pattern", "algorithm", "keyed", "keyOwner"],
+          "description": "The comparison primitive that lets support say 'the credential you typed is not the one on file' without either value appearing anywhere. It is the only derived representation of a secret this design permits.",
+          "properties": {
+            "pattern": {
+              "const": "^fp-[0-9a-f]{12}$",
+              "description": "Verbatim the shape protocol/commands/diagnostics.get.json uses for `masked.fingerprints`; scripts/verify.mjs asserts the two are the same string."
+            },
+            "algorithm": {
+              "const": "hmac-sha256-truncated-48",
+              "description": "Keyed, standard construction, truncated to 12 hex characters. A bare hash of a low-entropy credential is a dictionary in plain sight: the hash is deterministic, so anyone holding it can test candidates offline. No cipher of our own, per the master constraint and ADR-0011."
+            },
+            "keyed": {
+              "const": true,
+              "description": "The HMAC key lives in the keystore as a `host` reference. A machine that loses its keystore cannot reproduce the fingerprints it already emitted, which is the intended behaviour: comparability is scoped to the installation, never to the world."
+            },
+            "keyOwner": {
+              "type": "string",
+              "pattern": "^keystore://host/",
+              "description": "The reference to the fingerprint key itself."
+            }
+          }
+        },
+        "atRest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["blobs", "compiledConfigContainsValues", "compiledConfigOwnerOnly", "compiledConfigLifetime", "compiledConfigInExports"],
+          "description": "What is plaintext and what is not, stated as data because the honest answer is uncomfortable: the keystore protects the envelope, not the configuration handed to Core.",
+          "properties": {
+            "blobs": {
+              "type": "string",
+              "minLength": 30,
+              "description": "One protected blob per secret, mechanism owned by ADR-0011 (Windows, user-scope DPAPI, no application entropy)."
+            },
+            "compiledConfigContainsValues": {
+              "const": true,
+              "description": "Xray reads a config file of its own format and cannot be handed references (ADR-0003). So the compiled config is, and will remain, plaintext credential material on disk -- a fact this field exists to stop anyone from later writing a document that implies otherwise."
+            },
+            "compiledConfigOwnerOnly": {
+              "const": true,
+              "description": "Written in the Connector's per-user directory with inherited user-profile ACL only, never inside the extension's directory (docs/architecture/22-component-contracts.md CoreSupervisor invariant)."
+            },
+            "compiledConfigLifetime": {
+              "type": "string",
+              "minLength": 10,
+              "description": "When the file may be assumed to exist. It is re-derivable from intent plus keystore, so it is a cache and is deleted when it stops being needed."
+            },
+            "compiledConfigInExports": {
+              "const": false,
+              "description": "No diagnostics section, log, support bundle or sync payload ever carries it; the only version of the config that leaves the Connector is `maskedConfig` (protocol/commands/config.snapshot.json)."
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "example": {
+      "description": "Illustrative only; the populated registry lives in examples/envelope-keys.nexora.json so verify.mjs can check it against the schema files on disk.",
+      "type": "object"
+    }
+  }
+}

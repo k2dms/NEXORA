@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/protocol/error-taxonomy.json",
+  "title": "Closed error taxonomy",
+  "description": "Every error the Connector may return. The set is closed: a code not listed here is a protocol violation, because a client cannot decide whether to retry an error it has never seen, and a silently-unhandled error in a proxy tool means traffic goes somewhere the user did not choose. `retryable` is the client's whole backoff policy, so it is data, not a comment: every entry declares it as a JSON boolean, an entry that is not an object fails here rather than passing vacuously, and a frame's optional `error.retryable` hint must equal the value declared for that code (scripts/verify.mjs compares every fixture error against this table). `surface` is where the screen shows the code; it is a second closed vocabulary, declared in packages/schema/presentation.json#/errorPlacements/values, because a code whose placement nobody implements is an error the user never sees.",
+  "protocolVersion": 1,
+  "codes": [
+    { "code": "BadRequest", "retryable": false, "layer": "transport", "meaning": "Frame is well-formed JSON but violates the call contract (missing args, wrong shape).", "surface": "diagnostics" },
+    { "code": "UnknownMethod", "retryable": false, "layer": "transport", "meaning": "Method is not in the allowlist. Hard stop, no fallthrough (ADR-0007).", "surface": "diagnostics" },
+    { "code": "SchemaMismatch", "retryable": false, "layer": "validation", "meaning": "Payload validated against a schema version the receiver does not implement.", "surface": "error" },
+    { "code": "VersionMismatch", "retryable": false, "layer": "validation", "meaning": "connector.hello negotiation failed: no supported protocol intersection.", "surface": "error" },
+    { "code": "UnauthorizedExtension", "retryable": false, "layer": "security", "meaning": "Sender extension id is not on the allowlist the host resolved at startup.", "surface": "diagnostics" },
+    { "code": "InvalidProfile", "retryable": false, "layer": "validation", "meaning": "A profile or server document failed entity validation.", "surface": "error" },
+    { "code": "UnsupportedCombination", "retryable": false, "layer": "validation", "meaning": "Semantically invalid transport combination, e.g. xtls-rprx-vision over ws. Rejected rather than silently ignored (docs/architecture/23).", "surface": "error" },
+    { "code": "SecretRedacted", "retryable": false, "layer": "security", "meaning": "A secret-bearing field was present in a place that syncs or logs. The call was refused instead of stripping it.", "surface": "error" },
+    { "code": "QuotaExceeded", "retryable": false, "layer": "storage", "meaning": "chrome.storage.sync or keystore quota hit. Client must fall back and tell the user.", "surface": "error" },
+    { "code": "CoreNotRunning", "retryable": false, "layer": "state", "meaning": "Operation needs a running Core. Call core.start; do not retry blindly.", "surface": "status" },
+    { "code": "CoreAlreadyRunning", "retryable": false, "layer": "state", "meaning": "A second supervisor tried to start Core on the same ports.", "surface": "status" },
+    { "code": "CoreExited", "retryable": false, "layer": "state", "meaning": "Core exited unexpectedly. Triggers the fail-closed path (docs/architecture/30).", "surface": "banner" },
+    { "code": "ConfigApplyFailed", "retryable": false, "layer": "state", "meaning": "Compiled config was rejected by Core. The previous working config stays applied.", "surface": "banner" },
+    { "code": "HealthCheckFailed", "retryable": true, "layer": "network", "meaning": "A health probe failed. Never used to decide that the proxy is healthy.", "surface": "status" },
+    { "code": "HandshakeFailed", "retryable": true, "layer": "network", "meaning": "TLS/REALITY handshake did not complete. Distinct from HealthCheckFailed so the UI can say what failed.", "surface": "status" },
+    { "code": "AuthFailed", "retryable": false, "layer": "network", "meaning": "Server rejected the credential (UUID/shortId). Retrying wastes a probe budget.", "surface": "error" },
+    { "code": "NetworkUnreachable", "retryable": true, "layer": "network", "meaning": "No route / DNS failure to the endpoint.", "surface": "status" },
+    { "code": "Timeout", "retryable": true, "layer": "transport", "meaning": "Deadline owned by the caller expired. The Connector may still be working; the caller must treat a late response as discardable (envelope.inReplyTo).", "surface": "status" },
+    { "code": "IntegrityMismatch", "retryable": false, "layer": "security", "meaning": "Binary hash or chunk reassembly hash differs from the pin. Core refuses to start (docs/architecture/33).", "surface": "error" },
+    { "code": "DiskFull", "retryable": false, "layer": "storage", "meaning": "Cannot write config, keystore or logs.", "surface": "error" },
+    { "code": "KeystoreUnavailable", "retryable": false, "layer": "security", "meaning": "OS-level secret store inaccessible (e.g. DPAPI call failed, wrong user session).", "surface": "error" },
+    { "code": "Busy", "retryable": true, "layer": "state", "meaning": "Single-flight guard: a reconcile is already in progress for this resource, or the sender's rate budget for this class is spent (framing.json senderPolicy.rateLimits). Both mean 'ask again, nothing was lost'.", "surface": "none" },
+    { "code": "Internal", "retryable": false, "layer": "state", "meaning": "Unmapped failure. MUST produce a diagnostics record; MUST NOT be the default for anything the caller could handle.", "surface": "banner" }
+  ]
+}

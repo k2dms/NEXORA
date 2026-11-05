@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/subscription-source.schema.json",
+  "title": "NEXORA SubscriptionSource",
+  "description": "A subscription feed that yields Servers. Fetch semantics mirror the already-correct legacy path (fetch -> sha256 -> compare -> keep-last-good, docs/audit/09) and add the durable status the legacy path lacks, so a background refresh failure is still visible days later.",
+  "type": "object",
+  "required": [
+    "id",
+    "displayName",
+    "url",
+    "format",
+    "limits",
+    "keepLastGood",
+    "schedule"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/uuid",
+      "description": "UUID v4 identity; the envelope key is -nexora.subscription.<id> and Servers point back at it."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Label shown in the Subscriptions list. Not an identifier."
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://[^@\\s]+$",
+      "description": "https only, and no userinfo: a credential-bearing URL would be stored and synced in clear. Also no credential in the query: feeds routinely ship '?token=...', which is a secret wearing the shape of an address, so a token-bearing address belongs in urlRef and this field carries the display form -- scheme, host, path, query dropped (docs/architecture/29 §4). SSRF guard (loopback/link-local/metadata rejection) is a Connector-side control, not a schema property -- see docs/architecture/29 and SEC-2."
+    },
+    "headersRef": {
+      "type": "string",
+      "pattern": "^keystore://[A-Za-z0-9._:/-]{1,96}$",
+      "description": "Authorization and similar headers are keystore references. Inline headers is exactly the SEC-1 leak path (omega-target/src/options.coffee:27)."
+    },
+    "format": {
+      "enum": [
+        "auto",
+        "vless-base64",
+        "vless-uri-list",
+        "v2ray-json",
+        "clash-yaml"
+      ],
+      "default": "auto",
+      "description": "Parser selection, declared rather than sniffed: an ambiguous body must fail rather than guess a transport."
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxBytes",
+        "maxRedirects",
+        "timeoutMs"
+      ],
+      "properties": {
+        "maxBytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 8388608,
+          "default": 2097152
+        },
+        "maxRedirects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 3
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 120000,
+          "default": 20000
+        },
+        "maxServers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096,
+          "default": 1024
+        }
+      },
+      "description": "Ceilings enforced before the body is parsed. The legacy loader has none (docs/audit/11 SEC-2)."
+    },
+    "keepLastGood": {
+      "const": true,
+      "description": "A failed refresh MUST NOT delete the last working version. Fixed to true: it is not a user preference."
+    },
+    "schedule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intervalSeconds"
+      ],
+      "properties": {
+        "intervalSeconds": {
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 604800
+        },
+        "jitterPercent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50,
+          "default": 20
+        },
+        "backoffMultiplier": {
+          "type": "number",
+          "minimum": 1.5,
+          "maximum": 10,
+          "default": 2
+        },
+        "maxIntervalSeconds": {
+          "type": "integer",
+          "minimum": 3600,
+          "maximum": 2592000,
+          "default": 86400
+        }
+      },
+      "description": "When refresh runs and how backoff grows after failures."
+    },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consecutiveFailures"
+      ],
+      "properties": {
+        "lastAttemptAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastSuccessAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "serverCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "consecutiveFailures": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "nextAttemptAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastError": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "enum": [
+                "NetworkUnreachable",
+                "Timeout",
+                "AuthFailed",
+                "SchemaMismatch",
+                "QuotaExceeded",
+                "IntegrityMismatch",
+                "DiskFull",
+                "Internal"
+              ]
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "detail": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        }
+      },
+      "description": "Persisted, not transient. The legacy engine computes this information and throws it away (docs/audit/09)."
+    },
+    "serverIds": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/uuid"
+      },
+      "description": "Servers produced by the last successful parse. Owned by the refresh, so user edits to them are expected to be lost; manual changes belong on a copy."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "First successful or attempted import of this source."
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last change to the source document itself, not to the servers it produced."
+    },
+    "urlRef": {
+      "type": "string",
+      "pattern": "^keystore://[A-Za-z0-9._:/-]{1,96}$",
+      "description": "Keystore reference holding the FULL fetch address when it carries a credential in its query or path. 'url' then holds the display form -- scheme, host and path with the query dropped -- which is what the UI shows and what sync carries. Optional: a feed whose address is not secret uses 'url' alone. Chosen per-source rather than by sniffing, because the schema cannot tell a token from a tracking parameter (docs/architecture/29 §4, ADR-0010)."
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    }
+  },
+  "allOf": [
+    {
+      "description": "A credential in the query string is the SEC-1 leak wearing a different hat: `Authorization` had a schema field of its own, `?token=` had none, and this namespace is sync-eligible, so an unsanitised token would travel to the browser account, the Gist and the WebDAV target. A `urlRef` therefore has to exist whenever the address carries a credential-shaped parameter; `url` keeps the display form. First-letter case classes are spelled out because JSON Schema patterns are case-sensitive -- the Connector re-checks case-insensitively at fetch time (docs/architecture/29 §4, docs/architecture/31).",
+      "properties": {
+        "url": {
+          "not": {
+            "pattern": "[?&]([Tt]oken|[Kk]ey|[Ss]ecret|[Pp]assword|[Pp]asswd|[Aa]pi[_]?[Kk]ey|[Aa]ccess[_]?[Tt]oken|[Aa]uth)="
+          }
+        }
+      }
+    }
+  ]
+}

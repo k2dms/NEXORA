@@ -1,0 +1,26 @@
+{
+  "id": "c7e5a2d1-9f30-4b12-a4e6-1c8d3b5f7a90",
+  "displayName": "Frankfurt 1 - VLESS gRPC multi",
+  "protocol": "vless",
+  "address": "de1.example.net",
+  "port": 443,
+  "userIdRef": "keystore://server/c7e5a2d1/user-id",
+  "network": "grpc",
+  "security": "tls",
+  "tls": {
+    "serverName": "de1.example.net",
+    "alpn": ["h3", "h2", "http/1.1"],
+    "fingerprint": "firefox"
+  },
+  "grpc": {
+    "serviceName": "kernel-video",
+    "multiMode": true,
+    "authority": "de1.example.net",
+    "headersRef": "keystore://server/c7e5a2d1/headers"
+  },
+  "tag": "srv-c7e5a2d1",
+  "source": "subscription",
+  "subscriptionId": "5d0c9b83-4a21-4e7f-9c3d-8b1e6f2a4c77",
+  "createdAt": "2026-11-04T09:10:00Z",
+  "updatedAt": "2026-11-04T09:10:00Z"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "c3c3c3c3-3333-4333-8333-333333333304",
+  "displayName": "MUST BE REJECTED: download ceiling above the guard limit",
+  "url": "https://feeds.example.net/sub/abc123",
+  "format": "vless-base64",
+  "limits": {
+    "maxBytes": 16777216,
+    "maxRedirects": 3,
+    "timeoutMs": 20000
+  },
+  "keepLastGood": true,
+  "schedule": {
+    "intervalSeconds": 21600
+  },
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

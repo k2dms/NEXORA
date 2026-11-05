@@ -1,0 +1,60 @@
+{
+  "id": "f1e2d3c4-b5a6-4978-8b9c-0d1e2f3a4b55",
+  "displayName": "Browser-plane policy: intranet direct, rest to connector",
+  "browserPlane": {
+    "defaultProfileName": "Home - fastest of three, fail-open accepted",
+    "rules": [
+      {
+        "condition": { "conditionType": "BypassCondition", "pattern": "10.0.0.0/8" },
+        "profileName": "direct",
+        "note": "Intranet stays direct even when the connector is applied."
+      },
+      {
+        "condition": { "conditionType": "BypassCondition", "pattern": "<local>" },
+        "profileName": "direct"
+      },
+      {
+        "condition": { "conditionType": "HostWildcardCondition", "pattern": "*.corp.example.net" },
+        "profileName": "direct"
+      },
+      {
+        "condition": { "conditionType": "UrlWildcardCondition", "pattern": "*://example.net/*" },
+        "profileName": "block",
+        "note": "Blocked by user choice, not by an error path."
+      },
+      {
+        "condition": { "conditionType": "WeekdayCondition", "days": "YYYYNNN" },
+        "profileName": "Travel - ordered failover chain"
+      },
+      {
+        "condition": { "conditionType": "TimeCondition", "startHour": 9, "endHour": 18 },
+        "profileName": "Work - single pinned server"
+      }
+    ]
+  },
+  "corePlane": {
+    "domainStrategy": "IPIfNonMatch",
+    "sniffing": { "enabled": true, "protocols": ["http", "tls"], "routeOnly": true },
+    "rules": [
+      {
+        "domain": ["geosite:category-ads-all"],
+        "outbound": "block"
+      },
+      {
+        "ip": ["10.0.0.0/8"],
+        "port": "0-65535",
+        "outbound": "direct"
+      }
+    ],
+    "unrepresentable": [
+      {
+        "source": "WeekdayCondition days=YYYYNNN",
+        "reason": "Xray routing has no calendar-time predicate; the rule can only be decided in the browser plane."
+      },
+      {
+        "source": "KeywordCondition (http url substring)",
+        "reason": "Requires the full URL, which the Core only sees for sniffed HTTP; TLS SNI is not equivalent, so the rule is reported rather than silently compiled into a domain match."
+      }
+    ]
+  }
+}

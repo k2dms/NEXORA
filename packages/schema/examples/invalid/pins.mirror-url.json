@@ -1,0 +1,24 @@
+{
+  "pinsVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/XTLS/Xray-core",
+    "releaseTag": "v24.11.11",
+    "assetNaming": "Xray-{os}-{arch}.zip",
+    "signaturePubkey": "dQhl6RdqT9NtVhZK0mYcXk3sPpQwErTyUiOpAsDfGhJkLzXcVbNmQ1234567"
+  },
+  "verifySignature": true,
+  "silentSelfUpdate": false,
+  "installRoot": "%LOCALAPPDATA%\\NEXORA\\core",
+  "retainedPreviousVersions": 1,
+  "assets": [
+    {
+      "os": "windows",
+      "arch": "amd64",
+      "file": "Xray-windows-amd64.zip",
+      "url": "https://mirror.example.net/Xray-windows-amd64.zip",
+      "sha256": "1f3c8a9d0b6e2c47a85d3e1f9b7c2a4d6e8f0b1c3d5e7f9a2b4c6d8e0f1a3b5c",
+      "sizeBytes": 9277440,
+      "verifiedAt": "2026-11-04T00:00:00Z"
+    }
+  ]
+}

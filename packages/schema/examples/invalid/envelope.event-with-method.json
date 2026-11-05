@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "id": "evt-0009",
+  "type": "event",
+  "method": "core.exited",
+  "sentAt": "2026-11-04T10:00:02.000Z",
+  "progress": { "stage": "exit", "done": 1, "event": "core.exited" }
+}

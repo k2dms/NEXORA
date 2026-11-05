@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/import-staging.schema.json",
+  "title": "NEXORA import staging buffer",
+  "description": "The transient envelope key holding an import that was still being reassembled when the service worker was torn down (docs/architecture/25, MV3 cold-start history in omega-target-chromium-extension/src/coffee/omega_target_web.coffee:41-78). It buffers a `profile.import` whose Server set exceeds one 1 MiB frame, so an interrupted import resumes instead of silently writing a truncated server list -- a subscription feed is never what is buffered here, because that body is fetched and parsed inside the Connector (docs/architecture/29 §2). This is the only NEXORA namespace allowed to contain secret-bearing material, and precisely because of that it MUST NOT sync and MUST NOT survive longer than the import. The required set is deliberate and is exactly subscriptionId, contentSha256, chunkCount, receivedChunkSeqs, createdAt, expiresAt -- the six fields a resume cannot do without. The two optional fields are optional for a reason and for no other: body cannot exist before the first chunk has been written, and attempt is a counter that defaults to 0. scripts/verify.mjs asserts that every name in `required` is declared in `properties`, that this description names each optional field, and that the shipped example still validates with any one optional field removed and stops validating with any required field removed.",
+  "type": "object",
+  "required": [
+    "subscriptionId",
+    "contentSha256",
+    "chunkCount",
+    "receivedChunkSeqs",
+    "createdAt",
+    "expiresAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "subscriptionId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "The SubscriptionSource this buffer belongs to. Staging for a source the user deleted is orphaned and keystore.purge's 'orphaned' scope collects it."
+    },
+    "contentSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hash the reassembled body must match before profile.import is dispatched. Without it, a resumed buffer cannot tell a missing chunk from a corrupted one."
+    },
+    "chunkCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1024,
+      "description": "Total chunks declared by the sender. Bounds the resume: a buffer whose seqs never reach this count is dropped, not retried forever."
+    },
+    "receivedChunkSeqs": {
+      "type": "array",
+      "maxItems": 1024,
+      "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 0 },
+      "description": "Zero-based indexes already stored. Sorted by the writer so the resume check is an equality test rather than a set difference."
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 8388608,
+      "description": "The accumulated raw payload. SECRET-BEARING by policy, not by inference: a payload the user pasted or uploaded can carry credentials on every path except the subscription refresh, and a scratch buffer is treated as secret material whether or not this particular import happens to contain one (docs/architecture/32). Never logged, never synced, never handed to diagnostics.get; cleared as soon as profile.import is acknowledged."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the first chunk arrived."
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Hard expiry, at most one hour after createdAt (checked by scripts/verify.mjs). Secret material sitting in chrome.storage.local with no deadline is how a scratch buffer becomes a credential store."
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5,
+      "default": 0,
+      "description": "Resume count. At the maximum the buffer is discarded and the subscription is marked failed, because a permanently broken reassembly loop is worse than a visible error."
+    }
+  }
+}

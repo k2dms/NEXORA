@@ -1,0 +1,14 @@
+{
+  "id": "d4d4d4d4-4444-4444-8444-444444444401",
+  "displayName": "MUST BE REJECTED: condition type that does not exist in the registry",
+  "browserPlane": {
+    "defaultProfileName": "direct",
+    "rules": [
+      {
+        "condition": { "conditionType": "ClientTypeCondition", "value": "desktop" },
+        "profileName": "direct"
+      }
+    ]
+  },
+  "corePlane": { "domainStrategy": "IPIfNonMatch", "rules": [] }
+}

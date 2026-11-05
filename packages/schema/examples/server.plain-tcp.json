@@ -1,0 +1,14 @@
+{
+  "id": "a4f8e1b2-5c76-4d90-8b33-2e9f6a1c4d78",
+  "displayName": "Lab relay - VLESS TCP no transport security",
+  "protocol": "vless",
+  "address": "10.0.0.21",
+  "port": 1443,
+  "userIdRef": "keystore://server/a4f8e1b2/user-id",
+  "network": "tcp",
+  "security": "none",
+  "flow": "",
+  "tag": "srv-a4f8e1b2",
+  "source": "manual",
+  "notes": "Allowed shape, not a recommended one: it exists so the schema states what an unencrypted VLESS hop means rather than pretending it cannot be typed."
+}

@@ -1,0 +1,27 @@
+{
+  "id": "d3a7c1b8-6e42-4f95-8b10-2c9d4e7f6a33",
+  "displayName": "Home - fastest of three, fail-open accepted",
+  "kind": "connector",
+  "serverIds": [
+    "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01",
+    "8b1d4e70-2a3c-4f51-8b62-7e9d0c1a3f55",
+    "e2b7c4a9-6d15-4f83-9a27-3c5e7b9d1f42"
+  ],
+  "selection": { "mode": "fastest", "stickySeconds": 600 },
+  "failover": {
+    "enabled": true,
+    "cooldownSeconds": 120,
+    "maxConsecutiveFailures": 2,
+    "probeIntervalSeconds": 90
+  },
+  "failurePolicy": {
+    "coreDeath": {
+      "action": "failOpen",
+      "confirmToken": "confirm://user-choice/2026-11-04-home-lab"
+    }
+  },
+  "routingPolicyId": "f1e2d3c4-b5a6-4978-8b9c-0d1e2f3a4b55",
+  "enabled": true,
+  "createdAt": "2026-11-04T09:25:00Z",
+  "updatedAt": "2026-11-04T09:25:00Z"
+}

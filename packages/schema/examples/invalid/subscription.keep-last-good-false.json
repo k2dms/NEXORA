@@ -1,0 +1,17 @@
+{
+  "id": "c3c3c3c3-3333-4333-8333-333333333303",
+  "displayName": "MUST BE REJECTED: refresh allowed to discard the last good list",
+  "url": "https://feeds.example.net/sub/abc123",
+  "format": "vless-base64",
+  "limits": {
+    "maxBytes": 2097152,
+    "maxRedirects": 3,
+    "timeoutMs": 20000
+  },
+  "keepLastGood": false,
+  "schedule": {
+    "intervalSeconds": 21600
+  },
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

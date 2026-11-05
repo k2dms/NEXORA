@@ -1,0 +1,11 @@
+{
+  "id": "d4d4d4d4-4444-4444-8444-444444444402",
+  "displayName": "MUST BE REJECTED: outbound tag the compiler did not emit",
+  "browserPlane": { "defaultProfileName": "direct", "rules": [] },
+  "corePlane": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      { "domain": ["geosite:category-ads-all"], "outbound": "proxy-3" }
+    ]
+  }
+}

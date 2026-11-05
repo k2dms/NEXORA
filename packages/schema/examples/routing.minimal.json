@@ -1,0 +1,28 @@
+{
+  "id": "7c6b5a49-3d2e-4108-9f7a-6b5c4d3e2f10",
+  "displayName": "Minimal policy: everything through the connector",
+  "browserPlane": {
+    "defaultProfileName": "Work - single pinned server",
+    "rules": [
+      {
+        "condition": { "conditionType": "HostLevelsCondition", "minValue": 1, "maxValue": 2 },
+        "profileName": "direct",
+        "note": "Short hostnames (routers, printers, bare hosts) stay local; this is the legacy HostLevelsCondition used verbatim."
+      },
+      {
+        "condition": { "conditionType": "IpCondition", "ip": "192.168.0.0", "prefixLength": 16 },
+        "profileName": "direct"
+      }
+    ]
+  },
+  "corePlane": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "network": ["udp"],
+        "port": "53",
+        "outbound": "direct"
+      }
+    ]
+  }
+}

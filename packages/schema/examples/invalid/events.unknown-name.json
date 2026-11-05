@@ -1,0 +1,4 @@
+{
+  "protocolVersion": 1,
+  "events": ["core.started", "core.crashed", "config.applied"]
+}

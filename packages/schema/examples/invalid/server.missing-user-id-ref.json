@@ -1,0 +1,15 @@
+{
+  "id": "a1a1a1a1-1111-4111-8111-111111111106",
+  "displayName": "MUST BE REJECTED: no credential reference",
+  "protocol": "vless",
+  "address": "bad.example.net",
+  "port": 443,
+  "network": "tcp",
+  "security": "tls",
+  "flow": "",
+  "tls": { "serverName": "bad.example.net" },
+  "tag": "srv-a1a1a1a1",
+  "source": "manual",
+  "createdAt": "2026-11-04T09:00:00Z",
+  "updatedAt": "2026-11-04T09:00:00Z"
+}

@@ -1,0 +1,19 @@
+{
+  "backupId": "9a8b7c6d-5e4f-4a3b-8c9d-0e1f2a3b4c5d",
+  "createdAt": "2026-11-04T07:55:00Z",
+  "fromSchemaVersion": 2,
+  "toSchemaVersion": 3,
+  "extensionVersion": "3.6.0",
+  "keyCount": 14,
+  "contentSha256": "7c2f9a1e5b3d8c6041a9f2e7d5c8b3a1064897e5d3c1b9a7f5e3d1c9b7a5f3e1",
+  "connectorMirrorPath": "%LOCALAPPDATA%\\NEXORA\\backups\\2026-11-04T07-55-00Z.json",
+  "restoredAtLeastOnce": true,
+  "payload": {
+    "+proxy": { "name": "proxy", "profileType": "FixedProfile" },
+    "+vless-berlin": { "name": "vless-berlin", "profileType": "RuleListProfile", "sourceUrl": "https://sub.example/abc" },
+    "-schemaVersion": 2,
+    "-downloadInterval": 1440,
+    "-revertProxyChanges": true,
+    "__ruleListOf_vless-berlin": "SERVERA https://a.example\r\nSERVERB https://b.example"
+  }
+}

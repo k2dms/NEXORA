@@ -1,0 +1,165 @@
+{
+  "name": "profile.import",
+  "title": "Import ConnectorProfiles and Servers",
+  "summary": "Validate-then-apply: the whole payload is schema-validated and secret-extracted before anything is written, so a malformed or credential-bearing import cannot half-apply. Payloads above the frame limit arrive as envelope.chunk frames and are rejected on any hash or sequence mismatch.",
+  "class": "replace",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 60000,
+  "requiresHello": true,
+  "capabilities": ["chunked.import"],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["profiles"],
+    "allOf": [
+      {
+        "description": "A single-frame import must carry at least one profile. A chunked import may carry none on the frames that are only slices -- the terminal frame holds the complete arrays.",
+        "if": { "not": { "required": ["chunk"] } },
+        "then": { "properties": { "profiles": { "minItems": 1 } } }
+      },
+      {
+        "description": "A chunked import cannot be verified without the hash of the whole, so contentHash is mandatory on every slice frame. The Connector rejects a reassembled payload whose hash differs (IntegrityMismatch) rather than importing an unknown subset. The slice fields are nested under `chunk` -- the same shape protocol/envelope.schema.json#/properties/chunk uses for the frame carrying this call; that object is authoritative and scripts/verify.mjs asserts this mirror is structurally identical to it. Group rules the same script enforces over protocol/fixtures/protocol/*.jsonl: every slice of one import (same envelope.id) declares the same chunkCount, its chunkSeq values cover 0..chunkCount-1 exactly once, and args.contentHash equals args.chunk.contentHash; a group that disagrees about contentHash must be answered by IntegrityMismatch.",
+        "if": { "required": ["chunk"] },
+        "then": {
+          "required": ["contentHash"],
+          "properties": {
+            "chunk": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["contentHash", "chunkSeq", "chunkCount", "encoding"],
+              "properties": {
+                "contentHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "chunkSeq": { "type": "integer", "minimum": 0 },
+                "chunkCount": { "type": "integer", "minimum": 2 },
+                "encoding": { "enum": ["base64", "json"] }
+              }
+            }
+          }
+        }
+      },
+      {
+        "description": "A credential never travels on a chunked frame. A slice is reassembled in the extension's import-staging namespace, which lives in chrome.storage.local and is protected by nothing but its expiry -- so a value split across slices would sit in the one buffer DPAPI does not reach (docs/architecture/32 §6). The payload that carries `credentials` MUST arrive whole in a single frame, which is why the field is bounded at 512 entries and each value at 4 KiB: hand-entered material and a legacy backup's auth maps both fit, a feed body does not and must not be here.",
+        "if": { "required": ["chunk"] },
+        "then": { "not": { "required": ["credentials"] } }
+      }
+    ],
+    "properties": {
+      "profiles": {
+        "type": "array",
+        "minItems": 0,
+        "maxItems": 256,
+        "items": { "$ref": "https://schema.nexora.local/connector-profile.schema.json" }
+      },
+      "servers": {
+        "type": "array",
+        "maxItems": 512,
+        "items": { "$ref": "https://schema.nexora.local/server.schema.json" }
+      },
+      "mode": { "enum": ["merge", "replace"], "default": "merge" },
+      "contentHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "chunk": {
+        "type": ["object", "null"],
+        "description": "Mirror of protocol/envelope.schema.json#/properties/chunk for the frame carrying this slice: same four fields, nested under `chunk`, with the values the envelope copy carries. The Connector echoes it so the caller can verify completeness. Constrained field-by-field by the allOf above when present; a frame whose envelope `chunk` and `args.chunk` disagree is rejected, not reconciled."
+      },
+      "backupBeforeWrite": {
+        "type": "boolean",
+        "const": true,
+        "description": "Not optional. A destructive import mode must be preceded by a verified snapshot on both sides (docs/architecture/35-schema-versioning-migration.md §7, §11)."
+      },
+      "credentials": {
+        "type": "array",
+        "maxItems": 512,
+        "description": "The keystore write primitive, and the only place in the entire command surface where secret material may arrive as a value instead of a reference. It exists for exactly two cases: a credential the user typed (a VLESS UUID, a header value, a token), and a legacy ZeroOmega backup whose 'auth' and 'headers' fields are values that no reference could have replaced on the way in. Everything a subscription can carry arrives through `subscription.refresh`, which fetches and parses inside the Connector, so its values never cross the pipe (docs/architecture/29 §2). The Connector writes each entry to the keystore, mints or confirms its reference, and drops the value: it is not in the result, not in any log line, not in the idempotency record (ADR-0008 stores responses, never requests), and the only thing this command says about it is the count -- `result.secretsExtracted`. Re-sending the same entity and field with a new value overwrites, which is credential rotation. Forbidden on a chunked frame (the third `allOf` clause): a reassembly buffer lives in the extension's import-staging namespace, where DPAPI does not reach.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entity", "entityId", "field", "value"],
+          "properties": {
+            "entity": {
+              "enum": ["server", "subscription", "profile", "sync", "host"],
+              "description": "Which class owns the secret. Mirrors the entity set in envelope-keys.schema.json#/properties/secretReferences; scripts/verify.mjs fails if the two lists separate."
+            },
+            "entityId": {
+              "type": "string",
+              "pattern": "^[0-9a-f][0-9a-f-]{6,61}[0-9a-f]$",
+              "description": "The owning entity's identifier, or a prefix of it. The Connector resolves it against the entities in this same payload and refuses an entry whose owner does not exist -- an orphaned credential is a failure, not a stash."
+            },
+            "field": {
+              "enum": ["user-id", "headers", "url", "token"],
+              "description": "Which field of the entity this is, from the closed vocabulary in envelope-keys.schema.json#/properties/secretReferences. It is what the minted reference ends with, so a new kind of secret is a schema change, not an invented string."
+            },
+            "value": {
+              "type": ["string", "object"],
+              "writeOnly": true,
+              "maxLength": 4096,
+              "maxProperties": 32,
+              "description": "The secret itself. `headers` is the one field whose value is a map rather than a string. Declared writeOnly because a value that may arrive MUST NOT leave: no result schema field, fixture or diagnostics section may echo it back."
+            }
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["imported", "rejected"],
+    "properties": {
+      "imported": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["profileIds", "serverIds"],
+        "properties": {
+          "profileIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "https://schema.nexora.local/connector-profile.schema.json#/properties/id" } },
+          "serverIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "https://schema.nexora.local/server.schema.json#/properties/id" } }
+        }
+      },
+      "rejected": {
+        "type": "array",
+        "maxItems": 256,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "code"],
+          "properties": {
+            "id": { "type": "string" },
+            "code": { "type": "string" },
+            "field": { "type": "string", "maxLength": 64 }
+          }
+        }
+      },
+      "backupKeys": {
+        "type": "array",
+        "maxItems": 2,
+        "items": { "type": "string" },
+        "description": "Extension-side '-nexora.backup.<iso>' key and Connector-side snapshot path id. Both MUST be restorable."
+      },
+      "secretsExtracted": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Count of `credentials` entries this command moved into the keystore -- the only statement it makes about them. Zero for a subscription-sourced import: `subscription.refresh` parses inside the Connector and writes the keystore there, so no value ever crosses the pipe (docs/architecture/29 §2). Non-zero only where the user or a legacy backup supplied values through `args.credentials`, which is the single ingest path in this surface (docs/architecture/32 §6). A payload that still contains a value in an entity field after this command ran is a SecretRedacted failure, not a stripped document."
+      }
+    }
+  },
+  "errors": [
+    "BadRequest",
+    "SchemaMismatch",
+    "InvalidProfile",
+    "SecretRedacted",
+    "IntegrityMismatch",
+    "QuotaExceeded",
+    "DiskFull",
+    "KeystoreUnavailable",
+    "Busy",
+    "Timeout",
+    "UnauthorizedExtension",
+    "Internal"
+  ],
+  "sideEffects": ["entity-write", "entity-delete", "keystore-write", "disk-write", "log-write"],
+  "progressEvents": ["config.applied"],
+  "invariants": [
+    "mode 'replace' MUST be atomic: on any rejection nothing is written, so a user does not lose working profiles to a partially valid file.",
+    "an entry in credentials whose entityId names no entity in the same payload is refused; a secret that nothing references is a failure, not a stash, because no later purge path can reach it."
+  ]
+}

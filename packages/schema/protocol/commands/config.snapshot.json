@@ -1,0 +1,53 @@
+{
+  "name": "config.snapshot",
+  "title": "Hash and masked view of the applied configuration",
+  "summary": "Not in the original command brief. Required because the extension must be able to detect drift after a Connector restart or an out-of-band edit: comparing hashes is cheap, and the masked config lets Diagnostics show what is actually running without ever exposing a credential.",
+  "class": "read",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 5000,
+  "requiresHello": true,
+  "capabilities": ["config.snapshot"],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "includeMaskedConfig": { "type": "boolean", "default": false },
+      "maxBytes": { "type": "integer", "minimum": 1024, "maximum": 1048576, "default": 262144 }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["appliedConfigHash", "matchesExtensionHash", "serverTags"],
+    "properties": {
+      "appliedConfigHash": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$",
+        "description": "Lowercase sha256 of the config Core is running -- the identical quantity connector.status#/result/appliedConfigHash reports, spelled with the identical pattern, never a truncated or re-encoded form of it. drift: true is how a snapshot says that hash no longer matches what the extension believes was applied."
+      },
+      "compiledAt": { "type": ["string", "null"], "format": "date-time" },
+      "matchesExtensionHash": {
+        "type": ["boolean", "null"],
+        "description": "Null when the caller supplied no expectation. Computed by the Connector against the hash the extension sent, so a clock-skewed comparison cannot produce a false 'in sync'."
+      },
+      "drift": { "type": "boolean" },
+      "serverTags": {
+        "type": "array",
+        "maxItems": 512,
+        "uniqueItems": true,
+        "items": { "type": "string", "pattern": "^srv-[0-9a-f]{8}$" }
+      },
+      "maskedConfig": {
+        "type": ["object", "null"],
+        "description": "Structurally identical to the applied Xray config with every secret field masked at the sink (docs/architecture/32). Field NAMES are preserved, values are not."
+      },
+      "truncated": { "type": "boolean", "default": false }
+    }
+  },
+  "errors": ["CoreNotRunning", "SecretRedacted", "Timeout", "UnauthorizedExtension", "Internal"],
+  "sideEffects": ["none"],
+  "invariants": [
+    "A grep of maskedConfig for any pinned secret value MUST find nothing; LIVE-10 asserts it against a real keystore entry."
+  ]
+}

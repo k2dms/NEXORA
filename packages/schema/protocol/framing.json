@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/protocol/framing.json",
+  "title": "Native Messaging framing and transport limits",
+  "description": "Normative transport facts for the extension-to-host pipe, including who may speak on it (senderPolicy). Written as data because both implementations must agree on the same numbers: the Go host and the TypeScript client are tested against this file in Phase 2 (fixtures/protocol/*.jsonl replay them).",
+  "protocolVersion": 1,
+  "minCompatibleProtocolVersion": 1,
+  "frameFormatVersion": 1,
+  "encoding": {
+    "lengthPrefix": {
+      "bytes": 4,
+      "byteOrder": "little-endian",
+      "unsigned": true,
+      "meaning": "Byte length of the JSON payload that follows, UTF-8, excluding the prefix itself."
+    },
+    "payload": {
+      "format": "application/json",
+      "charset": "utf-8",
+      "oneFrameOneObject": true,
+      "noNewlineFraming": true,
+      "note": "Native Messaging is message-delimited, not byte-stream: never split or merge a JSON object across frames. A frame is a single envelope object, never an array."
+    }
+  },
+  "limits": {
+    "extensionToHostBytes": {
+      "value": 1048576,
+      "reason": "Chrome's documented cap on a message sent to the host.",
+      "enforcement": "sender must reject before write, not the receiver after read"
+    },
+    "hostToExtensionBytes": {
+      "value": 1073741824,
+      "reason": "Chrome allows 1 GB host-to-extension; Firefox historically caps at 1 MB, so anything larger must be chunked for cross-browser parity (docs/architecture/25).",
+      "enforcement": "receiver must treat a frame larger than the effective limit as a transport error and reconnect, not truncate"
+    },
+    "effectiveCrossBrowserBytes": { "value": 1048576 },
+    "maxConcurrentRequests": { "value": 64 },
+    "maxInFlightBytes": { "value": 8388608 }
+  },
+  "oversizedPayloads": {
+    "decision": "chunked-envelope",
+    "alternativesRejected": [
+      {
+        "option": "out-of-band file handoff (extension writes a temp file, host reads it)",
+        "why_rejected": "The extension cannot write arbitrary paths (no filesystem API in a service worker), and a handoff directory reintroduces the exact trust problem ADR-0004 removed: another local process could race or replace the file. Native Messaging gives an authenticated pipe; a temp file does not."
+      },
+      {
+        "option": "raise the limit by splitting the subscription through the Connector's own fetch",
+        "why_rejected": "Moves subscription ownership into the Connector for a transport reason, and would make subscription refresh untestable from the extension while still not solving >1 MB requests."
+      }
+    ],
+    "mechanism": {
+      "field": "envelope.chunk",
+      "ordering": "chunks of one contentHash must arrive in chunkSeq order; a gap fails the whole import with IntegrityMismatch rather than partially applying",
+      "atomicity": "reassembly completes, hashes, validates, and only then replaces the previous good set (validate-then-apply)",
+      "cap": "total reassembled bytes bounded by subscription-source limits.maxBytes"
+    }
+  },
+  "liveness": {
+    "heartbeatSeconds": 25,
+    "heartbeatDirection": "host-to-extension",
+    "missedHeartbeatsBeforeDisconnect": 3,
+    "note": "Chrome tears out the port when the extension's service worker is evicted. The Connector and Core MUST survive that (ADR-0005) -- a dropped port is a client reconnect event, never a shutdown signal."
+  },
+  "reconnect": {
+    "strategy": "exponential-with-cap",
+    "backoffSeconds": [1, 2, 4, 8, 16, 32, 60],
+    "jitterPercent": 30,
+    "afterReconnect": "re-run connector.hello, then reconcile: the extension sends config.snapshot hash and the Connector answers whether the applied config still matches."
+  },
+  "ordering": {
+    "rule": "Frames on one port are delivered in order per sender. Cross-sender ordering is not assumed; seq is assigned by each sender and only used for gap detection.",
+    "backpressure": "Sender stops issuing requests beyond limits.maxConcurrentRequests; there is no unbounded queue in either direction."
+  },
+  "nonGoals": [
+    "no streaming of large bodies inside one logical message beyond chunk envelopes",
+    "no binary frames",
+    "no secrets inside traceId or event names",
+    "no protocol defined by NEXORA over the network -- the pipe is local and its only job is control (ADR-0004)"
+  ],
+  "senderPolicy": {
+    "description": "Who may speak on this pipe, how often, and what a refusal costs. This lives next to the byte limits because it is the same class of fact: a transport property both implementations must agree on, not a product preference. The numbers are budgets a UI defect can exhaust, not a rate the user is expected to notice.",
+    "identity": {
+      "resolvedFrom": "the Native Messaging manifest registration the OS hands the host when the port opens -- the extension cannot choose it and the caller cannot claim it (ADR-0004 rule 3)",
+      "notIdentity": [
+        "a payload field asserting that the caller is the extension",
+        "the method name or its args",
+        "envelope.traceId or envelope.seq",
+        "the peer process command line"
+      ],
+      "allowlistSource": "the host's own startup configuration on disk, written by the Connector installer",
+      "allowlistNeverIn": "browser storage: -nexora.settings is written through the code path rule 6 exists to constrain, so letting the caller configure its own authorization is not a control",
+      "unknownSender": "answer UnauthorizedExtension and do not touch state (ADR-0004 rule 6)"
+    },
+    "privilegedMethods": {
+      "declaredIn": "protocol/command-allowlist.json -- the commands[].privileged flag, not a name pattern",
+      "names": [
+        "core.start",
+        "core.stop",
+        "core.restart",
+        "core.select",
+        "config.apply",
+        "profile.import",
+        "profile.remove",
+        "subscription.refresh",
+        "server.test",
+        "diagnostics.get",
+        "keystore.purge"
+      ],
+      "rule": "a Connector build MAY refuse these to a sender that is not the pinned extension id (docs/architecture/26 section 2, docs/architecture/31 section 5); a refusal is UnauthorizedExtension with no state change",
+      "why": "every one of them starts a process, writes the keystore, deletes an entity, or emits traffic the user did not type -- so they are the methods a compromised or buggy UI can do damage with"
+    },
+    "rateLimits": [
+      {
+        "scope": ["subscription.refresh"],
+        "windowSeconds": 60,
+        "maxRequests": 3,
+        "onExceed": "Busy",
+        "why": "args.force bypasses the per-source backoff (subscription-source status.nextAttemptAt) and this budget is the only thing left between a stuck options tab and the user's feed provider; one call may carry forty sources, so the budget counts calls, not fetches"
+      },
+      {
+        "scope": ["server.test"],
+        "windowSeconds": 10,
+        "maxRequests": 8,
+        "onExceed": "Busy",
+        "why": "enough for a 'test all' on one panel of servers, too small for a poll loop to reach every VPS on the user's list every second; probes are never retried, so a refusal is not a lost measurement"
+      },
+      {
+        "scope": ["config.apply", "core.start", "core.stop", "core.restart", "core.select"],
+        "windowSeconds": 20,
+        "maxRequests": 4,
+        "onExceed": "Busy",
+        "why": "each may restart Core, and a restart drops every live tunnel: a state-change storm is a self-inflicted outage, and converge-to-desired-state means the user loses nothing by being asked to wait"
+      },
+      {
+        "scope": ["profile.import", "profile.remove", "keystore.purge"],
+        "windowSeconds": 60,
+        "maxRequests": 2,
+        "onExceed": "Busy",
+        "why": "replace-class and destructive: a second import inside a minute is either a retry of the first (idempotency answers it) or a bug, and keystore.purge cannot be un-done"
+      },
+      {
+        "scope": ["diagnostics.get"],
+        "windowSeconds": 120,
+        "maxRequests": 1,
+        "onExceed": "Busy",
+        "why": "it reads logs and writes a dump to disk, so it is the most expensive read on the pipe; a UI that polls diagnostics is asking for a file the user has to delete"
+      },
+      {
+        "scope": ["*"],
+        "windowSeconds": 1,
+        "maxRequests": 20,
+        "onExceed": "Busy",
+        "why": "the floor every other row sits under: it bounds the pipe itself against a spinning worker, so a budget mistake in one row cannot turn into an unbounded queue"
+      }
+    ],
+    "rateLimitFacts": {
+      "scopeOfBudget": "per sender id, per Connector process, not per browser tab -- the Connector is single-instance by design (ADR-0005)",
+      "notPersisted": "spent budget dies with the process; a reconnect is not a fresh budget for an attacker but is for a user who restarted the browser",
+      "refusalIsRetryable": "onExceed is always Busy, whose taxonomy entry declares retryable true; QuotaExceeded is a storage-layer code and must never be the answer to a rate limit, because a client cannot tell 'back off' from 'you are out of space'",
+      "countedWhere": "the host, before dispatch: a request refused by budget never reaches the handler, so it cannot half-apply"
+    },
+    "refusals": {
+      "loggedFields": "sender id, method name, window remaining -- never args, which may carry a document the user typed (docs/architecture/32)",
+      "amplificationGuard": {
+        "windowSeconds": 10,
+        "maxRefusals": 10,
+        "then": "close the port rather than keep answering",
+        "why": "an unallowlisted sender with a retry loop is a CPU and log-volume attack on the only process that holds the keystore; closing the pipe is the response that costs the attacker nothing to notice and the host nothing to compute"
+      }
+    },
+    "portsPerSender": {
+      "maxConcurrent": 2,
+      "onExceed": "close the oldest port",
+      "why": "MV3 eviction legitimately overlaps an old port with a reconnect; three or more means either a leak the extension should fix or a second registration, and the Connector has no reason to serve both"
+    }
+  }
+}

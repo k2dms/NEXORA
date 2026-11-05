@@ -1,0 +1,160 @@
+{
+  "schemaVersionKey": "-nexora.schemaVersion",
+  "profilePrefix": "+",
+  "scalarPrefix": "-",
+  "namespaces": [
+    {
+      "keyPattern": "^-nexora\\.server\\.[0-9a-f-]{36}$",
+      "entity": "Server",
+      "valueSchema": "server.schema.json",
+      "syncEligible": true,
+      "secretBearing": false,
+      "notes": "The only secret-shaped fields are keystore:// references, which are inert on another machine."
+    },
+    {
+      "keyPattern": "^-nexora\\.profile\\.[0-9a-f-]{36}$",
+      "entity": "ConnectorProfile",
+      "valueSchema": "connector-profile.schema.json",
+      "syncEligible": true,
+      "secretBearing": false
+    },
+    {
+      "keyPattern": "^-nexora\\.routing\\.[0-9a-f-]{36}$",
+      "entity": "RoutingPolicy",
+      "valueSchema": "routing-policy.schema.json",
+      "syncEligible": true,
+      "secretBearing": false
+    },
+    {
+      "keyPattern": "^-nexora\\.subscription\\.[0-9a-f-]{36}$",
+      "entity": "SubscriptionSource",
+      "valueSchema": "subscription-source.schema.json",
+      "syncEligible": true,
+      "secretBearing": false,
+      "notes": "A bare https URL with no userinfo and no credential in the query (urlRef holds a token-bearing address), plus a headersRef. Legacy RuleListProfile headers are the SEC-1 counter-example (omega-target/src/options.coffee:27)."
+    },
+    {
+      "keyPattern": "^-nexora\\.settings$",
+      "entity": "ConnectorSettings",
+      "valueSchema": "connector-settings.schema.json",
+      "syncEligible": true,
+      "secretBearing": false
+    },
+    {
+      "keyPattern": "^-nexora\\.failurePolicy$",
+      "entity": "FailurePolicy",
+      "valueSchema": "failure-policy.schema.json",
+      "syncEligible": true,
+      "secretBearing": false
+    },
+    {
+      "keyPattern": "^-nexora\\.pins$",
+      "entity": "CorePins",
+      "valueSchema": "pins.schema.json",
+      "syncEligible": true,
+      "secretBearing": false
+    },
+    {
+      "keyPattern": "^-nexora\\.importStaging\\.[0-9a-f-]{36}$",
+      "entity": "ImportStaging",
+      "valueSchema": "import-staging.schema.json",
+      "syncEligible": false,
+      "secretBearing": true,
+      "notes": "The one namespace carrying raw payload. Never sync-eligible, hard-expiring, and the only place the secretBearing rule above is non-vacuous."
+    },
+    {
+      "keyPattern": "^-nexora\\.backup\\.[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "entity": "EnvelopeBackup",
+      "valueSchema": "envelope-backup.schema.json",
+      "syncEligible": false,
+      "secretBearing": true,
+      "notes": "A pre-migration snapshot is a copy of everything, so it inherits the secrets it copied. Local-only, and the migration runner refuses to run without one (docs/architecture/35-schema-versioning-migration.md §7)."
+    }
+  ],
+  "legacyOwned": [
+    "+profile",
+    "-schemaVersion",
+    "-proxySchema",
+    "-ruleLists",
+    "-tempRuleList",
+    "-customCss",
+    "-downloadInterval",
+    "-optionsSync",
+    "-showExternalProfile",
+    "-revertProxyChanges"
+  ],
+  "attachmentKeyPattern": "^__ruleListOf_",
+  "backupKeyPattern": "^-nexora\\.backup\\.[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+  "syncExcludedValueKeys": [
+    "lastUpdate",
+    "ruleList",
+    "pacScript",
+    "sha256",
+    "headers",
+    "auth",
+    "body",
+    "gistToken",
+    "token"
+  ],
+  "secretReferences": {
+    "scheme": "keystore://",
+    "pattern": "^keystore://[A-Za-z0-9._:/-]{1,96}$",
+    "shape": "^keystore://(server|subscription|profile|sync|host)/[0-9a-f][0-9a-f-]{6,61}[0-9a-f]/(user-id|headers|url|token)$",
+    "mintedBy": "The Connector, when it stores a value: it generates a random identifier and returns keystore://<entity>/<that identifier>/<field>. Nothing in the extension, the envelope or a feed ever composes a reference, and no part of the stored value is ever part of one.",
+    "neverDerivedFrom": [
+      "the secret value itself -- a content-addressed reference is an offline dictionary: the reference syncs, exports and logs freely, so a guesser only compares strings",
+      "any digest, truncated digest or keyed MAC of the secret value",
+      "the entity display name, address or port, which are all public and would put the field's meaning in the identifier"
+    ],
+    "entities": ["server", "subscription", "profile", "sync", "host"],
+    "fields": [
+      {
+        "name": "user-id",
+        "valueShape": "string",
+        "entropyClass": "high",
+        "maxVisibleChars": 8,
+        "description": "The VLESS user id (a UUID). Server.userIdRef and the compiled Core client both point here."
+      },
+      {
+        "name": "headers",
+        "valueShape": "object",
+        "entropyClass": "high",
+        "maxVisibleChars": 0,
+        "description": "A header map carrying Authorization, Cookie or an API key -- for a transport (ws/grpc/xhttp) or for a subscription feed. Names are displayable, values are not, so the map's keys survive masking and its values never do."
+      },
+      {
+        "name": "url",
+        "valueShape": "string",
+        "entropyClass": "high",
+        "maxVisibleChars": 0,
+        "description": "A fetch address whose query or path is a credential. SubscriptionSource.urlRef; nothing of the value is ever shown, because the UI shows `url` -- the same address with its query dropped (docs/architecture/29 §4). A head-then-tail rule would be wrong here even for high entropy: the tail of such a URL is the token."
+      },
+      {
+        "name": "token",
+        "valueShape": "string",
+        "entropyClass": "low",
+        "maxVisibleChars": 0,
+        "description": "A single human-or-service credential: a sync-backend token (GitHub Gist, WebDAV -- SEC-5) or a passphrase for an upstream proxy imported from a legacy backup. Low entropy is the default assumption: a credential the user can read aloud has no partial display."
+      }
+    ],
+    "display": {
+      "lengthPreserving": false,
+      "fillChar": "\u2022",
+      "maskLiteral": "***redacted***",
+      "appliesAt": "sink"
+    },
+    "fingerprint": {
+      "pattern": "^fp-[0-9a-f]{12}$",
+      "algorithm": "hmac-sha256-truncated-48",
+      "keyed": true,
+      "keyOwner": "keystore://host/4f1d2c8b/token"
+    },
+    "atRest": {
+      "blobs": "One DPAPI-protected blob per secret under the Connector's per-user keystore directory (ADR-0011 rule 1); the blob is the only place a value exists on disk.",
+      "compiledConfigContainsValues": true,
+      "compiledConfigOwnerOnly": true,
+      "compiledConfigLifetime": "from the rename that installs it until core.stop or Connector shutdown; always re-derivable from intent plus keystore, so never backed up",
+      "compiledConfigInExports": false
+    }
+  }
+}

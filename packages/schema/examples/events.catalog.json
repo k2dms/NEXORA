@@ -1,0 +1,19 @@
+{
+  "protocolVersion": 1,
+  "events": [
+    "core.started",
+    "core.exited",
+    "core.restart",
+    "core.blocked",
+    "config.applied",
+    "config.drift",
+    "server.health.changed",
+    "subscription.updated",
+    "subscription.failed",
+    "routing.decision",
+    "connector.connected",
+    "connector.disconnected",
+    "keystore.unavailable",
+    "integrity.mismatch"
+  ]
+}

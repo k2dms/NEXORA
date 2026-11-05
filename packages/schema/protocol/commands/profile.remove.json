@@ -1,0 +1,88 @@
+{
+  "name": "profile.remove",
+  "title": "Delete a ConnectorProfile or Server with reference checks",
+  "summary": "Deletion is the one operation that can leave the user worse off than before, so it is expressed as: verify the backup, resolve references, then delete. Mirrors the legacy UI's delete-with-confirmation-of-references behaviour (omega-web/src/omega/controllers/profile.coffee) rather than inventing a new hazard.",
+  "class": "mutate",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 10000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["backupBeforeDelete"],
+    "minProperties": 2,
+    "properties": {
+      "profileIds": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 64,
+        "uniqueItems": true,
+        "items": { "$ref": "https://schema.nexora.local/connector-profile.schema.json#/properties/id" }
+      },
+      "serverIds": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 128,
+        "uniqueItems": true,
+        "items": { "$ref": "https://schema.nexora.local/server.schema.json#/properties/id" }
+      },
+      "backupBeforeDelete": { "type": "boolean", "const": true },
+      "dryRun": { "type": "boolean", "default": false },
+      "cascadeSecrets": {
+        "type": "boolean",
+        "default": true,
+        "description": "Also purge the keystore entries that only this entity referenced. Secrets of a still-referenced Server MUST survive a profile deletion."
+      }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["deleted", "blockingReferences"],
+    "properties": {
+      "deleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["profileIds", "serverIds"],
+        "properties": {
+          "profileIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+          "serverIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+        }
+      },
+      "blockingReferences": {
+        "type": "array",
+        "maxItems": 128,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["holder", "kind"],
+          "properties": {
+            "holder": { "type": "string", "maxLength": 80 },
+            "kind": { "enum": ["switch-rule", "default-profile", "connector-profile-ref", "subscription-ownership"] },
+            "resolution": { "type": "string", "maxLength": 200 }
+          }
+        }
+      },
+      "backupKeys": { "type": "array", "maxItems": 2, "items": { "type": "string" } },
+      "purgedSecretRefs": { "type": "array", "maxItems": 128, "items": { "type": "string" } },
+      "dryRun": { "type": "boolean" }
+    }
+  },
+  "errors": [
+    "BadRequest",
+    "InvalidProfile",
+    "QuotaExceeded",
+    "DiskFull",
+    "KeystoreUnavailable",
+    "Busy",
+    "Timeout",
+    "UnauthorizedExtension",
+    "Internal"
+  ],
+  "sideEffects": ["entity-delete", "entity-write", "keystore-delete", "disk-write", "log-write"],
+  "invariants": [
+    "A delete blocked by references returns deleted=[] plus blockingReferences; it never reports success with 0 deleted and no explanation."
+  ]
+}

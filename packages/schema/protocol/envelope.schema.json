@@ -1,0 +1,329 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/protocol/envelope.schema.json",
+  "title": "Native Messaging frame envelope",
+  "description": "One JSON object per frame, after the 4-byte little-endian length prefix (protocol/framing.json). Drafted so that a hung host cannot hang the service worker: the deadline belongs to the extension, and every frame carries the identifiers needed to discard a late answer.",
+  "type": "object",
+  "required": [
+    "v",
+    "id",
+    "type",
+    "sentAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255,
+      "description": "Frame format version. Distinct from the protocol version negotiated in connector.hello: the shim can be replaced independently of the Connector (ADR-0005), so the pipe format is versioned separately."
+    },
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 36,
+      "pattern": "^[A-Za-z0-9_-]{8,36}$",
+      "description": "Request id, and for a response the id of the request it answers. Doubles as the idempotency key for mutating commands (ADR-0008)."
+    },
+    "type": {
+      "enum": [
+        "request",
+        "response",
+        "event",
+        "progress"
+      ],
+      "description": "Frame direction. Determines which of the if/then rules below apply, and therefore which fields may exist at all."
+    },
+    "method": {
+      "type": "string",
+      "pattern": "^[a-z]+.[a-z][A-Za-z0-9]*(.[a-z][A-Za-z0-9]*)*$",
+      "description": "Present on request only. Must be a member of protocol/command-allowlist.json -- an unknown method is a hard UnknownMethod error, never a fallthrough (ADR-0007)."
+    },
+    "args": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Method parameters, validated against protocol/commands/<method>.args by the Connector. Absent or null for methods that take none."
+    },
+    "result": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Method result, validated against protocol/commands/<method>.result on an ok response, and the event payload on a type=event frame -- which object is declared per name in events.schema.json and observability.json (docs/architecture/36-observability.md §6). Absent on a progress frame, which carries only how far along a call is."
+    },
+    "error": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "code"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Closed enum; the authoritative list with retryable flags is protocol/error-taxonomy.json."
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Human-readable, already masked. Secret values are never present (docs/architecture/32)."
+        },
+        "redacted": {
+          "type": "boolean",
+          "default": false
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "description": "Failure detail. Only legal on a non-ok response, and its code must be a member of protocol/error-taxonomy.json."
+    },
+    "inReplyTo": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_-]{8,36}$",
+      "description": "Set on response, event-of-a-request and progress. Lets the caller drop a late answer after its own timeout already fired."
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "Present on response only: false means error is set and result is absent."
+    },
+    "traceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9_-]*$",
+      "description": "Correlation id safe to log. Cannot contain characters that appear in hostnames, URLs or secrets."
+    },
+    "sentAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Sender clock, informational only. Never used for ordering -- ordering comes from seq."
+    },
+    "seq": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Monotonic per-connection sequence assigned by the sender. Ordering and gap detection do not depend on either clock."
+    },
+    "progress": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "stage",
+        "done"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "done": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "event": {
+          "type": "string",
+          "description": "For type=event: a name from events.schema.json."
+        }
+      },
+      "description": "Completion or event payload for the progress and event frame types."
+    },
+    "chunk": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "contentHash",
+        "chunkSeq",
+        "chunkCount",
+        "encoding"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "chunkSeq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chunkCount": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "encoding": {
+          "enum": [
+            "base64",
+            "json"
+          ]
+        }
+      },
+      "description": "Present when a payload exceeds the 1 MB extension-to-host frame limit (profile.import is the only such sender today -- a subscription feed body is fetched inside the Connector and so never crosses this frame boundary in the extension-to-host direction, docs/architecture/29 §2). The slice fields live nested here, under `chunk`, and NOT at the top level of the frame: `chunkCount` >= 2 because a single-slice payload is not a chunked transfer and must be sent as one frame. The receiver MUST reject a reassembled payload whose hash differs: IntegrityMismatch. protocol/commands/profile.import.json mirrors this object inside its args, and scripts/verify.mjs asserts the two mirrors are structurally identical (same required names, same per-field constraints) so the frame contract and the command contract cannot drift apart; for a chunked profile.import the two copies must also carry byte-identical values in the same frame."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "request"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "method"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "result"
+              ]
+            },
+            {
+              "required": [
+                "ok"
+              ]
+            },
+            {
+              "required": [
+                "error"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "response"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "ok",
+          "inReplyTo"
+        ],
+        "not": {
+          "required": [
+            "method"
+          ]
+        },
+        "anyOf": [
+          {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "result"
+            ]
+          },
+          {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "event",
+              "progress"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "progress"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "method"
+              ]
+            },
+            {
+              "required": [
+                "ok"
+              ]
+            },
+            {
+              "required": [
+                "error"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "event"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "progress": {
+            "required": [
+              "event",
+              "stage",
+              "done"
+            ]
+          }
+        },
+        "required": [
+          "progress",
+          "result"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/events.schema.json",
+  "title": "NEXORA Connector event registry",
+  "description": "The closed set of asynchronous events the Connector may emit (protocol frame type 'event'). An event type not listed here is a protocol error, which keeps UI code from binding to an event that only exists on one build. Payloads are secret-free by construction: each payload schema sets additionalProperties:false and carries ids plus immutable facts (docs/architecture/36).",
+  "type": "object",
+  "required": [
+    "protocolVersion",
+    "events"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "protocolVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255,
+      "description": "Protocol major this build registers events for; a client reads it from connector.hello, not from this field."
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Names registered for a given connector build; must be a subset of the catalog below.",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/name"
+      }
+    }
+  },
+  "$defs": {
+    "name": {
+      "enum": [
+        "core.started",
+        "core.exited",
+        "core.restart",
+        "core.blocked",
+        "config.applied",
+        "config.drift",
+        "server.health.changed",
+        "subscription.updated",
+        "subscription.failed",
+        "routing.decision",
+        "connector.connected",
+        "connector.disconnected",
+        "keystore.unavailable",
+        "integrity.mismatch"
+      ]
+    },
+    "catalog": {
+      "type": "object",
+      "description": "Payload schema per event name. Referenced by protocol/commands/connector.events.subscribe.json.",
+      "required": [
+        "name",
+        "channel",
+        "retained",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "channel": {
+          "enum": [
+            "core",
+            "config",
+            "server",
+            "subscription",
+            "routing",
+            "connector",
+            "keystore",
+            "integrity"
+          ]
+        },
+        "retained": {
+          "type": "boolean",
+          "description": "Retained events are re-sent to a subscriber that connects after the fact, because a service worker can be torn down between the event and the UI that must show it."
+        },
+        "sampled": {
+          "type": "boolean",
+          "default": false
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "traceId": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9_-]*$",
+      "description": "Correlation id. Pattern excludes '.', ':' and any character that appears in hostnames, URLs or credentials, so a trace id cannot smuggle a secret into a log line (docs/architecture/25 non-goal)."
+    }
+  }
+}

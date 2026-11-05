@@ -1,0 +1,106 @@
+{
+  "name": "config.apply",
+  "title": "Declaratively replace the applied Core configuration",
+  "summary": "Replace-and-reconcile: the caller states the desired profile set, the Connector compiles it deterministically and restarts Core only if the compiled hash differs from the applied one. Applying the same config twice is therefore a hash-only no-op, which is what makes apply safe to call after every subscription refresh.",
+  "class": "replace",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 30000,
+  "requiresHello": true,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["profileIds"],
+    "properties": {
+      "profileIds": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 64,
+        "uniqueItems": true,
+        "items": { "$ref": "https://schema.nexora.local/connector-profile.schema.json#/properties/id" }
+      },
+      "routingPolicyId": { "$ref": "https://schema.nexora.local/routing-policy.schema.json#/properties/id" },
+      "dryRun": {
+        "type": "boolean",
+        "default": false,
+        "description": "Compile, validate and report -- touch nothing. The only safe way for the UI to preview a change or surface unrepresentable rules."
+      },
+      "expectedAppliedHash": {
+        "type": ["string", "null"],
+        "pattern": "^([0-9a-f]{64})?$",
+        "description": "Compare-and-swap against the config the caller believes is applied. A mismatch is Busy, not a silent overwrite -- two UI tabs must not race a config."
+      },
+      "restartPolicy": { "enum": ["auto", "never"], "default": "auto" }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["applied", "configHash", "restarted"],
+    "properties": {
+      "applied": { "type": "boolean" },
+      "dryRun": { "type": "boolean" },
+      "configHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "previousConfigHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "restarted": { "type": "boolean" },
+      "unchangedBecauseHashMatched": { "type": "boolean" },
+      "inboundPorts": {
+        "type": "array",
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["listen", "port"],
+          "properties": {
+            "listen": { "enum": ["127.0.0.1", "::1"] },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "tag": { "type": "string" }
+          }
+        }
+      },
+      "serverTags": {
+        "type": "array",
+        "maxItems": 512,
+        "uniqueItems": true,
+        "items": { "type": "string", "pattern": "^srv-[0-9a-f]{8}$" }
+      },
+      "unrepresentable": {
+        "type": "array",
+        "maxItems": 256,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "reason"],
+          "properties": {
+            "source": { "type": "string", "maxLength": 200 },
+            "reason": { "type": "string", "maxLength": 200 }
+          }
+        },
+        "description": "Browser-plane rules that could not be compiled into Xray routing. The compiler reports rather than drops (ADR-0013)."
+      }
+    }
+  },
+  "errors": [
+    "BadRequest",
+    "SchemaMismatch",
+    "InvalidProfile",
+    "UnsupportedCombination",
+    "SecretRedacted",
+    "ConfigApplyFailed",
+    "IntegrityMismatch",
+    "KeystoreUnavailable",
+    "DiskFull",
+    "Busy",
+    "QuotaExceeded",
+    "Timeout",
+    "UnauthorizedExtension",
+    "Internal"
+  ],
+  "sideEffects": ["core-config", "core-process", "disk-write", "log-write"],
+  "progressEvents": ["config.applied", "core.restart", "core.started"],
+  "invariants": [
+    "The compiled config is byte-stable for the same input: sorted keys, no timestamps, no map iteration order. Golden fixtures prove it (docs/architecture/27).",
+    "A failed apply leaves the previously working config applied and reports ConfigApplyFailed; it never leaves Core running with a partial config."
+  ]
+}

@@ -71,7 +71,7 @@ function classifyLine(line, isFixture) {
     return { rule: 'private-key', detail: 'PEM private key material in a tracked file' };
   }
   const assign = line.match(ASSIGN_RE);
-  if (assign && isLiteralSecret(assign[1], assign[2])) {
+  if (assign && !isFixture && isLiteralSecret(assign[1], assign[2])) {
     return { rule: 'secret-assignment', detail: line.trim().slice(0, 90) };
   }
   if (!isFixture && UUID_RE.test(line)) {
@@ -90,6 +90,7 @@ const SELFTEST = [
   { file: 'src/a.go', line: '  key: "-----BEGIN PRIVATE KEY-----"', want: 'private-key' }, // nexora-secret-allow: gate's own positive
   { file: 'src/a.go', line: 'uuid: "b7a3f1c2-4d5e-4f60-8a9b-0c1d2e3f4a5b"', want: 'uuid-literal' }, // nexora-secret-allow: gate's own positive
   { file: 'docs/x.md', line: 'uuid: "b7a3f1c2-4d5e-4f60-8a9b-0c1d2e3f4a5b"', want: null }, // nexora-secret-allow: gate's own negative
+  { file: 'docs/x.md', line: 'password: "aB3dE6fG9hJ2kL5mN8pQ"', want: null }, // nexora-secret-allow: gate's own negative
   {
     file: 'src/a.go',
     line: 'password: "aB3dE6fG9hJ2kL5mN8pQ"', // nexora-secret-allow: gate's own positive

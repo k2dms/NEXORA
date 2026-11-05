@@ -1,0 +1,13 @@
+{
+  "id": "b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11",
+  "displayName": "Work - single pinned server",
+  "kind": "connector",
+  "serverIds": ["3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01"],
+  "defaultServerId": "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01",
+  "selection": { "mode": "fixed", "stickySeconds": 0 },
+  "failover": { "enabled": false },
+  "failurePolicy": { "coreDeath": { "action": "block" } },
+  "enabled": true,
+  "createdAt": "2026-11-04T09:20:00Z",
+  "updatedAt": "2026-11-04T09:20:00Z"
+}

@@ -1,0 +1,46 @@
+{
+  "name": "connector.hello",
+  "title": "Version and capability negotiation",
+  "summary": "The first and only frame allowed before negotiation completes. Not a status call: it exists so the extension can refuse to send anything a Connector might misread. Subsumes connector.version for negotiation purposes.",
+  "class": "read",
+  "idempotent": true,
+  "replayable": true,
+  "timeoutMs": 5000,
+  "requiresHello": false,
+  "capabilities": [],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["extensionVersion", "protocolVersion", "minCompatibleProtocolVersion"],
+    "properties": {
+      "extensionVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" },
+      "protocolVersion": { "type": "integer", "minimum": 1, "maximum": 255 },
+      "minCompatibleProtocolVersion": { "type": "integer", "minimum": 1, "maximum": 255 },
+      "uiBuild": { "type": "string", "maxLength": 40 }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["protocolVersion", "minCompatibleProtocolVersion", "connectorVersion", "capabilities"],
+    "properties": {
+      "protocolVersion": { "type": "integer", "minimum": 1, "maximum": 255 },
+      "minCompatibleProtocolVersion": { "type": "integer", "minimum": 1, "maximum": 255 },
+      "connectorVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?(-[0-9A-Za-z.-]+)?$" },
+      "coreVersion": { "type": ["string", "null"] },
+      "pinnedCoreVersion": { "type": ["string", "null"] },
+      "schemaVersion": { "type": "integer", "minimum": 1 },
+      "capabilities": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": { "type": "string" },
+        "description": "Names this Connector will honour, and nothing else. protocol/compatibility-rules.json#/capabilities is the single normative registry: a command may cite only names declared there, and the recorded hello in protocol/fixtures/protocol/handshake.jsonl must announce exactly that set. scripts/verify.mjs asserts both directions, so the registry cannot grow a name no Connector reports nor report a name the registry never declared."
+      },
+      "os": { "enum": ["windows", "linux", "darwin"] },
+      "keystoreBackend": { "enum": ["dpapi", "keyring", "file-acl", "unavailable"] },
+      "jobObjectAvailable": { "type": ["boolean", "null"], "description": "Windows: whether Core can be contained so it cannot outlive the Connector. False is a warning, not a failure (docs/architecture/30)." }
+    }
+  },
+  "errors": ["HandshakeFailed", "VersionMismatch", "UnauthorizedExtension", "Timeout", "Internal"],
+  "sideEffects": ["none"]
+}

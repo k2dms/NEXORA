@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.nexora.local/envelope-backup.schema.json",
+  "title": "NEXORA pre-migration envelope backup",
+  "description": "The full options-envelope snapshot the migration runner MUST write before its first destructive step (ADR-0014, docs/architecture/35-schema-versioning-migration.md §7). Stored under -nexora.backup.<iso> in chrome.storage.local and mirrored as a file on the Connector side, because a backup that lives only in the storage being migrated proves nothing. This document is the shape of that record; the payload is the envelope verbatim.",
+  "type": "object",
+  "required": [
+    "backupId",
+    "createdAt",
+    "fromSchemaVersion",
+    "toSchemaVersion",
+    "extensionVersion",
+    "keyCount",
+    "contentSha256",
+    "restoredAtLeastOnce"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "backupId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Identity of this snapshot, so a resume can tell 'the backup I already wrote' from 'a backup written by a different run'."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the snapshot was taken; also the timestamp half of the storage key."
+    },
+    "fromSchemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255,
+      "description": "Envelope schemaVersion read from storage at snapshot time. 2 is the legacy value shipped by the fork (omega-target/src/default_options.coffee:2 -- `schemaVersion: 2`)."
+    },
+    "toSchemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255,
+      "description": "Version the run intended to reach. The machine-checkable rule this document enforces is a floor, not an ordering: allOf below requires toSchemaVersion >= 2, the lowest version any shipped envelope can already be at. The intent is stricter -- toSchemaVersion MUST equal or exceed fromSchemaVersion, never descend -- but JSON Schema 2020-12 cannot compare two sibling integers without an if/then pair per version, so the ordering is asserted by scripts/verify.mjs over every backup record shipped here and generalised in Phase 2 (docs/verification matrix) once the version space is enumerated."
+    },
+    "extensionVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Recorded because the update path in omega-target-chromium-extension/src/coffee/background.coffee:32-47 compares versions, and a migration must be able to say which version wrote which bytes."
+    },
+    "keyCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 8192,
+      "description": "Number of envelope keys captured. A backup of 0 keys is how a wipe gets recorded as a success, so the runner refuses to write a migration step against one."
+    },
+    "contentSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hash over the canonically serialised payload, so restore can prove it is reading what was written rather than what the quota fallback left behind."
+    },
+    "connectorMirrorPath": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "default": null,
+      "description": "File path of the Connector-side copy, or null when no Connector is reachable. Null is allowed only for migrations with no destructive step; scripts/verify.mjs cannot see the step list, so the runner enforces that half."
+    },
+    "restoredAtLeastOnce": {
+      "type": "boolean",
+      "description": "Whether a read-back of this backup was performed and compared during the same run. An unverified backup is a file, not a recovery plan (docs/architecture/35-schema-versioning-migration.md §7 makes the check blocking).",
+      "default": false
+    },
+    "payload": {
+      "type": "object",
+      "description": "The captured envelope, keys verbatim including the '+' profile keys, MINUS every key matching the backup namespace: a snapshot that contains the older snapshots contains itself recursively, so its size grows with the number of runs and restoring one would resurrect the others out of order. Not schema-checked per key on purpose: the point of a backup is to survive a migration that misreads those keys.",
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "description": "A migration only ever moves forward or stays put. Expressed here as the floor the schema language can state on its own (toSchemaVersion >= 2, the shipped legacy version); the forward-only ordering between the two fields is a sibling-integer comparison and is checked by scripts/verify.mjs against every record in examples/, with the general per-version rule deferred to Phase 2.",
+      "if": { "required": ["fromSchemaVersion", "toSchemaVersion"] },
+      "then": { "properties": { "toSchemaVersion": { "minimum": 2 } } }
+    }
+  ]
+}

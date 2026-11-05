@@ -1,0 +1,14 @@
+{
+  "id": "d4d4d4d4-4444-4444-8444-444444444403",
+  "displayName": "MUST BE REJECTED: envelope prefix written into a rule",
+  "browserPlane": {
+    "defaultProfileName": "direct",
+    "rules": [
+      {
+        "condition": { "conditionType": "KeywordCondition", "pattern": "example.com" },
+        "profileName": "+direct"
+      }
+    ]
+  },
+  "corePlane": { "domainStrategy": "IPIfNonMatch", "rules": [] }
+}

@@ -1,0 +1,86 @@
+{
+  "name": "server.test",
+  "title": "Layered probe of one Server",
+  "summary": "Deliberately not one latency number. A TCP connect succeeding says nothing about whether the VLESS handshake works or whether traffic actually egresses the VPS, so results are reported per layer and a TCP-only pass is never labelled 'proxy OK' (master prompt 13).",
+  "class": "probe",
+  "idempotent": true,
+  "replayable": false,
+  "timeoutMs": 30000,
+  "requiresHello": true,
+  "capabilities": ["health.probes"],
+  "args": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["serverId", "layers"],
+    "properties": {
+      "serverId": { "$ref": "https://schema.nexora.local/server.schema.json#/properties/id" },
+      "layers": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 4,
+        "uniqueItems": true,
+        "items": { "enum": ["dns", "tcp", "core-outbound", "proxied-http"] },
+        "description": "Ordered by the Connector, not by the caller: dns before tcp before core-outbound before proxied-http."
+      },
+      "egressProbe": {
+        "type": "boolean",
+        "default": false,
+        "description": "When true, fetch the configured egress endpoint through the Core and return the observed public IP. This is the only layer that can prove the tunnel is carrying traffic."
+      },
+      "repeat": { "type": "integer", "minimum": 1, "maximum": 10, "default": 1 }
+    }
+  },
+  "result": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["serverId", "layers", "overall"],
+    "properties": {
+      "serverId": { "type": "string" },
+      "overall": {
+        "enum": ["pass", "partial", "fail", "not-proxied"],
+        "description": "'partial' = lower layers passed, a higher layer did not. 'not-proxied' = something answered but the egress IP was not the expected one, i.e. traffic leaked. The two are different user-visible facts."
+      },
+      "layers": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 5,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["layer", "state"],
+          "properties": {
+            "layer": { "enum": ["dns", "tcp", "core-outbound", "proxied-http", "egress-ip"] },
+            "state": { "enum": ["pass", "fail", "skipped", "timeout"] },
+            "rttMs": { "type": ["number", "null"], "minimum": 0 },
+            "jitterMs": { "type": ["number", "null"], "minimum": 0 },
+            "code": { "type": "string" },
+            "detail": { "type": "string", "maxLength": 160 }
+          }
+        }
+      },
+      "egressIp": {
+        "type": ["string", "null"],
+        "maxLength": 45,
+        "description": "Only present when egressProbe was requested and proxied-http passed."
+      },
+      "matchesExpectedEgress": { "type": ["boolean", "null"] },
+      "testedAt": { "type": "string", "format": "date-time" }
+    }
+  },
+  "errors": [
+    "CoreNotRunning",
+    "NetworkUnreachable",
+    "HandshakeFailed",
+    "AuthFailed", "KeystoreUnavailable",
+    "HealthCheckFailed",
+    "IntegrityMismatch",
+    "Timeout",
+    "UnauthorizedExtension",
+    "Internal"
+  ],
+  "sideEffects": ["network-egress", "log-write"],
+  "invariants": [
+    "Results are never replayed from the idempotency cache: replayable=false, and a client that receives a cached response must mark it stale (ADR-0008).",
+    "server.test is rate-limited per serverId so a UI defect cannot launch a probe storm against the VPS (docs/architecture/31)."
+  ]
+}
