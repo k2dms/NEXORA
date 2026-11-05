@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schema.nexora.local/open-decisions.json",
   "title": "NEXORA open-decision register — every question Phase 1 refused to answer silently",
-  "description": "Phase 1's rule is that a document may raise a question but must not answer it with a guess. Fifty-two deferral sites across `docs/**` say, in one form or another, 'this goes to `docs/architecture/40-open-decisions.md`'. This file is that destination: one entry per question, each owning the exact lines that deferred to it, so the corpus cannot defer to a document that does not keep the item. It is the sixth list in the repository's data-home rule -- the queue of claims with no check is `packages/schema/verification.json` (doc 39); this is the queue of claims with no *answer*, and the two are tied: every entry names the `VER-NN` rows it gates and, where the answer is a number only a browser yields, the `COMP-NN` row it waits on. An entry is not a decision. It becomes one by an ADR, a contract addition, a measurement, or a human answer in `docs/PROJECT-STATE.md` §9 -- at which point the entry is deleted from this file, not marked `decided`, for the same reason a closed queue row is deleted: a status field you can edit in place is a status field you will.",
+  "description": "Phase 1's rule is that a document may raise a question but must not answer it with a guess. Fifty-four deferral sites across `docs/**` say, in one form or another, 'this goes to `docs/architecture/40-open-decisions.md`'. This file is that destination: one entry per question, each owning the exact lines that deferred to it, so the corpus cannot defer to a document that does not keep the item. It is the sixth list in the repository's data-home rule -- the queue of claims with no check is `packages/schema/verification.json` (doc 39); this is the queue of claims with no *answer*, and the two are tied: every entry names the `VER-NN` rows it gates and, where the answer is a number only a browser yields, the `COMP-NN` row it waits on. An entry is not a decision. It becomes one by an ADR, a contract addition, a measurement, or a human answer in `docs/PROJECT-STATE.md` §9 -- at which point the entry is deleted from this file, not marked `decided`, for the same reason a closed queue row is deleted: a status field you can edit in place is a status field you will.",
   "protocolVersion": 1,
   "scope": {
     "owns": [
@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 53
+    "counted": 54
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -514,6 +514,19 @@
         "raw-body read: the extension may request the feed body through a bounded command, which contradicts doc 29 §11's invariant that no feed body enters the browser process and would need that invariant withdrawn"
       ],
       "at": [{ "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "the extension may receive feed-derived Servers through chunked events" }]
+    },
+    {
+      "id": "ODEC-34",
+      "question": "In a chunked `profile.import`, what are the bytes of a slice, and which byte string does `chunk.contentHash` hash?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-76"], "compatibility": [] },
+      "why": "doc 25 §5 is complete about slice metadata and silent about the slice body, and the silence is not a gap in the prose -- it is a gap in `packages/schema`. `protocol/envelope.schema.json#/properties/chunk` allows four fields and no others, and `protocol/commands/profile.import.json#/args/properties/profiles/items` is a `$ref` to the profile schema, so a byte fragment cannot be sent through the only two list fields that exist. The recorded group in `fixtures/protocol/import-chunked.jsonl` then carries the whole document in its last slice and empty arrays in the others, all three declaring `encoding: \"base64\"`. Choosing an answer is one contract addition plus its examples; refusing to choose leaves `connector/internal/chunk` unwritable and, worse, leaves `#/oversizedPayloads/mechanism/atomicity` asserting the hash of a byte string nobody has defined -- which is exactly the reassembly bug ADR-0008's replay discipline exists to prevent.",
+      "options": [
+        "announcement model -- excluded by the data, recorded so the exclusion is not re-litigated: only the final slice carries the document, which leaves that frame over the 1 MiB sender cap §4 states and `framing.json#/oversizedPayloads/mechanism/cap` counting bytes nobody reassembled",
+        "fragment model: a new `args.payload` string of base64 per slice, `contentHash` over the concatenation of the decoded bytes -- what doc 25 §5's rules 2, 5 and 6 already assume, and the only reading that actually bounds a frame",
+        "subset model: each slice carries a valid subset of `profiles` and `servers`, `contentHash` over the canonical serialization of the union -- keeps every frame individually schema-valid, but makes `encoding: \"base64\"` meaningless on a frame of JSON objects, leaves the enum's other member (`json`) as the natural fit, and requires a canonical byte form this repository has never defined"
+      ],
+      "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "cannot be written from this document without guessing" }]
     }
   ]
 }

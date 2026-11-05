@@ -195,10 +195,10 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `202` labelled lines over `44` documents partitioned into `75` rows `VER-01…VER-75`, `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `53` deferral
-sites over `13` documents partitioned into `33` entries `ODEC-01…ODEC-33`, each naming who can answer it
-(`product` 14, `contract` 11, `adr` 5, `measurement` 2, `upstream` 1), three options, and the `VER`/`COMP` rows it
+The queue is `203` labelled lines over `44` documents partitioned into `76` rows `VER-01…VER-76`, `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `54` deferral
+sites over `14` documents partitioned into `34` entries `ODEC-01…ODEC-34`, each naming who can answer it
+(`product` 14, `contract` 12, `adr` 5, `measurement` 2, `upstream` 1), three options, and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
@@ -241,6 +241,13 @@ their place, because what settled the question is a rule in the contract data an
 `docs/adr/0007-typed-versioned-command-allowlist.md`, not a place in a file. A disagreement between two implementations
 gets cited by line; the rule that ends it gets cited by pointer. The six new names are ADR-0007 and the schema harness,
 each of them restated by every section that carries the answer — §4.9's addendum, §4.10's table and §9's note.
+§4.11 moves the set a sixth time — **2262 / 507 / 1335** — with §4.10's shape and the opposite cause: the
+`path:line` figure does not move, because the finding is that a `path:line` citation is precisely what went stale
+under the paragraph. Two citations in `docs/architecture/32-secrets-keystore-masking.md` into doc 25 §8 had their
+numbers re-read and moved by twenty-one lines, and a re-numbered citation changes none of the three figures. What the
+slice adds is seven pointers and twelve names — four pointers and three names in the paragraph the protocol document now
+carries, one name in the register's new argument for why a green check hid the answer, two in the index row that says
+the package is not written, and the rest in this file's own record of the finding.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
@@ -603,6 +610,65 @@ question, `internal/chunk` and `cmd/nexora-connector`, are unblocked, and §6 no
 stays exactly where §4.7 left it: §9's eighth question is still open, and this answer says nothing about which frame
 carries a beat.
 
+### 4.11 The gate behind the gate: what `connector/internal/chunk` found before any of it was written (2026-11-05)
+
+§4.10 unblocked two items, and the first thing done with the unblocked one was to read the contract it would
+implement. `connector/internal/chunk` is still not written, because the contract does not say what the package has to
+do. Nothing in this section is a guess about the design; every line below is a field, a fixture, or a check that either
+exists or does not.
+
+**What the chunk contract does say, and it says well.** Slice metadata: four required fields, `chunkCount ≥ 2`, no
+`chunkId`, one `contentHash` per group, sequence order enforced, a gap failing the whole import with
+`IntegrityMismatch`, validate-then-apply, total bytes bounded, and the envelope copy mirrored byte-identically in
+`args.chunk`. All of it is asserted in `packages/schema/scripts/verify.mjs` and every clause of it is GREEN. That is
+exactly the problem: a green block over the part that was specified made the part that was not invisible.
+
+**What no file states: the slice body.**
+
+| Data | What it holds | What it does not hold |
+|---|---|---|
+| `packages/schema/protocol/envelope.schema.json#/properties/chunk` | four metadata fields, `additionalProperties: false` | any payload field, and no way to add one without editing the closed object |
+| `packages/schema/protocol/commands/profile.import.json#/args/properties` | `profiles`, `servers`, `mode`, `contentHash`, `chunk`, `backupBeforeWrite`, `credentials` | a byte carrier: the two list fields are arrays whose `items` is a `$ref` to a whole-document schema, so a fragment of a serialized document fails validation rather than passing through |
+| `packages/schema/fixtures/protocol/import-chunked.jsonl` | `chunkCount: 3`; slices 0 and 1 with `args.profiles: []` and no `args.servers`; slice 2 with the whole document; `encoding: "base64"` on all three; one whole-document `args.contentHash` repeated by every frame | a decision. Two empty frames declaring a *bytes* encoding of bytes no field holds is the corpus declining to take a side |
+| `packages/schema/protocol/framing.json#/oversizedPayloads/mechanism` | `ordering`, `atomicity`, `cap` — all three written as if a group contributes bytes | the byte string those three are written against |
+
+**The reading the data does remove.** "The earlier slices are announcements and only the last frame carries the
+document" is what the fixtures literally show, and it cannot be the contract: `#/properties/chunk/description` in the
+envelope appears "when a payload exceeds the 1 MB extension-to-host frame limit", and under that reading the frame that
+must carry the whole document exceeds §4's sender cap and would be refused by §4.7's own peer before it reached a
+writer. So one of the three is decided and two survive — the fragment model (`contentHash` over the concatenation of
+decoded bytes, needing a field that does not exist) and the subset model (each slice a valid subset, `contentHash` over
+the canonical serialization of a union, needing a canonical form that does not exist). The two disagree about which
+byte string `chunk.contentHash` names, and both the gap rule and validate-then-apply are written against that string.
+
+**What this slice therefore is.** Not the package, and not a guess at the field. It is the gap put where the corpus keeps
+gaps, so that it cannot be inherited silently by Phase 2: a row in §13 of `docs/architecture/25-native-messaging-protocol.md`
+carrying that document's deferred claim in the state column, a paragraph in its §5 that names the gap and defers, a row
+`VER-76` in the queue, an entry `ODEC-34` in the register with the two survivors and the excluded reading written out,
+and the argument in doc 40 §4 as a sixth kind of "why Phase 1 could not answer": the answer was hidden by a check that
+passes. The chain of coupled counts that had to move together — `marker.counted`
+202→203, the queue 75→76 rows with `no-code` 53→54, owner `connector` 34→35 and closing kind `assertion` 15→16, anchor
+entries 152→153, the register 33→34 entries with `contract` 11→12, and `citation.counted` 53→54 across 14 documents —
+is asserted by `verify.mjs` on every run, which is the only reason appending one row to two JSON files is safe.
+
+**A second thing this slice fixed, unrelated to chunking.** Inserting the §5 paragraph moved doc 25 down by 21 lines,
+and two citations in `docs/architecture/32-secrets-keystore-masking.md` — §10's coverage row and §11's opening
+sentence, both into doc 25 §8's rule 4 — went stale without the guard noticing, because `path:line` citations only fail
+when the number exceeds the file. The numbers were re-read and repaired. This is the failure mode
+`tools/check-doc-evidence.mjs` documents for itself at the top of its own source; the corpus's answer for a mutable
+target is a named constant or a pointer, and doc 25 §8 is neither, so the repair is the mechanism here.
+
+**Measured on this host.** `node packages/schema/scripts/verify.mjs` → green, **1217 checks** — the same number as
+before the row was appended, because a queue row is data and adds no assertion; `node tools/check-doc-evidence.mjs` →
+green; `node tools/check-no-secrets.mjs` and `node tools/check-legacy-backup.mjs --selftest` → green; `go -C connector
+test -count=1 ./...` → the same six `ok` lines §4.10 printed, unchanged, because no Go file moved in this slice. The
+print of the evidence guard is §4.4's sentence and §5's bullet.
+
+**One row appears; none closes.** The queue went up, which is the opposite of what the last four entries in §4 did. It
+is the honest direction for this find: `VER-76` is `no-code` and gated by `ODEC-34`, and until the body field exists
+there is no test to write and no package to name — so the correct output of reading the contract was a row, not a
+green tick.
+
 ---
 
 ## 5. Verification state to the letter
@@ -652,14 +718,15 @@ carries a beat.
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
   row rather than by one more Go test, and §4.9 names the live row whose mechanism is half in this repository and the
   question two of this repository's own packages raised against each other; §4.10 names the three pieces of contract
-  data that answered it and the boundary the answer drew.
-- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 500 `path#pointer`, 1323 doc-and-script
+  data that answered it and the boundary the answer drew; §4.11 names the four that stopped the next package before its
+  first line — and none of the five changed a `ok` count, because only §4.10 moved code.
+- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 507 `path#pointer`, 1335 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
   `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
   as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
-  set and never pinned. No execution has printed a set since: the four M2 slices are on this branch and not on
+  set and never pinned. No execution has printed a set since: the five M2 slices are on this branch and not on
   `nexora/master` (§7), so the three figures above are this host's, and §4.4 says which slice moved which of them and
   in what shape.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
@@ -719,8 +786,8 @@ SHOULD/MAY`, `Status:` header, `Trace: ADR-…; Contract: packages/schema/…` f
 document asserts behaviour nothing checks — otherwise it gets a `39-verification-matrix.md` row with
 `Verified: NO — deferred to Phase 2`.
 
-`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `202`
-deferral labels over `44` documents are partitioned, on every run, into `75` rows, `26` sentences that define the
+`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `203`
+deferral labels over `44` documents are partitioned, on every run, into `76` rows, `26` sentences that define the
 label and `24` live rows the matrix owns — so a new deferral with no row, a row whose anchor moved, a row re-labelled
 instead of closed, or a document reading a distribution the data does not have, all fail the build. Writing it also
 caught seven citations that pointed at a live row which does not test the claim: `LIVE-08`→`LIVE-13` for the
@@ -906,8 +973,11 @@ written before any behaviour existed. What each next milestone has to make true:
    one process. What §4.8's package does *not* have an honest way to do is the heartbeat clause, for the reason §4.7
    gives and §9 asks. Remaining, in the order they build on each other: `internal/chunk`, the reassembly that
    `packages/schema/protocol/framing.json#/oversizedPayloads` requires to fail a whole import with
-   `IntegrityMismatch` rather than apply part of one — the gate this list put in front of it, §9's ninth question, is
-   answered in §4.10, and the frame a chunk carries arrives through a codec that no longer pre-empts the verdict;
+   `IntegrityMismatch` rather than apply part of one — the gate this list put in front of it, §9's ninth question, was
+   answered in §4.10, so the codec no longer pre-empts the front door's verdict and a chunk arrives as a frame; the
+   package then met a second gate, found by reading the contract rather than by writing code, and §4.11 records what
+   the contract does not say. `VER-76` and `ODEC-34` are that gap as data, §9's ninth row is it as a question, and this
+   list will not put a third item in front of `internal/chunk` until one of the two surviving readings is chosen;
    then `cmd/nexora-connector`, the process that reads a pipe and owns a dispatcher — which is exactly where
    `internal/envelope` and `internal/dispatch` met and disagreed, and now meet in the test §4.10 names; then
    `cmd/nexora-host` — sender identity resolved from the platform per
@@ -917,7 +987,8 @@ written before any behaviour existed. What each next milestone has to make true:
    the negotiation. §4.7 records why `VER-49` in particular does not close on the peer alone; §4.8 records why the
    three sender-policy rows need a running host and cannot close on a unit test; §4.9 records why `LIVE-01` names two
    test halves and only one of them is in this repository; §4.10 records why a boundary that only decides *which*
-   package speaks moves no row either.
+   package speaks moves no row either; and §4.11 records why reading the first item on this list, rather than writing
+   it, moved the queue up instead of down.
 2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
    leaves to a human.
 
@@ -926,8 +997,9 @@ written before any behaviour existed. What each next milestone has to make true:
 ## 7. Git rules of this session (do not improvise)
 
 - Branch: **`nexora/architecture`**. `nexora/master` was last
-  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the four M2
-  slices §4.7, §4.8, §4.9 and §4.10 record are on this branch and not there, because a push needs its own confirmation each time
+  fast-forwarded to the sha the bullet below names (`1004c4e`); the runner-record commit `f1a3829` and the five slices
+  §4.7 to §4.11 record — four of them code, the fifth a contract gap found by reading — are on this branch and not
+  there, because a push needs its own confirmation each time
   and this file states that rather than assuming it was given. Local `master`
   still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
   so the local branch pointer was never moved.
@@ -1036,6 +1108,12 @@ written before any behaviour existed. What each next milestone has to make true:
     through `connector/internal/peer/`. Do not re-add the check "for safety": the gate is
     `connector/internal/dispatch/`, `New` already refuses a handler for a name the allowlist does not publish, and
     §4.10 names the composed test that shows the corpus's own two negatives still get answered.
+14. **A green check over an unspecified body is not a spec** (§4.11). `connector/internal/chunk` stays unwritable until
+    §9's ninth row is answered: do not invent a fragment field, a subset rule, or a canonical serialization to make the
+    chunk block "work end to end". `packages/schema/scripts/verify.mjs` asserts everything the contract says about
+    slices, and the value of that green run is precisely that it does not assert where a slice's bytes ride. When an
+    answer is chosen, `VER-76` and `ODEC-34` are deleted in the same commit that adds the field, its examples, and the
+    assertion named in the row's `closesBy` — not marked closed.
 
 ---
 
@@ -1051,16 +1129,22 @@ written before any behaviour existed. What each next milestone has to make true:
 | 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
 | 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
 | 8 | What carries the heartbeat? `packages/schema/protocol/framing.json#/liveness` gives the interval (25 s), the miss count (3) and a **direction** (`host-to-extension`), and `packages/schema/protocol/envelope.schema.json#/properties/type` has four values — `request`, `response`, `event`, `progress` — none of them a beat. So either the beat is an envelope frame the data has not named (which one, given the closed object and the four type rules), or `nexora-host` keeps the port open without writing and only the extension counts, or the beat belongs to the local pipe instead and the direction value is wrong. Until one of those is chosen, no Go peer can claim the third clause of `VER-49`'s closer, and the peer in §4.7 counts *any* inbound frame as a beat arrived — a proxy, not the contract | `VER-49`, §11 of `docs/architecture/25-native-messaging-protocol.md`, the watchdog in `connector/internal/peer/` |
-**This list ran to nine rows until §4.10.** The ninth — whether a name the allowlist does not publish is refused by
-the codec or by the front door — was raised here as a choice between two defensible readings and turned out not to be
-one: `docs/adr/0007-typed-versioned-command-allowlist.md` rule 2 says an unknown method MUST be *answered*,
-`packages/schema/protocol/envelope.schema.json#/properties/method` declares a pattern and no membership rule, and
-`packages/schema/scripts/verify.mjs` replays the two frames in question and requires the answer the corpus records.
-The codec was the half out of step with the contract it mirrors. A question the corpus already answers does not belong
-in a list of questions that need a human, so the row is deleted rather than marked answered, for the same reason §5
-deletes a queue row that closed; §4.10 carries the change and §8's thirteenth entry carries the position. What remains
-in this list is eight questions, and only the eighth has a Go package waiting on it — `VER-49`'s heartbeat clause,
-which §4.7 declined to fake.
+| 9 | What are the bytes of a chunk slice, and which byte string does `chunk.contentHash` hash? §4.11 read the contract to write `connector/internal/chunk` and found the metadata complete and the body absent: the envelope's `chunk` object is closed at four fields, `profile.import`'s only list fields are arrays of whole documents, and the recorded group declares `encoding: "base64"` on two frames that hold no bytes. The data does exclude one reading — announcements-only, because that leaves the whole document in one frame over §4's sender cap — and does not choose between the two survivors: a fragment field plus a hash over the concatenation, or per-slice valid subsets plus a hash over a canonical serialization of the union that nothing in this repository defines. Whichever is chosen, `#/oversizedPayloads/mechanism/atomicity` and the gap rule start meaning a specific byte string instead of an intended one | `VER-76`, `ODEC-34`, `connector/internal/chunk`, §5 of `docs/architecture/25-native-messaging-protocol.md` |
+**This list ran to nine rows, dropped to eight, and is at nine again.** It dropped when §4.10 deleted the ninth it had
+— whether a name the allowlist does not publish is refused by the codec or by the front door was raised here as a
+choice between two defensible readings and turned out not to be one: `docs/adr/0007-typed-versioned-command-allowlist.md`
+rule 2 says an unknown method MUST be *answered*, `packages/schema/protocol/envelope.schema.json#/properties/method`
+declares a pattern and no membership rule, and `packages/schema/scripts/verify.mjs` replays the two frames in question
+and requires the answer the corpus records. The codec was the half out of step with the contract it mirrors. A question
+the corpus already answers does not belong in a list of questions that need a human, so the row is deleted rather than
+marked answered, for the same reason §5 deletes a queue row that closed; §4.10 carries the change and §8's thirteenth
+entry carries the position. The ninth row that replaced it came from the opposite situation: §4.11 read the chunk
+contract, found an answer that was *not* in it, and refused to supply one. It is a `contract` question — the two
+survivors cost a field and its examples, not a person — and it is in this list because the next agent to touch
+`connector/internal/chunk` would otherwise meet a green chunk block and an unwritable package, and the cheapest answer
+available to them would be a guess in a commit message. What remains is nine questions, and two of them have Go waiting:
+the eighth, `VER-49`'s heartbeat clause, which §4.7 declined to fake, and the ninth, which stopped §4.11 before a line
+of §6's queue was written.
 
 ---
 
@@ -1077,8 +1161,10 @@ which §4.7 declined to fake.
 ---
 
 *End of handoff log. The remaining work order is §6: the connector queue it orders — `internal/chunk`, then
-`cmd/nexora-connector`, then `cmd/nexora-host`, with §4.6 to §4.10 the inventory of what exists of it — and task #11,
-the end-to-end pass no document in this corpus can do for itself. Plus the decisions in §7 and the eight questions in
-§9, which are not work an agent may finish; the note under that table says why the ninth stopped being one of them.
+`cmd/nexora-connector`, then `cmd/nexora-host`, with §4.6 to §4.11 the inventory of what exists of it — and task #11,
+the end-to-end pass no document in this corpus can do for itself. The first item on that queue is stopped, and §4.11
+says by what. Plus the decisions in §7 and the nine questions in
+§9, which are not work an agent may finish; the note under that table says why one ninth stopped being a question and
+what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

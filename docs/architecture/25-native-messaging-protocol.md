@@ -82,6 +82,33 @@ file, host reads it) — `#/oversizedPayloads/alternativesRejected`. It leaks us
 temp path, needs a second cleanup mechanism, and gives the pipe two protocols instead of one. This closes the
 plan's open question §7 п.9 in favour of chunking.
 
+**The one thing §5 does not decide.** Everything above is slice *metadata*, and the fixtures and
+`packages/schema/scripts/verify.mjs` assert all of it. What no file in `packages/schema/` states is the slice
+**body** — where the bytes ride. `packages/schema/protocol/envelope.schema.json#/properties/chunk/additionalProperties`
+is `false`, so nothing travels inside `chunk`; `packages/schema/protocol/commands/profile.import.json#/args/properties`
+offers `profiles`, `servers`, `mode`, `contentHash`, `chunk`, `backupBeforeWrite`, `credentials`, and the only two
+list fields are typed as arrays of whole documents (`#/args/properties/profiles/items/$ref` points at the profile
+schema), so a byte fragment cannot be put in them and still validate. The recorded group does not choose between
+them. `packages/schema/fixtures/protocol/import-chunked.jsonl` sends `chunkCount: 3` whose first two slices carry
+`args.profiles: []`, no `args.servers` at all, and `encoding: "base64"` — a string encoding of bytes no field
+holds — while the third carries the entire document as structured `profiles` and `servers`, and all three repeat
+one whole-document `args.contentHash`. That is consistent with three shapes of exchange, and the data removes one
+of them: (a) the earlier slices are announcements and only the last frame travels, except that
+`packages/schema/protocol/framing.json#/oversizedPayloads/mechanism/cap` counts "total reassembled bytes" and
+`packages/schema/protocol/envelope.schema.json#/properties/chunk/description` says the field appears "when a
+payload exceeds the 1 MB extension-to-host frame limit" — under (a) the frame that must carry the whole document
+exceeds §4's sender cap and cannot be written at all, so this reading is excluded, and what the corpus does not
+say is which of the two survivors replaces it. (b) each slice carries a fragment of the serialized document and
+`contentHash` hashes the concatenation of the decoded bytes — what rules 2, 5 and 6 above assume, and the one
+reading with no field to write a fragment into. (c) each slice carries a valid *subset* of the profile and server
+arrays and `contentHash` hashes the canonical serialization of the union — every frame then stays individually
+schema-valid, but `encoding: "base64"` on a frame of JSON objects becomes meaningless, `json` is the other member
+of that enum for a reason, and "canonical" is a byte form no file in this repository defines. (b) and (c)
+disagree about which byte string `chunk.contentHash` names, and the atomicity rule is written against exactly that
+string, so reassembly cannot be written from this document without guessing. This defers to `docs/architecture/40-open-decisions.md`,
+whose entry for it is the question `connector/internal/chunk` is waiting on; the human wording of the same question
+is `docs/PROJECT-STATE.md` §9.
+
 ## 6. Envelope
 
 Required: `["v","id","type","sentAt"]` — `packages/schema/protocol/envelope.schema.json#/required`.
@@ -237,6 +264,7 @@ and no bidirectional streaming RPC semantics.
 | `request`/`response`/`event` field discipline | `#/allOf` + the two must-reject envelope examples | **GREEN** |
 | Chunk shape is one object mirrored in `profile.import` | "the envelope chunk shape and profile.import args.chunk are one shape" assertion | **GREEN** |
 | Chunk groups complete and non-vacuous | the chunk-group block with its absent-group, clean-group and split-hash guards | **GREEN** |
+| Slice bodies reassemble to the document the sender hashed | nothing | Verified: NO — deferred to Phase 2 (the contract says what a slice *is* and never says where its bytes ride — see §5's last paragraph; the reassembly test is the assertion this row promises) |
 | Nothing dispatchable pre-hello but `connector.hello` | "nothing is dispatchable before negotiation except connector.hello" | **GREEN** |
 | Capability registry and recorded hello are the same set | the capability equality assertions | **GREEN** |
 | Every cited error code exists | "cites only taxonomy codes" + fixture-level taxonomy checks | **GREEN** |

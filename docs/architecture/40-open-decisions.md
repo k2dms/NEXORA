@@ -1,6 +1,6 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 53 lines across 13 documents defer to this file as the place an answer lives, and five more name it only to
+> Purpose: 54 lines across 14 documents defer to this file as the place an answer lives, and five more name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
@@ -24,8 +24,8 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§9 names the assertio
 
 - The argument for each question: why it is genuinely open rather than merely unfinished, and what a reader would be
   lied to about if Phase 1 had invented an answer.
-- The grouping of the 33 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
-  pile, and so the eleven `contract` questions do not look as expensive as the five `adr` ones.
+- The grouping of the 34 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
+  pile, and so the twelve `contract` questions do not look as expensive as the five `adr` ones.
 - The tie backwards: which `VER-NN` rows and which `COMP-NN` rows stop moving until an entry here is answered.
 
 **Refuses.**
@@ -69,7 +69,7 @@ is worth stating precisely.
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 53 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 54 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -92,20 +92,20 @@ costs to answer:
 | Value | Count | What closing it looks like | Why it is not interchangeable with the others |
 |---|---|---|---|
 | `product` | 14 | a screen, a sentence, or a refusal the user sees — written into `docs/architecture/37-ui-architecture.md` and the command docs | no measurement can decide what the user should be told; a schema field cannot make the choice less arbitrary |
-| `contract` | 11 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
+| `contract` | 12 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
 | `adr` | 5 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
 | `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 1 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-Fourteen of the 33 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+Fourteen of the 34 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
-Eleven `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
+Twelve `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without touching the
 Connector.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
 `VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, twenty entries gate exactly two
-and ten gate one; that is the honest shape of a design phase — most open questions are one field wide, and the few
+and eleven gate one; that is the honest shape of a design phase — most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 Two questions are cited by four or more sites each — `ODEC-15` (the built-in sync secret, five) and `ODEC-01`
@@ -118,7 +118,7 @@ Two questions are cited by four or more sites each — `ODEC-15` (the built-in s
 ## 4. Why none of these could be answered in Phase 1
 
 There is a tempting failure mode for a phase like this one: invent the answer, because an open question reads as
-incompetence. Every entry here resisted that, and the reasons are of five kinds.
+incompetence. Every entry here resisted that, and the reasons are of six kinds.
 
 1. **The answer is a number that lives in a browser.** `ODEC-31` asks what a `chrome.storage.sync` envelope actually
    holds without `unlimitedStorage`; `ODEC-11` asks when `<all_urls>` can leave the manifest. Writing a plausible
@@ -141,6 +141,14 @@ incompetence. Every entry here resisted that, and the reasons are of five kinds.
    disposition, WebRTC, and the `chrome.alarms` floor that every fail-closed timer in
    `docs/architecture/30-failure-policy.md` rests on. That is `upstream`, and the only honest closing artefact is a
    measured residual plus a sentence the user can read.
+6. **The answer was hidden by a check that passes.** `ODEC-34` asks where a chunk's bytes ride. Nothing in
+   `packages/schema` says, and `packages/schema/scripts/verify.mjs` prints a green chunk block anyway, because every
+   clause it was given is about slice *metadata* — `contentHash`, `chunkSeq`, `chunkCount`, `encoding` — and a
+   reassembly needs a body. The fixtures showed it before any Go did: the recorded group declares three slices, sends
+   the first two with `args.profiles` empty and no `args.servers` at all, and puts the whole document in the third,
+   while all three repeat one `encoding: "base64"` and one whole-document hash. That is not a wrong contract; it is a
+   contract that asserts everything except the byte string its own atomicity rule is written against. A green check
+   over an undefined body is how a design phase ends up leaving the next component a guess instead of a spec.
 
 What Phase 1 did instead: every entry names at least three options and the cost of each (`…#/register/N/options`),
 and every entry names the rows it gates. An answer can therefore be *audited against a Phase-2 diff* — which is what
@@ -240,9 +248,10 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-31` | the real envelope sizes without `unlimitedStorage` | `measurement` | `VER-74`, `COMP-14` |
 | `ODEC-32` | whether mirrored legacy profile keys are name-derived or minted | `contract` | `VER-33` |
 | `ODEC-33` | whether the Connector owns subscriptions end to end, or the extension may receive Servers in chunks | `adr` | `VER-61` |
+| `ODEC-34` | where a chunk slice carries its bytes, and which byte string its `contentHash` names | `contract` | `VER-76` |
 
 Each entry in the data also carries the options (§4's argument in three lines each), the reason it is open, and the
-sites that deferred to it; the 33 rows above are the same 33 objects, not a summary of them.
+sites that deferred to it; the 34 rows above are the same 34 objects, not a summary of them.
 
 ---
 
@@ -304,7 +313,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 33 questions, 53 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 34 questions, 54 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; only `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it.
 2. Every question gates at least one row. An entry that blocks nothing is a question the architecture does not need
    answered yet, and belongs in a note rather than the register.

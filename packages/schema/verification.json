@@ -27,7 +27,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 202
+    "counted": 203
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -933,6 +933,15 @@
       "closesBy": { "kind": "live-row", "ref": "LIVE-15" },
       "at": [{ "doc": "docs/architecture/28-routing-model.md", "anchor": "`<local>` expansion is shown in the UI" }],
       "why": "A rule that silently expands to a CIDR list is a rule the user cannot audit; the row is the promise that they will be able to."
+    },
+    {
+      "id": "VER-76",
+      "subject": "chunk reassembly has no slice body: the contract says what a slice is and never says where its bytes ride",
+      "state": "no-code",
+      "owner": "connector",
+      "closesBy": { "kind": "assertion", "ref": "reassembled slice bodies hash to the document the sender declared" },
+      "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Slice bodies reassemble to the document the sender hashed" }],
+      "why": "Every clause of doc 25 §5 that verify.mjs asserts is slice metadata, and the recorded group is consistent with three different byte-level readings -- announcements-only, a fragment field that does not exist, or a valid subset of the typed `profiles`/`servers` arrays -- which disagree about the exact byte string `chunk.contentHash` names. The gap-to-`IntegrityMismatch` rule and validate-then-apply are both written against that string, so `connector/internal/chunk` is not a package awaiting code but a package awaiting a contract answer (`ODEC-34`)."
     }
   ]
 }
