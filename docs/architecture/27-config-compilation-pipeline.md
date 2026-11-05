@@ -68,8 +68,15 @@ The contract:
 **Golden fixtures** are the test: `connector/testdata/config/*.golden.json`, one per canonical shape — the
 three in `docs/architecture/23-unified-server-model.md` §9 plus one multi-server profile, one with core-plane
 rules, one fail-closed variant. A golden file is compared byte-for-byte, and `docs/architecture/39-verification-matrix.md`
-owns the rule that a change to a golden file requires a named reason in the same commit.
-`Verified: NO — deferred to Phase 2` (no compiler, therefore no goldens).
+owns the rule that a change to a golden file requires a named reason in the same commit. Three of the six are
+pinned: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp` and `multi-server-ordered`, each written by
+`connector/internal/compile/golden_test.go` from the contract examples and re-compared on every run, so the emitter
+is not the thing that certified its own output. The other three are not pinnable from this corpus as written. Shape
+C stops at its `headersRef`, which is a handle for an object and has no materialization rule yet. The core-plane one
+pins nothing because every rule the two shipped policies carry is reported rather than emitted — `direct` and `block`
+have no shown outbound and `network` has no shown spelling. And the fail-closed variant has no bytes of its own:
+`docs/architecture/30-failure-policy.md` §7 puts the block in `chrome.proxy`, so a fail-closed profile compiles to
+the same document as any other. `Verified: NO — deferred to Phase 2` (three of the six, for two reasons).
 
 ## 4. Port allocation
 
@@ -173,15 +180,16 @@ are the same principle at two layers, which is why neither is allowed to be "bes
 | `ports.host` is a `const`, not an enum with two values | `#/properties/ports/properties/host` | **GREEN** |
 | Port range is bounded and sane | `connector-settings.schema.json#/allOf` | **GREEN** |
 | `domainStrategy` accepts only Xray's three values | "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" in `packages/schema/scripts/verify.mjs:847-890` | **GREEN** |
-| `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256` | **GREEN** for the shape; the *reporting behaviour* is Verified: NO |
+| `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256`; `connector/internal/compile/split.go` fills it and its bounds are tested | **GREEN** for the shape; the *reporting behaviour* is Verified: NO — no command surface reads it yet |
 | Every `*Hash` field is one canonical lowercase sha256 pattern | the "`<field>` uses the canonical sha256 pattern" coverage check at `packages/schema/scripts/verify.mjs:750` | **GREEN** |
-| Compilation is byte-deterministic | the serializer only — `connector/internal/compile/emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder; nothing has compiled a profile into a document yet | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
-| Non-loopback bind is impossible to emit | nothing (the `const` helps, the compiler must still be checked) | Verified: NO — deferred to Phase 2 |
-| Block port range and allocation range are disjoint | nothing | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
-| The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | nothing | Verified: NO — deferred to Phase 2 |
+| Compilation is byte-deterministic | the serializer and three goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
+| Non-loopback bind is impossible to emit | `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before stage 7 returns, and `compile_test.go` shows an `0.0.0.0` inbound cannot survive it | Verified: NO — deferred to Phase 2 |
+| Block port range and allocation range are disjoint | `connector/internal/compile/ports.go` refuses a range that overlaps the block range rather than drawing around it, and `model_test.go` checks the two shipped documents | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
+| The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | `ports.go` refuses the whole set naming the count, so no partial document is ever emitted; whether `QuotaExceeded` is that count's code is `ODEC-03`'s question | Verified: NO — deferred to Phase 2 |
+| The core-rule and per-tag inbound spellings a golden must pin | none of §2–§7 states them, so `split.go` reports the rule instead of inventing its bytes | open decision, `docs/architecture/40-open-decisions.md` |
 | A failed apply leaves the previous config applied | nothing | Verified: NO — deferred to Phase 2 |
 | `localDNS` semantics decided before Phase 2 ships | — | open decision, `docs/architecture/40-open-decisions.md` |
-| Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | nothing | Verified: NO — deferred to Phase 2 (`docs/architecture/40-open-decisions.md`) |
+| Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `compile.go` hashes exactly what `Emit` returned, and `emit_test.go` pins that hash for shape A; the row's own question is which of the two byte strings the field is supposed to mean | Verified: NO — deferred to Phase 2 (`docs/architecture/40-open-decisions.md`) |
 
 Trace: ADR-0002, ADR-0003, ADR-0006, ADR-0008, ADR-0010, ADR-0012, ADR-0013, ADR-0019, ADR-0020 · Contract:
 `packages/schema/connector-settings.schema.json`, `packages/schema/routing-policy.schema.json`,

@@ -284,6 +284,13 @@ has that the eight before it did not: one of those re-read citations had *never*
 that cites "the compiler's dependency on install state" pointed at the footer of doc 27 — a `See also` line, non-blank,
 so green for two slices, and not the claim. The guard checks that a number lands on text; it cannot check what the text
 says, so §8's decision 19 keeps the finding instead.
+§4.16 moves the set a tenth time — **2282 / 517 / 1379** — and the move is almost entirely the doc-name kind: measured
+per file against the commit before, this file is `+1 / +1 / +6`, doc 23 `+0 / +0 / +1`, doc 27 `+0 / +0 / +2`, doc 40
+`+0 / +0 / +3`, and the two documents this slice rewords hardest — `docs/README.md` and
+`docs/architecture/26-command-surface.md` — move `+0 / +0 / +0`, because a sentence corrected in place to stop claiming
+that no compiler exists neither adds nor drops an address. The one `path:line` and the one pointer are the two the
+prose pass needed to cite rather than assert: the taxonomy row that proves `ODEC-03`'s old premise was wrong, and the
+`$defs` entry whose description contradicts the values the same definition admits.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -938,6 +945,87 @@ at 36 entries over 56 sites with `contract` at thirteen. `node tools/check-no-se
 with this package staged — two more than §4.13 recorded, which is §5's standing note about that guard reading
 `git ls-files` come true in the ordinary way.
 
+### 4.16 M3's second slice: the five stages the serializer was waiting for, and the three goldens that pin them (`connector/internal/compile/`, 2026-11-06)
+
+**What landed.** `model.go`, `resolve.go`, `split.go`, `ports.go`, `outbound.go`, `compile.go`, `validate.go`, six test
+files beside them, `golden_test.go`, and `connector/testdata/config/` with three files in it. That is stage 1 (resolve),
+stage 2 (split), stage 3 (allocate), stage 4 (embed) and the document-building half of stage 5 of
+`docs/architecture/27-config-compilation-pipeline.md` §2, plus the assembler that runs them in one call and the part of
+stage 7 that needs no Core. §4.15's package was an encoder with nothing to encode; this is the first code in the
+repository that turns a desired state into a config byte string and a `configHash` for it. The `ok` line count stays at
+eight — no new package is born here — but the package's test functions go from eleven to forty-nine, and the first
+line of that shift is a decision about fixtures: the tests read `packages/schema/examples/`, not a copy of it under
+this directory, which is ADR-0020's golden rule as doc 27 §3 applies it. One artefact, two readers — ajv in the
+contract suite, Go here — and no third thing allowed to drift. `corpus(t, name)` is the whole mechanism, and it is why
+`connector/testdata/config/` holds three files instead of three hundred.
+
+**What the goldens pin, and what they cannot.** Three of doc 27 §3's six fixtures. `shape-a-vision-tcp-tls` and
+`shape-b-reality-xhttp` are doc 23 §9's first two canonical configs as this compiler emits them;
+`multi-server-ordered` is the third thing a single-machine test can actually prove about determinism — two servers
+handed to the pipeline in one order and the profile naming them in the other, pinned to the tag-sorted bytes, so the
+golden is the assertion that arrival order does not reach the hash. `TestCompilingTwiceProducesTheSameBytesAndHash`
+already re-emits shape A two hundred times; what it cannot do is catch a change of *mind*, and a golden file can, which
+is why `-golden.update` exists as an explicit, named act of re-blessing rather than a silent rewrite. The other three
+fixtures are not pinned, and each is unpinnable for a different reason, recorded rather than worked around: shape C
+refuses at `headersRef` (`ODEC-36`), the core-plane fixture has no spelled form for the rules it would emit
+(`ODEC-37`), and the fail-closed fixture has no bytes in a Core config at all because
+`docs/architecture/30-failure-policy.md` §7 puts the block in `chrome.proxy`.
+
+**Two refusals the corpus forced, and where they live.** The first is the `headersRef` case: the model holds one
+`keystore://` string where doc 23 §9's shape C prints an *object* whose key — `:authorization` — no schema in this
+repository lists, so `outbound.go` refuses and names the register entry rather than inventing a map. The second is
+bigger and is the reason `split.go` is a reporter and not a lowering engine: four positions in the emitted document —
+an inbound's protocol, the protocol behind a `direct` or `block` outbound, where `sniffing` rides, and whether
+routing's `network` and `protocol` are arrays or one string — are named by the prose and spelled by nothing. `freedom`
+and `blackhole`, Xray's usual words for a direct and a null route, appear in no document, schema or example here, and
+`routing-policy.schema.json#/$defs/coreOutbound` admits `direct` and `block` while its own description says only
+derived tags are allowed. So a rule that needs one of those arrives in `unrepresentable[]`, which is doc 27 §7 rule 1
+("report, never drop") implemented as bytes instead of as an intention — and the report is what `VER-28` and `VER-78`
+are now described against, rather than the four fixtures a reader might have expected to find in the directory.
+
+**The prose this slice had to correct, because the code made it checkable.** Six claims in the corpus were true when
+written and are not true now, and one was never true. `ODEC-03` said `UnsupportedCombination` is absent from the
+taxonomy; it is at `packages/schema/protocol/error-taxonomy.json:14`, with a transport-combination meaning — so the
+question is whether that meaning stretches to a non-loopback bind, not whether the code exists.
+`docs/architecture/23-unified-server-model.md` §3's transport tables and §5's secrets row both over-named fields:
+`xhttpSettings` is `mode`, `path`, `host`, `extra` and `h2Settings` is `path`, `host`, neither of which is what the
+tables said, and only `wsSettings` and `grpcSettings` carry a `headersRef`, so §5's promise of a `:authorization`
+header for "gRPC / WS / XHTTP" was three transports' worth of a two transports' field. §9 of the same document claimed
+the three canonical configs compile byte-for-byte. `docs/architecture/26-command-surface.md` explained an empty
+`unrepresentable` by saying no compiler exists; a compiler now exists and it is the command surface that does not read
+the report. doc 27 §9's rows for range disjointness and the inbound ceiling said *nothing* checks them, which was the
+honest state in §4.15 and is `ports.go` today. Six queue rows were re-worded to match what their anchors now assert
+(`VER-16`, `VER-20`, `VER-27`, `VER-32`, `VER-70`, `VER-73`) and the two golden rows describe three fixtures instead of
+zero (`VER-28`, `VER-78`). No row was added and none deleted: the register and the queue have no state meaning closed,
+and a row whose subject is half-met stays where it is, which is what §4.7's `VER-49` established and this slice follows.
+
+**The register gained one entry, and the harness proved it gained one.** `ODEC-37` is `upstream`, gates `VER-28` and
+`VER-78`, and was born from exactly two new deferral lines: doc 23 §9's sentence about the four spellings, and the §9
+invariant row in doc 27 written by this slice to defer the same question. The first harness run after the pass failed five checks, all
+of them arithmetic between prose and data rather than Go: an anchor rewritten underneath the row that cites it, a new
+deferral line no entry claimed, the derived deferral count ahead of the declared one, the deferred-claim partition one
+short, and the register document not yet naming the entry it had just acquired. The second run is green at 1217
+checks — the same figure §4.15 recorded, because this slice writes no new assertion; what moved is inside existing
+ones. The register is now 37 entries over 58 sites: `product` 14, `contract` 13, `adr` 6, `measurement` 2, `upstream` 2.
+
+**And the secrets guard met Go's test convention.** `node tools/check-no-secrets.mjs` reported nine `uuid-literal`
+findings in this package's test files, and it is right to: a VLESS user id *is* the credential the keystore holds, so
+the guard treats its shape as a secret in every path that is not a fixture directory — and its exempt list
+(`docs/**`, `packages/schema/**`, `connector/testdata/**`, `**/test/**`) has no slot for a Go `_test.go`, which by
+convention sits beside the package it tests rather than under a `test/` directory. The ids were hoisted into one
+documented `const` block at the top of `resolve_test.go` and annotated with the guard's own escape hatch, which no
+file in this repository had needed before this slice; `--selftest` is still 13/13, so the gate demonstrably fires on
+the shape it is being asked to forgive. The plain run now enumerates 455 files, sixteen more than §4.15's 439, which is
+that slice's note about `git ls-files` repeating itself in the expected direction.
+
+**Gates.** `gofmt -l connector` prints nothing, `go -C connector vet ./...` is clean, and
+`go -C connector test -count=1 ./...` prints the same eight `ok` lines §4.15 recorded — the ninth will arrive with a
+package that is not this one. `npm --prefix packages/schema run verify` → 1217 checks, green.
+`node tools/check-doc-evidence.mjs` → 2282 `path:line`, 517 pointers, 1379 doc names.
+What is still not here, and is the shape of the next slice: nothing reads a handle out of the keystore, so a compiled
+config is a document with `keystore://` strings in its credential positions and has never been written to disk; stage
+7's probe needs a running Core; and no command surface calls `Compile`, so `config.apply` still has no answer to give.
+
 ---
 
 ## 5. Verification state to the letter
@@ -977,9 +1065,11 @@ with this package staged — two more than §4.13 recorded, which is §5's stand
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **439** files — §4.13's 437 plus
-  the two that §4.15's package adds, because the guard walks `git ls-files` and so counts a file when it is staged, not
-  when it is thought of.
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **455** files — §4.15's 439 plus
+  the sixteen this slice stages, because the guard walks `git ls-files` and so counts a file when it is staged, not
+  when it is thought of. It also carries its first `nexora-secret-allow` annotations: eight documented constants in
+  `connector/internal/compile/resolve_test.go` covering the nine findings §4.16 lists, because Go's test convention
+  puts a `_test.go` beside the package it tests and therefore outside every path the guard exempts.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
@@ -998,8 +1088,9 @@ with this package staged — two more than §4.13 recorded, which is §5's stand
   moves no Go code at all — it registers what the running binary proved the contract does not say — and §4.15 moves the
   count again with a package whose subject is a config rather than a frame, which is the first Go code in this
   repository able to produce a `configHash` and therefore the reason `VER-78` exists to name which byte string it is a
-  hash of.
-- `node tools/check-doc-evidence.mjs` → **green** (2281 `path:line`, 516 pointers, 1367 doc-and-script
+  hash of. §4.16 fills that package in — stages 1 to 4, the document half of 5 and stage 7's inspection — and moves no
+  `ok` line, because the eight are packages and §4.16 is thirty-eight more test functions inside the eighth.
+- `node tools/check-doc-evidence.mjs` → **green** (2282 `path:line`, 517 pointers, 1379 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -1091,6 +1182,10 @@ delivery) had cited `27-…` §5's deferral line, which is the 64-inbound ceilin
 question existed nowhere in the corpus, only as `docs/PROJECT-STATE.md` §9's fourth note to a person.
 `docs/architecture/29-subscriptions-and-servers.md` §13 carries it now, the labelled corpus is `202` rather than
 `201`, and `ODEC-33` gates `VER-61`.
+
+The two figures in the paragraphs above are the ones those slices measured, and they have moved since: §5 and §4.16
+carry today's partition of the labelled corpus and today's size of the register. This block is the record of how the
+machinery was written, not a second place to read its counts.
 
 **Still owed in the corpus, deliberately not done here:** (a) `109 frames` / `504 checks` / `707 checks` remain in
 five ADR `## Verification` sections — ADR-0001 rule 5 forbids correcting history in place, and

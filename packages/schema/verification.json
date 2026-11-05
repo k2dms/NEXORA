@@ -289,7 +289,7 @@
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Non-loopback bind is impossible to emit" },
         { "doc": "docs/architecture/24-options-envelope-compat.md", "anchor": "`ConnectorProfile` compiles to a loopback proxy string" }
       ],
-      "why": "Constraint 4. The `const` in the schema makes the value unfalsifiable at the contract layer; a compiler can still emit a bind address from somewhere else, and only `Get-NetTCPConnection` / `ss -ltnp` can see it."
+      "why": "Constraint 4. The `const` in the schema makes the value unfalsifiable at the contract layer, and stage 7 closes the door a compiler could otherwise open: `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before the bytes are handed on, and `compile_test.go` shows an `0.0.0.0` inbound cannot pass it. What stays unmeasured is this row's own word -- measured: only `Get-NetTCPConnection` / `ss -ltnp` can say that a running Connector holds no listener outside loopback, and `ADR-0006:108` names that as the untested half of its rule 1."
     },
     {
       "id": "VER-17",
@@ -323,7 +323,7 @@
     },
     {
       "id": "VER-20",
-      "subject": "`UnsupportedCombination` is not in the error taxonomy, so a user-supplied port overlap cannot yet be refused with the right code",
+      "subject": "`UnsupportedCombination` is in the taxonomy with a transport-combination meaning, so a user-supplied port overlap has a refusal and no code that names it",
       "state": "no-check",
       "owner": "contracts",
       "closesBy": { "kind": "assertion", "ref": "the overlap refusal is a named error code, not BadRequest" },
@@ -333,7 +333,7 @@
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2`." },
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Block port range and allocation range are disjoint" }
       ],
-      "why": "Nothing about either document is malformed, so a generic error would blame the user. The disjointness itself cannot be expressed as a JSON Schema constraint across two files -- it is asserted where both are loaded, and that place does not exist yet."
+      "why": "Nothing about either document is malformed, so a generic error would blame the user. The refusal exists: `connector/internal/compile/ports.go` refuses an allocation range that overlaps the block range rather than drawing around it, so no partial document reaches the writer. Two halves stay owed. The refusal is a Go error with no command surface, and the code doc 30 §8 promises for it means 'semantically invalid transport combination' (`packages/schema/protocol/error-taxonomy.json:14`), which an overlap is not -- `ODEC-03` holds that reading. And the shipped disjointness of the two files is checked where both are loaded, which is now stage 3 of the compiler (`model_test.go`), not a schema rule."
     },
     {
       "id": "VER-21",
@@ -410,7 +410,7 @@
     },
     {
       "id": "VER-27",
-      "subject": "the envelope→Xray compiler does not exist, so ADR-0013's representability table, the lowering rules and the rank-5 bound are unread",
+      "subject": "the envelope→Xray compiler reports instead of lowering, so ADR-0013's representability table, doc 28 §8's lowering rules and the rank-5 bound are still unread",
       "state": "no-code",
       "owner": "connector",
       "closesBy": { "kind": "live-row", "ref": "LIVE-04" },
@@ -420,22 +420,22 @@
         { "doc": "docs/architecture/28-routing-model.md", "anchor": "Rank 5 is unreachable in a compiled config" },
         { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "fixtures. `Verified: NO — Phase 2` for a compiler that could violate i" }
       ],
-      "why": "This is the row that decides whether the routing promise is real: a rule that compiles to something else is a user-visible lie about which traffic goes where. The fourth line is doc 33 §11's own verdict on its door-back prohibition -- the fixture scan is green because no recorded config opens a door, and that is worth nothing until the compiler that could open one exists."
+      "why": "This is the row that decides whether the routing promise is real: a rule that compiles to something else is a user-visible lie about which traffic goes where. None of the three is readable today because stage 2 emits no core-plane rule at all: every rule the two shipped policies carry is reported -- `direct` and `block` have no shown outbound and `network` no shown spelling (`ODEC-37`) -- so the emitted half of doc 28 §8 is the reorder-and-preserve rule, which `split.go` enforces by keeping authored order, and the lowering half has nothing to lower. The fourth line is doc 33 §11's own verdict on its door-back prohibition -- the fixture scan is green because no recorded config opens a door, and that is worth nothing until the compiler that could open one exists."
     },
     {
       "id": "VER-28",
-      "subject": "golden compiled configs do not exist, so byte-determinism and the three canonical shapes in docs/architecture/23 are unproven",
+      "subject": "golden compiled configs pin three of doc 27 §3's six fixtures, so byte-determinism holds for the shapes the corpus spells and is still unproven for the ones it does not",
       "state": "no-code",
       "owner": "connector",
       "closesBy": { "kind": "assertion", "ref": "golden config snapshots under connector/testdata/config/*.golden.json" },
       "at": [
         { "doc": "docs/adr/0020-test-strategy.md", "anchor": "- Verified: NO -- deferred to Phase 2: the golden-config snapshots, th" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2` (no compiler, therefore no golden" },
+        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2` (three of the six, for two reasons)" },
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Compilation is byte-deterministic" },
         { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "`Verified: NO — deferred to Phase 2` for byte-exactness (ADR-0020's go" },
         { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "The three canonical configs compile byte-for-byte as shown" }
       ],
-      "why": "Tier 2 of ADR-0020. A diff in a golden file is a contract change; without goldens there is no way to tell a compiler change from a compiler bug."
+      "why": "Tier 2 of ADR-0020. A diff in a golden file is a contract change; without goldens there is no way to tell a compiler change from a compiler bug. Three exist: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp` and `multi-server-ordered` under `connector/testdata/config/`, compared byte-for-byte by `connector/internal/compile/golden_test.go`, which writes only when the run says `-golden.update` -- so the change and its reason land in the same diff. The other three of doc 27 §3's six are not writable from this corpus, not unwritten: shape C stops at a `headersRef` with no materialization rule (`ODEC-36`), the core-plane fixture has no rule to pin because every rule the shipped policies carry is reported (`ODEC-37`), and the fail-closed variant has no bytes of its own because docs/architecture/30-failure-policy.md §7 puts the block in `chrome.proxy`."
     },
     {
       "id": "VER-29",
@@ -483,7 +483,7 @@
         { "doc": "docs/architecture/26-command-surface.md", "anchor": "`{source, reason}`, never silently discarded. **Verified as data; the " },
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`unrepresentable` shape is identical in policy and command" }
       ],
-      "why": "ADR-0013's promise is 'report instead of drop'. The shape being identical in two files is the cheap half; a compiler that silently omits a rule is the defect the promise is about."
+      "why": "ADR-0013's promise is 'report instead of drop'. The shape being identical in two files is the cheap half; a compiler that silently omits a rule is the defect the promise is about. The promise now has a producer -- `connector/internal/compile/split.go` turns a built-in tag, an undecided match spelling or the policy's own note into an `unrepresentable[]` entry and enforces doc 27 §7's 200-character and 256-entry bounds rather than truncating -- and keeps authored order, so a report can be read against the rule list. What is unmeasured is the command answer: no `config.apply` handler reads `Result.Unrepresentable` into a frame yet, which is the live half of this row."
     },
     {
       "id": "VER-33",
@@ -875,12 +875,12 @@
     },
     {
       "id": "VER-70",
-      "subject": "tag uniqueness over the whole server set is specified to be a compile error naming both ids; there is no compile step",
+      "subject": "tag uniqueness over the whole server set is a compile error naming both ids in stage 1; it has never met a registry that arrives unsorted from a subscription import",
       "state": "no-code",
       "owner": "connector",
       "closesBy": { "kind": "assertion", "ref": "the eight-hex collision test over the canonical server examples" },
       "at": [{ "doc": "docs/architecture/23-unified-server-model.md", "anchor": "Tag collision across the server set is a compile error" }],
-      "why": "Deterministic tags are what make byte-stability and Core logs usable; a silent suffix would break both and be invisible until two tunnels crossed."
+      "why": "Deterministic tags are what make byte-stability and Core logs usable; a silent suffix would break both and be invisible until two tunnels crossed. `connector/internal/compile/resolve.go` checks the whole set, not one profile, and names both server ids and the shared tag when they clash (`TestATagCollisionNamesBothServers`), which is the claim doc 23 §10 makes; the row stays open because the collision this predicts arrives from a feed, where two URLs sharing the first eight hex characters of a generated uuid is a subscription-refresh event rather than a unit test, and because the promise doc 23 §6 makes is that the tag is *derived*, never stored -- a server whose stored `tag` disagrees with its id is refused today, and no real import has tried."
     },
     {
       "id": "VER-71",
@@ -910,7 +910,7 @@
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "The 64-inbound ceiling produces `QuotaExceeded`, not a partial config" },
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2`; the ceiling value itself is an o" }
       ],
-      "why": "A partial config is the state where some traffic is proxied and some is not, which is the failure the whole failure-policy document is built to make impossible. The second line is doc 27 §5's plain statement of the same limit -- 200 servers need 200 inbounds, `profile.import` answers `QuotaExceeded` naming the count -- and it adds that the number itself is still unchosen, which is `ODEC-06`'s question rather than this row's obligation."
+      "why": "A partial config is the state where some traffic is proxied and some is not, which is the failure the whole failure-policy document is built to make impossible. The refusal exists and is whole-set-or-nothing: `connector/internal/compile/ports.go` answers a 65th tag by naming the count and refusing every port in the document, so no partial config can reach the writer -- and whether `QuotaExceeded`, a `storage`-layer code meaning 'chrome.storage.sync or keystore quota hit' (`protocol/error-taxonomy.json:14`), is that count's code is `ODEC-03`'s question rather than this row's. The second line is doc 27 §5's plain statement of the same limit -- 200 servers need 200 inbounds, `profile.import` answers `QuotaExceeded` naming the count -- and it adds that the number itself is still unchosen, which is `ODEC-06`'s question rather than this row's obligation."
     },
     {
       "id": "VER-74",
@@ -954,12 +954,12 @@
     },
     {
       "id": "VER-78",
-      "subject": "the compiled bytes are byte-deterministic and `configHash` covers the byte string `ODEC-36` names — there is no compiler, so neither the stability nor the hash's subject is proven",
+      "subject": "the compiled bytes are byte-deterministic over three goldens and `configHash` covers the byte string `ODEC-36` names — the stability has a producer now, the subject still does not",
       "state": "no-code",
       "owner": "connector",
       "closesBy": { "kind": "assertion", "ref": "golden configs compile byte-for-byte and configHash is the sha256 of the bytes the register names" },
       "at": [{ "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Which byte string `configHash` covers" }],
-      "why": "This row answers the §9 invariant 'Which byte string `configHash` covers — the handle-bearing document or the materialized bytes', split on purpose from `VER-28`: `VER-28` owns the labelled golden-fixtures line that carries the byte-determinism claim, and this row owns the pipeline's own closing statement that the hash is over 'the exact bytes written' while two byte strings exist by the time a config is on disk (`docs/architecture/27-config-compilation-pipeline.md` §3 item 6, `docs/architecture/22-component-contracts.md` §9, `docs/architecture/23-unified-server-model.md` §9). It has two halves a golden config alone cannot settle. The determinism half is Tier 2 of ADR-0020 and waits on the compiler exactly like `VER-28`: `connector/internal/compile` proves the *serializer* byte-stable over a document a test hands it, and a hand-built document is not a compiled one — stages 1 to 4 of `docs/architecture/27-config-compilation-pipeline.md` §2 have no producer, so there is nothing to compare a golden against. The subject half is not a code problem at all: `config.apply` returns one `^[0-9a-f]{64}$` value with no description (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`), and nothing says whether it hashes the handle-bearing document or the materialized bytes, so a golden file can be byte-stable and still hash the wrong string. Which bytes the hash covers is `ODEC-36`, and `ODEC-36` gates this row: no assertion can name the byte string until the register says which one it is."
+      "why": "This row answers the §9 invariant 'Which byte string `configHash` covers — the handle-bearing document or the materialized bytes', split on purpose from `VER-28`: `VER-28` owns the labelled golden-fixtures line that carries the byte-determinism claim, and this row owns the pipeline's own closing statement that the hash is over 'the exact bytes written' while two byte strings exist by the time a config is on disk (`docs/architecture/27-config-compilation-pipeline.md` §3 item 6, `docs/architecture/22-component-contracts.md` §9, `docs/architecture/23-unified-server-model.md` §9). It has two halves a golden config alone cannot settle. The determinism half has a producer: stages 1 to 6 of `docs/architecture/27-config-compilation-pipeline.md` §2 exist in `connector/internal/compile`, `golden_test.go` compares three compiled profiles byte-for-byte against `connector/testdata/config/`, and `emit_test.go` shows the order comes from sorting rather than from ranging a map — what `VER-28` still owes is the two shapes this corpus cannot spell, not a compiler. The subject half is not a code problem at all: `config.apply` returns one `^[0-9a-f]{64}$` value with no description (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`), and nothing says whether it hashes the handle-bearing document or the materialized bytes, so a golden file can be byte-stable and still hash the wrong string. Which bytes the hash covers is `ODEC-36`, and `ODEC-36` gates this row: no assertion can name the byte string until the register says which one it is."
     }
   ]
 }

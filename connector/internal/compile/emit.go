@@ -1,13 +1,13 @@
 // Package compile is the ConfigCompiler: ADR-0013's "compiled into Xray routing where representable" and the
 // seven-stage pipeline of docs/architecture/27-config-compilation-pipeline.md §2. This file is stage 5 — emit — and
 // stage 6 — hash, because stage 6 is one call over stage 5's bytes and separating them would only invite a second,
-// different hashing rule.
+// different hashing rule. The other stages are resolve.go, split.go, ports.go, compile.go and validate.go.
 //
-// What is deliberately NOT here: stages 1-4 (resolve, split, allocate, embed), which own what the document *contains*,
-// and stage 7, which owns what the emitted bytes must never contain (a non-loopback bind, doc 27 §9). A serializer that
-// also decided content would be the second answer to a question the assembler is about to ask.
+// What is deliberately NOT in this package: the keystore read behind a `userIdRef` or `headersRef` (the compiler
+// emits the handle or refuses — see outbound.go's headersRef refusal and ODEC-36), the writer that renames the file
+// into place (doc 27 §8), and the probe that ends stage 7, which needs a Core to run.
 //
-// The contract this implements is doc 27 §3, in its order:
+// The contract this file implements is doc 27 §3, in its order:
 //
 //  1. key order is lexicographic at every depth, "emitted by the serializer, not inherited from map iteration" — so
 //     this file sorts, and does not hand `encoding/json` a `map[string]any` and hope;

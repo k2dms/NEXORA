@@ -153,7 +153,8 @@ is the only safe way for the UI to preview a change or surface unrepresentable r
 result field (`packages/schema/protocol/commands/config.apply.json:68-81`) is the machine-readable form of
 ADR-0013's "report instead of drop": a browser-plane rule that Xray routing cannot express is returned as
 `{source, reason}`, never silently discarded. **Verified as data; the behaviour is `Verified: NO — deferred to
-Phase 2`** because no compiler exists yet.
+Phase 2`** because nothing has answered a `config.apply` with a report yet: the Compiler fills the field and its
+bounds (`connector/internal/compile/split.go`), and no command surface reads it.
 
 **`config.snapshot`** — returns `appliedConfigHash`, `matchesExtensionHash`, `serverTags`, and optionally a
 masked config (`includeMaskedConfig`, `maxBytes`). This is the drift-detection primitive: the extension holds

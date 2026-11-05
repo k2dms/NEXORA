@@ -56,8 +56,8 @@ below is complete — an unlisted field is a schema error, not a tolerated extra
 | `reality` | `$defs/realitySettings` | no | — | `publicKey`, `serverName` required; `shortId`, `spiderX`, `fingerprint` | present **iff** `security = reality`; note the absence of `privateKey` (§5) |
 | `ws` | `$defs/wsSettings` | no | — | `path`, `host`, `headersRef` | required when `network = ws` |
 | `grpc` | `$defs/grpcSettings` | no | — | `serviceName` required; `multiMode`, `authority`, `headersRef` | required when `network = grpc` |
-| `xhttp` | `$defs/xhttpSettings` | no | — | `mode`, `path`, `host`, `headersRef` | required when `network = xhttp` |
-| `h2` | `$defs/h2Settings` | no | — | `path`, `host`, `headersRef` | required when `network = h2`, which also forces `security = tls` |
+| `xhttp` | `$defs/xhttpSettings` | no | — | `mode`, `path` required; `host`, `extra` | required when `network = xhttp` |
+| `h2` | `$defs/h2Settings` | no | — | `path` required; `host` | required when `network = h2`, which also forces `security = tls` |
 | `tag` | `^srv-[0-9a-f]{8}$` | no | derived | `#/properties/tag` | the Xray outbound tag; §6 |
 | `notes` | string | no | — | ≤200 | user annotation |
 | `source` | enum | no | `manual` | `manual`, `subscription`, `import` | provenance; drives whether the UI may edit it in place |
@@ -89,7 +89,7 @@ recorded in `packages/schema/examples/invalid/reasons.json`.
 | Secret | Lives | Reference field | In any config byte written to disk? |
 |---|---|---|---|
 | VLESS user id | keystore | `packages/schema/server.schema.json#/properties/userIdRef` | yes, in the generated Core config, in-memory only for Xray's own reader — see the file-permission note below |
-| gRPC / WS / XHTTP `:authorization` headers | keystore | `$defs/headersRef` | same |
+| gRPC / WS `:authorization` headers | keystore | `$defs/headersRef` — the two blocks that have the field; `xhttpSettings` and `h2Settings` have none | same |
 | REALITY **private** key | never client-side | no field exists | not representable: `packages/schema/examples/invalid/server.reality-with-privatekey.json`. A client holding a server's private key is not a client |
 | Subscription `Authorization` | keystore | `packages/schema/subscription-source.schema.json#/properties/headersRef` | never leaves the extension; this is exactly the SEC-1 field that legacy replicated into a Gist via `transformValueKeys` (`omega-target/src/options.coffee:27`) |
 
@@ -159,6 +159,15 @@ These are illustrative here and **normative in `connector/testdata/config/*.gold
 `Verified: NO — deferred to Phase 2` for byte-exactness (ADR-0020's golden-config rule is the check). Marked
 `⟨secret⟩` fields are materialized by the Connector from the keystore at write time and appear in no extension
 transit.
+
+Two of the three are pinned by a golden file today — `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`
+and `shape-b-reality-xhttp.golden.json` hold the emitted bytes, compared byte-for-byte by
+`connector/internal/compile/golden_test.go` — and shape C is refused rather than pinned, because its `headersRef` is
+a handle for an *object* and no decision says how one is materialized (`ODEC-36`). The four spellings none of the
+three shapes shows are a question of the same kind, not a gap in the emitter: whether an inbound per server tag is
+`socks` or `http`, what a core-plane rule naming the built-in `direct` or `block` emits, where `sniffing` sits in the
+document, and whether routing `network` and `protocol` are arrays or one comma-joined string. The compiler reports
+all four instead of inventing them, and `docs/architecture/40-open-decisions.md` keeps the list as `ODEC-37`.
 
 **A. VLESS + TCP + TLS + Vision**
 
@@ -254,11 +263,11 @@ one inbound with internal routing — is considered and rejected there, not here
 | Every field has a description | the undocumented-field coverage check in `packages/schema/scripts/verify.mjs` | **GREEN** |
 | `h2` implies `tls` | `allOf` clause 8 + `packages/schema/examples/invalid/server.h2-without-tls.json` | **GREEN** |
 | A subscription server names its subscription | `allOf` clause 9 | **GREEN** |
-| The three canonical configs compile byte-for-byte as shown | nothing (no compiler yet) | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
-| Tag collision across the server set is a compile error | nothing | Verified: NO — deferred to Phase 2 |
+| The three canonical configs compile byte-for-byte as shown | two of three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json` and `shape-b-reality-xhttp.golden.json`, compared by `connector/internal/compile/golden_test.go`; shape C is refused at its `headersRef` (`ODEC-36`) and no shipped policy emits a core-plane rule (`ODEC-37`) | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
+| Tag collision across the server set is a compile error | `connector/internal/compile/resolve.go` refuses a second server whose derived tag is taken, naming both ids — `TestATagCollisionNamesBothServers` | Verified: NO — deferred to Phase 2 |
 | The generated config file is owner-only on disk | nothing | Verified: NO — LIVE-18 |
 | A non-VLESS server in a legacy subscription is reported, not dropped | nothing (parser does not exist) | Verified: NO — `LIVE-14` carries the import; `docs/architecture/39-verification-matrix.md` will own the row |
-| `protocol` enum expansion requires an ADR | nothing | Verified: NO — process rule, `docs/adr/README.md` |
+| `protocol` enum expansion requires an ADR | `connector/internal/compile/outbound.go` refuses any protocol other than `vless` before it emits | Verified: NO — process rule, `docs/adr/README.md` |
 
 Trace: ADR-0003, ADR-0006, ADR-0008, ADR-0010, ADR-0012, ADR-0013, ADR-0019 · Contract:
 `packages/schema/server.schema.json`, `packages/schema/connector-profile.schema.json`,
