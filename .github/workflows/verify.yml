@@ -238,7 +238,7 @@ jobs:
           cutover=0
           while IFS=$'\t' read -r sha subject; do
             if ! printf '%s' "$subject" \
-                 | grep -qE '^(feat|fix|docs|build|test|refactor|chore|perf)(\([a-z0-9._/-]+\))?!?: |^CUT-OVER: |^Merge |^Revert '; then
+                 | grep -qE '^(feat|fix|docs|build|test|refactor|chore|perf|ci)(\([a-z0-9._/-]+\))?!?: |^CUT-OVER: |^Merge |^Revert '; then
               echo "::error file=${sha}::subject \"$subject\" carries no conventional label (doc 20 §6)."
               exit 1
             fi

@@ -143,6 +143,14 @@ document MAY describe a cut-over and MUST NOT perform one. Removing legacy sourc
 class (ADR-0016, popup-last). Verified: NO — deferred to Phase 2: nothing checks commit granularity, the label,
 or the ADR-before-flip.
 
+The label vocabulary the guard accepts is `feat`, `fix`, `docs`, `build`, `test`, `refactor`, `chore`, `perf` and
+`ci` — each optionally scoped, optionally `!`-marked — plus the `CUT-OVER:` prefix above and git's own `Merge `
+and `Revert ` subjects. `ci` is the label for `.github/**`. This list was written into
+`.github/workflows/verify.yml` as the VER-06 step before it was stated in the document it cites, so the first run
+of that workflow on a real runner rejected this repository's own `ci(verify): …` commit — the defect the run found
+was the guard enforcing a rule its source document did not state. The rule is stated now; the vocabulary is
+declared here and the step reads it from here.
+
 ## 7. Import boundary for `nexora/**`
 
 Nothing under `nexora/**` MAY import from `omega-*`, except types *derived from* `packages/schema`
