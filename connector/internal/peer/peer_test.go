@@ -85,16 +85,37 @@ func answerBytes(t *testing.T, requestID string) []byte {
 }
 
 // waitFor polls a condition the way these tests need it: a reservation is visible immediately, a delivery is
-// not, and a fixed sleep would be the flake.
+// not, and a fixed sleep would be the flake. The budget is five seconds rather than one because run
+// `42086433856` lost a poll that a local machine wins a hundred times in a row: `go test ./...` runs every
+// package's binary at once on a two- to four-core runner, and a goroutine that had not been scheduled inside
+// the old second was reported as a peer that had not reserved.
 func waitFor(t *testing.T, what string, ok func() bool) {
 	t.Helper()
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 2500; i++ {
 		if ok() {
 			return
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
 	t.Fatalf("timed out waiting for %s", what)
+}
+
+// consume reads n bytes straight from the far end of the pipe, with a deadline so that a frame which never
+// arrives is reported as that rather than as an infinite wait. `net.Pipe` has no buffer: the writer's `Write`
+// returns only once the reader has taken the whole frame, which is what makes this an event instead of a poll.
+func consume(t *testing.T, end io.ReadWriteCloser, n int) {
+	t.Helper()
+	c, ok := end.(net.Conn)
+	if !ok {
+		t.Fatalf("the pipe end is a %T, not a net.Conn with a read deadline", end)
+	}
+	if err := c.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		t.Fatalf("setting the read deadline: %v", err)
+	}
+	defer func() { _ = c.SetReadDeadline(time.Time{}) }()
+	if _, err := io.ReadFull(c, make([]byte, n)); err != nil {
+		t.Fatalf("reading the %d bytes the peer issued: %v", n, err)
+	}
 }
 
 func TestTheBudgetsAreTheContractsAndCrossTheTwoDirections(t *testing.T) {
@@ -173,9 +194,13 @@ func TestTheConcurrencyCapStopsIssuing(t *testing.T) {
 
 // The concurrency cap alone does not bound memory when frames are large, which is why the contract declares a
 // byte budget beside it. This test holds the cap out of the way to prove the budget binds on its own.
+//
+// There is no `drain` here on purpose: the frame the peer issues is read by this goroutine, and because
+// `net.Pipe` hands bytes directly from writer to reader, the moment those bytes arrive the reservation the peer
+// took is already visible to `InFlight` — the budget assertion stops being a race with the scheduler and becomes
+// a happens-before fact.
 func TestTheInFlightByteBudgetStopsIssuing(t *testing.T) {
 	mine, theirs := newPipe(t)
-	drain(t, theirs)
 
 	blob := strings.Repeat("b", 4096)
 	single := len(requestBytes(t, "req-budget-1", "profile.import", json.RawMessage(`{"blob":"`+blob+`"}`)))
@@ -190,7 +215,11 @@ func TestTheInFlightByteBudgetStopsIssuing(t *testing.T) {
 		_, _ = p.Request(context.Background(), "req-budget-1", "profile.import", json.RawMessage(`{"blob":"`+blob+`"}`))
 		close(done)
 	}()
-	waitFor(t, "the first reservation", func() bool { _, b := p.InFlight(); return b == single })
+	consume(t, theirs, frames.PrefixBytes+single)
+
+	if reqs, bytes := p.InFlight(); reqs != 1 || bytes != single {
+		t.Fatalf("the frame reached the far end but the budget reports %d requests / %d B, want 1 / %d", reqs, bytes, single)
+	}
 
 	if _, err := p.Request(context.Background(), "req-budget-2", "profile.import", json.RawMessage(`{"blob":"`+blob+`"}`)); !errors.Is(err, ErrBudgetExhausted) {
 		t.Fatalf("a request that would overrun the byte budget got %v, want ErrBudgetExhausted", err)
