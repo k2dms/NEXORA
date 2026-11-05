@@ -18,8 +18,8 @@ implements (five quick attempts, then nine exponentially longer ones, roughly fi
 in-process worker's disappearance is that awkward, a *proxy process* disappearing when a tab reloads is
 unacceptable: every tunnel in the browser breaks.
 
-Neither of those processes exists yet — there is no Go code and no host in this tree
-(`docs/audit/00-scope-and-method.md` §1) — so the shape is a decision, not a refactor.
+Neither of those processes exists yet — `connector/` has had Go *libraries* since 2026-11-05 and still has no `cmd/`,
+no host and no pipe (`docs/PROJECT-STATE.md` §4.6) — so the shape is a decision, not a refactor.
 
 ## Decision
 
@@ -61,9 +61,10 @@ a first-class event with its own policy); an orphans problem if the connector ou
 bounded by rule 4's idle timeout and by containment; and a local pipe with its own schema is a second
 contract nobody can copy from the extension protocol.
 
-Forbidden for this iteration: writing either process (no Go toolchain on this host, and Phase 1 is
-documents and contracts only); and folding host duties into the connector "temporarily" — that decision is
-what this ADR exists to prevent.
+Forbidden for the iteration this was written in: writing either process — there was no Go toolchain on this host
+when it was accepted, and Phase 1 was documents and contracts only. The user lifted that hold on 2026-11-05
+(`docs/PROJECT-STATE.md` §4.6); the libraries landed, the two `cmd/` processes have not. Still forbidden, and the
+reason this ADR exists: folding host duties into the connector "temporarily".
 
 ## Alternatives considered
 
@@ -96,8 +97,9 @@ what this ADR exists to prevent.
   processes.
 - `packages/schema/protocol/commands/core.start.json:4` — VERIFIED — converge-to-running semantics that make
   a reconnect-driven `core.start` safe rather than a port-conflict storm.
-- No Go, no host, no connector exists — VERIFIED via `docs/audit/00-scope-and-method.md` §1; the runtime
-  behaviour of the two-process design is therefore UNVERIFIED by construction and belongs to Phase 2.
+- Neither process exists, and never did when this was accepted — `connector/` gained three Go libraries on
+  2026-11-05 and no `cmd/` (`docs/PROJECT-STATE.md` §4.6); the runtime behaviour of the two-process design is
+  therefore UNVERIFIED by construction and belongs to Phase 2.
 
 ## Verification
 

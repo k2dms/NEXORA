@@ -19,7 +19,7 @@ Explicitly **not** audited, because it does not exist yet:
 
 | Subject | Status |
 |---|---|
-| Go Connector (`connector/`) | not written; no Go toolchain on the host |
+| Go Connector (`connector/`) | not written when this was audited; the module and its first three Go packages landed on 2026-11-05, and neither process still (`docs/PROJECT-STATE.md` §4.6) |
 | Xray Core integration | not present |
 | Native Messaging host / protocol implementation | not present — `grep -i nativeMessaging` over the whole tree (excluding `node_modules`, `bower_components`, `build/`) returns **0 files** |
 | VLESS / REALITY / Vision code | not present — `grep -i` for `vless`, `xray`, `reality` over `omega-*` and `.github` returns **0 files** each |

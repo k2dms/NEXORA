@@ -464,23 +464,27 @@ jobs:
           retention-days: 14
 
   connector:
-    # Deliberately absent from the two jobs above, and switched off here rather than deleted, so the gap is
-    # visible: Go, Docker and Python are all absent on the audited host (docs/audit/99-baseline-report.md §1)
-    # and there is no connector/ tree yet. Enable in Phase 2, with ADR-0018 rule 7's `go -C connector` style.
-    # Also deliberately absent: web-ext lint (it would report the inherited manifest findings on every run and
-    # teach the team to ignore the job), the live matrix (docs/verification/live-env-contract.md -- a missing
-    # env var means SKIPPED, never PASSED), and any Go-shaped root file (VER-04 guards the root).
-    name: Go connector (enable in Phase 2)
-    if: ${{ false }}
-    runs-on: ubuntu-latest
+    # Enabled on 2026-11-05, with the first Go code in the tree. Until that commit this job was switched off
+    # rather than deleted, so the gap stayed visible (Go, Docker and Python were all absent on the audited host,
+    # docs/audit/99-baseline-report.md §1, and there was no connector/ to build). It is still absent from the
+    # other two: web-ext lint would report the inherited manifest findings on every run and teach the team to
+    # ignore the job, the live matrix is docs/verification/live-env-contract.md (a missing env var means
+    # SKIPPED, never PASSED), and no Go-shaped file may appear at the repository root — VER-04 guards that.
+    # ADR-0018 rule 7 is why every command names its root with `-C connector` instead of a `working-directory`
+    # or a root-level tool.
+    name: Go connector (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
       - name: Build, vet and test the connector
-        working-directory: connector
         run: |
-          go build ./...
-          go vet ./...
-          go test ./...
+          go -C connector build ./...
+          go -C connector vet ./...
+          go -C connector test ./...

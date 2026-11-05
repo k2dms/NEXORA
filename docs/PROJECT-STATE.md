@@ -214,7 +214,12 @@ probe round appends to; it rose by 8 again when the runner record cited the lega
 third figure by 34 for the same reason, and by two more in this sitting — its VER-11 row in
 `docs/architecture/21-system-context.md` now names that runner record, and this file's sentence about the count now
 names that document. It rose by one more in the pass that recorded the seventh and eighth runner runs: that pass
-leaves one more named reference to the baseline report in `docs/` than it removes.
+leaves one more named reference to the baseline report in `docs/` than it removes. The `connector/` increment §4.6
+records moved the set again — **2262 / 487 / 1306**: two more `path:line` citations, sixteen more names, no new
+pointer — and it is the first increment in this repository whose citations point at executable code in a language
+other than CoffeeScript or JavaScript. Both figures moved for two reasons: §4.6 and §6 cite code paths that exist
+now, and nine documents outside `connector/` had to stop asserting that this host had no Go toolchain, no Go code or
+no `connector/` tree — each of them now names §4.6 as the reason that sentence stopped being true.
 It had also risen earlier, when `DOCNAME_RE` began checking that a `tools/*.mjs` name a document tells the
 reader to run is a file that exists), and `PLANNED_DOCS` is empty — no document is cited anywhere in `docs/` that does
 not exist.
@@ -272,7 +277,8 @@ user later changes policy: `!packages/**/package-lock.json`. Pending user decisi
 
 Nothing the Phase 0/1 plan asks for on disk is absent any more. `.github/workflows/verify.yml` landed on
 2026-11-05 — three jobs (`contracts`, `legacy-chain`, and `connector` present but switched off with
-`if: ${{ false }}`), a three-row matrix, and the `VER-02`/`03`/`04`/`06`/`08`/`10`/`11` guards as executable steps —
+`if: ${{ false }}` — it is switched on now, §4.6), a three-row matrix, and the
+`VER-02`/`03`/`04`/`06`/`08`/`10`/`11` guards as executable steps —
 and it ran there the same day: `docs/audit/99-baseline-report.md` §12 tabulates seven of those runs — twice red, four
 times green and once cancelled by the file's own
 `concurrency` block — under the rule that a further run joins the table only when its shape differs, a rule this
@@ -287,7 +293,48 @@ three gate scripts.
 `packages/schema/open-decisions.json` are **on disk** now, with the harness
 cross-checks that used to print `DEFERRED:` notes running as real assertions, and `docs/verification/README.md`
 landed with them so `PLANNED_DOCS` in `tools/check-doc-evidence.mjs` is empty.
-No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/extension` — all Phase 2+.
+No `packages/{protocol,state,i18n,ui}` and no `nexora/extension` — all Phase 2+. `connector/` is no longer in that
+list; §4.6.
+
+---
+
+### 4.6 The first executable code: `connector/` (2026-11-05)
+
+The user lifted the Phase-1 hold on writing the two connector processes ("Go — начинай с bookkeeping-коммита,
+дальше `connector/` на Go"), which is what `docs/adr/0005-two-process-connector.md:64` had reserved for Phase 2.
+
+**Toolchain.** Go was not on this host — `go: command not found` — which is exactly the reason that line gives for
+the prohibition. Offered three ways to fix that (user-local zip, CI-only, machine-wide), the user chose
+`winget install GoLang.Go`: **Go 1.27.3** at `C:\Program Files\Go`. Shells that were open before the install do not
+see it; they need `export PATH="$PATH:/c/Program Files/Go/bin"`. `connector/go.mod` declares `go 1.24`, the version
+`setup-go` pins in CI, so the module's floor is the version the workflow proves rather than the one this host
+happens to have.
+
+**What landed** — four packages, all under `internal/`, and all of them derived rather than hand-copied:
+
+| Package | What it is |
+|---|---|
+| `connector/internal/contractgen/` | a generator that reads `packages/schema/protocol/**` and refuses to emit on drift — it re-checks the `protocolVersion` agreement across the four files that carry it, that `availableBeforeHello` and `requiresHello` are complements, that the capability registry covers the surface, that the privileged set equals `senderPolicy.privilegedMethods.names`, that the byte limits are ordered, that every `onExceed` is `Busy`, and that there is exactly one `"*"` catch-all |
+| `connector/internal/contract/` | `contract_gen.go` (committed, 19 methods / 23 codes / 13 capabilities / 6 budgets / the transport numbers) plus a drift test that regenerates it and compares the **bytes**, so the method list in Go cannot diverge from `packages/schema/protocol/command-allowlist.json:12` unnoticed — the same rule §3 of `docs/architecture/20-target-repository-layout.md` writes for `packages/protocol/` |
+| `connector/internal/frames/` | the 4-byte little-endian prefix codec; `Write` checks the limit **before** touching the writer, which is what `docs/architecture/25-native-messaging-protocol.md` requires of the sender |
+| `connector/internal/envelope/` | the envelope validator: required keys, closed object, id/method/trace/hash patterns, the four type rules, allowlist membership for `method`, taxonomy membership for `error.code`, and the chunk mirror; reports **every** violation, not the first |
+
+**Measured on this host** (`go -C connector …`, the invocation form ADR-0018 rule 7 mandates): `build ./...`,
+`vet ./...` and `test ./...` all exit 0, and the replay test prints `replayed 112 protocol frames (110 accepted,
+2 refused)` — the two refusals being the two `examples/invalid/envelope.*.json` files, asserted separately. `node
+tools/check-doc-evidence.mjs`, `npm --prefix packages/schema run verify`, `node tools/check-no-secrets.mjs` and
+`node tools/check-legacy-backup.mjs` all stay green on the tree with `connector/` in it; §5 carries the counts.
+
+**CI.** The `connector` job that §4.5 recorded as switched off is switched on: two OS cells, `setup-go@v5` with
+`go-version: '1.24'`, and the same three commands. That changes the *shape* of `.github/workflows/verify.yml`, so the
+next execution is a row `docs/audit/99-baseline-report.md` §12's own rule says to tabulate; it is not a `VER-NN` row
+moving, for the reason §5 already gives.
+
+**Not yet.** No `cmd/nexora-host`, no `cmd/nexora-connector`, no ADR-0005 local pipe, no `connector.hello`
+negotiation, no dispatcher, no per-sender budgets enforced at dispatch, no chunk reassembly, no Core supervisor, no
+keystore, no config compiler, no prober. `VER-49`/`13`/`52`/`55` keep their rows in
+`packages/schema/verification.json` — none of them is met by M1, each asks about the behaviour of those missing
+parts, and the queue has no state meaning closed (§5).
 
 ---
 
@@ -327,7 +374,11 @@ No `packages/{protocol,state,i18n,ui}`, no `connector/` content, no `nexora/exte
   with `TZ` exported.
 - `node tools/check-no-secrets.mjs --selftest` → 13/13 green.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
-- `node tools/check-doc-evidence.mjs` → **green** (2260 `path:line`, 487 `path#pointer`, 1290 doc-and-script
+- `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
+  2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
+  is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. No `VER-NN` row moves: §4.6's "Not yet" list is the
+  list of what those rows ask about.
+- `node tools/check-doc-evidence.mjs` → **green** (2262 `path:line`, 487 `path#pointer`, 1306 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
@@ -562,11 +613,29 @@ place, and neither is a status edit:
 2. **The browser half.** `LIVE-01…24`, unchanged and `SKIPPED`, need a person with a real Chrome, and `LIVE-14`
    needs the export that would replace the fixtures' exporter-shaped values.
 
+**Connector, in the order the user set on 2026-11-05.** M1 is §4.6's four packages — the last thing that could be
+written before any behaviour existed. What each next milestone has to make true:
+
+1. **M2 — both processes as far as they are testable without Xray.** `cmd/nexora-connector`: the dispatcher over the
+   generated surface (closed method table, `UnknownMethod` with no fallthrough, `deniedByDefault`, and nothing
+   dispatchable before negotiation except `connector.hello` — the rule in
+   `packages/schema/protocol/command-allowlist.json`), the per-sender budgets answering `Busy` *before* dispatch, and
+   chunk reassembly. `cmd/nexora-host`: the framing peer against the limits in
+   `docs/architecture/25-native-messaging-protocol.md` — refusing an oversized write before it reaches the writer,
+   discarding a late answer by `id`, treating three missed heartbeats as a lost peer and never as a shutdown signal —
+   sender identity per ADR-0004, and spawn/adopt of the connector over the local pipe whose separate version is rule 2
+   of `docs/adr/0005-two-process-connector.md`. `VER-49`, `VER-13`, `VER-52` and
+   `VER-55` all ask about that behaviour, so none of them closes on M1.
+2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
+   leaves to a human.
+
 ---
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`**, now equal to local and remote `master`. Main branch for PRs upstream: `master`.
+- Branch: **`nexora/architecture`**, equal to local and remote `master` up to the last sha the bullet below names;
+  the §4.6 connector commit sits on it, one ahead, and is the pending push — unconfirmed as §7 requires.
+  Main branch for PRs upstream: `master`.
 - Remotes: `origin` = upstream ZeroOmega (**never push**), `nexora` = `git@github.com:k2dms/NEXORA.git`.
 - **Committed and pushed** (2026-11-05: `c367db2..431ea0a`, a clean fast-forward to `nexora/master`, no MR needed),
   in the planned groups — (a) infrastructure: `.gitattributes`, `.env.example`, `.gitignore`, `.npmrc`×5, `tools/*`;

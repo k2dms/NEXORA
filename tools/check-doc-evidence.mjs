@@ -17,7 +17,6 @@ import { fileURLToPath } from 'node:url';
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const FUTURE_PREFIX = [
-  'connector/',
   'nexora/',
   'packages/protocol/',
   'packages/state/',

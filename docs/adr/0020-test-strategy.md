@@ -67,8 +67,8 @@ pinned to it.
    lifecycle, config apply, chunked import, failure-block and probes.
 8. Cadence rule: tiers 1 and 2 run on every push; tier 3 runs only where the environment provides the
    server, and its absence MUST be visible in the report rather than presented as success. In this iteration
-   tier 3 is specification only -- no Go toolchain, no browser and no live run exist on this host, and the
-   CI matrix parity for the legacy chain follows the Node version pinned in
+   tier 3 is specification only -- no browser and no live run exist on this host (the Go toolchain arrived
+   later the same day, `docs/PROJECT-STATE.md` §4.6), and the CI matrix parity for the legacy chain follows the Node version pinned in
    `.github/workflows/release.yml:21`.
 
 ## Consequences

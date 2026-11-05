@@ -107,8 +107,8 @@ or reorder user profiles on its own authority; and letting the extension write a
 - `packages/schema/connector-profile.schema.json:5` — VERIFIED — an intent document that compiles to one
   loopback FixedProfile, which is the boundary in one sentence.
 - The connector side of the split (keystore contents, compiled config, health history) — UNVERIFIED at
-  runtime: `connector/` does not exist, so the durable specification is
-  `docs/architecture/34-data-split.md` §6–§7 and the executable half is this package.
+  runtime: no `connector/` process exists, only the Go libraries `docs/PROJECT-STATE.md` §4.6 records, so the
+  durable specification is `docs/architecture/34-data-split.md` §6–§7 and the executable half is this package.
 
 ## Verification
 

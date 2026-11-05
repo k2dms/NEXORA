@@ -15,9 +15,9 @@ A `path:line` citation means the file and the line were opened and read in this 
 `node tools/check-doc-evidence.mjs` enforces it — a missing file, an out-of-range line, or a range whose first
 line carries no characters all fail the check (the `outOfRange`, `unresolved` and `blankTarget` reports in
 `tools/check-doc-evidence.mjs`). Paths that exist in no
-form yet — `connector/**`, `nexora/**`, `packages/protocol/**`, `packages/state/**`, `packages/i18n/**`,
-`packages/ui/**` — are cited WITHOUT a line number, and are pre-registered as future paths inside the checker
-itself (`FUTURE_PREFIX` in `tools/check-doc-evidence.mjs`): that is this layout existing as code. Every behavioural
+form yet — `nexora/**`, `packages/protocol/**`, `packages/state/**`, `packages/i18n/**`, `packages/ui/**` — are
+cited WITHOUT a line number, and are pre-registered as future paths inside the checker itself (`FUTURE_PREFIX`
+in `tools/check-doc-evidence.mjs`); `connector/**` left that list on 2026-11-05. Every behavioural
 assertion with no automated or live check carries `Verified: NO — deferred to Phase 2` inline and belongs to
 `docs/architecture/39-verification-matrix.md`.
 
@@ -34,7 +34,7 @@ E:/NEXORA
 ├─ docs/architecture/                                    PARTIAL  20-40; this file is 20
 ├─ packages/schema/                                      EXISTS   the only executable artefact of Phase 1
 ├─ packages/{protocol,state,i18n,ui}/                    PLANNED  four more independent npm roots (§3)
-├─ connector/                                            PLANNED  own Go module; nothing Go-shaped outside it
+├─ connector/                                            EXISTS   own Go module; nothing Go-shaped outside it
 ├─ nexora/extension/                                     PLANNED  own npm root: Vite + Svelte 5 + TypeScript
 ├─ tools/*.mjs                                           EXISTS   three dependency-free guards (§13)
 ├─ dist/                                                 GENERATED  never tracked (`.gitignore:4`)
@@ -57,7 +57,7 @@ E:/NEXORA
 | `packages/state/` | no | framework-agnostic typed client of the *extension-side* RPC contract, incl. the MV3 cold-start backoff ported verbatim and a form-state layer (ADR-0016) | `subscribe(fn)` compatible with `svelte/store` but not depending on Svelte | any import from `omega-*/src/**` |
 | `packages/i18n/` | no | `.po` → typed UI catalog compiler plus the `locale → browser lang` mapping table (ADR-0017) | its own `package.json` (a root of its own) | a runtime dependency on `po2crx` |
 | `packages/ui/` | no | design tokens and presentational primitives below the framework (ADR-0016 reversal clause) | the 164 base16 + 3 default theme contract (`docs/audit/08-ui-i18n-and-themes.md:192-203`) | theme CSS copied out of `omega-web/lib/themes/` |
-| `connector/` | no | the Go module: `cmd/nexora-host` (framing, auth, spawn only), `cmd/nexora-connector`, `internal/**` for the Core supervisor, config compiler, keystore, prober, and `testdata/pins.json` (ADR-0019) | one `go.mod`; loopback-only bind assertion inside `core.start` (ADR-0006) | a compiled binary in git; the Xray executable; any file the extension zip reads |
+| `connector/` | yes | the Go module: `cmd/nexora-host` (framing, auth, spawn only), `cmd/nexora-connector`, `internal/**` for the Core supervisor, config compiler, keystore, prober, and `testdata/pins.json` (ADR-0019) | one `go.mod`; loopback-only bind assertion inside `core.start` (ADR-0006) | a compiled binary in git; the Xray executable; any file the extension zip reads |
 | `nexora/extension/` | no | the new extension tree and new UI: `src/ui/**`, the `nexora-options.html` / `nexora-popup.html` entry documents, the Vite config that builds them | only JSON-serialisable boundaries with legacy code (ADR-0016) | any `import` of `omega-*` except types derived from `packages/schema` (§6) |
 | `tools/` | yes | repository-level guards usable before any install | zero-dependency `.mjs` scripts (ADR-0018 rule 6) | an npm dependency; a `package.json` |
 
@@ -192,8 +192,8 @@ Rules 1-7 of `docs/adr/0018-workspace-roots-and-no-root-package-json.md` are nor
 
 Inherited open decision: with no lockfile tracked (`.gitignore:3`) each root answers reproducibility for
 itself, and `packages/schema` currently answers UNVERIFIED on a clean machine (`docs/PROJECT-STATE.md` §9.2).
-Verified: NO — deferred to Phase 2: no guard fails when a root `package.json`, `go.work` or `.npmrc` appears,
-and `connector/` cannot be built or vetted on this host because Go, Docker and Python are absent.
+Verified: NO — deferred to Phase 2: no guard fails when a root `package.json`, `go.work` or `.npmrc` appears.
+`connector/` builds, vets and tests on this host since 2026-11-05 (Go 1.27.3) and in the `connector` job.
 
 ## 9. The Connector is never inside the extension archive
 

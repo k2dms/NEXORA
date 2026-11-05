@@ -68,8 +68,9 @@ so `LIVE-05`'s negative branch is what prevents it from being *silently believed
 ## 4. Execution status in this iteration
 
 **None of LIVE-01…LIVE-13 or LIVE-15…LIVE-24 can be executed here**: the connector, the host shim and the Xray
-binary do not exist yet, and the Go toolchain is not installed on the development host
-(`docs/audit/00-scope-and-method.md` §2). The matrix is therefore published as a **specification**, with every
+binary do not exist yet, and the Go toolchain was not installed on the development host when this was written
+(`docs/audit/00-scope-and-method.md` §2) — it is installed now, and `connector/` has libraries beside no process
+(`docs/PROJECT-STATE.md` §4.6). The matrix is therefore published as a **specification**, with every
 row's `Verified:` column set to `NO — deferred to Phase 2` except where a Phase-1 artefact already checks the
 contract statically. `LIVE-14` (import of a real 3.5.2 backup) is partially executable now — see
 `docs/verification/README.md` §3 for the command that compiles the shipped fixtures through the legacy

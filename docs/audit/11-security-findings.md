@@ -342,9 +342,10 @@ forward-looking gap the Connector introduces.
   VERIFIED (`omega-target-chromium-extension/src/module/fetch_url.coffee:10`, `:36-46`). That a given deployment can actually reach
   `169.254.169.254` or a loopback service is environment-dependent and **UNVERIFIED** here (no network
   test was run, by design — no PoC).
-- **`connector/testdata/pins.json` does not exist (SEC-6).** The `connector/` tree being absent is
-  VERIFIED by directory listing; the statement is therefore an existence claim about the current tree,
-  not about the eventual Phase-2 layout.
+- **`connector/testdata/pins.json` does not exist (SEC-6).** It was VERIFIED by directory listing when the
+  whole `connector/` tree was absent, and is still true: the module landed on 2026-11-05 without that file
+  (`docs/PROJECT-STATE.md` §4.6). The statement remains an existence claim about the current tree, not about
+  the eventual Phase-2 layout.
 - **Log contents actually contain a secret in normal operation (SEC-7).** That the export path applies
   no `headers`/`syncUsername` masking is VERIFIED. Whether a specific log file in the wild contains a
   live credential depends on which code paths fired; this is **INFERRED** from the `console.log` of

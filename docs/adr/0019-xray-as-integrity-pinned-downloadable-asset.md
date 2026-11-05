@@ -81,8 +81,8 @@ as data, not as prose: the brief's constraint 6 says no committed binaries, and
 - Disk usage per user grows by the retained versions; bounded by `retainedPreviousVersions`.
 - The extension archive stays a pure web bundle, which keeps the store story simple and the zip assertions
   in the baseline report meaningful.
-- Nothing on this host can currently prove any of it: no Go toolchain, no Core, no network probe was run in
-  this iteration. The decision is expressed as data and deferred as behaviour.
+- Nothing in this iteration could prove any of it: no Core, no installer, no network probe, and the Go toolchain
+  only arrived later the same day (`docs/PROJECT-STATE.md` §4.6). Data, as above; behaviour, deferred.
 
 ## Alternatives considered
 

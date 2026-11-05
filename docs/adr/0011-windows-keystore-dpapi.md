@@ -100,7 +100,7 @@ a privileged daemon holding a master key, or a plain file with an ACL.
   `packages/schema/examples/envelope-keys.nexora.json:70`: the two namespaces declared
   `secretBearing: true`, and therefore not sync-eligible.
 - INFERRED -- Windows DPAPI user-scope semantics (a same-user process can decrypt). OS behaviour, not
-  observable in this tree; no Go code exists yet.
+  observable in this tree; no keystore code exists yet (`docs/PROJECT-STATE.md` §4.6 lists what does).
 - UNVERIFIED -- ACL inheritance of `%LOCALAPPDATA%\NEXORA\keystore` on a real host, and the Connector's
   redaction path. Both are Phase-2 observations.
 
@@ -112,4 +112,5 @@ a privileged daemon holding a master key, or a plain file with an ACL.
 - Existing check: `node tools/check-doc-evidence.mjs` resolves every citation above.
 - Verified: NO -- deferred to Phase 2: DPAPI round-trip, same-user decrypt demonstration, `keystore.purge`
   orphan collection, and redaction in logs. These become `LIVE` rows plus Go unit tests in the connector
-  module once a Go toolchain exists on the host.
+  module; the toolchain arrived on 2026-11-05 and the module has three packages, none of them the keystore
+  (`docs/PROJECT-STATE.md` §4.6).

@@ -39,8 +39,9 @@ owns the emit list), the identity model for who may ask for any of this (`docs/a
 and whether any row below has actually been executed — `docs/verification/live-matrix.md`, cited per row.
 
 `Verified: NO — deferred to Phase 2` appears at the point of use throughout, and in this document that is nearly
-every behavioural claim: there is no Go toolchain on this host, no Core, no installer, and no network fetch was
-performed in this iteration. What *is* green is the contract layer, and §4 names exactly which assertions are
+every behavioural claim: there is no Core, no installer, and no network fetch has been performed here — the Go
+toolchain only reached this host later on 2026-11-05, after this document was written
+(`docs/PROJECT-STATE.md` §4.6). What *is* green is the contract layer, and §4 names exactly which assertions are
 green today.
 
 ## 2. The questions this document was cited to answer

@@ -16,3 +16,7 @@ tmp/
 # The release directory the hub writes: two zips plus the checksum file .github/workflows/verify.yml
 # produces beside them. Build output, never a committed artifact (constraint: no binaries in git).
 dist/
+
+# The Go connector builds here. `connector/` MUST NOT carry a compiled binary in git
+# (docs/architecture/20-target-repository-layout.md §3); this is where `go build -o bin/` writes.
+connector/bin/
