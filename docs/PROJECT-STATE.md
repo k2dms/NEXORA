@@ -294,6 +294,15 @@ prose pass needed to cite rather than assert: the taxonomy row that proves `ODEC
 The runner ledger below moves the set an eleventh time — **2282 / 517 / 1381** — one doc-name reference and nothing
 else: measured against HEAD file by file, §12 of the baseline report gained the one and no document lost one, which is
 the cheapest kind of move a bookkeeping pass can make.
+§4.17 moves the set a twelfth time — **2314 / 517 / 1389** — and it is the first move of this series whose headline is
+the first number: 32 new `path:line` addresses, no new pointer, eight new document names. Measured per file against the
+commit before: this file `+27 / +0 / +5` — five, because this sentence names two of the documents it is counting —
+`docs/adr/0011-windows-keystore-dpapi.md` `+5 / +0 / -1`, and `docs/README.md` and doc 32 `+0 / +0 / +2` each. The ADR's
+minus one is the sentence that said no keystore code exists yet; a claim about the absence of a file is not an address
+once the file arrives. Doc 39 moves `+0 / +0 / +0` while its `no-code` table loses a row and its distribution is
+restated four times: §4.11's lesson a fifth time, an edit that re-numbers a count without naming a new place is
+invisible to this guard, and what makes the change real is the harness asserting 55 / 13 / 3 / 2 / 5 rather than
+admiring it.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1033,6 +1042,127 @@ config is a document with `keystore://` strings in its credential positions and 
 
 ---
 
+### 4.17 The keystore: a projected grammar, one file per credential, and a syscall pair for the protection (`connector/internal/keystore/`, 2026-11-06)
+
+**What landed.** `ref.go`, `store.go`, `keystore.go`, `platform_windows.go`, `platform_other.go`, four test files beside
+them, and a regenerated `connector/internal/contract/contract_gen.go`. Five sources, four tests, 24 test functions —
+and the ninth `ok` line: §4.16 left its Gates paragraph saying "the ninth will arrive with a package that is not this
+one", and this is a package that is not that one, so the eight became nine on the same command. It is the first Go code
+in the repository that holds a credential, which is why most of what it asserts is absence: nothing on disk is the value
+(`connector/internal/keystore/keystore_test.go:84`), no error string quotes one (`connector/internal/keystore/keystore_test.go:246`),
+and a resolved secret prints as its reference and nothing else (`connector/internal/keystore/store.go:189`). ADR-0011
+rule 6, turned into three test names.
+
+**The grammar is projected, so it cannot be copied twice.** doc 32 §5 says the reference vocabulary is data, and
+`packages/schema/envelope-keys.schema.json:143` is the line holding it: scheme, floor and shape as three `const`s, read
+by ajv, read by `packages/schema/scripts/verify.mjs`, and now read by the Go generator into
+`connector/internal/contract/contract_gen.go:139`. `connector/internal/contractgen/contractgen.go:283` is where the
+projection refuses instead of copies: both floors must be built on the scheme they are anchored to, the entity and field
+lists must agree with the registry's own, the identifier segment of the shape must be the ingest document's pattern
+byte-for-byte (`packages/schema/protocol/commands/profile.import.json:85`), and
+`connector/internal/contractgen/contractgen.go:304` will not emit a vocabulary with more — or fewer — than one
+object-shaped field, because `headers` is the one ODEC-36 is about. One artefact, three readers, a build that stops when
+they drift: §4.16's golden rule applied to a grammar rather than a fixture. The other half of that claim is a test, not
+a generator: `connector/internal/keystore/vocabulary_test.go:108` walks every JSON file under `packages/schema/`,
+parses each string that begins with the scheme, and keeps a floor on how many it found (`:144`) so the walk cannot go
+quietly blind.
+
+**Three refusals, and a fourth the store had to keep for itself.** doc 32 §11's table names `SecretRedacted`,
+`InvalidProfile` and `KeystoreUnavailable` and says each sends the user somewhere different;
+`connector/internal/keystore/keystore.go:48` is the map from this package's sentinels onto those projected names, and
+`:98` is the check that the map still means what the table says — a code that went missing, or went retryable, stops the
+package at init rather than at the point where a user would be told to retry something no retry can fix.
+`connector/internal/keystore/ref.go:30` decides which one applies, and the order of its tests is the design: no scheme
+prefix means a value in a reference position, and a value is never echoed
+(`connector/internal/keystore/ref_test.go:82`); a proven prefix with an unproven shape is a malformed reference, echoed
+only once the floor has accepted it. The fourth refusal is not in §11
+and could not be: an empty value. The contract bounds a credential at the door
+(`packages/schema/protocol/commands/profile.import.json:95`) and says nothing about a zero-length one, so the store keeps
+a floor of its own and answers it with `SchemaMismatch`, recorded here rather than smoothed over.
+
+**DPAPI is two syscalls and no dependency.** `connector/internal/keystore/platform_windows.go:21` reaches `crypt32.dll`
+through `syscall.NewLazyDLL`, because the module has zero external requirements and ADR-0011 rule 1 names exactly one
+API: `CryptProtectData` with no descriptor, no application entropy, `CRYPTPROTECT_UI_FORBIDDEN`, and a `LocalFree` of the
+buffer the OS allocated. The `golang.org/x/sys` import a DPAPI binding usually arrives with would have been this
+module's first; the hand-written `DATA_BLOB` is the cheaper thing to audit. What the call buys is checked at
+`connector/internal/keystore/store.go:105`: the store refuses a protector that answers with the bytes it was handed,
+which is rule 5's forbidden plaintext fallback made unrepresentable at write time, and
+`connector/internal/keystore/keystore_test.go:100` proves the refusal with an `identityProtector` that is exactly the
+plausible placeholder rule 5 fears.
+
+**The seam is why the ubuntu runner has keystore tests at all.** `Protector` is an interface of two methods
+(`connector/internal/keystore/store.go:17`), `New` takes one and `Open` does not; on anything that is not Windows
+`connector/internal/keystore/platform_other.go:11` answers an error so `Open` fails closed, because ADR-0011 binds
+Windows and rule 5 forbids filling the gap with a cipher nobody designed. That split lets 21 of the 24 tests run on
+Linux against a base64 protector that is explicitly *not* protection: one blob per reference, temp-file-and-rename at
+`0600`, rotation leaving nothing behind (`connector/internal/keystore/keystore_test.go:165`), a dangling handle answering
+`InvalidProfile` and not `KeystoreUnavailable` (`connector/internal/keystore/keystore_test.go:136`) are properties of the
+store, not of crypt32. The three that are crypt32's (`connector/internal/keystore/dpapi_windows_test.go:17`) are
+build-tagged and ran on this host against the real DLL, in a temp directory: `TestDefaultDirIsADRsPath` checks the path
+`Open` would have used without creating it, because leaving secret-shaped files in a user profile from a test suite is a
+finding of its own.
+
+**What this package does not do.** It mints nothing: `mintedBy` says the Connector generates the identifier when it
+stores a value (`packages/schema/examples/envelope-keys.nexora.json:103`), and minting is a command handler's job, so
+every reference in these tests was typed by a test. It masks nothing — doc 32 §8 puts masking at the sink, keyed by
+value, and a store is not a sink. It purges nothing by scope: `keystore.purge`'s three scopes need the reference index
+doc 32 §7 describes, and what exists is a directory of blobs whose names encode their reference, which is enough to
+delete one handle and not enough to answer "which orphans does nothing reference". It enforces no ingest bound: 512
+entries, 4096 characters and 32 keys are projected so the door that must apply them has a number to read, and that door
+is `profile.import`'s argument validation, which is not written. And nothing opens it: `compile.Compile` takes no
+`Store`, so a compiled document still carries handles in its credential positions and has still never been written out.
+
+**Which is why ODEC-36's blocker is narrower and no smaller.** §4.16 recorded shape C refusing at its `headersRef`
+because "no schema in this repository lists the keys". The mechanism half of that reason is gone: a
+`keystore://…/headers` reference parses, resolves and reads out as a `map[string]string`
+(`connector/internal/keystore/store.go:205`), and the key names come from the object a user imported rather than from a
+schema that never enumerated them. What remains is the decision, and `connector/internal/compile/outbound.go:229` still
+refuses for the right reason: whether that map is inside the hashed bytes or only in the written file is a question about
+what `configHash` *means*, and no amount of code answers it. The comment above the refusal was rewritten to say so,
+because a refusal that cites a missing mechanism once the mechanism has arrived is a map edited and not re-walked.
+
+**The prose this slice had to correct, because the code made it checkable.** Five sentences said there is no keystore.
+ADR-0011's Evidence line said "no keystore code exists yet" and its Verification line queued four deferred things under
+one label; the round trip is now measured, so the ADR gained three VERIFIED bullets — the syscall pair, the fallback
+refusal, the owner-only install — and its INFERRED row now names precisely what is still OS behaviour: that a same-user
+process can decrypt, which is rule 7's residual risk and cannot be a test of ours. doc 32 §1's reading rule said
+"almost every row, because there is no keystore code yet"; it now says which half became code and which four doors did
+not. doc 32 §12's closing verdict keeps its Phase-2 label, because a table of commands still has no command behind
+it, and adds that the store is code and nothing has run. LIVE-18's parenthetical said "no keystore code exists to
+round-trip" — the sentence this slice makes false — and its verdict stays in the same Phase-2 column for the reason §1's
+rule gives: a live row is a session, not a syscall. And `VER-23`, whose subject was that the backend does not exist,
+moved state:
+`no-code` to `no-run`, the queue's word for a check that is green where it ran and has not run where the claim needs it.
+That is the first subtraction from the `no-code` column this queue has made — every earlier move of that number added a
+row beside it — and it takes doc 39's distribution to 55 / 13 / 3 / 2 / 5, which the harness asserts rather than admires.
+§4.16's rule that no row is added and none deleted still holds: a state is not a closure, and `VER-23` is queued at
+LIVE-18 exactly as it was.
+
+**And the secrets guard met the grammar it cannot exempt.** The ids this package's tests are written from are
+uuid-shaped, and a VLESS user id is the credential the keystore holds, so the gate reads every one of them as a secret:
+they are now two documented consts (`connector/internal/keystore/keystore_test.go:55`,
+`connector/internal/keystore/ref_test.go:16`) and one deletion — the DPAPI round trip does not need its own identifier to
+prove that crypt32 gives the bytes back, and the second it had was a fourth literal for no fourth claim. The remaining
+finding is `connector/internal/keystore/ref_test.go:83`, whose whole purpose is to be a value in a reference position:
+the shape the gate looks for, in a test that exists to be refused, so it is annotated rather than renamed. §4.16
+established the form — hoist, document, annotate with `nexora-secret-allow`, keep `--selftest` at 13/13 so the gate
+demonstrably still fires on the shape it is asked to forgive. The plain run enumerates 464 files, nine more than
+§4.16's 455: the same `git ls-files` behaviour, this time counting the nine files of a package that did not exist.
+
+**Gates.** `gofmt -l connector` prints nothing; `go -C connector vet ./...` is clean, and clean again under
+`GOOS=linux`; `go -C connector test -count=1 ./...` prints nine `ok` lines, the ninth being this package. On this host
+the keystore's 24 tests pass with the three DPAPI ones executing against `crypt32.dll`; on the ubuntu cell of the
+`connector` job they will pass with those three not built at all, which is what the seam is for.
+`npm --prefix packages/schema run verify` → 1217 checks, the same count as §4.16: this slice changes a state in the
+queue's data and the distribution assertion that reads it, and adds no check. `node tools/check-doc-evidence.mjs` →
+2314 path:line citations, 517 pointers and 1389 doc-name references. `node tools/check-no-secrets.mjs` → 464 files, no finding.
+What is next is unchanged in kind and narrower in size: the materializer that reads a handle at the moment of writing and
+the owner-only config file it would write into (`docs/architecture/32-secrets-keystore-masking.md` §13), then
+`config.apply`'s command surface calling `Compile`, then the supervisor, then stage 7's probe — the last of these still
+needing a Core binary this host does not have.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -1073,19 +1203,21 @@ config is a document with `keystore://` strings in its credential positions and 
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **455** files — §4.15's 439 plus
-  the sixteen this slice stages, because the guard walks `git ls-files` and so counts a file when it is staged, not
-  when it is thought of. It also carries its first `nexora-secret-allow` annotations: eight documented constants in
-  `connector/internal/compile/resolve_test.go` covering the nine findings §4.16 lists, because Go's test convention
-  puts a `_test.go` beside the package it tests and therefore outside every path the guard exempts.
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **464** files — §4.16's 455 plus
+  the nine `connector/internal/keystore` files §4.17 stages, because the guard walks `git ls-files` and so counts a file
+  when it is staged, not when it is thought of. It carries eleven `nexora-secret-allow` annotations now: the eight
+  documented constants in `connector/internal/compile/resolve_test.go` that §4.16 lists, and §4.17's three in
+  `keystore_test.go`, `ref_test.go` twice, because Go's test convention puts a `_test.go` beside the package it tests and
+  therefore outside every path the guard exempts.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
   is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
   six `ok` package lines where §4.6 recorded three — `contract`, `dispatch`, `envelope`, `frames`, `hello` and `peer`
-  — §4.13 makes it seven with `github.com/k2dms/nexora/connector/cmd/nexora-connector` and §4.15 eight with
-  `github.com/k2dms/nexora/connector/internal/compile`; `gofmt -l connector` still
-  prints nothing. No `VER-NN` row moves on any of those increments: §4.6's "Not yet"
+  — §4.13 makes it seven with `github.com/k2dms/nexora/connector/cmd/nexora-connector`, §4.15 eight with
+  `github.com/k2dms/nexora/connector/internal/compile` and §4.17 nine with
+  `github.com/k2dms/nexora/connector/internal/keystore`; `gofmt -l connector` still
+  prints nothing. No `VER-NN` row moves on any of the increments up to §4.16: §4.6's "Not yet"
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
   row rather than by one more Go test, and §4.9 names the live row whose mechanism is half in this repository and the
@@ -1097,8 +1229,11 @@ config is a document with `keystore://` strings in its credential positions and 
   count again with a package whose subject is a config rather than a frame, which is the first Go code in this
   repository able to produce a `configHash` and therefore the reason `VER-78` exists to name which byte string it is a
   hash of. §4.16 fills that package in — stages 1 to 4, the document half of 5 and stage 7's inspection — and moves no
-  `ok` line, because the eight are packages and §4.16 is thirty-eight more test functions inside the eighth.
-- `node tools/check-doc-evidence.mjs` → **green** (2282 `path:line`, 517 pointers, 1381 doc-and-script
+  `ok` line, because the eight are packages and §4.16 is thirty-eight more test functions inside the eighth. §4.17 is the
+  ninth package, and the first slice to move a row's *state* rather than its count: `VER-23` leaves `no-code` for
+  `no-run`, which is the one subtraction the queue's `no-code` column has had, and why doc 39's distribution and the
+  harness assertion that reads it both move by one.
+- `node tools/check-doc-evidence.mjs` → **green** (2314 `path:line`, 517 pointers, 1389 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -1625,20 +1760,23 @@ of §6's queue was written.
 
 ---
 
-*End of handoff log. The remaining work order is §6's, and §4.15 changed its shape without changing its two stoppers.
-The Connector queue now runs: the keystore read that turns a `keystore://<ref>` position into a credential and the
-writer that puts the materialized bytes under the state directory — §4.16 compiled a config for the first time and both
-of those are why it has still never been applied — then the Core supervisor, then stage 7's probe, which needs a binary
-`docs/adr/0013-omega-conditions-compiles-into-xray-routing.md` §Evidence records as absent from this host. Stages 1 to 4, the
-document half of 5, the serializer of §4.15 and three of doc 27 §3's six golden configs are now written (§4.16), so
-`VER-28` and `VER-78` describe three fixtures rather than none and stay open for the two reasons §4.16 names.
-`internal/chunk` and
+*End of handoff log. The remaining work order is §6's, and §4.17 changed its shape the way §4.16 did: one of the two
+halves the compiled config was waiting for is written. The Connector queue now runs: the materializer that reads a handle
+at the moment of writing, and the owner-only config file it writes into — `docs/architecture/32-secrets-keystore-masking.md`
+§13 is the design and §4.17's package is the read — then the command surface that makes `config.apply` call `Compile`,
+then the Core supervisor, then stage 7's probe, which needs a binary
+`docs/adr/0013-omega-conditions-compiles-into-xray-routing.md` §Evidence records as absent from this host. Stages 1 to 4,
+the document half of 5, the serializer of §4.15, three of doc 27 §3's six golden configs (§4.16) and the store that holds
+every credential a config points at (§4.17) are written; `VER-28` and `VER-78` describe three fixtures rather than none and
+stay open for the two reasons §4.16 names, and `VER-23` has moved from `no-code` to `no-run` because the round trip is
+measured while the session around it is not. `internal/chunk` and
 `cmd/nexora-host` stay where they were: the first is stopped by `ODEC-34`, and the second by `ODEC-35` — a decision with
 three surviving answers, which is the first time this queue has been blocked by an ADR rather than by a gap in the data.
-`ODEC-36` is the third stopped thing and the cheapest: it gates a row, not a package, and a field with a description
-closes it. A fourth has appeared beside it — `ODEC-37`, the four byte positions the corpus names and never spells, which
-`§4.16`'s goldens found by refusing to guess and which only Xray's own accepted config can settle. Plus the decisions in §7 and the nine questions in
-§9, which are not work an agent may finish; the note under that table says why one ninth stopped being a question and
-what took its place.
+`ODEC-36` is the third stopped thing and the cheapest, with one third of its reason now gone: the mechanism that reads an
+object handle out of the store exists, and what is owed is the sentence that says whether the map it returns belongs to
+the hashed bytes or only to the file. A fourth sits beside it — `ODEC-37`, the four byte positions the corpus names and
+never spells, which `§4.16`'s goldens found by refusing to guess and which only Xray's own accepted config can settle.
+Plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish; the note under that table
+says why one ninth stopped being a question and what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

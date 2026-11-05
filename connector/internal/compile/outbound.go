@@ -221,10 +221,10 @@ func transportBlock(s Server) (string, Document, error) {
 }
 
 // unsupportedHeaders is the refusal doc 23 §9's shape C would otherwise paper over. `headersRef` points at an *object*
-// — `#/$defs/headersRef` is a `keystore://` string, and the map behind it has key names the schema never lists — so
-// the compiler cannot emit the `"headers": {"…": "⟨secret: headersRef⟩"}` that §9 shows: it has the handle, and the
-// handle is a string where Core wants an object. Whether the substituted map is inside the hashed bytes or only in
-// the written file is ODEC-36, and either answer still needs someone to say where the key names come from.
+// — `#/$defs/headersRef` is a `keystore://` string — and `connector/internal/keystore` can now resolve one into the map
+// a user imported, so the key names come from the stored value rather than from a schema that never listed them. What
+// is still missing is not the mechanism but the decision: whether that map is inside the hashed bytes or only in the
+// written file is ODEC-36, and this package takes no Store, so nothing here could substitute it either way.
 func unsupportedHeaders(s Server, network string) error {
 	return fmt.Errorf("compile: server %s (%s) carries a headersRef for %s, and no decision in this repository says how a keystore:// handle for an object reaches the config; ODEC-36 blocks shape C of doc 23 §9 until it does",
 		s.ID, network, s.refOf(network))

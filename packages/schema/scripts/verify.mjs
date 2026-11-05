@@ -3600,7 +3600,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 56 && count('state', 'no-check') === 13 && count('state', 'no-run') === 2 &&
+    count('state', 'no-code') === 55 && count('state', 'no-check') === 13 && count('state', 'no-run') === 3 &&
       count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 78,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +

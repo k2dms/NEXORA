@@ -43,8 +43,8 @@ and event catalogue (`docs/architecture/36-observability.md`); the wording a use
 
 One reading rule, inherited from `docs/architecture/20-target-repository-layout.md` §1 and sharpened here: **a
 secret-control claim with no check behind it is labelled `Verified: NO — Phase 2` at the point of use.** In this
-document that is almost every row, because there is no keystore code yet. That is the honest state, not an
-oversight, and §16 keeps the count visible instead of hiding it.
+document that is almost every row: `connector/internal/keystore` is code as of `docs/PROJECT-STATE.md` §4.17, and the
+ingest door, the purge, the writer and the masking sink are not — an honest state §16 keeps visible, not an oversight.
 
 ## 2. The fourteen questions this document was cited to answer
 
@@ -372,7 +372,7 @@ Two decisions fall out of the table:
 Read as a coverage rule: every command that writes the store names both `KeystoreUnavailable` and
 `SecretRedacted`, and every command that deletes from it names `KeystoreUnavailable`
 (`docs/architecture/31-security-model.md` §17 records the amendment). `Verified: NO — Phase 2` for every row of
-behaviour in this table; the *declarations* are green.
+behaviour in this table: the store is code (`docs/PROJECT-STATE.md` §4.17), the declarations are green, nothing has run.
 
 ## 13. The one place a value is plaintext: the compiled config
 

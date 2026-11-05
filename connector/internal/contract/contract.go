@@ -1,5 +1,7 @@
 // Package contract is the Go projection of packages/schema/protocol: the nineteen published methods, the
-// closed error taxonomy, the capability registry, the transport numbers and the per-sender budgets.
+// closed error taxonomy, the capability registry, the transport numbers and the per-sender budgets — plus,
+// since the keystore needed a reference grammar, the secret-reference vocabulary in
+// packages/schema/envelope-keys.schema.json and its recorded instance.
 //
 // Everything in contract_gen.go is generated — see internal/contractgen — and the drift test in
 // contract_test.go regenerates it from the schema directory and compares bytes, so a schema edit that was
@@ -42,14 +44,24 @@ type RateLimit struct {
 const ScopeAllMethods = "*"
 
 var (
-	methods  = indexMethods(Methods)
-	codes    = indexCodes(ErrorCodes)
-	limits   = indexLimits(RateLimits)
-	global   = catchAll(RateLimits)
-	caps     = indexSet(Capabilities)
-	names    = sortedNames(Methods)
-	privName = sortedPrivileged(Methods)
+	methods        = indexMethods(Methods)
+	codes          = indexCodes(ErrorCodes)
+	limits         = indexLimits(RateLimits)
+	global         = catchAll(RateLimits)
+	caps           = indexSet(Capabilities)
+	names          = sortedNames(Methods)
+	privName       = sortedPrivileged(Methods)
+	secretFields   = indexSecretFields(SecretFields)
+	secretEntities = indexSet(SecretEntities)
 )
+
+func indexSecretFields(in []SecretField) map[string]SecretField {
+	out := make(map[string]SecretField, len(in))
+	for _, f := range in {
+		out[f.Name] = f
+	}
+	return out
+}
 
 func indexMethods(in []Method) map[string]Method {
 	out := make(map[string]Method, len(in))
@@ -149,6 +161,17 @@ func CatchAllRateLimit() RateLimit { return global }
 
 // IsCapability reports whether a capability name is in the registry.
 func IsCapability(name string) bool { return caps[name] }
+
+// SecretFieldByName finds a member of the keystore field vocabulary. A name outside it is not a field the store
+// can hold, so the closed list is enforced by this lookup returning false rather than by a caller remembering the
+// four spellings.
+func SecretFieldByName(name string) (SecretField, bool) {
+	f, ok := secretFields[name]
+	return f, ok
+}
+
+// IsSecretEntity reports whether an entity class may own a secret at all.
+func IsSecretEntity(name string) bool { return secretEntities[name] }
 
 // CapabilityNames returns the registry in declaration order.
 func CapabilityNames() []string { return append([]string(nil), Capabilities...) }

@@ -18,7 +18,7 @@ import (
 	"strings"
 )
 
-const header = `// Code generated from packages/schema/protocol by internal/contractgen. DO NOT EDIT.
+const header = `// Code generated from packages/schema/protocol and the envelope-key registry by internal/contractgen. DO NOT EDIT.
 //
 // Regenerate with ` + "`go generate ./...`" + ` from the connector module root. The drift test in
 // contract_test.go fails the build when this file and the schema directory disagree, which is what keeps
@@ -110,6 +110,76 @@ type commandDoc struct {
 	Capabilities  []string `json:"capabilities"`
 }
 
+// ingestDoc is the half of profile.import.json that is not a method flag: the one door through which a secret
+// value may arrive (docs/architecture/32-secrets-keystore-masking.md §6), whose closed enums are the entity and
+// field lists the keystore reference vocabulary must agree with.
+type ingestDoc struct {
+	Args struct {
+		Properties struct {
+			Credentials struct {
+				MaxItems int `json:"maxItems"`
+				Items    struct {
+					Properties struct {
+						Entity struct {
+							Enum []string `json:"enum"`
+						} `json:"entity"`
+						EntityID struct {
+							Pattern string `json:"pattern"`
+						} `json:"entityId"`
+						Field struct {
+							Enum []string `json:"enum"`
+						} `json:"field"`
+						Value struct {
+							MaxLength     int `json:"maxLength"`
+							MaxProperties int `json:"maxProperties"`
+						} `json:"value"`
+					} `json:"properties"`
+				} `json:"items"`
+			} `json:"credentials"`
+		} `json:"properties"`
+	} `json:"args"`
+}
+
+// secretRefsDoc is the shape of the const floor strings in
+// packages/schema/envelope-keys.schema.json#/properties/secretReferences.
+type secretRefsDoc struct {
+	Properties struct {
+		SecretReferences struct {
+			Properties struct {
+				Scheme struct {
+					Const string `json:"const"`
+				} `json:"scheme"`
+				Pattern struct {
+					Const string `json:"const"`
+				} `json:"pattern"`
+				Shape struct {
+					Const string `json:"const"`
+				} `json:"shape"`
+				Fingerprint struct {
+					Properties struct {
+						Pattern struct {
+							Const string `json:"const"`
+						} `json:"pattern"`
+					} `json:"properties"`
+				} `json:"fingerprint"`
+			} `json:"properties"`
+		} `json:"secretReferences"`
+	} `json:"properties"`
+}
+
+// secretRegistry is the recorded instance of the same block — the entity list and the field vocabulary with
+// their value shapes. The schema declares the floor, the example carries the lists, and both are contract data:
+// scripts/verify.mjs already fails when the two separate, and this generator refuses to project them apart.
+type secretRegistry struct {
+	SecretReferences struct {
+		Entities []string `json:"entities"`
+		Fields   []struct {
+			Name       string `json:"name"`
+			ValueShape string `json:"valueShape"`
+		} `json:"fields"`
+	} `json:"secretReferences"`
+}
+
 // Source reads the protocol data under repoRoot and returns the generated Go source for package contract.
 func Source(repoRoot string) ([]byte, error) {
 	protocol := filepath.Join(repoRoot, "packages", "schema", "protocol")
@@ -128,6 +198,19 @@ func Source(repoRoot string) ([]byte, error) {
 	}
 	var cr compatDoc
 	if err := readJSON(filepath.Join(protocol, "compatibility-rules.json"), &cr); err != nil {
+		return nil, err
+	}
+	var ing ingestDoc
+	if err := readJSON(filepath.Join(protocol, "commands", "profile.import.json"), &ing); err != nil {
+		return nil, err
+	}
+	schemaDir := filepath.Join(repoRoot, "packages", "schema")
+	var sr secretRefsDoc
+	if err := readJSON(filepath.Join(schemaDir, "envelope-keys.schema.json"), &sr); err != nil {
+		return nil, err
+	}
+	var reg secretRegistry
+	if err := readJSON(filepath.Join(schemaDir, "examples", "envelope-keys.nexora.json"), &reg); err != nil {
 		return nil, err
 	}
 
@@ -179,6 +262,51 @@ func Source(repoRoot string) ([]byte, error) {
 		fr.Limits.ExtensionToHostBytes.Value > fr.Limits.HostToExtensionBytes.Value {
 		return nil, fmt.Errorf("byte limits are out of order: effective %d > extension-to-host %d > host-to-extension %d",
 			fr.Limits.EffectiveCrossBrowserBytes.Value, fr.Limits.ExtensionToHostBytes.Value, fr.Limits.HostToExtensionBytes.Value)
+	}
+
+	// The secret-reference vocabulary in four files, re-joined here. docs/architecture/32 §5 makes it one
+	// vocabulary on purpose and scripts/verify.mjs fails when the schemas drift apart; the keystore is the first
+	// Go consumer, so the same agreement is checked before it is projected rather than after a binary ships with
+	// a reference grammar only the Node side enforces.
+	srScheme := sr.Properties.SecretReferences.Properties.Scheme.Const
+	srPattern := sr.Properties.SecretReferences.Properties.Pattern.Const
+	srShape := sr.Properties.SecretReferences.Properties.Shape.Const
+	srFingerprint := sr.Properties.SecretReferences.Properties.Fingerprint.Properties.Pattern.Const
+	entities := ing.Args.Properties.Credentials.Items.Properties.Entity.Enum
+	fields := ing.Args.Properties.Credentials.Items.Properties.Field.Enum
+	idPattern := strings.Trim(ing.Args.Properties.Credentials.Items.Properties.EntityID.Pattern, "^$")
+	if srScheme == "" || srPattern == "" || srShape == "" || srFingerprint == "" {
+		return nil, fmt.Errorf("envelope-keys.schema.json lost one of its secretReferences const strings")
+	}
+	for name, s := range map[string]string{"pattern": srPattern, "shape": srShape} {
+		// Both floors are anchored regexes, so the scheme is what follows the anchor rather than the first bytes.
+		if !strings.HasPrefix(strings.TrimPrefix(s, "^"), srScheme) {
+			return nil, fmt.Errorf("the reference %s does not begin with the scheme const %q", name, srScheme)
+		}
+	}
+	if len(entities) == 0 || len(fields) == 0 {
+		return nil, fmt.Errorf("profile.import.json declares no entity or field enum; the keystore vocabulary is empty")
+	}
+	if !setEqual(entities, reg.SecretReferences.Entities) {
+		return nil, fmt.Errorf("the entity set differs: profile.import accepts %v, the envelope-key registry records %v", entities, reg.SecretReferences.Entities)
+	}
+	var fieldNames []string
+	objectFields := 0
+	for _, f := range reg.SecretReferences.Fields {
+		fieldNames = append(fieldNames, f.Name)
+		if f.ValueShape == "object" {
+			objectFields++
+		}
+	}
+	if !setEqual(fields, fieldNames) {
+		return nil, fmt.Errorf("the field vocabulary differs: profile.import accepts %v, the envelope-key registry records %v", fields, fieldNames)
+	}
+	if objectFields != 1 {
+		return nil, fmt.Errorf("the field vocabulary records %d object-shaped fields; ODEC-36 is open because of exactly one of them", objectFields)
+	}
+	if !alternationsIn(srShape, entities) || !alternationsIn(srShape, fields) ||
+		!strings.Contains(srShape, idPattern) {
+		return nil, fmt.Errorf("the reference shape %q does not carry the closed entity list, the closed field list and the ingest id pattern it is supposed to be built from", srShape)
 	}
 
 	var priv []string
@@ -284,6 +412,25 @@ func Source(repoRoot string) ([]byte, error) {
 	fmt.Fprintf(&b, "}\n\n// BackoffSeconds returns the reconnect ladder %s.\nfunc BackoffSeconds() []int {\n\tout := make([]int, len(backoffSeconds))\n\tcopy(out, backoffSeconds)\n\treturn out\n}\n",
 		joinInts(fr.Reconnect.BackoffSeconds))
 
+	fmt.Fprintf(&b, "\nconst (\n\tSecretScheme = %s\n\tSecretReferencePattern = %s\n\tSecretReferenceShape = %s\n\tSecretFingerprintPattern = %s\n",
+		quote(srScheme), quote(srPattern), quote(srShape), quote(srFingerprint))
+	fmt.Fprintf(&b, "\tKeystoreValueMaxChars = %d\n\tKeystoreValueMaxProperties = %d\n\tKeystoreMaxCredentials = %d\n)\n",
+		ing.Args.Properties.Credentials.Items.Properties.Value.MaxLength,
+		ing.Args.Properties.Credentials.Items.Properties.Value.MaxProperties,
+		ing.Args.Properties.Credentials.MaxItems)
+	fmt.Fprint(&b, "\n// SecretField is one member of the closed field vocabulary: which field of an entity a reference\n"+
+		"// names, and whether the secret behind it is one value or a map.\n"+
+		"type SecretField struct {\n\tName       string\n\tValueShape string\n}\n\n"+
+		"var SecretEntities = []string{\n")
+	for _, e := range entities {
+		fmt.Fprintf(&b, "\t%s,\n", quote(e))
+	}
+	fmt.Fprint(&b, "}\n\nvar SecretFields = []SecretField{\n")
+	for _, f := range reg.SecretReferences.Fields {
+		fmt.Fprintf(&b, "\t{Name: %s, ValueShape: %s},\n", quote(f.Name), quote(f.ValueShape))
+	}
+	fmt.Fprint(&b, "}\n")
+
 	src, err := format.Source(b.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("the generated source does not parse: %w", err)
@@ -322,6 +469,41 @@ func readJSON(path string, dst any) error {
 }
 
 func quote(s string) string { return strconv.Quote(s) }
+
+func setEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	seen := map[string]int{}
+	for _, s := range a {
+		seen[s]++
+	}
+	for _, s := range b {
+		seen[s]--
+		if seen[s] < 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// alternationsIn reports whether every name occurs in the regex as a complete alternative — delimited by `(`, `|`
+// or `)` — so a shape that lists the same words in a different order still projects.
+func alternationsIn(regex string, names []string) bool {
+	for _, n := range names {
+		found := false
+		for _, delim := range []string{"(" + n + ")", "(" + n + "|", "|" + n + ")", "|" + n + "|"} {
+			if strings.Contains(regex, delim) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
 
 func stringSliceLit(items []string) string {
 	if len(items) == 0 {

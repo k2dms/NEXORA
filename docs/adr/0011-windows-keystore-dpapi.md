@@ -99,8 +99,18 @@ a privileged daemon holding a master key, or a plain file with an ACL.
 - VERIFIED -- `packages/schema/examples/envelope-keys.nexora.json:61` and
   `packages/schema/examples/envelope-keys.nexora.json:70`: the two namespaces declared
   `secretBearing: true`, and therefore not sync-eligible.
+- VERIFIED -- `connector/internal/keystore/platform_windows.go:70`: the protection is one call pair into
+  `crypt32.dll` with no descriptor, no application entropy and `CRYPTPROTECT_UI_FORBIDDEN`, so rule 1's "no
+  home-grown crypto" is a syscall rather than a library the module would have to take a dependency on to get.
+- VERIFIED -- `connector/internal/keystore/store.go:105`: a protector that answers with the bytes it was handed is
+  refused at write time, which is rule 5's forbidden plaintext fallback made unrepresentable rather than discouraged.
+- VERIFIED -- `connector/internal/keystore/store.go:133`: a blob is installed by temp-file-and-rename at `0600`
+  inside a directory created `0700` (`connector/internal/keystore/store.go:54`), so rule 1's "a set of files" is
+  a set one user owns.
 - INFERRED -- Windows DPAPI user-scope semantics (a same-user process can decrypt). OS behaviour, not
-  observable in this tree; no keystore code exists yet (`docs/PROJECT-STATE.md` §4.6 lists what does).
+  observable from this tree by construction: the round trip is now measured
+  (`connector/internal/keystore/dpapi_windows_test.go:17`), while the same-user decrypt that rule 7 accepts as
+  residual risk still is not.
 - UNVERIFIED -- ACL inheritance of `%LOCALAPPDATA%\NEXORA\keystore` on a real host, and the Connector's
   redaction path. Both are Phase-2 observations.
 
@@ -111,6 +121,7 @@ a privileged daemon holding a master key, or a plain file with an ACL.
   `node tools/check-no-secrets.mjs` scans the tree for literal credentials.
 - Existing check: `node tools/check-doc-evidence.mjs` resolves every citation above.
 - Verified: NO -- deferred to Phase 2: DPAPI round-trip, same-user decrypt demonstration, `keystore.purge`
-  orphan collection, and redaction in logs. These become `LIVE` rows plus Go unit tests in the connector
-  module; the toolchain arrived on 2026-11-05 and the module has three packages, none of them the keystore
-  (`docs/PROJECT-STATE.md` §4.6).
+  orphan collection, and redaction in logs -- the first of those four is now measured rather than deferred:
+  `connector/internal/keystore` round-trips a credential over the real crypt32 call, and `VER-23` has moved from
+  `no-code` to `no-run` (`docs/architecture/39-verification-matrix.md`) for exactly that reason. The other three
+  still owe a live session, which is what `LIVE-18` is.

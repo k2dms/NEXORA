@@ -364,8 +364,8 @@
     },
     {
       "id": "VER-23",
-      "subject": "no DPAPI round-trip, rotation, purge or owner-only config file has been demonstrated -- the keystore backend does not exist",
-      "state": "no-code",
+      "subject": "no live run has shown a DPAPI round-trip, a rotation, a purge or an owner-only config file -- the store, its round-trip and its rotation are now Go tests over the real crypt32 call on Windows (`connector/internal/keystore`); `keystore.purge` and the config writer are not written",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": { "kind": "live-row", "ref": "LIVE-18" },
       "at": [
@@ -375,7 +375,7 @@
         { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "The generated config file is owner-only on disk" },
         { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "In memory" }
       ],
-      "why": "ADR-0011 chose DPAPI over home-grown crypto precisely so the OS would be the part no test of ours can fake; that also means no test of ours can prove it."
+      "why": "ADR-0011 chose DPAPI over home-grown crypto precisely so the OS would be the part no test of ours can fake; the test now calls that part for real, which proves the call and not the session around it."
     },
     {
       "id": "VER-24",

@@ -1,4 +1,4 @@
-// Code generated from packages/schema/protocol by internal/contractgen. DO NOT EDIT.
+// Code generated from packages/schema/protocol and the envelope-key registry by internal/contractgen. DO NOT EDIT.
 //
 // Regenerate with `go generate ./...` from the connector module root. The drift test in
 // contract_test.go fails the build when this file and the schema directory disagree, which is what keeps
@@ -131,4 +131,36 @@ func BackoffSeconds() []int {
 	out := make([]int, len(backoffSeconds))
 	copy(out, backoffSeconds)
 	return out
+}
+
+const (
+	SecretScheme               = "keystore://"
+	SecretReferencePattern     = "^keystore://[A-Za-z0-9._:/-]{1,96}$"
+	SecretReferenceShape       = "^keystore://(server|subscription|profile|sync|host)/[0-9a-f][0-9a-f-]{6,61}[0-9a-f]/(user-id|headers|url|token)$"
+	SecretFingerprintPattern   = "^fp-[0-9a-f]{12}$"
+	KeystoreValueMaxChars      = 4096
+	KeystoreValueMaxProperties = 32
+	KeystoreMaxCredentials     = 512
+)
+
+// SecretField is one member of the closed field vocabulary: which field of an entity a reference
+// names, and whether the secret behind it is one value or a map.
+type SecretField struct {
+	Name       string
+	ValueShape string
+}
+
+var SecretEntities = []string{
+	"server",
+	"subscription",
+	"profile",
+	"sync",
+	"host",
+}
+
+var SecretFields = []SecretField{
+	{Name: "user-id", ValueShape: "string"},
+	{Name: "headers", ValueShape: "object"},
+	{Name: "url", ValueShape: "string"},
+	{Name: "token", ValueShape: "string"},
 }
