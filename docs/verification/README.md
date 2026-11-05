@@ -69,13 +69,15 @@ All seven also run unattended: `.github/workflows/verify.yml` executes them on e
 and on every pull request targeting `master`, and adds the guards only a machine can hold — the `VER-NN` rows it names
 in its step titles, plus the artifact inspection that `docs/audit/99-baseline-report.md` §6 turned into a rule (a build
 counts as green only when the zip is shown to carry 353 entries, 252 `lib/` files and `js/omega_pac.min.js` inside it,
-never from an exit code). It has now run there, and `docs/audit/99-baseline-report.md` §12 tabulates eight of those
+never from an exit code). It has now run there, and `docs/audit/99-baseline-report.md` §12 tabulates ten of those
 runs from 2026-11-05: the first two red on defects
 in the workflow — a commit label its own source document had never declared, a Windows `$GITHUB_WORKSPACE` that is
-not a POSIX path, and a byte total that was one checkout's property rather than a floor — five of them green, four
-across the six jobs the workflow then had and the eighth across all eight because the `connector` job executes now,
-and the sixth cancelled by the workflow's own `concurrency` block after its cells had
-printed everything, recorded line by line there. §12 also states why it tabulates instead of counting: every commit
+not a POSIX path, and a byte total that was one checkout's property rather than a floor — six of them green, four
+across the six jobs the workflow then had and the last two across all eight because the `connector` job executes now,
+the sixth cancelled by the workflow's own `concurrency` block after its cells had
+printed everything, and the ninth red on one Go test that polled a counter for ~1 s of wall clock instead of waiting
+for the bytes the peer had already issued — the green row after it is what makes that a diagnosis and not an excuse.
+Recorded line by line there. §12 also states why it tabulates instead of counting: every commit
 that records a run of that workflow is itself a commit that runs it, so only the shape rule — a run joins the table
 when its shape differs — stays true. Before those runs, each `run:` block
 had been executed on the development host and re-run against a synthetic violation to prove the guard can fail —

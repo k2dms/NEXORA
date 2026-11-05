@@ -238,9 +238,11 @@ pattern works: `tools/verify-vendor.mjs`, `tools/check-no-secrets.mjs`, `tools/c
 `.gitattributes:23-25` (Go line rules declared before any Go exists), `.env.example:11` (empty value whose
 comment names the LIVE row it gates), `.gitignore:8-10` (`.env`, `.env.*`, `!.env.example`).
 `.github/workflows/verify.yml` is the addition of the same class, landed on 2026-11-05 and run there the same day:
-`docs/audit/99-baseline-report.md` §12 tabulates eight of its runs — the first two red on defects in the file itself,
-five green, and one cancelled by the
-file's own `concurrency` block. It counts the table's rows and not the file's executions because a record of this
+`docs/audit/99-baseline-report.md` §12 tabulates ten of its runs — the first two red on defects in the file itself,
+six green, one cancelled by the
+file's own `concurrency` block, and a third red whose only failing job is the connector's, on one test that polled a
+counter for ~1 s of wall clock instead of waiting for the bytes the peer had already issued. It counts the table's
+rows and not the file's executions because a record of this
 workflow is itself a commit that runs it; §12 states the rule that decides when a further run is a finding. It is a
 **new** workflow, PR-blocking and
 non-tagging, leaving `.github/workflows/release.yml` untouched — that one fires only on a `v*` tag

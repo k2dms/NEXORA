@@ -291,6 +291,9 @@ per file against the commit before, this file is `+1 / +1 / +7`, doc 23 `+0 / +0
 that no compiler exists neither adds nor drops an address. The one `path:line` and the one pointer are the two the
 prose pass needed to cite rather than assert: the taxonomy row that proves `ODEC-03`'s old premise was wrong, and the
 `$defs` entry whose description contradicts the values the same definition admits.
+The runner ledger below moves the set an eleventh time — **2282 / 517 / 1381** — one doc-name reference and nothing
+else: measured against HEAD file by file, §12 of the baseline report gained the one and no document lost one, which is
+the cheapest kind of move a bookkeeping pass can make.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -347,12 +350,14 @@ Nothing the Phase 0/1 plan asks for on disk is absent any more. `.github/workflo
 2026-11-05 — three jobs (`contracts`, `legacy-chain`, and `connector` present but switched off with
 `if: ${{ false }}` — it is switched on now, §4.6), a three-row matrix, and the
 `VER-02`/`03`/`04`/`06`/`08`/`10`/`11` guards as executable steps —
-and it ran there the same day: `docs/audit/99-baseline-report.md` §12 tabulates eight of those runs — twice red, five
+and it ran there the same day: `docs/audit/99-baseline-report.md` §12 tabulates ten of those runs — three red, six
 times green and once cancelled by the file's own
 `concurrency` block — under the rule that a further run joins the table only when its shape differs, a rule this
-iteration had to write because every commit that records a run of that workflow is itself a commit that runs it. Each
-of the two failures was a defect in the workflow
-itself rather than in the tree, all of them recorded line by line in `docs/audit/99-baseline-report.md` §12. Before
+iteration had to write because every commit that records a run of that workflow is itself a commit that runs it. The
+first two failures were defects in the workflow
+itself rather than in the tree; the third was one Go test in `connector/internal/peer`, waiting on ~1 s of wall clock
+for a reservation the peer had already made, which `75c9d97` changed into a wait on the bytes the pipe carries — all
+of them recorded line by line in `docs/audit/99-baseline-report.md` §12. Before
 those runs every `run:` block had been executed on this host and proved able to fail against a synthetic violation,
 which is a claim about the shell logic; the runs are what made it a claim about CI
 (`docs/audit/02-toolchain-decay-and-risk.md` §7.3). `tools/check-legacy-backup.mjs` — the command `LIVE-14`'s compile half cites — is on disk beside the other
@@ -1021,7 +1026,7 @@ that slice's note about `git ls-files` repeating itself in the expected directio
 **Gates.** `gofmt -l connector` prints nothing, `go -C connector vet ./...` is clean, and
 `go -C connector test -count=1 ./...` prints the same eight `ok` lines §4.15 recorded — the ninth will arrive with a
 package that is not this one. `npm --prefix packages/schema run verify` → 1217 checks, green.
-`node tools/check-doc-evidence.mjs` → 2282 `path:line`, 517 pointers, 1380 doc names.
+`node tools/check-doc-evidence.mjs` → 2282 `path:line`, 517 pointers, 1381 doc names.
 What is still not here, and is the shape of the next slice: nothing reads a handle out of the keystore, so a compiled
 config is a document with `keystore://` strings in its credential positions and has never been written to disk; stage
 7's probe needs a running Core; and no command surface calls `Compile`, so `config.apply` still has no answer to give.
@@ -1036,15 +1041,18 @@ config is a document with `keystore://` strings in its credential positions and 
   reused this host's `node_modules` (five `up to date` lines), so it re-verified the chain rather than resolution.
 - Artifact assertions: 353 files / 5 999 353 B / 252 `lib/` entries / 7 `_locales`, and `js/omega_pac.min.js` present at 742 272 B —
   every one of them reproduced from the 2026-11-05 rebuild, top-level path set included. On a clean image the *shape*
-  figures reproduce and the *byte* figures differ from this host's, then agree with each other: twenty-four runner
-  builds — the three images of each of the eight executions of that file whose legacy chain got that far, six of them
-  rows §12 tabulates and two of them the greens its shape rule leaves out — gave 353 entries, 252 `lib/`,
+  figures reproduce and the *byte* figures differ from this host's, then agree with each other: thirty-six runner
+  builds — the three images of each of the twelve executions of that file whose legacy chain got that far, eight of them
+  rows §12 tabulates and four of them the runs its shape rule leaves out — gave 353 entries, 252 `lib/`,
   7 `_locales` and the bundle, at 5 974 389 B / 5 974 444 B (ubuntu) and 5 974 401 B / 5 974 456 B (windows) with a
   735 547 B bundle, the same four totals in every one of those runs — so the totals and the bundle size are properties of a CRLF
   checkout against this host, and of the runner image against a different image, which is why the workflow
-  prints them as NOTEs (`docs/audit/99-baseline-report.md` §12). What no two builds ever shared is the hash: forty-eight
-  distinct sha256 values across those twenty-four builds — the ledger that lists them is the final block of
-  `docs/audit/raw/probe-8-runner-runs.txt` — none of them the two recorded below, and every further execution of
+  prints them as NOTEs (`docs/audit/99-baseline-report.md` §12). The hashes are the sharper half: seventy-two computed
+  sha256 values across those thirty-six builds, seventy of them distinct. The one repeat is a pair, and §12 explains
+  it — `96d1613` reached two refs, and the windows/Node-24 cell of one run and the windows/Node-22 cell of the other
+  printed the same two hashes 1.3 s apart, so "no two builds ever match" was a count that had not yet reached a
+  collision rather than a law. The ledger listing the values is the final block of
+  `docs/audit/raw/probe-8-runner-runs.txt`; none of the seventy is either of the two recorded below, and every further execution of
   that file adds three builds and six hashes to a set that has never once matched a recorded value, which is the form
   this finding keeps rather than the count it had.
 - `sha256 dist/chromium-release.zip` = `b93d5100e4c05ccf7af365dfc1742344360579f482df72e4e9ce00f5ba964ba8`
@@ -1090,7 +1098,7 @@ config is a document with `keystore://` strings in its credential positions and 
   repository able to produce a `configHash` and therefore the reason `VER-78` exists to name which byte string it is a
   hash of. §4.16 fills that package in — stages 1 to 4, the document half of 5 and stage 7's inspection — and moves no
   `ok` line, because the eight are packages and §4.16 is thirty-eight more test functions inside the eighth.
-- `node tools/check-doc-evidence.mjs` → **green** (2282 `path:line`, 517 pointers, 1380 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2282 `path:line`, 517 pointers, 1381 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -1102,7 +1110,7 @@ config is a document with `keystore://` strings in its credential positions and 
   `node tools/verify-vendor.mjs` runs against the
   working tree.
 - `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners since 2026-11-05 —
-  §12 tabulates eight of those runs: twice red, five times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
+  §12 tabulates ten of those runs: three red, six times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
   §4.5 and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 used to leave open — a clean image can install and build
   this tree: all five roots from an empty `node_modules`, no lockfile in git, both pinned test floors reproduced,
   every artifact content figure reproduced, and the 252 `lib/` entries produced without this host's Bower cache
@@ -1314,12 +1322,14 @@ That is a boundary, not an oversight.
 
 **The item that belonged here and nowhere else — the first execution of `.github/workflows/verify.yml` on a runner —
 is done.** It needed a push, so it was gated on the confirmation rule in §7; it happened on 2026-11-05 and has
-happened since, and `docs/audit/99-baseline-report.md` §12 carries the measured output of the eight runs it
-tabulates, with the raw capture of those eight — job
+happened since, and `docs/audit/99-baseline-report.md` §12 carries the measured output of the ten runs it
+tabulates, with the raw capture of all fourteen executions — job
 conclusions, every `##[error]` annotation, and each quoted line beside the number of times the runner printed it — at
 `docs/audit/raw/probe-8-runner-runs.txt`. That is the raw record this file's own convention asks for. #10 is therefore
-no longer "written and locally step-verified"; it is written, run, twice failing, five times green and once cancelled —
-and §12 states the rule that keeps that sentence true under the runs still to come. Two items take its
+no longer "written and locally step-verified"; it is written, run, three times failing, six times green and once cancelled —
+and §12 states the rule that keeps that sentence true under the runs still to come. The third failure is the one that
+did not refuse a contract: a Go test in `connector/internal/peer/` that polled an in-flight counter for ~1 s instead of
+waiting for the frame the peer had already issued, and lost to the runner's scheduling. Two items take its
 place, and neither is a status edit:
 
 1. **The row bookkeeping.** `VER-06`, `VER-08`, `VER-10` and `VER-11` now meet the condition their records state — a

@@ -319,7 +319,7 @@ artifact content assertion. One thing did not reproduce: the recorded sha256 of 
 same-machine rebuild (§6). One thing that was inference became measurement: Bower resolves the declared `git://`
 endpoints over https by itself, so a cold install works without any transport rewrite (§7). One thing this
 iteration still has not done: run anything in a browser. The runner half it named alongside that is answered by
-§12, which tabulates eight runs on 2026-11-05 — two red, five green, one cancelled — under a rule that keeps later
+§12, which tabulates ten runs on 2026-11-05 — three red, six green, one cancelled — under a rule that keeps later
 green runs of the same shape out of the table, and so keeps this sentence true.
 
 ## 11. probe-4 and probe-5 — the iteration's own end-to-end check, 2026-11-05
@@ -365,19 +365,23 @@ exporter-shaped rather than genuine `.bak` files (`docs/verification/live-matrix
 `docs/verification/README.md` for what each row would need first). Under
 `docs/verification/live-env-contract.md`, an unexecuted row is `SKIPPED`, never `PASSED`, so `LIVE-01…24` are
 untouched by this section, and §12 opens no browser either. The other half this section could not close — a GitHub
-runner — is answered by §12: `.github/workflows/verify.yml` has run there, and §12 tabulates eight of those runs on
-2026-11-05 — twice red, five times green, once cancelled by its own `concurrency` block — the runs it leaves out
+runner — is answered by §12: `.github/workflows/verify.yml` has run there, and §12 tabulates ten of those runs on
+2026-11-05 — three red, six times green, once cancelled by its own `concurrency` block — the runs it leaves out
 being green executions of a shape already in the table.
 
-## 12. `.github/workflows/verify.yml` on a GitHub runner — eight runs tabulated, 2026-11-05
+## 12. `.github/workflows/verify.yml` on a GitHub runner — ten runs tabulated, 2026-11-05
 
 §11 ended with the one thing this iteration had not done: get the file onto a runner. It is now on one, and the
-answer came as two red runs before it came as a green one, the green one repeated, and the sixth of the eight is
+answer came as two red runs before it came as a green one, the green one repeated, and the sixth of the ten is
 neither red nor green but `cancelled` — by this file's own `concurrency` block, which had never had the chance to
-fire until two pushes arrived inside one build. Every line quoted below is copied out of `gh run view <id> --log`, not re-derived from the
-workflow source, and the extraction itself is kept as `docs/audit/raw/probe-8-runner-runs.txt` — those eight runs' job
+fire until two pushes arrived inside one build. The third red is not a contract, a floor or a path problem: it is one
+Go test that lost a race with the runner's scheduler, and it is the reason a red row and the green row after it are
+both in this table. Every line quoted below is copied out of `gh run view <id> --log`, not re-derived from the
+workflow source, and the extraction itself is kept as `docs/audit/raw/probe-8-runner-runs.txt` — those ten runs' job
 conclusions as the API reports them, every `##[error]` annotation verbatim, each line quoted here beside the number
-of times the runner printed it, and the PATH forms counted per run so the fix is visible in the numbers. One
+of times the runner printed it, and the PATH forms counted per run so the fix is visible in the numbers. That file
+holds four more executions the table does not, and the last block of it is the artifact checksum ledger the aggregate
+below counts from. One
 timestamp quoted below is not a log line but run metadata — the `createdAt` of `42029386377`, from
 `gh run view <id> --json createdAt` — and it is what identifies the cancellation as caused by this repository's own
 next push rather than by anything the tree did.
@@ -392,10 +396,12 @@ next push rather than by anything the tree did.
 | `42029092102` | `f15acb8` | **cancelled** — 3 `contracts` cells and the ubuntu `legacy-chain` cell `success`, both windows `legacy-chain` cells `cancelled`, no `##[error]` line anywhere in the log | the first run whose cause is this repository rather than the tree: `5dee596` was pushed at 12:42:12Z, ~2 min into a run created at 12:40:06Z, and `.github/workflows/verify.yml:31-33` declares `concurrency.cancel-in-progress: true` on a group keyed to the ref, so the runner cancelled the two windows cells then in flight. The cancellation is a verdict, not a missing build: both cells had already printed both floors, both `OK: dist/chromium-release.zip matches the shape of doc 20 §5` and `OK: dist/firefox-release.zip …`, their `NOTE: … does not match the recorded checksum` pair and their two computed hashes each, and all three cells — ubuntu included — printed `Artifact nexora-verify-<image>-node<n>.zip successfully finalized`. The Node 22 cell finished its upload at 12:43:15Z, three seconds before its `Post job cleanup`. Measured consequence: a run id is not the evidence; the log is, and `cancel-in-progress` can throw away a green verdict the artifacts and output already support. |
 | `42029386377` | `5dee596` | **green** — 6 passed, 1 skipped, no `##[error]` line | the fourth green, and the push that caused the row above. It adds no tracked file and no citation, so it prints `f15acb8`'s corpus figures exactly — `2260 / 487 / 1289`, `419 files`, `589 tracked files`, `checks run: 1217` — both floors, the same four zip byte counts (`5 974 389` / `5 974 444` on ubuntu, `5 974 401` / `5 974 456` on both windows images) and six more checksum NOTEs. This is the shape the convention above predicts will repeat, so nothing after it is tabulated unless it differs. |
 | `42046629162` | `1004c4e` | **green** — 8 passed, none skipped, no `##[error]` line | the shape differed, which is the only thing that reopens this table: `connector/` exists, so the job that file declares for it is no longer disabled. `75bff0f`'s run listed `Go connector (enable in Phase 2)` with the API conclusion `skipped`; this one runs `Go connector (ubuntu-latest)` and `Go connector (windows-latest)`, each printing `go version go1.24.13`, three `ok` package lines and two `?` no-test-file lines, so the workflow's job totals move from "6 passed, 1 skipped" to "8 passed". Every contract and legacy figure is `42033189223`'s except the three counters that scan the tree, which move with the files this commit adds: `checked 2262 path:line citations, 487 path#pointer citations and 1306 doc-name references`, `no secret-shaped content in 429 files`, `no PE, ELF or Mach-O bytes in 599 tracked files`, beside an unchanged `checks run: 1217`, both pinned floors, `353 entries` / `lib/=252` / `_locales=7`, the same four zip totals and six more checksum NOTEs. Two annotations are new and both belong to the new job: `##[warning]Restore cache failed: Dependencies file is not found in <workspace>. Supported file pattern: go.sum`, one per image — the module has no requirement yet, so `actions/setup-go@v5` has nothing to hash, which is a fact about a dependency-free tree rather than a misconfiguration. |
+| `42086433856` | `f2a5826` | **red** — 7 jobs `success`, `Go connector (ubuntu-latest)` `failure`, and the failure is one test | `--- FAIL: TestTheInFlightByteBudgetStopsIssuing (1.07s)` / `peer_test.go:193: timed out waiting for the first reservation` / `FAIL github.com/k2dms/nexora/connector/internal/peer 1.172s`, with `##[error]Process completed with exit code 1.` as the run's only error annotation. The same package, the same commit, the same step: the windows cell printed `ok … internal/peer 0.116s`. What the test was waiting for is a counter the peer increments *before* it writes to the pipe, so the reservation had certainly happened; the test then polled `InFlight()` with a ~1 s wall-clock budget, and the goroutine that makes the reservation did not get to run inside it. That is a diagnosis rather than a measurement — the same binary took 0.116 s on the windows cell of the same run, which is the evidence that the code was not late and the poll was. The fix follows the evidence: wait on the wire, on the bytes the peer issues, rather than on a poll, and give the remaining polling tests a budget measured in runner seconds rather than in local ones. Everything else in this run is the usual green: three contract cells, three legacy cells, both floors, `checks run: 1217`, `2281 / 516 / 1367`, `439 files`, `609 tracked files`, and six checksum NOTEs that reached the ledger normally. |
+| `42097247059` | `ef9792e` | **green** — 8 passed, none skipped, no `##[error]` line | the row above is a claim about a flake, and a flake is only a diagnosis once the same tree is green again. `75c9d97` is the commit that moves that test to the wire, and this run is the first one of the pair's tree: the ubuntu peer took 0.095 s and the windows peer 0.125 s, and both cells printed eight `ok` package lines and two `?` no-test-file lines — `internal/compile` joined the list at `f2a5826`, and the goldens at this commit. Its corpus figures are `2282 / 517 / 1380`, `no secret-shaped content in 455 files`, `no PE, ELF or Mach-O bytes in 625 tracked files`, `checks run: 1217`, both floors, the same four zip totals, six more distinct checksums — the set that tree printed, not the set this section's own text now makes the tree print; `docs/PROJECT-STATE.md` §5 carries the current one. |
 
 ### What the green runs measured
 
-`contracts`, identically on all three images and in all eight tabulated runs, with the one exception the red rows
+`contracts`, identically on all three images and in all ten tabulated runs, with the one exception the red rows
 explain —
 `42015170195` never printed the commit-subject line, because printing it is the step that run failed on: `checks run: 1217`, `OK: 13 schemas compile,
 19 command docs conform, 20 examples valid, 24 invalid examples rejected, 112 protocol frames replayed`,
@@ -410,12 +416,20 @@ The two corpus counters that scan the tree are the only lines that moved among t
 commit that adds the capture this section points at — and `c81ae7e` printed `2260 / 487 / 1287`, `419 files` and `589 tracked
 files`, and `f15acb8`, `5dee596` and `75bff0f` printed `2260 / 487 / 1289` beside those same two file counts. `1004c4e`
 moved all three — `2262 / 487 / 1306`, `429 files`, `599 tracked files` — because it adds ten paths, nine of them Go
-files, and the document text that cites them. All three counters read `git ls-files`
+files, and the document text that cites them. `96d1613` moved all three again — `2267 / 514 / 1356`, `437 files`,
+`607 tracked files` — and the two connector commits after it finished the move: `f2a5826` printed `2281 / 516 / 1367`
+over `439` and `609`, and `ef9792e` printed `2282 / 517 / 1380`
+over `455 files` and `625 tracked files`. The last of those adds 16 tracked files and 13 doc-name
+references, which is what a compile package with three golden fixtures looks like to a counter that scans the tree; the
+text that records those two runs moves the doc-name figure again, which is why the set is quoted per sha and pinned
+nowhere.
+All three counters read `git ls-files`
 and the current contents of `docs/`, so they are a property of the tree at the sha under test, which is why they are
 quoted as a set and never pinned as a floor.
 
-`legacy-chain`, on each of the three images, in every run whose legacy job ran the chain — the five tabulated greens
-and, with a `cancelled` verdict rather than a `success` one, the two windows cells of `42029092102`:
+`legacy-chain`, on each of the three images, in every run whose legacy job ran the chain — the six tabulated greens
+and, with a `cancelled` verdict rather than a `success` one, the two windows cells of `42029092102`, and the three
+green legacy cells of the red run `42086433856`:
 
 - `OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).` and
   `OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).` — §5's floors reproduced on
@@ -435,16 +449,22 @@ and, with a `cancelled` verdict rather than a `success` one, the two windows cel
   checksum matches. **Shape is the floor; bytes are an observation.** The two images differ from each other by
   exactly 12 B in total and not at all in the bundle size; that difference is recorded, not explained — nothing in
   this iteration computed a per-file diff between an ubuntu and a windows build.
-- The checksum NOTEs aggregate into the sharpest form of the same finding: across the eight executions of this file
-  whose legacy chain reached that step — the six tabulated rows whose job ran it, plus the two executions this section
-  leaves out (`42033189223` and `42035782395`) — there are twenty-four builds and forty-eight computed `sha256` values,
-  two per build. The count was not assumed: each execution's log was fetched and its `<64 hex>  dist/<zip>` lines
-  collected, giving six values per execution, no collisions across the set, and all forty-eight distinct from each
-  other and from §6's two recorded hashes. The ledger listing them is the final block of
-  `docs/audit/raw/probe-8-runner-runs.txt`, so the distinctness is checkable from tracked data rather than from a
-  fetched log. No runner image has ever reproduced another image's bytes, or its own. The aggregate grows by six with
-  every further execution of this file, which is why the finding is stated as a rule rather than as a count: §6's
-  recorded hashes have not been matched by any build any image has produced, including the tenth execution's.
+- The checksum NOTEs aggregate into the sharpest form of the same finding: across the twelve executions of this file
+  whose legacy chain reached that step — the eight tabulated rows whose job ran it, plus the four executions this section
+  leaves out (`42033189223`, `42035782395`, `42077447021` and `42077576648`) — there are thirty-six builds and
+  seventy-two computed `sha256` values, two per build. The count was not assumed: each execution's log was fetched and
+  its `<64 hex>  dist/<zip>` lines collected, giving six values per execution, **one collision across the set** and
+  seventy values distinct from each other and from §6's two recorded hashes. The ledger listing them is the final block
+  of `docs/audit/raw/probe-8-runner-runs.txt`, so the distinctness is checkable from tracked data rather than from a
+  fetched log. The collision is a pair, not a pattern: `42077447021` and `42077576648` are the *same commit* reached
+  through two refs, and in the first the windows/Node-24 cell and in the second the windows/Node-22 cell printed the
+  same two hashes, 1.3 s apart (`17:47:47.117Z` against `17:47:45.847Z`). What that pair kills is this section's own
+  earlier sentence — "no two runner images agree even on the same commit" was true of the runs it was written about,
+  and is not a law. What survives, and is the reason §6's hashes stay observations rather than floors: no ubuntu build
+  has ever matched a windows one, no execution more than a minute away from another has matched anything, and §6's
+  recorded hashes have still not been printed by any build any image has produced, including the fourteenth
+  execution's. The aggregate grows by six with every further execution of this file, which is why the finding is stated
+  as a rule rather than as a count.
 - `continue-on-error` on the Node 24 cell was not needed: it is green for the same reason the other two are. The
   attribute itself is still unmeasured — `42017987418` had a red Node 24 cell and the jobs API called that cell
   `failure` anyway, so what a red cell inside an otherwise green workflow would report has not been seen.
@@ -466,6 +486,12 @@ evidence and its log is, which is why a cancelled run is tabulated here at all; 
 one verdict, so a push waits for its run instead of stacking behind the previous one. The other workflow in
 `.github/workflows/` declares no `concurrency` block at all, so interruptibility is a property of this gate, chosen
 in this file, not of the repository's CI as a whole.
+
+The group being keyed to the ref has a second consequence, and `42077447021` with `42077576648` measured it: the same
+sha reached `master` 48 seconds after it reached `nexora/master`, the workflow listens to both, and the two runs are
+in two groups, so neither cancelled the other and both finished `success`. The knob interrupts inside one ref and
+nowhere else — which is not only a scheduling fact but the origin of the checksum collision in the bullet above: two
+full builds of one commit, overlapping in time, on the same OS image under two different Node cells.
 
 ### The eighth run, and why the corpus stopped counting executions
 
@@ -492,7 +518,9 @@ lands — that is how five became seven, and seven became eight, with the correc
 describes. What stays true is a claim about the table plus a claim about the rule, which is what §12 now states: the
 runs tabulated, their verdicts, and the condition under which any later run joins them. The eighth and ninth
 executions measured that condition holding, and the tenth measured it failing to hold — a shape did change, and that
-is why the table has a row for it.
+is why the table has a row for it. The eleventh and twelfth held it again: a commit pushed to two refs, two greens of
+the same job totals, neither a row — though that pair still moved an aggregate claim, as the section below shows, so
+"not a row" is not the same thing as "adds no fact".
 
 ### The run that reopened the table, and what the new job measured
 
@@ -515,6 +543,28 @@ alone.
 What this run does *not* measure is as bounded as what it does: the `connector` job runs `build`, `vet` and `test` over
 the four M1 packages, so its green is the projection matching the schema and the codec behaving on a pipe, not any
 part of the transport rules a peer has to own — those arrive with `internal/peer`, which is not in this commit's tree.
+
+### The first red that was not a contract
+
+`42086433856` is the thirteenth execution and the third red, and unlike the first two it refused nothing: the schema
+projection, the doc guards, the commit-label guard, both legacy floors and the artifact shapes all printed their usual
+lines, and the run's single `##[error]` annotation is `Process completed with exit code 1.` inside
+`Go connector (ubuntu-latest)`. The test is the connector's own in-flight byte budget, and the failure mode is a wait
+that was written against wall-clock time. `Peer.Request` reserves the bytes for a frame *before* it writes them, so
+by the time the test's goroutine had issued a request the reservation had certainly happened; what the test then did
+was poll `InFlight()` for up to ~1 s and fail with `timed out waiting for the first reservation`. On this host that
+poll never lost; on a shared runner it did, and the same binary on the windows cell of the same commit passed in
+0.116 s against 1.172 s of failure. The commit that records this, `75c9d97`, changes the assertion to wait on the
+wire — it reads the prefix and payload the peer actually issues, with a deadline, and only then checks the counter —
+and raises the budget of the three tests still polling from ~1 s to ~5 s, which is the runner fact written down beside
+them rather than a number picked to make a red go away.
+
+`42097247059` is that tree, green, and it is the row that turns the paragraph above from an excuse into a measurement:
+same image, same step, ubuntu peer 0.095 s, windows peer 0.125 s, eight `ok` packages per cell. The two rows are in
+this table together for the reason run 2 and run 3 are: a red and the green that reproduces its fix are one finding,
+and neither row means much alone. What the connector job still does not measure is the same list it was when it
+opened — the keystore read, the config writer, the Core supervisor and the loopback probe — and its two `go.sum` cache
+warnings, one per image, have printed in all four executions since, because the module still has no dependency.
 
 ### Where the `lib/` files actually come from
 
@@ -562,9 +612,9 @@ They do not move a single `VER-*` row. Three reasons, all mechanical:
 - Whether the 354-vs-353 file difference is exactly the `manifest` task substitution (per-file diff not computed).
 - Clean-machine reproducibility of `npm install` + `bower install`. **Narrowed twice 2026-11-05.** The Bower half is
   measured on a cold `bower_components` (§7) and works, and both halves are now measured on machines that had never
-  held this tree: three GitHub runner images, in the five green runs §12 tabulates and a sixth whose two windows cells
+  held this tree: three GitHub runner images, in the six green runs §12 tabulates, a seventh whose two windows cells
   did the same work
-  under a `cancelled` verdict, installed all five roots with no lockfile in
+  under a `cancelled` verdict, and the three legacy cells of the third red run, installed all five roots with no lockfile in
   git, built through the hub, and produced a zip carrying the same 252 `lib/` entries this host's warm cache did (§12). What remains unmeasured is
   narrower still — a *user* machine, whose image differs from GitHub's, and whether npm resolution there picks the
   same versions; the runner proves a set resolves and builds, not that it is the same set everywhere.

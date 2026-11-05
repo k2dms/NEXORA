@@ -1,18 +1,19 @@
-probe-8 -- .github/workflows/verify.yml executed on GitHub runners: the 8 runs that docs/audit/99-baseline-report.md
-§12 tabulates (run 1 to run 8 in that section's own numbering), 2026-11-05. That file has run more often than this
-capture holds; §12's rule is what decides which runs are findings, and two blocks below record the executions the
-table leaves out. The final block is not a run: it is the artifact checksum ledger every computed hash those executions
-printed, which is what makes the distinctness claim in §12 checkable from tracked data rather than from a fetched log.
+probe-8 -- .github/workflows/verify.yml executed on GitHub runners: the 10 runs that docs/audit/99-baseline-report.md
+§12 tabulates (run 1 to run 10 in that section's own numbering) plus the four executions it does not, 2026-11-05. That
+file has run more times than the table has rows, and this capture holds every execution up to the one the push of
+this commit describes; §12's rule is what decides which runs are findings. The final block is not a run: it is the
+artifact checksum ledger every computed hash those executions printed, which is what makes the distinctness claim in
+§12 checkable from tracked data rather than from a fetched log.
 captured on: MINGW64_NT-10.0-26300 / bash 5.3.15(2)-release / node v24.22.1
 extraction:  gh run view <id> -R k2dms/NEXORA --log   (job <TAB> step <TAB> timestamp+content; the runner's own
              'set -x' command echoes are excluded here, so every line below is program output or an annotation)
              gh run view <id> -R k2dms/NEXORA --json headSha,conclusion,event,createdAt,jobs
 remote: nexora = git@github.com:k2dms/NEXORA.git; workflow 'Verify'; event push. origin (upstream ZeroOmega) was never pushed.
 form: 'x<n>' is how many times that exact line occurs in that run's log, grouped by the line plus the job that printed it.
-notes: every line below is machine-extracted except the `note:` lines of the last five blocks, which interpret the
-       cancellation run 6 produced, the verdict run 7 reproduced, why the two executions §12 leaves out appear as
-       metadata and counted occurrences rather than as rows, and what changed in the workflow's shape to make run 8
-       a row.
+notes: every line below is machine-extracted except the `note:` lines of the last nine blocks, which interpret the
+       cancellation run 6 produced, the verdict run 7 reproduced, why the four executions §12 leaves out appear as
+       metadata and counted occurrences rather than as rows, what changed in the workflow's shape to make run 8
+       a row, and why run 9's red and run 10's green are rows together rather than one of the two.
 
 ===============================================================================================
 run 42015170195
@@ -663,11 +664,219 @@ run 42046629162 -- the tenth execution, and the eighth row section 12 tabulates
   ledger at the end of this file, which is where the cross-run distinctness that section 12 claims can be checked.
 
 ===============================================================================================
-artifact checksum ledger -- every computed sha256 the eight executions above that ran the legacy chain printed for the
+run 42077447021 -- the eleventh execution, the third that docs/audit/99-baseline-report.md §12 does not tabulate
+  head:       96d16137828a5704cc2ffcc62bf815f056c6a15f
+  conclusion: success
+  event:      push
+  ref:        nexora/master
+  created:    2026-11-05T17:43:47Z
+  updated:    2026-11-05T17:47:55Z
+  note:       this is the same commit as the block below, reaching the repository through the other ref this
+              workflow listens to. `.github/workflows/verify.yml` takes pushes to `master` and to `nexora/**`, and
+              its `concurrency.group` is keyed to `${{ github.ref }}`, so the two refs are two groups: the second
+              push, 48 seconds after the first, cancelled nothing. That makes run 6's cancellation narrower than
+              §12's paragraph about it reads -- the knob discards a verdict only inside one ref -- and it is why
+              this pair is two executions of one sha rather than one execution and a cancelled one.
+  jobs, as the API reports them:
+    success   Contracts, docs and layout guards (ubuntu-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 24)
+    success   Go connector (ubuntu-latest)
+    success   Go connector (windows-latest)
+    success   Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 24)
+  the runner's own error annotations:
+    (none)
+  what the two connector cells printed, verbatim:
+    x1  go version go1.24.13 linux/amd64   | Go connector (ubuntu-latest)
+    x1  go version go1.24.13 windows/amd64 | Go connector (windows-latest)
+    x2  ok   github.com/k2dms/nexora/connector/cmd/nexora-connector
+    x2  ok   github.com/k2dms/nexora/connector/internal/contract
+    x2  ok   github.com/k2dms/nexora/connector/internal/dispatch
+    x2  ok   github.com/k2dms/nexora/connector/internal/envelope
+    x2  ok   github.com/k2dms/nexora/connector/internal/frames
+    x2  ok   github.com/k2dms/nexora/connector/internal/hello
+    x2  ok   github.com/k2dms/nexora/connector/internal/peer
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen [no test files]
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen/gen [no test files]
+        note: seven ok lines and two no-test-file lines per cell -- the peer, the dispatcher, the negotiation and
+        the process exist now; there is still no compiler in the tree.
+  occurrences of the guard lines §12 quotes, counted the same way as the blocks above:
+    x3  checked 2267 path:line citations, 514 path#pointer citations and 1356 doc-name references in docs/
+    x3  OK: no secret-shaped content in 437 files (170 vendored/minified files skipped).
+    x3  OK: no PE, ELF or Mach-O bytes in 607 tracked files.
+    x3  checks run: 1217
+    x3  OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).
+    x3  OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).
+    x6  NOTE: <project> has 0 test files -- a green run there proves nothing (docs/audit/99-baseline-report.md 5).
+    x6  <zip>: 353 entries, <bytes> B uncompressed, lib/=252, _locales=7
+    x6  OK: <zip> matches the shape of doc 20 5.
+    x6  NOTE: <zip> does not match the recorded checksum (byte identity across machines is UNVERIFIED, docs/audit/99 10)
+    x6  NOTE: js/omega_pac.min.js is 735547 B, not the recorded 742 272 B.
+    x3  Artifact nexora-verify-<image>-node<n>.zip successfully finalized.
+  the four zip totals it printed, per image: ubuntu 5974389 / 5974444 B, windows 5974401 / 5974456 B -- the same
+  figures every run since 42020617681 printed. Two of its six checksums are not new: its windows/Node-24 pair equals
+  the windows/Node-22 pair of the run below, printed 1.3 s apart. The ledger block at the end of this file is where
+  that collision is visible as data rather than as a sentence.
+
+===============================================================================================
+run 42077576648 -- the twelfth execution, the fourth §12 does not tabulate; the same sha as the block above
+  head:       96d16137828a5704cc2ffcc62bf815f056c6a15f
+  conclusion: success
+  event:      push
+  ref:        master
+  created:    2026-11-05T17:44:35Z
+  updated:    2026-11-05T17:47:52Z
+  note:       same commit, other ref, 48 s later, and every contract figure identical to the run above it -- which is
+              what a tree that did not change looks like. It is in this capture rather than in the table because the
+              table's rule is about shape, and its shape is the one run 8 established: eight jobs, none skipped. What
+              makes it worth a block is the checksum collision with the run above, which is a fact about the
+              aggregate §12 states as a rule and not about this run's verdict.
+  jobs, as the API reports them:
+    success   Contracts, docs and layout guards (ubuntu-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 24)
+    success   Go connector (ubuntu-latest)
+    success   Go connector (windows-latest)
+    success   Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 24)
+  the runner's own error annotations:
+    (none)
+  what the two connector cells printed: the same seven `ok` packages and two `[no test files]` lines per cell as the
+  run above, on go1.24.13 linux/amd64 and go1.24.13 windows/amd64.
+  occurrences of the guard lines §12 quotes: identical to 42077447021, line for line --
+    x3  checked 2267 path:line citations, 514 path#pointer citations and 1356 doc-name references in docs/
+    x3  OK: no secret-shaped content in 437 files (170 vendored/minified files skipped).
+    x3  OK: no PE, ELF or Mach-O bytes in 607 tracked files.
+    x3  checks run: 1217
+    x3  both pinned floors, x6 the artifact-shape NOTEs and OKs, x3 the artifact finalizations, as above.
+  its windows/Node-22 cell printed `b1011eff…a6fefdb7  dist/chromium-release.zip` and
+  `ce1f120c…435633d  dist/firefox-release.zip` at 17:47:45.847Z; the windows/Node-24 cell above printed those two
+  strings at 17:47:47.117Z. Nothing else in either pair of cells agreed.
+
+===============================================================================================
+run 42086433856 -- the thirteenth execution, and the third red row §12 tabulates
+  head:       f2a58265857a9fd04675fe1bc7f60a5a0ec64b72
+  conclusion: failure
+  event:      push
+  ref:        master
+  created:    2026-11-05T18:40:04Z
+  updated:    2026-11-05T18:43:11Z
+  note:       this is the push of f2a5826, M3's first slice. The run is red on one test in one cell of one job, and
+              the test is the connector's own in-flight byte budget: `TestTheInFlightByteBudgetStopsIssuing` waited
+              up to ~1 s of wall clock for a reservation to appear and the runner did not schedule the goroutine
+              inside that budget. Every other job is green, including both legacy cells and all three contract
+              cells, so the tree's contracts, its docs and its build are not what this row is about.
+  jobs, as the API reports them:
+    success   Contracts, docs and layout guards (ubuntu-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 24)
+    failure   Go connector (ubuntu-latest)
+    success   Go connector (windows-latest)
+    success   Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 24)
+  the runner's own error annotations, all of them:
+    x1  ##[error]Process completed with exit code 1.	| Go connector (ubuntu-latest)
+  the failure, verbatim, as the ubuntu cell printed it:
+    x1  --- FAIL: TestTheInFlightByteBudgetStopsIssuing (1.07s)
+    x1  peer_test.go:193: timed out waiting for the first reservation
+    x1  FAIL	github.com/k2dms/nexora/connector/internal/peer	1.172s
+  what the two connector cells printed otherwise:
+    x1  go version go1.24.13 linux/amd64   | Go connector (ubuntu-latest)
+    x1  go version go1.24.13 windows/amd64 | Go connector (windows-latest)
+    x2  ok   github.com/k2dms/nexora/connector/cmd/nexora-connector
+    x2  ok   github.com/k2dms/nexora/connector/internal/contract
+    x2  ok   github.com/k2dms/nexora/connector/internal/compile
+    x2  ok   github.com/k2dms/nexora/connector/internal/dispatch
+    x2  ok   github.com/k2dms/nexora/connector/internal/envelope
+    x2  ok   github.com/k2dms/nexora/connector/internal/frames
+    x2  ok   github.com/k2dms/nexora/connector/internal/hello
+    x1  ok   github.com/k2dms/nexora/connector/internal/peer	0.116s   -- the windows cell
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen [no test files]
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen/gen [no test files]
+        note: eight `ok` packages per cell if the ubuntu peer had passed; `internal/compile` is in the list for the
+        first time, and the same test binary that failed in 1.17 s on ubuntu passed in 0.116 s on windows.
+  occurrences of the guard lines §12 quotes:
+    x3  checked 2281 path:line citations, 516 path#pointer citations and 1367 doc-name references in docs/
+    x3  OK: no secret-shaped content in 439 files (170 vendored/minified files skipped).
+    x3  OK: no PE, ELF or Mach-O bytes in 609 tracked files.
+    x3  checks run: 1217
+    x3  OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).
+    x3  OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).
+    x6  NOTE: <project> has 0 test files -- a green run there proves nothing (docs/audit/99-baseline-report.md 5).
+    x6  <zip>: 353 entries, <bytes> B uncompressed, lib/=252, _locales=7
+    x6  OK: <zip> matches the shape of doc 20 5.
+    x6  NOTE: <zip> does not match the recorded checksum (byte identity across machines is UNVERIFIED, docs/audit/99 10)
+    x6  NOTE: js/omega_pac.min.js is 735547 B, not the recorded 742 272 B.
+    x3  Artifact nexora-verify-<image>-node<n>.zip successfully finalized.
+  the red verdict did not touch the legacy chain: its three cells printed the floors, the shape OKs and the six
+  checksum NOTEs like every run before, and its six values join the ledger below.
+
+===============================================================================================
+run 42097247059 -- the fourteenth execution, and the tenth row §12 tabulates
+  head:       ef9792ea432b2bbf330ecfe1ec7e16201db0f57b
+  conclusion: success
+  event:      push
+  ref:        master
+  created:    2026-11-05T19:47:30Z
+  updated:    2026-11-05T19:51:20Z
+  note:       this is the push of 00cef50 and ef9792e together -- M3's second slice and the handoff that records it.
+              It is in the table because the row above is: the same test, on the same image, in a job whose totals
+              did not change, is green here after the wait moved from a wall-clock poll to the wire. A red followed
+              by a green of the same tree shape is the second time this corpus has had to make that pair a row; run
+              3 repeated run 2's fix the same way.
+  jobs, as the API reports them:
+    success   Contracts, docs and layout guards (ubuntu-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 22)
+    success   Contracts, docs and layout guards (windows-latest / Node 24)
+    success   Go connector (ubuntu-latest)
+    success   Go connector (windows-latest)
+    success   Ladder A legacy chain and artifact (ubuntu-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 22)
+    success   Ladder A legacy chain and artifact (windows-latest / Node 24)
+  the runner's own error annotations:
+    (none)
+  what the two connector cells printed, verbatim:
+    x1  go version go1.24.13 linux/amd64   | Go connector (ubuntu-latest)
+    x1  go version go1.24.13 windows/amd64 | Go connector (windows-latest)
+    x2  ok   github.com/k2dms/nexora/connector/cmd/nexora-connector
+    x2  ok   github.com/k2dms/nexora/connector/internal/compile
+    x2  ok   github.com/k2dms/nexora/connector/internal/contract
+    x2  ok   github.com/k2dms/nexora/connector/internal/dispatch
+    x2  ok   github.com/k2dms/nexora/connector/internal/envelope
+    x2  ok   github.com/k2dms/nexora/connector/internal/frames
+    x2  ok   github.com/k2dms/nexora/connector/internal/hello
+    x2  ok   github.com/k2dms/nexora/connector/internal/peer
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen [no test files]
+    x4  ?    github.com/k2dms/nexora/connector/internal/contractgen/gen [no test files]
+        note: eight ok lines and two no-test-file lines per cell; the ubuntu peer took 0.095 s and the windows peer
+        0.125 s, both well inside the budget the fixed test now waits on.
+  occurrences of the guard lines §12 quotes:
+    x3  checked 2282 path:line citations, 517 path#pointer citations and 1380 doc-name references in docs/
+    x3  OK: no secret-shaped content in 455 files (170 vendored/minified files skipped).
+    x3  OK: no PE, ELF or Mach-O bytes in 625 tracked files.
+    x3  checks run: 1217
+    x3  OK: omega-pac at or above its floor -- 142 passing, 1 failing (pinned >= 142, <= 1).
+    x3  OK: omega-target at or above its floor -- 8 passing, 5 failing (pinned >= 8, <= 5).
+    x6  NOTE: <project> has 0 test files -- a green run there proves nothing (docs/audit/99-baseline-report.md 5).
+    x6  <zip>: 353 entries, <bytes> B uncompressed, lib/=252, _locales=7
+    x6  OK: <zip> matches the shape of doc 20 5.
+    x6  NOTE: <zip> does not match the recorded checksum (byte identity across machines is UNVERIFIED, docs/audit/99 10)
+    x6  NOTE: js/omega_pac.min.js is 735547 B, not the recorded 742 272 B.
+    x3  Artifact nexora-verify-<image>-node<n>.zip successfully finalized.
+  the four zip totals it printed, per image: ubuntu 5974389 / 5974444 B, windows 5974401 / 5974456 B -- unchanged
+  since run 3; created archives 1901079 / 1901116 B on ubuntu and 1901087 / 1901124 B on windows. Its six checksums
+  join the ledger below and collide with nothing in it.
+
+===============================================================================================
+artifact checksum ledger -- every computed sha256 the twelve executions above that ran the legacy chain printed for the
 two extension zips, extracted from `gh run view <id> -R k2dms/NEXORA --log` lines shaped `<64 hex>  dist/<zip>`. This is
-the basis for the claim in docs/audit/99-baseline-report.md section 12 that no two builds have produced the same bytes:
-48 values, 6 per execution, and the set below has 48 distinct entries. The recorded baseline hashes of doc 99
-section 6 are NOT in this list -- no build has printed them.
+the basis for the claim in docs/audit/99-baseline-report.md §12 about byte identity across builds:
+72 values, 6 per execution, and the set below has 70 distinct entries -- two of them are the same value printed by
+two different cells. The recorded baseline hashes of doc 99 §6 are NOT in this list -- no build has printed them.
 
   42020617681 (6 values):
     dist/chromium-release.zip  63769ca76cb3757f8bd63ff54f298bd257e9fb62d2b1fbb5816c3270c2527b54
@@ -733,4 +942,41 @@ section 6 are NOT in this list -- no build has printed them.
     dist/firefox-release.zip   3cd2e8879700ae816feb8da24636848ad6d1e6169107d6b6217a52cbcc417a9c
     dist/firefox-release.zip   d6d86f0cf772798f5d780295d1865a087d669aa028293abe7766902e797fa586
 
-  distinct values above: 48 of 48
+  42077447021 (6 values):
+    dist/chromium-release.zip  3faf88c5527d6c78c803c0b7b924b52a9648d8f3ddcdd8a440a5ec6b8e219ff3
+    dist/chromium-release.zip  5197b06a21eb3e703b70f4ca69ac0116621fcd8483e341dee274b7ad0833b2ea
+    dist/chromium-release.zip  b1011eff145c927baabaa05ff6bb1c51a10a4d6d7e3d56611e99fa11a6fefdb7
+    dist/firefox-release.zip   7b615a8499659065f677d89ec306a0b9f364a382721367a3c18b471ac3f5bd81
+    dist/firefox-release.zip   ce1f120c8e57e0949b33879afa086797550e8340b5794e7155484df8a435633d
+    dist/firefox-release.zip   f8d464f6e10713785c16e20733ae0c2e3f0ea479749d6a99a3252e2a58410098
+
+  42077576648 (6 values):
+    dist/chromium-release.zip  08432e62d17ff7e51643c97462c3d60ec9774fd0129863f70c26b8e2062e4845
+    dist/chromium-release.zip  b1011eff145c927baabaa05ff6bb1c51a10a4d6d7e3d56611e99fa11a6fefdb7
+    dist/chromium-release.zip  eb32426226f9532ba08a6bc9474dd94c865474a3d5d7fd80f8d936154ef73923
+    dist/firefox-release.zip   4073c86ef1d4bfd8135fc51585c428f6ef4f212d7bc703422476104663f3fa71
+    dist/firefox-release.zip   6b2e1e541ef80708d15e63757f2c1a1b1e33785374431ff3869df61b9031549e
+    dist/firefox-release.zip   ce1f120c8e57e0949b33879afa086797550e8340b5794e7155484df8a435633d
+
+  42086433856 (6 values):
+    dist/chromium-release.zip  075fc93d7126ea8027b7a1e4aac020d2142ccd95595b1a88c584b606b18c1716
+    dist/chromium-release.zip  6186f5099e0adaa627e66ea604fe298b683032415c775d3f49f06dd9769877be
+    dist/chromium-release.zip  94075801c2add5d4f279d796d344e1218bca874f5ed3e60da3892cae58a242ea
+    dist/firefox-release.zip   74d55587489dad06dbd09b43059e79a5e818ed278816ccac86dd0e99e3592ee1
+    dist/firefox-release.zip   8582c9a6f2c7b7ff37cb4160d78bb1e02a8df3b829336f21acd660a6d7752c41
+    dist/firefox-release.zip   eb3abd99a191ca4a989848941aae784fbad6c4526ecc9341cdcd7ca1ca5fbc1d
+
+  42097247059 (6 values):
+    dist/chromium-release.zip  0f075155fdf5b7fcc638b8dea246809f4f61a60373c6d611d7ef0ee469a15ffa
+    dist/chromium-release.zip  9251cd0a6702bd0a40f6778288a8f85f1eab271e781f3fb3b8de204c86ccf22e
+    dist/chromium-release.zip  d48a9eb72bdaa214607942acd7961a6f62e524863be825d1d3986a5087df4f56
+    dist/firefox-release.zip   2951d579773bab6d1ca5fa52c77f34867b3ca09c6fe9ac4eef7df48230ed3afb
+    dist/firefox-release.zip   341b9f5dc2e5257b5025057be0665941f119ab42980fa7261fa9f142ff28bddf
+    dist/firefox-release.zip   4c16ebab877d67827d9618ad27f4f13d3a0dd88b9f93209711692a9b9dbe6cb9
+
+  distinct values above: 70 of 72. The two collisions are one pair, not two: `b1011eff…` and `ce1f120c…` appear
+  under 42077447021 and again under 42077576648, because those are the same commit pushed to two refs. In the first
+  run the pair came from the windows/Node-24 cell and in the second from the windows/Node-22 cell, and the two cells
+  hashed their zips 1.3 seconds apart (17:47:47.117Z and 17:47:45.847Z). It is the only repeat in the ledger: no
+  value from any other execution appears twice, no ubuntu value has ever matched a windows one, and no execution
+  more than a minute apart from another has produced a matching pair.

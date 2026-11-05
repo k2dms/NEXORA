@@ -422,7 +422,7 @@ distribution numbers in §4, §5 and `verify.mjs` (three assertions exist to mak
    the same record at `:121`, and `docs/adr/0020-test-strategy.md:126` all describe
    `.github/workflows/verify.yml` as not yet written. It was written on 2026-11-05, so those three were true when
    authored and are now the earlier fact. The same day it ran, and `docs/audit/99-baseline-report.md` §12 tabulates
-   eight of those runs — two red, five green, one cancelled — quoting each measured line there, and
+   ten of those runs — three red, six green, one cancelled — quoting each measured line there, and
    `docs/audit/02-toolchain-decay-and-risk.md` §7.3 says which
    half of each claim the runner measured. Nothing in this queue moved because of it, and that is not timidity —
    `packages/schema/verification.json` has no state meaning closed, so a row closes by being deleted together with
