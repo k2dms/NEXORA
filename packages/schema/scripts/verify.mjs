@@ -3387,6 +3387,465 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   }
 }
 
+// ---------------------------------------------------------------- the queue as a contract
+//
+// Every line in the corpus that says `Verified: NO — deferred to Phase 2` is a deferred claim. ADR-0001 rule 9 put
+// the label there, docs/architecture/20-target-repository-layout.md §13 made this file the owner of every one of
+// them, and docs/verification/live-matrix.md promotion rule 4 made the same demand, so that no design document
+// could invent a deferral nobody queued. A label scattered through a corpus is a rumour; `packages/schema/verification.json` is
+// the queue, and the queue is only a queue if it is *exact*. Three failures are invisible to a reader and to any
+// prose review, and each is a check below: a labelled claim no row answers (silently unowned work), an anchor that
+// no longer lands on a labelled line (a row that has been quietly closed, or moved, or deleted from the document
+// that carried it), and a line counted twice (two rows believing they own one obligation). The corpus is re-read
+// on every run rather than cached, because the whole point is that the documents keep being edited.
+//
+// The label pattern lives in the data, not here, so that the queue states its own membership rule; the leading
+// `\b` in it is load-bearing -- without it `UNVERIFIED: no lockfile is tracked` reads as a queued claim, which
+// would add a row nobody wrote and hide the fact that the two vocabularies in the corpus are one alternation.
+
+{
+  const verif = await readJson(join(PKG, 'verification.json'));
+  const LIVE_DOC = 'docs/verification/live-matrix.md';
+
+  const mdFiles = [];
+  for await (const f of walk(join(REPO, 'docs'))) {
+    if (!f.endsWith('.md')) continue;
+    const rel = f.slice(REPO.length + 1).replace(/\\/g, '/');
+    if (rel === 'docs/architecture/39-verification-matrix.md') continue;
+    mdFiles.push({ rel, abs: f });
+  }
+  check(
+    mdFiles.length >= 40,
+    'the queue is derived from the whole documentation corpus, not from a list of files it was written against',
+    `${mdFiles.length} markdown documents under docs/`,
+  );
+
+  const MARKER = new RegExp(verif.marker.pattern, verif.marker.flags);
+  const labelled = [];
+  for (const { rel, abs } of mdFiles) {
+    const lines = (await readFile(abs, 'utf8')).split(/\r?\n/);
+    lines.forEach((line, i) => {
+      MARKER.lastIndex = 0;
+      if (MARKER.test(line)) labelled.push({ doc: rel, n: i + 1, line });
+    });
+  }
+  const derived = labelled.length;
+  check(
+    derived === verif.marker.counted,
+    'the number of deferred claims the queue says the corpus carries is what the corpus carries',
+    `derived ${derived}, declared ${verif.marker.counted} -- a document gained or lost a label, or the count was typed`,
+  );
+
+  const ids = verif.matrix.map((r) => r.id);
+  const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+  const gapless = ids.every((id, i) => id === `VER-${String(i + 1).padStart(2, '0')}`);
+  check(
+    ids.length >= 60 && dupes.length === 0 && gapless,
+    'the queue is a closed set of rows with no duplicate and no hole in its ids',
+    `${ids.length} rows, duplicates=${dupes.join(',') || 'none'}, gapless=${gapless}`,
+  );
+  const offVocab = (key, values) => verif.matrix.filter((r) => !values.includes(r[key])).map((r) => r.id);
+  const badState = offVocab('state', verif.states.values);
+  const badOwner = offVocab('owner', verif.owners.values);
+  const badKind = verif.matrix.filter((r) => !verif.closingKinds.values.includes(r.closesBy.kind)).map((r) => r.id);
+  check(
+    badState.length === 0 && badOwner.length === 0 && badKind.length === 0 &&
+      new Set(verif.states.values).size === 5 && new Set(verif.owners.values).size === 9 &&
+      new Set(verif.closingKinds.values).size === 8,
+    'every row names one state, one owner and one closing mechanism, and all three vocabularies are closed',
+    `state=${badState.join(',')} owner=${badOwner.join(',')} kind=${badKind.join(',')}`,
+  );
+  const unexplained = verif.matrix
+    .filter((r) => (r.why ?? '').length < 40 || !(r.subject ?? '').length || !Array.isArray(r.at) || r.at.length === 0)
+    .map((r) => r.id);
+  check(
+    unexplained.length === 0,
+    'every row says what is unverified and why the state is what it is, rather than only that it is owed',
+    `thin or unanchored: ${unexplained.join(', ') || 'none'}`,
+  );
+
+  // ---- the partition: each labelled line is answered exactly once
+
+  const linesOf = async (rel) => {
+    const abs = rel.startsWith('docs/') ? join(REPO, rel) : join(PKG, rel);
+    return existsSync(abs) ? (await readFile(abs, 'utf8')).split(/\r?\n/) : null;
+  };
+  const ownersOf = new Map();
+  const broken = [];
+  const record = (key, what) => {
+    ownersOf.set(key, (ownersOf.get(key) ?? []).concat(what));
+  };
+  const claimKey = (d, n) => `${d}:${n}`;
+  for (const r of verif.matrix) {
+    for (const a of r.at) {
+      const lines = await linesOf(a.doc);
+      if (lines === null) {
+        broken.push(`${r.id} -> ${a.doc} (no such document)`);
+        continue;
+      }
+      const hits = [];
+      lines.forEach((l, i) => {
+        if (l.includes(a.anchor)) hits.push(i + 1);
+      });
+      if (hits.length === 0) broken.push(`${r.id} -> anchor not found in ${a.doc}`);
+      else if (hits.length > 1) broken.push(`${r.id} -> anchor matches ${hits.length} lines in ${a.doc}`);
+      else {
+        MARKER.lastIndex = 0;
+        if (!MARKER.test(lines[hits[0] - 1])) broken.push(`${r.id} -> ${a.doc}:${hits[0]} no longer carries a label`);
+        record(claimKey(a.doc, hits[0]), r.id);
+      }
+    }
+  }
+  for (const v of verif.vocabulary) {
+    const lines = await linesOf(v.doc);
+    if (lines === null) {
+      broken.push(`vocabulary -> ${v.doc} (no such document)`);
+      continue;
+    }
+    const hits = [];
+    lines.forEach((l, i) => {
+      if (l.includes(v.anchor)) hits.push(i + 1);
+    });
+    if (hits.length !== 1) broken.push(`vocabulary -> ${v.doc} anchor matches ${hits.length} lines`);
+    else record(claimKey(v.doc, hits[0]), 'vocabulary');
+  }
+  for (const l of labelled) {
+    if (l.doc === LIVE_DOC && /^\| (LIVE-\d\d) \|/.test(l.line)) record(claimKey(l.doc, l.n), 'live-row');
+  }
+  const twice = [...ownersOf].filter(([, who]) => new Set(who).size > 1);
+  check(
+    broken.length === 0,
+    'every anchor in the queue lands on one line of one document, and that line still carries the label',
+    `broken: ${broken.slice(0, 6).join(' | ') || 'none'}${broken.length > 6 ? ` | +${broken.length - 6} more` : ''}`,
+  );
+  check(
+    twice.length === 0,
+    'no deferred claim is counted as owned by two rows, or by a row and the vocabulary',
+    `claimed twice: ${twice.map(([k, who]) => `${k} by ${[...new Set(who)].join('+')}`).join(' | ') || 'none'}`,
+  );
+  const unowned = labelled.filter((l) => !ownersOf.has(claimKey(l.doc, l.n)));
+  check(
+    unowned.length === 0,
+    'every deferred claim in the corpus is answered by a row, a vocabulary entry, or an inherited live row',
+    `unowned: ${unowned.slice(0, 8).map((l) => `${l.doc}:${l.n}`).join(' | ') || 'none'}` +
+      `${unowned.length > 8 ? ` | +${unowned.length - 8} more` : ''}`,
+  );
+  const rowKeys = [...ownersOf].filter(([, who]) => who.some((x) => x !== 'vocabulary' && x !== 'live-row'));
+  const vocabKeys = [...ownersOf].filter(([, who]) => who.includes('vocabulary') && who.length === 1);
+  const liveKeys = [...ownersOf].filter(([, who]) => who.length === 1 && who[0] === 'live-row');
+  check(
+    vocabKeys.length === verif.vocabulary.length && liveKeys.length === 24 &&
+      rowKeys.length + vocabKeys.length + liveKeys.length === derived,
+    'the queue partitions the corpus exactly: rows, plus the sentences that define the label, plus the inherited live rows',
+    `rows=${rowKeys.length} + vocabulary=${vocabKeys.length} + live=${liveKeys.length} = ` +
+      `${rowKeys.length + vocabKeys.length + liveKeys.length}, derived=${derived}`,
+  );
+
+  // ---- the live half is read from its owner, never copied
+
+  const liveText = await readFile(join(REPO, LIVE_DOC), 'utf8');
+  const liveRows = [...liveText.matchAll(/^\| (LIVE-\d\d) \|(.*)$/gm)].map((m) => ({ id: m[1], rest: m[2] }));
+  const liveIds = liveRows.map((r) => r.id);
+  const denseLive = liveIds.every((id, i) => id === `LIVE-${String(i + 1).padStart(2, '0')}`);
+  const statusOf = (r) => r.rest.replace(/\|$/, '').split('|').pop().trim();
+  const partial = liveRows.filter((r) => /^`?PARTIAL/.test(statusOf(r))).map((r) => r.id);
+  const executed = liveRows.filter((r) => /^`?YES/.test(statusOf(r))).map((r) => r.id);
+  const unknownStatus = liveRows.filter((r) => !/^`?(NO|PARTIAL|YES)/.test(statusOf(r))).map((r) => r.id);
+  check(
+    liveIds.length === 24 && denseLive,
+    'the live rows this queue inherits are exactly LIVE-01 to LIVE-24, in order',
+    `derived ${liveIds.length}: ${liveIds.join(',')}`,
+  );
+  check(
+    partial.length === 1 && partial[0] === 'LIVE-14' && executed.length === 0 && unknownStatus.length === 0,
+    'in this iteration exactly one live row is partially executed and none is executed -- the queue may not read ahead',
+    `partial=${partial.join(',') || 'none'} executed=${executed.join(',') || 'none'} unreadable=${unknownStatus.join(',') || 'none'}`,
+  );
+  const ghostRefs = verif.matrix
+    .filter((r) => r.closesBy.kind === 'live-row' && !liveIds.includes(r.closesBy.ref))
+    .map((r) => `${r.id}->${r.closesBy.ref}`);
+  const prematureNew = verif.matrix
+    .filter((r) => r.closesBy.kind === 'new-live-row' && liveIds.some((id) => r.closesBy.ref.includes(id)))
+    .map((r) => r.id);
+  check(
+    ghostRefs.length === 0 && prematureNew.length === 0,
+    'a row that closes by a live row names a row the live matrix has, and a row that needs a new one does not claim it exists',
+    `not a row: ${ghostRefs.join(', ') || 'none'}; already present: ${prematureNew.join(', ') || 'none'}`,
+  );
+
+  // ---- promises the queue makes to itself: a named assertion must not already be green
+
+  const promisedAssertions = verif.matrix.filter((r) => r.closesBy.kind === 'assertion');
+  const alreadyGreen = promisedAssertions.filter((r) => labels.has(r.closesBy.ref)).map((r) => r.id);
+  check(
+    promisedAssertions.length >= 10 && alreadyGreen.length === 0,
+    'every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled',
+    `already green and still queued: ${alreadyGreen.join(', ') || 'none'}`,
+  );
+
+  // ---- the compatibility rows that owe a measurement are queued here too
+
+  const comp = await readJson(join(PKG, 'compatibility.json'));
+  const deferredComp = comp.matrix.filter((r) => r.verdict === 'deferred-needs-measurement').map((r) => r.id);
+  const queueText = JSON.stringify(verif.matrix);
+  const missingComp = deferredComp.filter((id) => !queueText.includes(id));
+  check(
+    deferredComp.length === 4 && missingComp.length === 0,
+    'the four compatibility promises that owe a browser measurement are queued as the measurement they owe',
+    `not in the queue: ${missingComp.join(', ') || 'none'}`,
+  );
+
+  // ---- the distribution the document reads aloud
+
+  const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
+  const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
+  check(
+    count('state', 'no-code') === 53 && count('state', 'no-check') === 13 && count('state', 'no-run') === 2 &&
+      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 75,
+    'the state distribution doc 39 reads aloud is what the data says',
+    `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
+      `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
+  );
+  check(
+    count('owner', 'connector') === 34 && count('owner', 'extension') === 11 && count('owner', 'packages') === 3 &&
+      count('owner', 'ui') === 3 && count('owner', 'contracts') === 6 && count('owner', 'tools') === 6 &&
+      count('owner', 'ci') === 7 && count('owner', 'human') === 2 && count('owner', 'external') === 3,
+    'the owner distribution doc 39 reads aloud is what the data says',
+    `connector=${count('owner', 'connector')} extension=${count('owner', 'extension')} ` +
+      `packages=${count('owner', 'packages')} ui=${count('owner', 'ui')} contracts=${count('owner', 'contracts')} ` +
+      `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
+  );
+  check(
+    kindCount('live-row') === 39 && kindCount('new-live-row') === 1 && kindCount('assertion') === 15 &&
+      kindCount('gate') === 3 && kindCount('tool') === 6 && kindCount('ci-step') === 6 &&
+      kindCount('decision') === 2 && kindCount('external-measurement') === 3,
+    'the closing-mechanism distribution doc 39 reads aloud is what the data says',
+    `live=${kindCount('live-row')} new-live=${kindCount('new-live-row')} assertion=${kindCount('assertion')} ` +
+      `gate=${kindCount('gate')} tool=${kindCount('tool')} ci=${kindCount('ci-step')} ` +
+      `decision=${kindCount('decision')} external=${kindCount('external-measurement')}`,
+  );
+
+  // ---- the argument, when it exists
+
+  const verifDoc = join(REPO, 'docs', 'architecture', '39-verification-matrix.md');
+  if (existsSync(verifDoc)) {
+    const text = await readFile(verifDoc, 'utf8');
+    const missing = [
+      ...ids.filter((id) => !text.includes(id)),
+      ...verif.states.values.filter((s) => !text.includes(`\`${s}\``)),
+      ...verif.owners.values.filter((o) => !text.includes(`\`${o}\``)),
+      ...verif.closingKinds.values.filter((k) => !text.includes(`\`${k}\``)),
+      ...deferredComp.filter((id) => !text.includes(id)),
+    ];
+    check(
+      missing.length === 0 && text.includes('verification.json'),
+      'the verification document names every row, state, owner, closing kind and owed compatibility promise the data declares',
+      `absent from doc 39: ${missing.join(', ') || 'none'}`,
+    );
+    const checkTables = text.split('## 11. Who owns each check')[1]?.split('## 13.')[0] ?? '';
+    const quoted = [...checkTables.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    const staleLabels = quoted.filter((q) => !labels.has(q));
+    check(
+      quoted.length >= 12 && staleLabels.length === 0,
+      'every mechanism doc 39 names is a check this run actually makes',
+      `not an assertion label: ${staleLabels.join(' | ') || 'none'}`,
+    );
+    const layoutDoc = await readFile(join(REPO, 'docs', 'architecture', '20-target-repository-layout.md'), 'utf8');
+    check(
+      layoutDoc.includes('39-verification-matrix.md') &&
+        liveText.includes('39-verification-matrix.md') &&
+        text.includes('docs/verification/live-matrix.md'),
+      'the two documents that made this queue mandatory are named by it, and it names the live matrix it inherits from',
+      'doc 20 and the live matrix each point here; this document must point back at both',
+    );
+  } else {
+    note('DEFERRED: 39-verification-matrix.md cross-check (file not present yet)');
+  }
+}
+
+
+// ---------------------------------------------------------------- the open questions as a contract
+//
+// A document that cannot answer something says so by naming docs/architecture/40-open-decisions.md. A deferral is
+// worth nothing while nothing counts it: the register in `packages/schema/open-decisions.json` is re-derived from
+// the corpus on every run, so a question nobody queued, a queued question whose citing line was rewritten under it,
+// and one line claimed by two entries are each a build failure. The membership rule is the data's own
+// (`citation.rule`): a line that names the file, plus every bullet of a list whose header line names it -- the
+// header is the sentence that says "these are open", not a deferral in itself, and a line that merely lists the
+// file among documents is declared in `notADeferral` rather than silently dropped from the arithmetic.
+//
+// The register also ties each question to the rows it gates, which is what makes "open" auditable rather than a
+// mood: a `verification.json` row that closes by a decision must be named by at least one entry, or the queue
+// waits on a question nobody wrote down.
+
+{
+  const odec = await readJson(join(PKG, 'open-decisions.json'));
+  const verifForOdec = await readJson(join(PKG, 'verification.json'));
+  const compatForOdec = await readJson(join(PKG, 'compatibility.json'));
+  const OPEN_DOC = 'docs/architecture/40-open-decisions.md';
+  // A document may name the register by basename or by path; either is a deferral, so the scan matches the
+  // basename and `citation.where` says which tree it reads.
+  const OPEN_NAME = '40-open-decisions.md';
+
+  const openLines = new Map();
+  for await (const f of walk(join(REPO, 'docs'))) {
+    if (!f.endsWith('.md')) continue;
+    const rel = f.slice(REPO.length + 1).replace(/\\/g, '/');
+    if (rel.endsWith(OPEN_NAME)) continue;
+    openLines.set(rel, (await readFile(f, 'utf8')).split(/\r?\n/));
+  }
+  check(
+    openLines.size >= 40,
+    'the register is derived from the whole documentation corpus, not from the files it was written against',
+    `${openLines.size} markdown documents under docs/`,
+  );
+
+  const deferralSites = new Map();
+  const capturingHeaders = [];
+  for (const [rel, lines] of openLines) {
+    lines.forEach((line, i) => {
+      if (!line.includes(OPEN_NAME)) return;
+      const trimmed = line.trim();
+      if (!/[:]\*{0,2}\s*$/.test(trimmed)) {
+        deferralSites.set(`${rel}:${i + 1}`, trimmed);
+        return;
+      }
+      let j = i + 1;
+      let captured = 0;
+      while (j < lines.length) {
+        while (j < lines.length && lines[j].trim() === '') j += 1;
+        if (j >= lines.length || !/^\s*-\s/.test(lines[j])) break;
+        let k = j + 1;
+        while (k < lines.length && lines[k].trim() !== '' && !/^\s*-\s/.test(lines[k])) k += 1;
+        deferralSites.set(`${rel}:${j + 1}`, lines[j].trim());
+        captured += 1;
+        j = k;
+      }
+      if (captured === 0) deferralSites.set(`${rel}:${i + 1}`, trimmed);
+      else capturingHeaders.push(`${rel}:${i + 1}`);
+    });
+  }
+  for (const key of capturingHeaders) deferralSites.delete(key);
+  const notSites = [];
+  for (const nd of odec.notADeferral) {
+    const lines = openLines.get(nd.doc);
+    const hits = lines === undefined ? [] : lines.map((l, i) => [l, i + 1]).filter(([l]) => l.includes(nd.anchor));
+    if (hits.length !== 1) notSites.push(`${nd.doc} anchor matches ${hits.length} lines`);
+    else if (!deferralSites.delete(`${nd.doc}:${hits[0][1]}`)) notSites.push(`${nd.doc}:${hits[0][1]} is not a site`);
+  }
+  check(
+    notSites.length === 0,
+    'each line the register declares "not a deferral" is exactly one line and really would otherwise count as one',
+    `wrong: ${notSites.join(' | ') || 'none'}`,
+  );
+  check(
+    deferralSites.size === odec.citation.counted,
+    'the number of lines that defer to the open-decisions register is the number the register declares',
+    `derived ${deferralSites.size}, declared ${odec.citation.counted} -- a document gained or lost a deferral, ` +
+      'or the count was typed rather than measured',
+  );
+
+  const siteOwner = new Map();
+  const unresolved = [];
+  for (const o of odec.register) {
+    for (const a of o.at) {
+      const lines = openLines.get(a.doc);
+      if (lines === undefined) {
+        unresolved.push(`${o.id} -> ${a.doc} (no such document)`);
+        continue;
+      }
+      const hits = lines.map((l, i) => [l, i + 1]).filter(([l]) => l.includes(a.anchor));
+      if (hits.length !== 1) {
+        unresolved.push(`${o.id} -> anchor matches ${hits.length} lines in ${a.doc}`);
+        continue;
+      }
+      const key = `${a.doc}:${hits[0][1]}`;
+      if (!deferralSites.has(key)) unresolved.push(`${o.id} -> ${key} is no longer a deferral site`);
+      else if (siteOwner.has(key)) unresolved.push(`${key} claimed by ${siteOwner.get(key)} and ${o.id}`);
+      else siteOwner.set(key, o.id);
+    }
+  }
+  const unowned = [...deferralSites.keys()].filter((k) => !siteOwner.has(k));
+  check(
+    unresolved.length === 0,
+    'every entry in the register lands on one line of one document, and that line still defers to it',
+    `broken: ${unresolved.slice(0, 6).join(' | ') || 'none'}${unresolved.length > 6 ? ` | +${unresolved.length - 6} more` : ''}`,
+  );
+  check(
+    unowned.length === 0,
+    'no deferral in the corpus is left without a register entry, so no open question is unregistered work',
+    `unowned: ${unowned.slice(0, 6).join(' | ') || 'none'}${unowned.length > 6 ? ` | +${unowned.length - 6} more` : ''}`,
+  );
+
+  const oIds = odec.register.map((o) => o.id);
+  check(
+    oIds.every((id, i) => id === `ODEC-${String(i + 1).padStart(2, '0')}`) &&
+      new Set(oIds).size === oIds.length &&
+      odec.register.every((o) => o.at.length >= 1),
+    'the register is a closed, gapless set of questions and every question was born from a line that deferred to it',
+    `${oIds.length} entries, dense=${oIds.every((id, i) => id === `ODEC-${String(i + 1).padStart(2, '0')}`)}`,
+  );
+  const thin = odec.register.filter((o) =>
+    !/\?\s*$/.test(o.question) || o.options.length < 2 || (o.why ?? '').length < 40 ||
+      !odec.decidedBy.values.includes(o.decidedBy)).map((o) => o.id);
+  check(
+    thin.length === 0,
+    'every open question is a question, names who can answer it, offers the choices a reader must weigh, and says why',
+    `thin or off-vocabulary: ${thin.join(', ') || 'none'}`,
+  );
+  check(
+    new Set(odec.decidedBy.values).size === odec.decidedBy.values.length && odec.decidedBy.values.length >= 5 &&
+      Object.keys(odec.decidedBy.meaning).length === odec.decidedBy.values.length &&
+      odec.scope.owns.length >= 3 && odec.scope.doesNotOwn.length >= 5,
+    'the register owns a closed vocabulary of who-can-decide, each member defined, and a boundary it states itself',
+    `values=${odec.decidedBy.values.length} defined=${Object.keys(odec.decidedBy.meaning).length} ` +
+      `owns=${odec.scope.owns.length} doesNotOwn=${odec.scope.doesNotOwn.length}`,
+  );
+
+  const verifIds = new Set(verifForOdec.matrix.map((r) => r.id));
+  const compatIds = new Set(compatForOdec.matrix.map((r) => r.id));
+  const phantom = [];
+  for (const o of odec.register) {
+    for (const v of o.blocks.verification) if (!verifIds.has(v)) phantom.push(`${o.id} -> ${v}`);
+    for (const c of o.blocks.compatibility) if (!compatIds.has(c)) phantom.push(`${o.id} -> ${c}`);
+  }
+  const gated = new Set(odec.register.flatMap((o) => o.blocks.verification));
+  const decisionRows = verifForOdec.matrix.filter((r) => r.closesBy.kind === 'decision').map((r) => r.id);
+  check(
+    phantom.length === 0 && decisionRows.every((id) => gated.has(id)) &&
+      gated.size >= decisionRows.length,
+    'every row a question gates exists, and every row the queue says waits on a decision is gated by a written question',
+    `phantom=${phantom.join(', ') || 'none'} unregistered=${decisionRows.filter((id) => !gated.has(id)).join(', ') || 'none'}`,
+  );
+  const nonBlocking = odec.register.filter((o) => o.blocks.verification.length + o.blocks.compatibility.length === 0);
+  check(
+    nonBlocking.length === 0,
+    'no register entry asks a question that blocks nothing, so an open question is work owed and not a worry noted',
+    `blocks nothing: ${nonBlocking.map((o) => o.id).join(', ') || 'none'}`,
+  );
+
+  const odecDoc = join(REPO, 'docs', 'architecture', '40-open-decisions.md');
+  if (existsSync(odecDoc)) {
+    const text = await readFile(odecDoc, 'utf8');
+    const missing = [
+      ...oIds.filter((id) => !text.includes(id)),
+      ...odec.decidedBy.values.filter((v) => !text.includes(`\`${v}\``)),
+    ];
+    check(
+      missing.length === 0 && text.includes('open-decisions.json'),
+      'the open-decisions document names every registered question and every word of the who-can-decide vocabulary',
+      `absent from doc 40: ${missing.join(', ') || 'none'}`,
+    );
+    check(
+      !/Verified: *(?:NO|PARTIAL)/i.test(text),
+      'the register document is a list of questions, not a source of deferred verification claims of its own',
+      'doc 40 carries a `Verified:` label; the queue in verification.json owns those, and this document is not in it',
+    );
+  } else {
+    note('DEFERRED: 40-open-decisions.md cross-check (file not present yet)');
+  }
+}
+
 
 // ---------------------------------------------------------------- report
 

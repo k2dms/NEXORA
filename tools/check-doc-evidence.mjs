@@ -33,14 +33,22 @@ const DERIVED_PREFIX = ['build/', 'tmp/', 'dist/', 'node_modules/', 'package-loc
 // The architecture series is written across sessions. A doc that is planned and named
 // in the layout spec is excused from "exists" — but only by exact filename, and the list
 // shrinks as each document is written. It is printed on every run so a stale excuse
-// cannot hide there.
-const PLANNED_DOCS = new Set([
-  'docs/architecture/39-verification-matrix.md',
-  'docs/architecture/40-open-decisions.md',
-  'docs/verification/README.md',
-]);
+// cannot hide there. The series is now complete: this set is empty, and a doc added here
+// is a document that has been named but not written.
+const PLANNED_DOCS = new Set([]);
 
 const CITATION_RE = /`([^`\s]+?):(\d+)(?:-(\d+))?`/g;
+
+// Files that are rewritten in place, by hand, every session. A line number into one of
+// them is correct only until the next paragraph is inserted above it, which is how eight
+// citations into the state document came to point at the wrong decisions in one sitting.
+// Cite these by section (`docs/PROJECT-STATE.md` §6), never by line. `packages/schema/
+// scripts/verify.mjs` belongs here too and joins when its 44 remaining line cites are
+// converted to assertion labels, in the one commit PROJECT-STATE §6 #8 already promises.
+// `docs/audit/99-baseline-report.md` joins on 2026-11-05 evidence: it is the file every
+// probe round appends to, and a row added to its §2 table moved three citations in
+// `docs/architecture/20-target-repository-layout.md` that addressed §6 by line number.
+const MUTABLE_CITATION_TARGETS = ['docs/PROJECT-STATE.md', 'docs/audit/99-baseline-report.md'];
 
 // A JSON Pointer citation is the stable half of the contract layer: `x.schema.json#/a/b`
 // survives every edit that would silently invalidate `x.schema.json:14`. It is therefore
@@ -51,7 +59,11 @@ const POINTER_RE = /`([^`\s#]+?)#([A-Za-z0-9_$\-~%.\/]*)`/g;
 // citation kind this tool did not check, and the first typo it missed was real:
 // `docs/audit/05-storage-sync-migration.md` for a file named
 // `05-storage-sync-and-migration.md`. A wrong doc name reads exactly like a right one.
-const DOCNAME_RE = /`((?:docs|tools|packages)\/[^`\s:#]*?\.md)(?:[#:]?\d*)`/g;
+// The same holds for the gate scripts the documents name as runnable commands -- a
+// `tools/check-*.mjs` that does not exist is a README that cannot be followed -- so
+// `.mjs` joins `.md` here.
+// `tools/*.mjs` is a glob in a layout table, not a file, so `*` is outside the path class.
+const DOCNAME_RE = /`((?:docs|tools|packages)\/[^`\s:#*][^`\s:#*]*?\.(?:md|mjs))(?:[#:]?\d*)`/g;
 
 async function* mdFiles(dir) {
   let entries;
@@ -96,6 +108,7 @@ const outOfRange = [];
 const unresolved = [];
 const blankTarget = [];
 const selfCite = [];
+const mutableCite = [];
 let checked = 0;
 const pointerUnresolved = [];
 let pointerChecked = 0;
@@ -118,6 +131,10 @@ for await (const doc of mdFiles(join(REPO, 'docs'))) {
     // to cite the pointer resolver.
     if (raw === 'tools/check-doc-evidence.mjs') {
       selfCite.push([label, match[0]]);
+      continue;
+    }
+    if (MUTABLE_CITATION_TARGETS.includes(raw)) {
+      mutableCite.push([label, match[0]]);
       continue;
     }
     const last = to ? Number(to) : Number(from);
@@ -206,7 +223,8 @@ const problems =
   blankTarget.length +
   pointerProblems +
   missingDocs.length +
-  selfCite.length;
+  selfCite.length +
+  mutableCite.length;
 console.log(
   `checked ${checked} path:line citations, ${pointerChecked} path#pointer citations and ${docNameChecked} doc-name references in docs/`,
 );
@@ -230,6 +248,13 @@ if (selfCite.length) {
   console.error(`\nSELF CITATION (${selfCite.length}) -- this file's line numbers move whenever a rule is added:`);
   for (const [doc, cite] of selfCite) {
     console.error(`  ${doc}  cites \`${cite}\`  (say CITATION_RE, POINTER_RE, FUTURE_PREFIX, DERIVED_PREFIX, PLANNED_DOCS or blankTarget instead)`);
+  }
+}
+
+if (mutableCite.length) {
+  console.error(`\nMUTABLE TARGET (${mutableCite.length}) -- a line cite into a file rewritten in place every session:`);
+  for (const [doc, cite] of mutableCite) {
+    console.error(`  ${doc}  cites \`${cite}\`  (say \`docs/PROJECT-STATE.md\` §n instead)`);
   }
 }
 

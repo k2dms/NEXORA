@@ -6,7 +6,7 @@
 > Everything is read statically from the repo; nothing was loaded in a browser.
 
 Every claim is tagged **VERIFIED** / **INFERRED** / **UNVERIFIED**. `docs/PROJECT-STATE.md` §1 (version/ID
-continuity), §2.6 (artifact baseline) and the "not fixed" list at `docs/PROJECT-STATE.md:282-289` are the settled
+continuity), §2.6 (artifact baseline) and the "not fixed" list in `docs/PROJECT-STATE.md` §6 are the settled
 findings this document expands; the refinements found are reported in §2 and §3 and do not contradict them.
 
 ---
@@ -31,12 +31,12 @@ no `firefox/manifest.json`, and no template elsewhere (Glob for `**/manifest*.js
 | `action.default_popup` | `"popup-iframe.html"` `:23` | `"popup/index.html"` `:23` | the popup divergence documented in doc 08; the service worker overrides Chromium's value at runtime (`omega-target-chromium-extension/overlay/x-background.js:26-30`) | **VERIFIED** |
 | `background` | `"service_worker": "x-background.js"` `:26` | `"scripts": ["x-background.js"]` `:26` | Chromium uses an MV3 service worker; Firefox uses an event page — different lifetimes, same entry script | **VERIFIED** |
 | `background.type` | `"module"` `:27` | `"module"` `:27` | ES-module import graph in `x-background.js` | **VERIFIED** |
-| `minimum_chrome_version` | `"88"` `:29` | `"88"` `:29` | ignored by Firefox; on Chromium it predates `chrome.storage.session` (see PROJECT-STATE §2, `omega-target-chromium-extension/src/module/options.coffee:106-140`) — **not fixed**, `docs/PROJECT-STATE.md:286` | **VERIFIED** |
+| `minimum_chrome_version` | `"88"` `:29` | `"88"` `:29` | ignored by Firefox; on Chromium it predates `chrome.storage.session` (see PROJECT-STATE §2, `omega-target-chromium-extension/src/module/options.coffee:106-140`) — **not fixed**, `docs/PROJECT-STATE.md` §6 | **VERIFIED** |
 | `options_page` | `"options.html"` `:30` | **absent** — `minimum_chrome_version` (`:29`) is immediately followed by `options_ui` (`:30`) | Firefox relies on `options_ui` only | **VERIFIED** |
 | `options_ui` | `page/browser_style/open_in_tab` `:31-34` | same keys `:30-33` | opens in its own tab | **VERIFIED** |
 | `commands` | `_execute_action` `Alt+Shift+O` `:37` | `_execute_action` `:36` | keyboard command uses the MV3 `_execute_action` id, consistent with `action` | **VERIFIED** |
 | `permissions` | proxy/tabs/alarms/storage/unlimitedStorage/webRequest/**webRequestAuthProvider**/contextMenus `:40-47` | proxy/tabs/alarms/storage/unlimitedStorage/webRequest/**webRequestBlocking**/contextMenus `:39-46` | Firefox keeps blocking webRequest (`:45`); Chromium keeps the auth-provider response capability (`:46`) | **VERIFIED** |
-| `host_permissions` | `["<all_urls>"]` `:49` | `["<all_urls>"]` `:48` | broadest possible host grant — an NEXORA permission-reduction target (`docs/PROJECT-STATE.md:286`) | **VERIFIED** |
+| `host_permissions` | `["<all_urls>"]` `:49` | `["<all_urls>"]` `:48` | broadest possible host grant — an NEXORA permission-reduction target (`docs/PROJECT-STATE.md` §6) | **VERIFIED** |
 | `browser_specific_settings.gecko` | **absent** | `id "suziwen1@gmail.com"`, `strict_min_version "112.0"` `:51-52` | the AMO identity lives here; see §3 | **VERIFIED** |
 
 Absent from **both** manifests (grep across every non-`node_modules` JSON in the repo returns no match for any of
@@ -46,12 +46,12 @@ reading the whole bodies `omega-target-chromium-extension/overlay/manifest.json:
 
 * **No extension CSP.** With MV3 the extension pages get Chromium's default isolated CSP; the repo adds none, so
   the Angular `ng-csp` stance in `omega-web/src/options.jade:2` is a UI-layer convention, not a manifest
-  guarantee. Adding a stricter CSP is explicitly on the not-fixed list (`docs/PROJECT-STATE.md:286`). **VERIFIED**
+  guarantee. Adding a stricter CSP is explicitly on the not-fixed list (`docs/PROJECT-STATE.md` §6). **VERIFIED**
 * **No `web_accessible_resources`.** The iframe popup (`overlay/popup-iframe.html`) loads same-origin, so nothing
   needs to be exposed cross-origin; a NEXORA overlay that reaches into page contexts would first have to add this
   key. **INFERRED**
-* **No `key` field.** Consequence is treated in §6; do not add it casually — `docs/PROJECT-STATE.md:286` lists
-  "adding `key`" as deliberately *not* done, and `docs/PROJECT-STATE.md:414` points at the upgrade path it
+* **No `key` field.** Consequence is treated in §6; do not add it casually — `docs/PROJECT-STATE.md` §6 lists
+  "adding `key`" as deliberately *not* done, and `docs/PROJECT-STATE.md` §2 points at the upgrade path it
   interacts with. **VERIFIED**
 
 ---
@@ -134,7 +134,7 @@ upstream ZeroOmega GitHub release area, distinct from `dist/*-release.zip` produ
 `release.yml` contains **no literal `ZeroOmega` or `SwitchyOmega` string** — it only references `dist/*-release.zip`
 and creates a GitHub Release on whichever repo the tag is pushed to. The surviving legacy brand lives instead in
 `omega-target-chromium-extension/overlay/manifest.json:3` (the `name`), the fixed basenames in `omega-target-chromium-extension/grunt/compress.coffee:6,22`, and the CircleCI filenames
-(`§5`). `docs/PROJECT-STATE.md:287-288` lists "NEXORA branding in `release.yml`" as a not-fixed *action item*
+(`§5`). `docs/PROJECT-STATE.md` §6 lists "NEXORA branding in `release.yml`" as a not-fixed *action item*
 (add branding / rename artifacts there), which is consistent — it is work not yet done, not text present now. **VERIFIED**
 
 ---
@@ -146,7 +146,7 @@ and creates a GitHub Release on whichever repo the tag is pushed to. The survivi
 * Base image `circleci/node:7.10` `:5` — that tag is far below the repo's own floor (`README.md:91` says node 20.x
   required; CI uses 22, `.github/workflows/release.yml:21`). Modern CircleCI no longer offers it. **VERIFIED**
 * It restores/saves **six** dependency caches keyed on each package manifest `:12-35` — the same fragility
-  PROJECT-STATE §2 flags (`docs/PROJECT-STATE.md:120`). **VERIFIED**
+  PROJECT-STATE's name-coupling list flags (`docs/PROJECT-STATE.md` §3). **VERIFIED**
 * Global tool install `sudo npm install -g grunt-cli@1.2.0 bower web-ext json` `:37`; bare `grunt` (not `npx`) `:64`. **VERIFIED**
 * Version string built from the manifest: `base_ver=$(json -f "overlay/manifest.json" version)` `:71`,
   `FULL_VER="${base_ver}-${CIRCLE_BUILD_NUM}.ci.${commit_rev}"` `:73`. **VERIFIED**
@@ -156,7 +156,7 @@ and creates a GitHub Release on whichever repo the tag is pushed to. The survivi
   `mv web-ext-artifacts/*.zip` `:94`) depends on the same dead branch. **VERIFIED**
 
 Consequence for NEXORA: this file is not a working distribution path and is pending deletion
-(`docs/PROJECT-STATE.md:402`, "delete in a separate commit or keep and mark dead"). Do not treat it as evidence of
+(`docs/PROJECT-STATE.md` §9 item 3, "delete in a separate commit or keep and mark dead"). Do not treat it as evidence of
 current release behaviour. **VERIFIED**
 
 ---
@@ -165,16 +165,17 @@ current release behaviour. **VERIFIED**
 
 1. **No arbitrary local binary inside the extension zip.** The zip is built solely from `build/**` minus the
    manifest templates plus the generated manifest (`omega-target-chromium-extension/grunt/compress.coffee:9-16`). PROJECT-STATE §2 is explicit that
-   "The Connector is **never** inside the extension zip" (`docs/PROJECT-STATE.md:139`): the Go+Xray connector is
-   a separate downloadable/installed component (ADR-0019, referenced at `docs/PROJECT-STATE.md:385`), not an
+   "The Connector is **never** inside the extension zip" (`docs/PROJECT-STATE.md` §3): the Go+Xray connector is
+   a separate downloadable/installed component (ADR-0019, recorded as a decision in
+   `docs/PROJECT-STATE.md` §8 item 10), not an
    extension payload. Any NEXORA feature needing a local executable must ship it out-of-band. **VERIFIED**
 2. **Adding `manifest.key` is a decision, not a cleanup.** Neither manifest has a `key` (§1). Pinning one would
    fix the Chromium extension ID to a self-derived value, changing how the store and unpacked-load identity are
-   computed. PROJECT-STATE lists "adding `key`" as intentionally *not* done (`docs/PROJECT-STATE.md:286`) and ties
-   ID continuity to version continuity (`docs/PROJECT-STATE.md:46`); the ADR is the authority, so this document
+   computed. PROJECT-STATE lists "adding `key`" as intentionally *not* done (`docs/PROJECT-STATE.md` §6) and ties
+   ID continuity to version continuity (`docs/PROJECT-STATE.md` §0); the ADR is the authority, so this document
    only records the constraint and does not restate it. **VERIFIED**
 3. **Update continuity is the hard constraint.** Because NEXORA "continue[s] the ZeroOmega line (3.6.x → 4.x),
-   same extension ID, existing CWS/Edge/AMO listings" (`docs/PROJECT-STATE.md:46`), the packaged `manifest.json`
+   same extension ID, existing CWS/Edge/AMO listings" (`docs/PROJECT-STATE.md` §0), the packaged `manifest.json`
    must keep producing the *same* identity the stores already know. For Firefox that identity is
    `omega-target-chromium-extension/overlay/manifest-firefox.json:51` (gecko.id) and must not change. **VERIFIED**
 4. **Version string must remain a single dotted value.** CircleCI parsed it (`:71`), the GitHub Release trigger is
@@ -187,17 +188,17 @@ current release behaviour. **VERIFIED**
 * The upgrade handler reads `chrome.runtime.getManifest().version` on `reason 'update'` and only wipes storage when
   the version transition straddles `3.3.0` (`omega-target-chromium-extension/src/coffee/background.coffee:37-46`). Changing the version line to `4.x` keeps
   `compare '3.3.0', currentVersion, '>'` false, so the wipe trap does not fire for NEXORA-era updates
-  (`docs/PROJECT-STATE.md:414`). **INFERRED** (arithmetic, not executed)
+  (`docs/PROJECT-STATE.md` §2). **INFERRED** (arithmetic, not executed)
 * Both manifests must bump together. The build writes them from two separate templates
   (`Gruntfile.coffee:6,9`); a NEXORA PR that edits only one would desynchronise the shipped versions. There is no
   single-source version file to guard against this. **VERIFIED**
 * Artifact renaming (`dist/*-release.zip` → `nexora-…`) is a cut-over-level change touching `compress.coffee` *and*
-  `.github/workflows/release.yml:29-39` together (`docs/PROJECT-STATE.md:140`); until then the zip basenames are load-bearing for
+  `.github/workflows/release.yml:29-39` together (`docs/PROJECT-STATE.md` §3); until then the zip basenames are load-bearing for
   `.github/workflows/release.yml:33-34` / `:40-43` and the CircleCI legacy (`.circleci/config.yml:82`). **VERIFIED**
 * Store-side publishing is not automated here: `release.yml` only creates a GitHub Release
   (`:37,40-43`). Uploading `dist/chromium-release.zip`/`firefox-release.zip` to CWS/Edge/AMO is a manual step no
   file in the repo performs, so NEXORA continuity depends on the *same* listing credentials and IDs being reused
-  (`docs/PROJECT-STATE.md:46`). **INFERRED**
+  (`docs/PROJECT-STATE.md` §0). **INFERRED**
 
 ---
 

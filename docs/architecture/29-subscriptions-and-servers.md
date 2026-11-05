@@ -347,7 +347,7 @@ no cache-busting parameter at all, and a feed that requires one is served by the
 | Invariant | Checked by | Status |
 |---|---|---|
 | A failed refresh leaves the last good Servers byte-identical and usable | `packages/schema/subscription-source.schema.json#/properties/keepLastGood` (`const true`) + `examples/invalid/subscription.keep-last-good-false.json`; the runtime half is `LIVE-12` | PARTIAL |
-| An HTTP 404 never deletes a subscription | `packages/schema/protocol/commands/subscription.refresh.json#/invariants`; the UI half is `LIVE-11` | Verified: NO — Phase 2 |
+| An HTTP 404 never deletes a subscription | `packages/schema/protocol/commands/subscription.refresh.json#/invariants`; the UI half is `LIVE-12` | Verified: NO — Phase 2 |
 | No credential-shaped query in a synced `url` | schema `packages/schema/subscription-source.schema.json#/allOf/0`, rejected case `packages/schema/examples/invalid/subscription.url-token.json`, accepted display form `packages/schema/examples/subscription.tokenised.json` | **Verified** — runs in `npm --prefix packages/schema run verify` |
 | Every Server a refresh returns validates against the stored schema, so extraction ran | `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/servers` (`$ref` to `server.schema.json`); the fixture pair `packages/schema/fixtures/protocol/probes-and-ops.jsonl` carries three real servers through it | **Verified** (schema half) — the keystore write is `LIVE-18` |
 | The engine never fetches, and no feed body enters the browser process | prose rule; testable as a build-graph assertion (no `fetch(`/`XMLHttpRequest` under `nexora/extension/src/subscriptions/**`) | Verified: NO — deferred to Phase 2 |
@@ -383,3 +383,4 @@ Each was found by reading one artefact against another, not by running anything.
 | 3 | Should the 64-inbound ceiling rise, or should profiles compile a subset? | `docs/architecture/27-config-compilation-pipeline.md` §5 owns the topology; the number belongs to `docs/architecture/40-open-decisions.md` |
 | 4 | `KeystoreUnavailable` on a second machine for `urlRef`/`headersRef` sources: which UI state names it | `docs/architecture/37-ui-architecture.md` §4 |
 | 5 | Whether a subscription may ever be created by the Connector (import of a legacy profile with `sourceUrl`) or only by the user | `docs/architecture/35-schema-versioning-migration.md` §6 |
+| 6 | Whether the Connector owns subscriptions end to end, or the extension may receive feed-derived Servers through chunked events -- §2's single-frame answer holds only while that is true; `Verified: NO — Phase 2` until someone answers | `docs/architecture/40-open-decisions.md`; the human half is `docs/PROJECT-STATE.md` §9's fourth decision |

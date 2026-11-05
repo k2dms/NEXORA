@@ -164,7 +164,7 @@ are the same principle at two layers, which is why neither is allowed to be "bes
 | `domainStrategy` accepts only Xray's three values | "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" in `packages/schema/scripts/verify.mjs:847-890` | **GREEN** |
 | `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256` | **GREEN** for the shape; the *reporting behaviour* is Verified: NO |
 | Every `*Hash` field is one canonical lowercase sha256 pattern | the "`<field>` uses the canonical sha256 pattern" coverage check at `packages/schema/scripts/verify.mjs:750` | **GREEN** |
-| Compilation is byte-deterministic | nothing | Verified: NO — golden configs, LIVE-02 |
+| Compilation is byte-deterministic | nothing | Verified: NO — golden configs (VER-28's tier; no live row tests determinism) |
 | Non-loopback bind is impossible to emit | nothing (the `const` helps, the compiler must still be checked) | Verified: NO — deferred to Phase 2 |
 | Block port range and allocation range are disjoint | nothing | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | nothing | Verified: NO — deferred to Phase 2 |

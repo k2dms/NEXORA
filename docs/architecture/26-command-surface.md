@@ -232,7 +232,7 @@ accidental "delete all credentials" is structurally impossible from a UI bug.
 | Chunk mirror equals envelope chunk shape | `packages/schema/scripts/verify.mjs:500-531` | **Verified** |
 | Chunk groups in the fixtures are complete | `packages/schema/scripts/verify.mjs:572-652` | **Verified** |
 | `config.apply` restarts only on hash change | no code exists to run | **Verified: NO — deferred to Phase 2** (golden config test, `docs/architecture/27-config-compilation-pipeline.md`) |
-| `core.select` performs no config write | no code exists to run | **Verified: NO — deferred to Phase 2** (`LIVE-05` plus a hash-equality assertion) |
+| `core.select` performs no config write | no code exists to run | **Verified: NO — deferred to Phase 2** (`core.select` leaves the applied-config hash unchanged, asserted once the handler exists) |
 | `profile.import` rejects a dangling `serverId` | not expressible in the schema | **Verified: NO — deferred to Phase 2** (ProfileRegistry invariant) |
 | `diagnostics.get` output contains no secret | fixtures cannot prove absence over a real keystore | **Verified: NO — deferred to Phase 2** (`LIVE-10`) |
 | `server.test` layer results are not replayed | static half green: assertions "probe is non-replayable: server.test" and "probe is answered exactly once" over `packages/schema/fixtures/protocol/` | **Verified: NO — deferred to Phase 2** for the runtime half (rides on `LIVE-05`) |

@@ -88,7 +88,7 @@ means: if the outer process dies, the inner one is destroyed by the OS, not by c
 does not happen by default and therefore has to be *requested* — Job Objects with
 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, because a bare child outlives its parent there. On Linux/macOS the
 equivalents are `prctl(PR_SET_PDEATHSIG)` and `kqueue`/`EVFILT_PROC`. Each level is adopted by the level above
-at spawn time and re-adopted on reconnect. `Verified: NO — deferred to Phase 2` (LIVE-08 is the row that kills
+at spawn time and re-adopted on reconnect. `Verified: NO — deferred to Phase 2` (LIVE-13 is the row that kills
 a parent and asserts no orphan remains).
 
 The inversion this creates is deliberate: the *browser* is the least durable process in the chain, so nothing
@@ -194,7 +194,7 @@ recorded in `docs/architecture/40-open-decisions.md`).
 | Invariant | Enforcing check today | State |
 |---|---|---|
 | Exactly one Native Messaging entry point per extension installation | nothing (no host exists yet) | Verified: NO — deferred to Phase 2 |
-| `Xray ⊆ connector ⊆ host` containment holds after a SIGKILL of the parent | nothing | Verified: NO — LIVE-08 |
+| `Xray ⊆ connector ⊆ host` containment holds after a SIGKILL of the parent | nothing | Verified: NO — LIVE-13 |
 | The Connector runs in the interactive user's session and never as a service/agent | nothing | Verified: NO — deferred to Phase 2 (§11); the installer must not register an SCM service or a LaunchAgent |
 | Reconnect adopts the running Connector instead of starting a second one | nothing | Verified: NO — deferred to Phase 2 (lock file format open, `docs/architecture/40-open-decisions.md`) |
 | No inbound binds non-loopback | asserted at `core.start` per ADR-0006; the shape is `packages/schema/protocol/commands/core.start.json#/result/properties/inboundPorts` and the compile-time rule is `packages/schema/connector-profile.schema.json#/properties/serverIds` | Verified: NO — deferred to Phase 2 (a Go test, not schema-checkable) |

@@ -6,8 +6,8 @@ Date: 2026-11-04
 ## Context
 
 The decisions that shape NEXORA were agreed in two pre-planning rounds and in a ~1000-line master prompt.
-Where they live today is a prose list in `docs/PROJECT-STATE.md` §8 and the work order line
-`docs/PROJECT-STATE.md:285`. A list of twelve bullets has no address, no date, no status and no owner, so
+Where they live today is a prose list in `docs/PROJECT-STATE.md` §8 and the work order in
+`docs/PROJECT-STATE.md` §6. A list of twelve bullets has no address, no date, no status and no owner, so
 it cannot be cited by a design document, a contract or a test.
 
 Phase 0 fixed an evidence standard for the *audit* half of this branch (see
@@ -82,7 +82,7 @@ continuation log and a pointer, not the source of a decision).
 - `tools/check-doc-evidence.mjs` — VERIFIED — `CITATION_RE` is the extractor whose rules section 7 must respect,
   and `blankTarget` is the rejection this practice inherits. Neither is cited by line number on purpose: this
   file changes every time a citation kind is added, and a line cite into it is the drift this ADR forbids.
-- `docs/PROJECT-STATE.md:285` — VERIFIED — the work order that fixes this format before the other nine.
+- `docs/PROJECT-STATE.md` §6 — VERIFIED — the work order that fixes this format before the other nine.
 - `packages/schema/README.md:51` — VERIFIED — precedent that a decision, a contract and a document must name
   the same set or the build fails; rule 9 generalises that precedent to prose.
 - `docs/audit/00-scope-and-method.md` — VERIFIED (read in full) — the evidence standard adopted in rule 7.

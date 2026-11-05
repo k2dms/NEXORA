@@ -243,11 +243,11 @@ and no bidirectional streaming RPC semantics.
 | Every taxonomy entry declares `retryable` | "every error code declares retryability" | **GREEN** |
 | Probes answered exactly once | "probe is answered exactly once" over the fixtures | **GREEN** |
 | Replays byte-identical after clock-strip | "idempotent replay returns the same result" (5 pairs today) | **GREEN** |
-| 109 fixture frames validate against the envelope | the replay loop | **GREEN** |
-| Sender-side rejection before write | nothing | Verified: NO — LIVE-05 |
-| Heartbeat / missed-heartbeat behaviour | nothing | Verified: NO — LIVE-06 |
-| Late-answer discard by `id` | nothing | Verified: NO — deferred to Phase 2 |
-| Jittered reconnect actually jitters | nothing | Verified: NO — deferred to Phase 2 |
+| Every fixture frame validates against the envelope | the replay loop; it prints the frame count on every run | **GREEN** |
+| Sender-side rejection before write | nothing | Verified: NO — deferred to Phase 2 (the client must refuse a >1 MiB write before the port) |
+| Heartbeat / missed-heartbeat behaviour | nothing | Verified: NO — deferred to Phase 2 (a liveness test drives the 25 s heartbeat and the three-miss deadline) |
+| Late-answer discard by `id` | nothing | Verified: NO — deferred to Phase 2 (a request-table test drops an answer whose `id` is no longer in flight) |
+| Jittered reconnect actually jitters | nothing | Verified: NO — LIVE-13 |
 
 Trace: ADR-0004, ADR-0005, ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0015, ADR-0019 · Contract:
 `packages/schema/protocol/framing.json`, `packages/schema/protocol/envelope.schema.json`,

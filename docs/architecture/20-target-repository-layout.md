@@ -28,7 +28,7 @@ E:/NEXORA
 ├─ .env.example, .gitattributes, .gitignore              EXISTS   root dotfiles added by this iteration (§11)
 ├─ .npmrc ×5                                             EXISTS   one per legacy project, none at root (§8)
 ├─ .github/workflows/release.yml                         EXISTS   legacy tag-driven publisher (§10)
-├─ .github/workflows/verify.yml                          PLANNED  PR-blocking, non-tagging counterpart
+├─ .github/workflows/verify.yml                          EXISTS   PR-blocking, non-tagging counterpart; written 2026-11-05, never run (§11)
 ├─ .circleci/config.yml                                  EXISTS   dead, cannot pass; pending PROJECT-STATE §9.3
 ├─ docs/{README,PROJECT-STATE}.md, audit/, adr/, verification/  EXISTS   Phase 0 + Phase 1 output
 ├─ docs/architecture/                                    PARTIAL  20-40; this file is 20
@@ -85,7 +85,7 @@ files:
 
 Getting it wrong is measured, not theoretical: before the lint demotion `grunt release` exited **0** while
 producing a 352-file zip with no `js/omega_pac.min.js`, which loads as a blank options page
-(`docs/audit/99-baseline-report.md:151-155`). Normative: the six legacy roots and their package names MUST NOT
+(`docs/audit/99-baseline-report.md` §6). Normative: the six legacy roots and their package names MUST NOT
 be moved, renamed, split or merged, and a tidy monorepo requires a superseding ADR naming all 23 sites as
 migration work plus an artifact assertion proving the move
 (`docs/adr/0002-keep-omega-directories-additive-layout.md:30-44`).
@@ -98,7 +98,7 @@ the tripwire is indirect — deleting one breaks a citation in `node tools/check
 `npm run deps` → `npm run dev` → `npm run build` (grunt-hub: omega-pac → omega-target → omega-web →
 omega-target-chromium-extension) → `npm run release` (the `manifest` task filters `downloads` and writes
 `tmp/{chromium,firefox}/manifest.json`; `compress` writes `dist/chromium-release.zip` +
-`dist/firefox-release.zip`) — the chain as agreed at `docs/PROJECT-STATE.md:135-140`.
+`dist/firefox-release.zip`) — the chain as agreed in `docs/PROJECT-STATE.md` §3.
 
 Line-level anchors, all read: `deps` and `dev` are `omega-build/package.json:12`, `:13`; `build` is bare `grunt`
 (`:14`) driven by grunt-hub (`:9`); `release` is `cd ../omega-target-chromium-extension && grunt release` (`:15`)
@@ -115,10 +115,19 @@ permissions are reduced at build time.
 
 Green baseline (Ladder A) that any layout change MUST reproduce: `dist/chromium-release.zip` +
 `dist/firefox-release.zip` at **353 file entries / 5 999 353 B uncompressed / 252 `lib/` entries / 7
-`_locales`**, with `js/omega_pac.min.js` present (`docs/audit/99-baseline-report.md:164-170`). `bower install`
-works on this host, clean-runner reproducibility is UNVERIFIED: no lockfile is tracked (`.gitignore:3`,
-`docs/audit/02-toolchain-decay-and-risk.md:135`) and two Bower deps use the dead `git://` transport
-(`omega-web/bower.json:37`, `:43`).
+`_locales`**, with `js/omega_pac.min.js` present (`docs/audit/99-baseline-report.md` §6) — and reproducible:
+probe-4 rebuilt the whole chain on 2026-11-05 and every one of those assertions held again (§11). The zips'
+sha256 did **not** move because the content changed but because the archive records each entry's build
+timestamp, so a rebuild cannot repeat a hash; that is why `verify.yml` prints it beside the recorded value
+instead of asserting it. `bower install` also succeeds with `omega-web/bower_components/` **removed**: bower
+normalises the declared `git://github.com/…` endpoints to `https://github.com/….git` before it shells out to
+git, so the transport `omega-web/bower.json:37` and `:43` name is never handed to git at all
+(`docs/audit/raw/probe-5-bower-cold-install.txt`, `docs/audit/02-toolchain-decay-and-risk.md` §1.1). Raw
+`git ls-remote git://…` still times out here, which is why `.github/workflows/verify.yml` keeps its
+`insteadOf` step — defence in depth for a caller that does pass the literal URL to git, not the thing that
+makes the build possible. No lockfile is tracked (`.gitignore:3`,
+`docs/audit/02-toolchain-decay-and-risk.md` §6), and 21 of the 26 components came from this host's Bower cache
+in the same measurement, so whether an empty-cache runner resolves all of them stays open.
 
 ## 6. Cut-over commit: definition
 
@@ -137,7 +146,7 @@ or the ADR-before-flip.
 ## 7. Import boundary for `nexora/**`
 
 Nothing under `nexora/**` MAY import from `omega-*`, except types *derived from* `packages/schema`
-(`docs/PROJECT-STATE.md:142`, `docs/adr/0002-keep-omega-directories-additive-layout.md:37`,
+(`docs/PROJECT-STATE.md` §3, `docs/adr/0002-keep-omega-directories-additive-layout.md:37`,
 `docs/adr/0018-workspace-roots-and-no-root-package-json.md:43-45`). Derived means generated from or written
 against a schema — never a re-export of a legacy module: `omega-pac` exports are not a stable contract, the
 schemas are. The legacy engine MUST NOT gain a dependency in the reverse direction either; both sides point at
@@ -191,7 +200,7 @@ the generated one, never the template.
 
 The check that would catch a violation — list the archive, fail on any path outside the known set or on a PE or
 ELF magic byte — **does not exist**. The 353-file and `omega_pac.min.js` figures were obtained by re-measuring
-by hand (`docs/audit/99-baseline-report.md:164-170`), and `.github/workflows/release.yml:31-34` checksums the
+by hand (`docs/audit/99-baseline-report.md` §6, reproduced by probe-4 in §11), and `.github/workflows/release.yml:31-34` checksums the
 zip it just built without inspecting it. **Verified: NO — deferred to Phase 2**, where it becomes a step of
 `.github/workflows/verify.yml` plus a row of `docs/architecture/39-verification-matrix.md`. `.gitignore:4`
 covers the zip and `tools/check-no-secrets.mjs` covers credentials; neither recognises an executable.
@@ -216,7 +225,8 @@ the two lint demotions (`omega-pac/grunt/coffeelint.coffee:11` and the chromium 
 pattern works: `tools/verify-vendor.mjs`, `tools/check-no-secrets.mjs`, `tools/check-doc-evidence.mjs`,
 `.gitattributes:23-25` (Go line rules declared before any Go exists), `.env.example:11` (empty value whose
 comment names the LIVE row it gates), `.gitignore:8-10` (`.env`, `.env.*`, `!.env.example`).
-`.github/workflows/verify.yml` is the planned addition of the same class: a **new** workflow, PR-blocking and
+`.github/workflows/verify.yml` is the addition of the same class, landed on 2026-11-05 and not yet run on a
+runner: a **new** workflow, PR-blocking and
 non-tagging, leaving `.github/workflows/release.yml` untouched — that one fires only on a `v*` tag
 (`.github/workflows/release.yml:6`) and MUST NOT be reused as a verification gate.
 
@@ -238,18 +248,18 @@ non-tagging, leaving `.github/workflows/release.yml` untouched — that one fire
 
 | Invariant | Enforcing check today | State |
 |---|---|---|
-| No credential-shaped literal in a tracked file; no committed `.env`; no PEM | `node tools/check-no-secrets.mjs` (rules at `:6-18`, fixture/doc path exemptions at `:33`, entropy gate at `:55-60`, self-test dispatch at `:128`) | **GREEN** — 13/13 self-test cases |
-| Every `lib/...` vendor reference resolves against `omega-web/lib/` or `build/lib/` | `node tools/verify-vendor.mjs` (roots at `:21-24`, non-zero exit on a miss at `:130-145`) | **GREEN** — and it is what replaced the plan's vendoring step |
-| Every `path:line` citation in `docs/` still resolves | `node tools/check-doc-evidence.mjs` (pattern `:33`, future-path exemptions `:19-28`) | **GREEN for this file** |
-| Contract layer: schemas compile, examples valid, invalid rejected, 109 frames replay, allowlist is exactly 19 with one pre-hello method | `npm --prefix packages/schema run verify` (`packages/schema/package.json:8`; 19-method assertion `packages/schema/scripts/verify.mjs:186`, pre-hello `:187-192`) | **GREEN** — 707 checks |
+| No credential-shaped literal in a tracked file; no committed `.env`; no PEM | `node tools/check-no-secrets.mjs` (the four rules in its header comment, the exemptions in `FIXTURE_PATH_RE` and `VENDORED_PATH_RE`, the shape bar in `credentialShaped` and `isLiteralSecret`, the self-test dispatch in `runSelftest`) | **GREEN** — 13/13 self-test cases |
+| Every `lib/...` vendor reference resolves against `omega-web/lib/` or `build/lib/` | `node tools/verify-vendor.mjs` (`VENDOR_ROOTS` names both roots; a non-empty `missing` exits non-zero) | **GREEN** — and it is what replaced the plan's vendoring step |
+| Every `path:line` citation in `docs/` still resolves | `node tools/check-doc-evidence.mjs` (`CITATION_RE` is the pattern, `FUTURE_PREFIX` exempts target paths, `selfCite` and `mutableCite` refuse line cites into files that move) | **GREEN for this file** |
+| Contract layer: schemas compile, examples valid, invalid rejected, every fixture frame replays against the envelope, allowlist is exactly 19 with one pre-hello method | `npm --prefix packages/schema run verify` (`packages/schema/package.json:8`; 19-method assertion `packages/schema/scripts/verify.mjs:186`, pre-hello `:187-192`) | **GREEN** — the run prints its own counts, and no assertion here depends on what it prints |
 | NEXORA keys never start with `+`; `secretBearing ⇒ ¬syncEligible`; `headers` stripped from sync | the prefix rejection at `packages/schema/scripts/verify.mjs:360-364`, the namespace loop at `packages/schema/scripts/verify.mjs:359-372` and the `headers` assertion at `packages/schema/scripts/verify.mjs:373-377` | **GREEN** — this is SEC-1 expressed as data |
-| Legacy build graph still reachable from `omega-build` | Ladder A (`omega-build/package.json:12-15`) run by hand, recorded in `docs/audit/99-baseline-report.md` | Verified: NO — deferred to Phase 2 (no automated chain run in this iteration; `.github/workflows/verify.yml` is the intended owner) |
+| Legacy build graph still reachable from `omega-build` | Ladder A (`omega-build/package.json:12-15`) run by hand, recorded in `docs/audit/99-baseline-report.md`; the `legacy-chain` job of `.github/workflows/verify.yml` automates install → link → hub build → tests → release → artifact inspection, and has never run | Verified: NO — deferred to Phase 2 |
 | The six legacy directories have not moved | nothing | Verified: NO — deferred to Phase 2 |
-| `nexora/**` and `packages/**` import nothing from `omega-*` | nothing | Verified: NO — deferred to Phase 2 (§7) |
-| No `package.json` / `go.work` / `.npmrc` at the repository root | nothing | Verified: NO — deferred to Phase 2 (§8) |
-| No connector, host shim, or Xray bytes inside `dist/*.zip` | nothing (manual measurement only) | Verified: NO — deferred to Phase 2 (§9) |
+| `nexora/**` and `packages/**` import nothing from `omega-*` | the `VER-02` step of `.github/workflows/verify.yml` — import-specifier, side-effect-import and `file:` greps over both roots; executed here, never on a runner | Verified: NO — deferred to Phase 2 (§7) |
+| No `package.json` / `go.work` / `.npmrc` at the repository root | the `VER-04` step of `.github/workflows/verify.yml` — five root paths including `package-lock.json` and `go.mod`; executed here, never on a runner | Verified: NO — deferred to Phase 2 (§8) |
+| No connector, host shim, or Xray bytes inside `dist/*.zip` | the `VER-08` step's `check_zip`, which asserts the exact top-level path set, the 353-entry count and the bundle's presence, and ran here against both real artifacts | Verified: NO — deferred to Phase 2 (§9) |
 | Extension identity and version-line continuity | nothing in-repo; store behaviour is external | Verified: NO — deferred to Phase 2, `docs/verification/live-matrix.md` LIVE-14 |
-| Line endings and binary classification stay as declared | `.gitattributes` itself; `git add --renormalize` is forbidden by the session rules | Verified: NO — deferred to Phase 2 |
+| Line endings and binary classification stay as declared | `.gitattributes` itself, plus the `VER-10` step (`git diff --check` over the range and `git ls-files --eol` over the index); `git add --renormalize` is forbidden by the session rules | Verified: NO — deferred to Phase 2 |
 
 Every `Verified: NO` row above is owned by `docs/architecture/39-verification-matrix.md`; no assertion here is
 complete until its row there is green.

@@ -38,9 +38,15 @@ Executable artefacts, outside this directory:
   constant or assertion label, never by a line number — its line numbers move whenever a rule is added,
   and the checker rejects self-cites for exactly that reason. New sections in the verifier go above its
   report block, never between two existing sections: a mid-file insertion shifts every `verify.mjs:` cite
-  below it, and two had already drifted that way before this rule was written.
+  below it, and two had already drifted that way before this rule was written. The same rule now covers
+  `docs/PROJECT-STATE.md`, which is rewritten in place as the handoff log, and `docs/audit/99-baseline-report.md`,
+  which every probe round appends to: cite them as `docs/PROJECT-STATE.md` §n and
+  `docs/audit/99-baseline-report.md` §n, and the checker rejects a line cite into any of them.
 - **Every design claim names its check.** If nothing checks it, it is recorded in
   `architecture/39-verification-matrix.md` with `Verified: NO — deferred to Phase 2` rather than asserted.
+- **A question a check cannot close is a decision, not a deferral.** If the missing artefact is an answer a human
+  owes — a product choice, a contract addition, a measurement, an upstream fact — it is registered in
+  `architecture/40-open-decisions.md` and the row in 39 names the register entry that gates it.
 - **Decisions are ADRs, not prose in design docs.** A design document may cite an ADR; it may not silently
   make one.
 - **No secrets, no binaries, no invented protocol.** Credentials are keystore references, Xray is a pinned
@@ -56,7 +62,8 @@ Executable artefacts, outside this directory:
 | `packages/schema` contracts + verifier | done, green |
 | `docs/audit/00-12 + 99` | done (99-baseline-report written after the Step-0 probe) |
 | `docs/adr/0001-0020` | done |
-| `docs/architecture/20-40` | 20-38 done; 39-40 in progress |
-| `docs/verification/*` | pending |
-| `verify.yml` + baseline fixes | pending |
+| `docs/architecture/20-40` | done — 39 is the queue of every claim nothing checks, 40 is the register of the questions 39 cannot close |
+| `docs/verification/*` | done — live matrix, env contract, both 3.5.2 backups, and the README that indexes what runs |
+| `verify.yml` + baseline fixes | done — written and executed step-by-step on this host, never run on a runner; the `VER-*` rows it names stay open until a green CI run is recorded |
+| `probe-4` + `probe-5`, the end-to-end re-verification | done 2026-11-05 — the Ladder A chain, both test floors, all five gates, the artifact content and a cold Bower install, all re-measured and archived in `docs/audit/raw/` (`docs/audit/99-baseline-report.md` §11); the browser half and the runner half are recorded as not done, not as passed |
 | Anything in `connector/`, `nexora/`, `packages/{protocol,state,i18n,ui}` | **not in this iteration** |
