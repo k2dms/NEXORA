@@ -301,8 +301,15 @@ commit before: this file `+27 / +0 / +5` — five, because this sentence names t
 minus one is the sentence that said no keystore code exists yet; a claim about the absence of a file is not an address
 once the file arrives. Doc 39 moves `+0 / +0 / +0` while its `no-code` table loses a row and its distribution is
 restated four times: §4.11's lesson a fifth time, an edit that re-numbers a count without naming a new place is
-invisible to this guard, and what makes the change real is the harness asserting 55 / 13 / 3 / 2 / 5 rather than
-admiring it.
+invisible to this guard, and what makes the change real is the harness asserting the distribution the data gives it —
+55 / 13 / 3 / 2 / 5 at that commit, and the next line is the second time the middle numbers moved.
+§4.18 moves the set a thirteenth time — **2331 / 518 / 1394** — seventeen `path:line` addresses, one pointer and five
+names, measured per file against the commit before: this file `+17 / +1 / +3` and `docs/README.md` `+0 / +0 / +2`. The
+one pointer is `previousConfigHash`'s pattern, cited because the writer reports "nothing was applied" as an empty
+string and that is only honest if the schema admits one. Doc 27, doc 32 and doc 39 move `+0 / +0 / +0` between them
+while all three change what they assert about the same file — §8's parenthetical rewritten, §1's reading rule and §13's
+cost paragraph re-typed inside their own line counts, doc 39's row deleted from one table and added to another — which
+is §4.11's lesson a sixth time, and the reason the guard's set is a floor on the work rather than a measure of it.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1163,6 +1170,90 @@ needing a Core binary this host does not have.
 
 ---
 
+### 4.18 The one place a value is plaintext: the materializer, and a write that leaves the previous config intact (`connector/internal/apply/`, 2026-11-06)
+
+**What landed.** Two files, six exported names, thirteen tests: `Materialize`
+(`connector/internal/apply/apply.go:39`) over a `Resolver` seam (`connector/internal/apply/apply.go:28`) and `Write`
+(`connector/internal/apply/write.go:41`) with `Applied` (`:22`), `AppliedHash` (`:114`) and `FileName` (`:17`). The
+compiler's own package doc named the writer as one of the things deliberately not in it
+(`connector/internal/compile/emit.go:6`), so this is the package that half of M3 was waiting on rather than a
+second answer to a question `compile` already answers.
+
+**It walks for the grammar, not for the key names.** `docs/architecture/22-component-contracts.md` §9 says every layer
+above the keystore carries a handle and `docs/architecture/23-unified-server-model.md` §9 marks those positions
+⟨secret⟩, but neither lists a field name — and a substitution keyed on `id` would ship a handle to Core the first time
+a field is renamed or a new credential position appears. So `substitute` recurses the whole document and asks one
+question of each string: does `keystore.Parse` accept it (`connector/internal/apply/apply.go:50`). Depth is bounded by
+compile's own 32 (`:34`), because a document deeper than the emitter that wrote it is a cycle nobody should be hashing.
+The refusal keeps the path it failed at (`:88`), which is why a missing secret says `outbounds[0].settings.vnext[0]…`
+and never says what it could not read.
+
+**Two documents, two hashes, and no decision taken in the middle of a writer.** ODEC-36 asks which byte string
+`configHash` covers — the handle-bearing document or the materialized file — and `compile.HashInputNote` exists so the
+emitter is not the thing that decided. `Write` therefore emits twice and reports both
+(`connector/internal/apply/write.go:103` and `connector/internal/apply/write.go:104`);
+`connector/internal/apply/write_test.go:71` asserts the two differ, because two equal hashes
+would mean one of them is not what it claims. The file on disk is re-read and re-hashed separately (`AppliedHash`,
+`:114`) so doc 25 §11's drift check compares a writer's claim against bytes that survived the rename. And "nothing was
+applied yet" is the empty string rather than a sentinel, because
+`packages/schema/protocol/commands/config.apply.json#/result/properties/previousConfigHash` already admits `^([0-9a-f]{64})?$`
+— a pattern the contract accepts beats a value invented to mean absence.
+
+**The rollback is now a test, and it is still only half the row.** `VER-29`'s sentence is "a failed `config.apply`
+leaves the previous config applied and reports `previousConfigHash`". The measurable half is
+`connector/internal/apply/write_test.go:85`: a document naming a secret the store does not have fails after the
+handle-bearing emit and before a byte is written, the previous file comes back byte-identical, the directory holds one
+entry — no temp left behind — and the hash the caller would report has not moved. The half nothing in this repository
+can measure is the Core that was already signalled and the extension that believed the old hash. `VER-29` therefore
+moved `no-code` → `no-run`, the same move §4.17 made for `VER-23`, and for the same reason: the live row it owes is a
+session.
+
+**Owner-only, in the one sense this host can show.** The sequence is `keystore.Store.Put`'s — create in the target
+directory, write, `Sync` (`connector/internal/apply/write.go:85`), close, `Chmod 0600` (`:93`), rename (`:96`) — so the
+module has one temp-and-rename discipline to audit rather than two, and the deferred cleanup at `:75` is the reason the
+failure path is expressible at all. The mode assertions skip on Windows (`connector/internal/apply/write_test.go:44`),
+where Go reports the inherited profile descriptor instead of the bits that were asked for; that is ADR-0011 rule 3's
+residual stated in the test rather than smoothed over, and the ubuntu cell of the connector job is the one that will
+assert it. What the `Sync` does
+not buy is also now written down: there is no directory-level flush on Windows, so a power loss between the rename and
+the metadata flush can lose the rename — and doc 32 §13's answer is that the file is re-derivable, so the recovery is a
+re-apply. doc 27 §8 carries that sentence.
+
+**What it refuses to invent.** An object-shaped handle is refused by name (`connector/internal/apply/apply.go:93`),
+because ODEC-36 blocks shape C and a writer that guessed would make the decision a bug report later; the compiler's own
+refusal at `connector/internal/compile/outbound.go:229` stays, since `compile` still takes no store. And the corpus
+names four properties of this file — owner, lifetime, portability, verifiability — and never a path, so `Write` takes
+the directory from its caller and refuses an empty one (`connector/internal/apply/write.go:43`): naming
+`%LOCALAPPDATA%\NEXORA\config` would be this slice inventing an ADR-shaped fact. That choice belongs to the slice that
+wires `config.apply`.
+
+**The prose this slice had to correct, and the anchor that made it move together.** doc 27 §8's closing parenthetical
+read "(no writer exists)" and was `VER-29`'s `at[]` anchor, so the sentence and the row could not be edited apart: the
+harness requires an anchor to land on exactly one line and that line to still carry a label
+(`packages/schema/scripts/verify.mjs:3518`). Rewriting one without the other is a red run, which is the cheapest form
+of the law "a claim and its check are one change". doc 32 §1's reading rule and §13's closing paragraph, doc 34's
+row that `VER-23` cites, `VER-23`'s own subject — which had named "the config writer" as unwritten one slice after
+§4.17 — and doc 39's distribution all moved with it.
+
+**Queue arithmetic, stated so the next slice can check it.** 78 rows unchanged; `no-code` 55 → 54 and `no-run` 3 → 4;
+owner counts unchanged, because `VER-29` was already the Connector's; `closesBy` kinds unchanged, so the 39 live-row
+rows and the 205-claim partition did not move — no label was added or removed anywhere, only three labels had their
+reasons rewritten. Two subtractions from the `no-code` column, in two slices: the queue's own size is starting to
+respond to code, which is what it was written to measure.
+
+**Gates.** `gofmt -l connector` prints nothing; `go -C connector vet ./...` is clean here and under `GOOS=linux`;
+`go -C connector test -count=1 ./...` prints ten `ok` lines, the tenth being this package.
+`npm --prefix packages/schema run verify` → 1217 checks, unchanged: this slice moves one row's state and rewrites three
+labels' reasons, and adds no assertion to the harness. `node tools/check-no-secrets.mjs` → 468 files, no finding — four
+more than §4.17's 464, the same `git ls-files` behaviour counting a package that did not exist, and its one uuid-shaped
+literal annotated rather than renamed (`connector/internal/apply/apply_test.go:17`).
+`node tools/check-doc-evidence.mjs` → 2331 path:line citations, 518 pointers and 1394 doc-name references.
+What is next is unchanged in kind: `config.apply`'s command surface
+calling `Compile` and this package, then the supervisor, then stage 7's probe — the last still needing a Core binary
+this host does not have.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -1203,12 +1294,12 @@ needing a Core binary this host does not have.
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **464** files — §4.16's 455 plus
-  the nine `connector/internal/keystore` files §4.17 stages, because the guard walks `git ls-files` and so counts a file
-  when it is staged, not when it is thought of. It carries eleven `nexora-secret-allow` annotations now: the eight
-  documented constants in `connector/internal/compile/resolve_test.go` that §4.16 lists, and §4.17's three in
-  `keystore_test.go`, `ref_test.go` twice, because Go's test convention puts a `_test.go` beside the package it tests and
-  therefore outside every path the guard exempts.
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **468** files — §4.17's 464 plus
+  the four `connector/internal/apply` files §4.18 stages, because the guard walks `git ls-files` and so counts a file
+  when it is staged, not when it is thought of. It carries twelve `nexora-secret-allow` annotations now: the eight
+  documented constants in `connector/internal/compile/resolve_test.go` that §4.16 lists, §4.17's three in
+  `keystore_test.go` and `ref_test.go` twice, and §4.18's one in `connector/internal/apply/apply_test.go:17`, because
+  Go's test convention puts a `_test.go` beside the package it tests and therefore outside every path the guard exempts.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
@@ -1216,7 +1307,8 @@ needing a Core binary this host does not have.
   six `ok` package lines where §4.6 recorded three — `contract`, `dispatch`, `envelope`, `frames`, `hello` and `peer`
   — §4.13 makes it seven with `github.com/k2dms/nexora/connector/cmd/nexora-connector`, §4.15 eight with
   `github.com/k2dms/nexora/connector/internal/compile` and §4.17 nine with
-  `github.com/k2dms/nexora/connector/internal/keystore`; `gofmt -l connector` still
+  `github.com/k2dms/nexora/connector/internal/keystore`; §4.18 ten with
+  `github.com/k2dms/nexora/connector/internal/apply`; `gofmt -l connector` still
   prints nothing. No `VER-NN` row moves on any of the increments up to §4.16: §4.6's "Not yet"
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
@@ -1232,8 +1324,9 @@ needing a Core binary this host does not have.
   `ok` line, because the eight are packages and §4.16 is thirty-eight more test functions inside the eighth. §4.17 is the
   ninth package, and the first slice to move a row's *state* rather than its count: `VER-23` leaves `no-code` for
   `no-run`, which is the one subtraction the queue's `no-code` column has had, and why doc 39's distribution and the
-  harness assertion that reads it both move by one.
-- `node tools/check-doc-evidence.mjs` → **green** (2314 `path:line`, 517 pointers, 1389 doc-and-script
+  harness assertion that reads it both move by one. §4.18 is the tenth package and the second such subtraction — the
+  materializer and the owner-only write, with `VER-29` following `VER-23` out of the same column.
+- `node tools/check-doc-evidence.mjs` → **green** (2331 `path:line`, 518 pointers, 1394 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -1760,16 +1853,17 @@ of §6's queue was written.
 
 ---
 
-*End of handoff log. The remaining work order is §6's, and §4.17 changed its shape the way §4.16 did: one of the two
-halves the compiled config was waiting for is written. The Connector queue now runs: the materializer that reads a handle
-at the moment of writing, and the owner-only config file it writes into — `docs/architecture/32-secrets-keystore-masking.md`
-§13 is the design and §4.17's package is the read — then the command surface that makes `config.apply` call `Compile`,
-then the Core supervisor, then stage 7's probe, which needs a binary
+*End of handoff log. The remaining work order is §6's, and §4.18 closes the shape §4.17 opened: both halves the compiled
+config was waiting for are written — the store that holds each credential and the writer that reads one out and installs
+the file. The Connector queue now runs: the command surface that makes `config.apply` call `Compile` and
+`connector/internal/apply` — including the directory no document names, which §4.18 deliberately did not choose — then
+the Core supervisor, then stage 7's probe, which needs a binary
 `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md` §Evidence records as absent from this host. Stages 1 to 4,
-the document half of 5, the serializer of §4.15, three of doc 27 §3's six golden configs (§4.16) and the store that holds
-every credential a config points at (§4.17) are written; `VER-28` and `VER-78` describe three fixtures rather than none and
-stay open for the two reasons §4.16 names, and `VER-23` has moved from `no-code` to `no-run` because the round trip is
-measured while the session around it is not. `internal/chunk` and
+the document half of 5, the serializer of §4.15, three of doc 27 §3's six golden configs (§4.16), the store that holds
+every credential a config points at (§4.17) and the materialize-and-rename that turns one into a file Core can read
+(§4.18) are written; `VER-28` and `VER-78` describe three fixtures rather than none and
+stay open for the two reasons §4.16 names, and `VER-23` and `VER-29` have both moved from `no-code` to `no-run` because
+the round trip and the rollback are measured while the session around them is not. `internal/chunk` and
 `cmd/nexora-host` stay where they were: the first is stopped by `ODEC-34`, and the second by `ODEC-35` — a decision with
 three surviving answers, which is the first time this queue has been blocked by an ADR rather than by a gap in the data.
 `ODEC-36` is the third stopped thing and the cheapest, with one third of its reason now gone: the mechanism that reads an

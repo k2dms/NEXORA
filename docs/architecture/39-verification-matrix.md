@@ -43,7 +43,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
   result.
 - **Copying the live matrix.** Its 24 rows are inherited by id (§7). A second copy of 24 rows is a second thing
   that can be wrong, and it would be wrong in the direction that matters: a stale status column reads as progress.
-- **Designing anything.** A row is not a feature request and not an approval. 55 rows say the component does not
+- **Designing anything.** A row is not a feature request and not an approval. 54 rows say the component does not
   exist; that is the queue reporting the phase boundary, not endorsing what comes after it.
 - **Repeating the argument.** Why a claim is made lives in the document that carries the label. This document
   quotes the line and points at it; it does not re-litigate it.
@@ -94,13 +94,13 @@ would have to be re-derived from the design, which is how a verification matrix 
 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
-| `no-code` | 55 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
+| `no-code` | 54 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
 | `no-check` | 13 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
-| `no-run` | 3 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
+| `no-run` | 4 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 2 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 5 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **55 of 78 rows are `no-code`**: this iteration's claims are overwhelmingly
+The distribution is the finding. **54 of 78 rows are `no-code`**: this iteration's claims are overwhelmingly
 blocked on the Connector, the compiler and the UI existing, not on tests being clever. 13 `no-check` rows are the
 part that could be closed *before* Phase 2 writes a line of product code — `VER-01`, `VER-04`, `VER-05`,
 `VER-07`, `VER-08`, `VER-10`, `VER-56` and `VER-58` are all guards over files that already exist. `VER-19` and
@@ -212,9 +212,11 @@ Not a schedule — a dependency graph the states impose:
    inbound-per-tag question (`ODEC-06`) changes what `VER-30` even
    asserts. `VER-09`, `VER-37`, `VER-74`
    wait on browsers and stores, which is why they are `needs-human` and not quietly estimated.
-4. **Everything else is `no-code` and waits on the Connector.** 36 of the 55 are owned by it. One connector row has
+4. **Everything else is `no-code` and waits on the Connector.** 35 of the 54 are owned by it. Two connector rows have
    left the column since the queue was written — `VER-23`, whose keystore is now code with a green test over the real
-   `crypt32` call — and it is in `no-run` rather than closed, because the live row it owes is a session, not a syscall.
+   `crypt32` call, and `VER-29`, whose writer and rollback are now Go tests over a temp directory
+   (`connector/internal/apply`) — and both are in `no-run` rather than closed, because the live row each owes is a
+   session, not a syscall and not a rename.
 
 The queue does not pretend this is fast. It is the reason the queue exists: 78 named obligations with 39 of them
 pointing at one executable matrix is a plan; the same 78 as 205 scattered phrases is a mood.
@@ -240,7 +242,7 @@ pointing at one executable matrix is a plan; the same 78 as 205 scattered phrase
 78 rows, grouped by state. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
-### `no-code` — 55
+### `no-code` — 54
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
@@ -259,7 +261,6 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-26 | two version stamps coexisting (`-schemaVersion` 2, `-nexora.schemaVersion` 3) never loaded by the legacy engine together | `extension` · LIVE-14 | 1 · 1 |
 | VER-27 | the envelope→Xray compiler does not exist: representability, lowering, and the rank-5 bound are unread | `connector` · LIVE-04 | 2 · 3 |
 | VER-28 | golden compiled configs do not exist, so byte-determinism and the three canonical shapes are unproven | `connector` · assertion | 3 · 5 |
-| VER-29 | no run shows a failed `config.apply` leaves the previous config applied and reports `previousConfigHash` | `connector` · LIVE-03 | 2 · 3 |
 | VER-30 | `core.select` performing no config write is asserted by nothing (and §9.5 changes what the row means) | `connector` · assertion: the applied-config hash is unchanged | 1 · 1 |
 | VER-31 | cross-entity referential integrity — a dangling `serverId` — checked by nothing, because JSON Schema cannot see a sibling key | `extension` · assertion | 3 · 4 |
 | VER-32 | the `unrepresentable[]` shape is validated; the behaviour of reporting rather than dropping is not shown | `connector` · LIVE-04 | 2 · 2 |
@@ -318,12 +319,13 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-65 | no live row covers guards applied to every redirect hop — the omission is the finding | `contracts` · new-live-row | 1 · 1 |
 | VER-71 | `protocol` enum expansion requires an ADR, and that process rule is asserted by nothing | `contracts` · assertion | 1 · 1 |
 
-### `no-run` — 3
+### `no-run` — 4
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
 | VER-11 | Ladder A ran by hand on one host and is green on three runner images at the pinned floors; what the row still owes is the unpinned dependency set, which no run can supply while `.gitignore:3` keeps the lockfile out | `ci` · ci-step | 1 · 2 |
-| VER-23 | no live run shows a secret surviving a round-trip and dying on command: the store, its DPAPI round-trip and its rotation are Go tests over the real `crypt32` call on this host, while `keystore.purge` and the owner-only config file remain unwritten | `connector` · LIVE-18 | 4 · 5 |
+| VER-23 | no live run shows a secret surviving a round-trip and dying on command: the store, its DPAPI round-trip and its rotation are Go tests over the real `crypt32` call on this host, and the owner-only file the keystore feeds is now written and re-read by Go tests too, while `keystore.purge` and the masking sink remain unwritten | `connector` · LIVE-18 | 4 · 5 |
+| VER-29 | no live apply has failed: the temp-file, sync, chmod and rename are Go tests over a temp directory, and a document whose secret is missing leaves the previous config byte-identical — the rollback half of doc 27 §8 is measured, the Core half is not | `connector` · LIVE-03 | 2 · 3 |
 | VER-57 | no CI build shows the packaged bundle survives the declared CSP | `ci` · ci-step | 1 · 2 |
 
 ### `no-fixture` — 2
@@ -414,7 +416,7 @@ distribution numbers in §4, §5 and `verify.mjs` (three assertions exist to mak
    §7's dense-id assertion must be amended in the same commit, deliberately, rather than allowed to drift.
 3. `VER-09` and `VER-74` cannot be closed in-repo at all; they are the two places where this queue's answer is
    "someone must open a browser".
-4. The 55 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
+4. The 54 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
    because it is much harder to state afterwards.
 5. `docs/adr/0020-test-strategy.md:86` calls this document "not yet written". ADR-0001 rule 5 forbids correcting
    history in place, and the same aside sits unsuperseded in `docs/adr/0016-svelte-5-vite-typescript.md:46`, so it

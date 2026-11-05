@@ -42,9 +42,9 @@ and event catalogue (`docs/architecture/36-observability.md`); the wording a use
 `docs/verification/live-matrix.md`, cited row by row below.
 
 One reading rule, inherited from `docs/architecture/20-target-repository-layout.md` §1 and sharpened here: **a
-secret-control claim with no check behind it is labelled `Verified: NO — Phase 2` at the point of use.** In this
-document that is almost every row: `connector/internal/keystore` is code as of `docs/PROJECT-STATE.md` §4.17, and the
-ingest door, the purge, the writer and the masking sink are not — an honest state §16 keeps visible, not an oversight.
+secret-control claim with no check behind it is labelled `Verified: NO — Phase 2` at the point of use.** Here that is
+almost every row: `keystore` and `apply` are code (`docs/PROJECT-STATE.md` §4.17, §4.18); the ingest door, the purge,
+the command surface and the masking sink are not, and §16 keeps that count visible instead of hiding it.
 
 ## 2. The fourteen questions this document was cited to answer
 
@@ -393,13 +393,13 @@ The controls that make the exception bounded:
 | Portability | never an export artefact; `maskedConfig` is the only version that leaves | *the compiled config never leaves as an artefact* |
 | Verifiability | grepping `maskedConfig` for any pinned secret value finds nothing | `packages/schema/protocol/commands/config.snapshot.json#/invariants`, `LIVE-10` |
 
-Who the exception costs: an adversary with the user's own privileges. That adversary can already call
-`CryptUnprotectData` (`docs/adr/0011-windows-keystore-dpapi.md:49-54`), so a live config file introduces no new
-adversary class — it is the same residual, written where it is easier to find. What it does add is a *timing*
-risk: an abrupt kill or a power loss can leave the file past its lifetime, and cleanup is a shutdown step, not a
-guarantee. `docs/architecture/33-binary-integrity.md` and `docs/architecture/30-failure-policy.md` own the
-process-death half; §17 lists "orphaned plaintext config after an unclean kill" as a live residual rather than a
-solved item.
+Who the exception costs: an adversary with the user's own privileges, who can already call
+`CryptUnprotectData` (`docs/adr/0011-windows-keystore-dpapi.md:49-54`) — the same residual, written where it is
+easier to find. `connector/internal/apply` writes it now under the four properties above: owner-only, temp-and-
+rename, never an export artefact, and greppable for nothing. What the code adds is a *timing* risk: an abrupt
+kill or a power loss can leave the file past its lifetime, and cleanup is a shutdown step, not a guarantee.
+`docs/architecture/33-binary-integrity.md` and `docs/architecture/30-failure-policy.md` own the process-death
+half; §17 lists "orphaned plaintext config after an unclean kill" as a live residual rather than a solved item.
 
 ## 14. In transit, in sync, on another machine
 

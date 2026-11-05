@@ -171,7 +171,11 @@ Core. A failure at any stage leaves the previous config *applied and unchanged*,
 can detect that its belief about the applied state was wrong. The extension-side mirror of this rule — "a
 failed refresh keeps the last good version" — is `docs/architecture/29-subscriptions-and-servers.md`; the two
 are the same principle at two layers, which is why neither is allowed to be "best effort".
-`Verified: NO — deferred to Phase 2` (no writer exists).
+The fsync above is the file's: a directory-level flush has no Windows equivalent, so a power loss between the rename
+and the metadata flush can lose the rename — and the config is re-derivable from intent plus keystore, so the answer
+is a re-apply, not a recovery.
+`Verified: NO — deferred to Phase 2` (the writer and its rollback are Go tests in `connector/internal/apply`; no
+live apply has run, and no command surface calls either).
 
 ## 9. Invariants of this pipeline and their checks
 
@@ -187,7 +191,7 @@ are the same principle at two layers, which is why neither is allowed to be "bes
 | Block port range and allocation range are disjoint | `connector/internal/compile/ports.go` refuses a range that overlaps the block range rather than drawing around it, and `model_test.go` checks the two shipped documents | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | `ports.go` refuses the whole set naming the count, so no partial document is ever emitted; whether `QuotaExceeded` is that count's code is `ODEC-03`'s question | Verified: NO — deferred to Phase 2 |
 | The core-rule and per-tag inbound spellings a golden must pin | none of §2–§7 states them, so `split.go` reports the rule instead of inventing its bytes | open decision, `docs/architecture/40-open-decisions.md` |
-| A failed apply leaves the previous config applied | nothing | Verified: NO — deferred to Phase 2 |
+| A failed apply leaves the previous config applied | `connector/internal/apply/write_test.go` writes a document whose secret is missing over a good config and re-reads the file, byte-for-byte, plus the hash the contract would report | Verified: NO — deferred to Phase 2 |
 | `localDNS` semantics decided before Phase 2 ships | — | open decision, `docs/architecture/40-open-decisions.md` |
 | Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `compile.go` hashes exactly what `Emit` returned, and `emit_test.go` pins that hash for shape A; the row's own question is which of the two byte strings the field is supposed to mean | Verified: NO — deferred to Phase 2 (`docs/architecture/40-open-decisions.md`) |
 

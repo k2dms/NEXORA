@@ -364,7 +364,7 @@
     },
     {
       "id": "VER-23",
-      "subject": "no live run has shown a DPAPI round-trip, a rotation, a purge or an owner-only config file -- the store, its round-trip and its rotation are now Go tests over the real crypt32 call on Windows (`connector/internal/keystore`); `keystore.purge` and the config writer are not written",
+      "subject": "no live run has shown a DPAPI round-trip, a rotation, a purge or an owner-only config file -- the store, its round-trip and its rotation are Go tests over the real crypt32 call on Windows (`connector/internal/keystore`), and the owner-only file is now written and re-read by Go tests too (`connector/internal/apply`); `keystore.purge` and the masking sink are not written",
       "state": "no-run",
       "owner": "connector",
       "closesBy": { "kind": "live-row", "ref": "LIVE-18" },
@@ -439,16 +439,16 @@
     },
     {
       "id": "VER-29",
-      "subject": "no run shows that a failed `config.apply` leaves the previous config applied and reports `previousConfigHash`",
-      "state": "no-code",
+      "subject": "no live run shows that a failed `config.apply` leaves the previous config applied and reports `previousConfigHash` -- the writer and its rollback are Go tests over a temp directory (`connector/internal/apply`); the apply that failed was never driven by a browser",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": { "kind": "live-row", "ref": "LIVE-03" },
       "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2` (no writer exists)." },
+        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "the writer and its rollback are Go tests in `connector/internal/apply`" },
         { "doc": "docs/architecture/26-command-surface.md", "anchor": "`config.apply` restarts only on hash change" },
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "A failed apply leaves the previous config applied" }
       ],
-      "why": "Same principle as the subscription rule at two layers; a half-applied config is the state where nothing is true."
+      "why": "Same principle as the subscription rule at two layers; a half-applied config is the state where nothing is true. The mechanism is now code and its rollback is measured: `connector/internal/apply` writes a temp file, syncs, chmods, renames, and a document whose secret is missing fails before any byte is written, so the file on disk keeps both its bytes and the hash `previousConfigHash` would report (`write_test.go`). What that does not prove is the sentence's subject: an apply that failed under a running Core, from a real extension, over a real frame."
     },
     {
       "id": "VER-30",
