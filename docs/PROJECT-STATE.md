@@ -398,7 +398,8 @@ measures into the refresh contract, the source schema and the register's own sco
 slice's one lesson in the guard's own grammar: the first draft named the register by path in a sentence *about* naming
 the register, and the run counted that line as a deferral this file owes — `derived 62, declared 61`, with
 `unowned: docs/PROJECT-STATE.md:1773` pointing at the sentence. A description of a deferral is not a deferral, and the
-membership rule cannot tell them apart; the prose now says "names the register". What the corpus counts moved for is the queue and the register rather than the
+membership rule cannot tell them apart; the prose now says "names the register". What the corpus counts moved for is the
+queue and the register rather than the
 citations: one labelled line in doc 29 §5 and one deferral site in its §13, so `marker.counted` goes
 207 → 208, `citation.counted` 60 → 61, and doc 39's partition sentence reads rows (158) + vocabulary (26) + live (24) =
 208. §4.20's third failure mode — the file a number points into grew for a reason belonging to the next slice — did not
@@ -410,6 +411,17 @@ label — while the queue silently lost §5's claim. It was found by a throwaway
 159 lines, and proven to be caught rather than merely noted by restoring the collision and running the harness, which
 fails three checks and names the document, the line and the arithmetic. The 68 labels are the unchanged fourth figure: a
 slice that changes four constants in the harness quotes no new label.
+A twenty-first entry, the third whose headline is a remote and the third that moves no figure at all — **2312 / 528 /
+1471**, 68 labels, and every one of them unchanged, measured against a clean archive of the commit before rather than
+asserted from the shape of the edit. §4.24 re-types a sha, a query's output and the five commits it counts, and none of
+those tokens is an address: no backtick in the whole edit holds a path, a line number or a pointer, so the census walks
+this file and finds the same three counts it found an hour ago. The fifteenth and the nineteenth did the same arithmetic
+about the same bullet; what is different here is only that the interval between the bullet being written and the bullet
+being stale is now one slice rather than three, which is what a sentence about a remote costs in a repository that
+commits a slice a sitting. It is also the first entry whose *own* text moves nothing it describes: §4.23's paragraph
+still reports 1471 because nothing after it added an address, and §4.24's paragraph reports the same number twice — once
+as the delta of the edit and once as the delta of the recording — which is the ledger saying out loud that this file is
+the only artefact the slice touched.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1824,6 +1836,37 @@ file. `go -C connector test -count=1 ./...` → the same eleven `ok` lines, `gof
 
 ---
 
+### 4.24 The bullet that asks the remote, asking it again (section 7, 2026-11-06)
+
+**What landed.** One bullet and this section. §7's opening line now names `f4cac24` as the branch head instead of
+`31008a5`, the count that query returns is 5 instead of 3, and the five commits the count covers are spelled out —
+§4.20's surface, §4.21's tail, §4.22's conversion, the ledger line that recorded those three, and §4.23's
+registration. No push has been confirmed for any of them, and §4.23 is the reason a bullet written yesterday was stale
+today: a sentence about a remote ages at the rate this repository commits, which is the whole case for asking the remote
+instead of reading the file.
+
+**The convention, now that it has bitten twice.** §4.22's entry — the nineteenth in this series — refreshed this same
+bullet for this same reason, and left behind the residue every such refresh leaves: its own paragraph still reads
+`prints 3`, and it is true, of the run that measured it. Both stay true because of a division this file has never stated
+in one place, so it is stated here: **the bullet carries the present, the ledger carries the past**. §7 is undated and
+re-typed whenever the remote is asked; §4.4's paragraphs are dated and never re-typed, because a measurement of a run is
+evidence about that run, and rewriting it would destroy the only thing that makes a ledger usable — the ability to see
+what was known when. The rule the nineteenth entry drew licenses both halves: a sha and the output of a query against a
+remote are prose about the remote, and the remote is the only witness; a paragraph in this file's own history is prose
+about a run, and the run is the only witness. What is *not* licensed is a third place that reads the remote aloud, and
+there is none: the bullet is the only line in the corpus that states a present fact about `nexora/master`.
+
+**Gates.** `npm --prefix packages/schema run verify` → the same **1220 checks**, green: no contract, no queue row and no
+register entry moved, so nothing in the harness has a new thing to say. `node tools/check-doc-evidence.mjs` → green at
+the four figures §4.4's twenty-first paragraph carries, every one of them unchanged, and the per-file census over the
+61 Markdown documents under `docs/` prints no line — the edit adds no address, no pointer and no name, because a sha, a
+refspec and the output
+of a query are prose about a remote. `node tools/check-no-secrets.mjs` → the same **478 files**, no file added.
+`go -C connector test -count=1 ./...`, `gofmt -l connector` and `go -C connector vet ./...` → the eleven `ok` lines, the
+empty list and the silence they were in §4.23, because this section is neither Go nor contract.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -2214,10 +2257,12 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`** at `31008a5`. The remote is not where this bullet last left it: `git ls-remote nexora
-  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 3 — the config.apply surface, M2's
-  cheap tail and the citation conversion are committed here and unpushed, because the rule further down this list asks
-  for its own confirmation each time and none was given for these three. When this bullet was written the remote was at
+- Branch: **`nexora/architecture`** at `f4cac24`. The remote is not where this bullet last left it: `git ls-remote nexora
+  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 5 — the config.apply surface
+  (`293cb73`), M2's cheap tail (`d1d22bb`), the citation conversion (`31008a5`), the ledger line that recorded those
+  three (`18f1e1b`) and `VER-81`'s registration (`f4cac24`) are committed here and unpushed, because the rule further
+  down this list asks for its own confirmation each time and none was given for these five. When this bullet was
+  written the remote was at
   `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer, not this file's
   memory, is what says where a ref is. What the `5e59e17..cf7e56d` fast-forward carried is §4.17's keystore (`bdd7f1d`),
   §4.18's materializer
