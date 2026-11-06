@@ -324,6 +324,10 @@ three `BLANK TARGET` findings; the four addresses moved are `:135` and `:370` fo
 `:369-370` with them. §4.11's lesson was that a re-read citation is invisible to this ledger; this is the case that lesson
 did not cover — a citation nobody re-read, plausible because the sentence under it was untouched, caught only by the
 guard's floor that a number must land on text.
+The push that carried §4.17 through §4.19 moves the set a fifteenth time and changes none of the three figures —
+**2347 / 520 / 1402** — which is the first entry in this ledger whose headline is that nothing moved: a commit sha, a
+refspec and a line of remote output are prose about the remote, not addresses into this tree, and the three numbers count
+only the second kind.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
