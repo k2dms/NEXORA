@@ -141,6 +141,65 @@ func TestNothingIsDispatchableBeforeHelloExceptHello(t *testing.T) {
 	}
 }
 
+// TestTheGateMessageNamesTheStateRatherThanOneHistory pins §4.13's finding. The boolean this gate reads has two
+// producers: no hello has ever crossed this stream, and a hello did and was then withdrawn by a `VersionMismatch`
+// (internal/hello's Session.Record). A sentence about which history produced the state is a sentence that is false
+// half the time, so the message states the state and states it identically both times.
+func TestTheGateMessageNamesTheStateRatherThanOneHistory(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	ran, h := counting(t)
+	d, err := New(Config{Handlers: map[string]Handler{"core.status": h}, Now: now.Now})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	id := Identity{SenderID: "ext-nexora-pinned", Allowlisted: true}
+	_, before := d.Dispatch(context.Background(), id, request(t, "req-gate-none-1", "core.status"))
+	if before == nil || before.Code != "HandshakeFailed" {
+		t.Fatalf("a gated method with no negotiation answered %+v, want HandshakeFailed", before)
+	}
+	id.Negotiated = true
+	if _, r := d.Dispatch(context.Background(), id, request(t, "req-gate-open-1", "core.status")); r != nil {
+		t.Fatalf("the negotiated sender was refused: %+v", r)
+	}
+	// The withdrawal lives in the session, and what reaches the front door afterwards is the boolean again -- which
+	// is exactly why the wording cannot lean on which of the two histories handed it over.
+	id.Negotiated = false
+	_, after := d.Dispatch(context.Background(), id, request(t, "req-gate-gone-1", "core.status"))
+	if after == nil || after.Code != "HandshakeFailed" {
+		t.Fatalf("a withdrawn negotiation answered %+v, want HandshakeFailed", after)
+	}
+	if before.Message != after.Message {
+		t.Errorf("the gate tells two stories for one state: %q then %q", before.Message, after.Message)
+	}
+	for _, phrase := range []string{"in force", "withdrawn"} {
+		if !strings.Contains(after.Message, phrase) {
+			t.Errorf("the message does not say %s: %q", phrase, after.Message)
+		}
+	}
+	if strings.Contains(after.Message, "before") {
+		t.Errorf("the message claims an order the state cannot support: %q", after.Message)
+	}
+	if *ran != 1 {
+		t.Errorf("handler ran %d times, want 1 — only the negotiated request may run", *ran)
+	}
+
+	// The message goes on the wire inside an envelope, and the envelope bounds it:
+	// `packages/schema/protocol/envelope.schema.json#/properties/error/properties/message/maxLength`. No refusal on
+	// this path is clipped, so the bound is checked against the widest name the allowlist publishes.
+	for _, name := range contract.MethodNames() {
+		m, _ := contract.LookupMethod(name)
+		if m.AvailableBeforeHello {
+			continue
+		}
+		_, r := d.Dispatch(context.Background(), Identity{SenderID: strings.Repeat("e", 32), Allowlisted: true},
+			request(t, "req-gate-width", name))
+		if r == nil || len(r.Message) > 200 {
+			t.Errorf("%s's gate message is %d characters, over the envelope's 200: %+v",
+				name, len(r.Message), r)
+		}
+	}
+}
+
 func TestAMethodNeedsTheCapabilityItsHelloAnnounced(t *testing.T) {
 	now := &clock{t: time.Unix(0, 0)}
 	ran, h := counting(t)

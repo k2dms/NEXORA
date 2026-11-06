@@ -167,8 +167,13 @@ func (d *Dispatcher) Dispatch(ctx context.Context, id Identity, f *envelope.Fram
 		return nil, d.refuse(id, "UnknownMethod", fmt.Sprintf("%q is not a published method", method))
 	}
 	if !m.AvailableBeforeHello && !id.Negotiated {
+		// The state the gate reads is a boolean, and two histories produce it: no hello has ever crossed this
+		// stream, or a hello was answered and a later `VersionMismatch` withdrew it (internal/hello's
+		// Session.Record). A sentence naming the first history would be false during the second, which is the
+		// case the recorded corpus reaches on purpose.
 		return nil, d.refuse(id, "HandshakeFailed",
-			fmt.Sprintf("%s arrived before connector.hello on %q's connection", method, id.SenderID))
+			fmt.Sprintf("%s needs a negotiation in force on %q's connection, and none is: no connector.hello answered, or one withdrawn",
+				method, id.SenderID))
 	}
 	for _, need := range m.Capabilities {
 		if !id.knows(need) {

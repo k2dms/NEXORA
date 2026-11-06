@@ -341,12 +341,23 @@ its `no-code` table loses a row, gains one and has six of its distributions re-t
 three of its `connector/` rows ended with "no command surface calls it", and a row that says that while §4.20 exists is
 not a slow claim but a false one, so each now points at this file instead of at nothing. What this ledger cannot see is
 the half of the slice that was a repair: two addresses in this file into
-`connector/internal/supervisor/supervisor_test.go`
-had gone wrong when the fake child gained fifteen lines above them, and fixing them moves nothing. §4.11's case was a
-citation somebody re-read and did not update; §4.19's was a citation nobody re-read, green because the sentence under it
-was untouched; this is the third way a number can be wrong while the ledger stays silent — the *file the number points
-into grew for a reason belonging to the next slice*, and both figures and prose read fine until a test starts needing a
-process that stays alive.
+`connector/internal/supervisor/supervisor_test.go` had gone wrong when the fake child gained fifteen lines above them, and
+fixing them moves nothing. §4.11's case was a citation somebody re-read and did not update; §4.19's was a citation nobody
+re-read, green because the sentence under it was untouched; this is the third way a number can be wrong while the ledger
+stays silent — the *file the number points into grew for a reason belonging to the next slice*, and both figures and prose
+read fine until a test starts needing a process that stays alive.
+§4.21 moves the set a seventeenth time — **2364 / 524 / 1410** — by **+2 / +1 / +2**, every one of them inside this file,
+which is what a slice whose subject is the harness looks like: two new addresses for the gate message and its test, one
+pointer to the `countedWhere` field the new assertion now reads, and two names — doc 39, whose tallies the harness now
+opens, and the harness file itself, whose growth is the paragraph's other finding.
+The two documents the assertions read move by nothing, and that is the point of them: a check that *reads* a document
+leaves no citation behind, because reading is not pointing. The one prose edit outside this file is the exception that
+proves the same rule — doc 39's "Five rows are `needs-human`" became "5 rows are" so the number could be checked at all,
+which is the first time in this ledger a sentence changed its *format* because a guard asked to parse it. §4.20's third
+failure mode arrived on schedule one file over: this slice grew `packages/schema/scripts/verify.mjs` by 88 lines, 22 of
+them above the §4.18 address into its anchor rule, and that address moved by exactly the 22 that preceded it — silently
+and correctly, because a citation that lands on a different assertion than the one it names is caught only when it
+lands on a blank line.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1268,7 +1279,7 @@ wires `config.apply`.
 **The prose this slice had to correct, and the anchor that made it move together.** doc 27 §8's closing parenthetical
 read "(no writer exists)" and was `VER-29`'s `at[]` anchor, so the sentence and the row could not be edited apart: the
 harness requires an anchor to land on exactly one line and that line to still carry a label
-(`packages/schema/scripts/verify.mjs:3518`). Rewriting one without the other is a red run, which is the cheapest form
+(`packages/schema/scripts/verify.mjs:3540`). Rewriting one without the other is a red run, which is the cheapest form
 of the law "a claim and its check are one change". doc 32 §1's reading rule and §13's closing paragraph, doc 34's
 row that `VER-23` cites, `VER-23`'s own subject — which had named "the config writer" as unwritten one slice after
 §4.17 — and doc 39's distribution all moved with it.
@@ -1589,6 +1600,60 @@ still does not have, and `internal/chunk`, which `ODEC-34` still stops.
 
 ---
 
+### 4.21 The three cheap items §6 queued, and the harness that now reads its own documents aloud (2026-11-06)
+
+**What landed.** §6's M2 tail queues three items beside the milestone and says of all three that they are "a string and a
+check in a file the next real slice already opens". §4.20 opened that file, so this is the three of them, in the order
+they were written: the front door's gate message (`connector/internal/dispatch/dispatch.go:169`), an assertion joining
+doc 31 §8 to `packages/schema/protocol/framing.json#/senderPolicy/rateLimitFacts/countedWhere` (§4.12's repair, which
+left the data, the document and a comment agree and left nothing to keep them agreeing), and an assertion that opens
+`docs/architecture/39-verification-matrix.md` and reads its tallies out of the document instead of comparing the data to
+a constant (§4.14's finding, which was that three of those tallies had rotted while every run stayed green). The harness
+goes 1217 → **1220 checks**: two new assertions for the counting process and one for the tallies. No `VER` row moves, and
+none is invented — these three were §6's lines, not doc 39's queue, and a register entry for work the tree already
+finished is the defect doc 40 §3 calls a question the register invented.
+
+**One boolean, two histories, one sentence.** `Identity.Negotiated` is false because no hello has ever crossed the stream
+and because a hello was answered and a later `VersionMismatch` withdrew it; §4.13 ran the second case on purpose through
+the corpus's own `handshake.jsonl` and found the refusal claiming the frame "arrived before connector.hello". The state
+was right and the wording was a history, so the message now names the state — `TestTheGateMessageNamesTheStateRatherThanOneHistory`
+(`connector/internal/dispatch/dispatch_test.go:148`) drives both halves, requires the two messages to be byte-identical,
+requires the words "in force" and "withdrawn" to be present and the word "before" to be absent, and then walks every
+published gated method with a 32-character sender id to hold each message under the envelope's
+`#/properties/error/properties/message/maxLength` of 200, since nothing on that path clips.
+
+**The counting process, cross-read rather than cross-constants.** §4.12's lesson was that a field and a document can
+agree with each other and disagree with the code, so the new check extracts a process name from each side's own text —
+the leading clause of `countedWhere`, and the sentence in §8 that says `counted by the X **before dispatch**` — and fails
+if they differ or if either becomes unreadable. Its second half refuses a §8 that hands the counting to a *different*
+process in a different sentence, which is how the original contradiction was phrased. Proven load-bearing, not assumed:
+writing `host` into §8 turns the run red with `framing.json says "Connector", doc 31 §8 says "host"`, and reverting it
+turns it green again.
+
+**Doc 39's numbers, read from doc 39.** The new tally check parses §4's five-row state table, §5's owner list and
+closing-kind list, and the prose sentences that restate the same counts — nine of them, matched by eight patterns: the
+`N of M rows are \`no-code\`` sentence, the `N of M rows close by executing an existing live row` one, the two `N rows
+promise a named assertion` occurrences, the `N \`no-check\` rows` and `The N \`no-code\` rows` sentences, the
+`N rows say the component does not exist` bullet, the `N rows are \`needs-human\`` bullet and the
+`the N deferrals the corpus says exist` question — and compares each to the distribution the data has. One of doc 39's
+own tallies had to change to be readable at all: §1 said "Five rows are `needs-human`", and a check cannot read an
+English numeral, so it says 5. The sentence's point was that those rows stay unnumbered as *questions*, which is still
+what it says. Proven the same way: setting §4's table to 53 fails the run with `§4's table says 53 no-code rows, the
+data says 54`.
+
+**Gates.** `npm --prefix packages/schema run verify` → 1220 checks, green, and green again after both negative tests were
+reverted. `go -C connector test -count=1 ./...` → the same eleven `ok` lines §4.20 printed, one of them now carrying a
+test it did not have. `gofmt -l connector` prints nothing and `go -C connector vet ./...` is silent.
+`node tools/check-no-secrets.mjs` → 478 files, unchanged and unsurprising: the guard enumerates `git ls-files`, and this
+slice adds no file. `node tools/check-doc-evidence.mjs` caught, on its first run, the one citation this slice broke by
+growing the harness — §4.18's address into the anchor rule, 3518 → 3540 — and after that re-point prints the figures in
+§4.4's seventeenth paragraph.
+
+What is next is §6's queue with its first paragraph closed: the three cheap items are done, and what remains at the front
+is `connector/cmd/nexora-host`, which `ODEC-35` stops — not a cheap item, and not work an agent may finish by itself.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -1637,7 +1702,8 @@ still does not have, and `internal/chunk`, which `ODEC-34` still stops.
   in `config_apply_test.go` — the synthetic credential value, profile id and server id in its constant block and the second
   server's id in its fixture — because Go's test convention puts a `_test.go` beside the package it tests and therefore
   outside every path the guard exempts.
-- `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
+- `npm --prefix packages/schema run verify` → **green** (1220 checks: §4.21 adds three, and what they add is the
+  harness opening two documents it used to quote; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
   is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
@@ -1668,7 +1734,9 @@ still does not have, and `internal/chunk`, which `ODEC-34` still stops.
   twelfth package: sixteen test functions inside `cmd/nexora-connector`, its compile-and-apply-and-supervisor path, and
   the slice that turned a *runtime* fact about this repository's own test device into a code change two packages away —
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
-- `node tools/check-doc-evidence.mjs` → **green** (2362 `path:line`, 523 pointers, 1408 doc-and-script
+  §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
+  client can see is a sentence.
+- `node tools/check-doc-evidence.mjs` → **green** (2364 `path:line`, 524 pointers, 1410 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -1699,7 +1767,7 @@ still does not have, and `internal/chunk`, which `ODEC-34` still stops.
 
 **#5 `packages/schema` — done.** It is now the green, re-runnable test of this iteration:
 `npm --prefix packages/schema run verify` → `OK: 13 schemas compile, 19 command docs conform, 20 examples
-valid, 24 invalid examples rejected, 112 protocol frames replayed.` (1217 checks; details and the 8 contract
+valid, 24 invalid examples rejected, 112 protocol frames replayed.` (1220 checks; details and the 8 contract
 defects the fixtures exposed are in §4.4). Every step the earlier draft of this block prescribed is
 implemented — `envelope` is in `SCHEMAS_BY_PREFIX`, the six `fixtures/protocol/*.jsonl` clear `frameCount`
 and `replayPairs`, `verify.mjs` validates each frame's `args`/`result` against the compiled per-command
@@ -1948,7 +2016,7 @@ written before any behaviour existed. What each next milestone has to make true:
    package speaks moves no row either; and §4.11 records why reading the first item on this list, rather than writing
    it, moved the queue up instead of down. §4.12 records the mechanism by which a contract sentence naming the wrong
    process stayed green, §4.13 that the sentence was testable both ways at once, and §4.14 that this list's last item is
-   a question with three surviving answers rather than work nobody has done. Three cheap items queue beside this
+   a question with three surviving answers rather than work nobody has done. Three cheap items queued beside this
    milestone, none of them a slice: `connector/internal/hello`'s gate answers a frame that arrived *after* a
    `VersionMismatch` withdrew a negotiation with the wording that it arrived before one — the state is right and the
    sentence is wrong (§4.13); §4.12 leaves an assertion un-written rather than race a concurrent editor of
@@ -1959,7 +2027,9 @@ written before any behaviour existed. What each next milestone has to make true:
    that would make doc 39's tallies un-rottable is the third item here, not a variant of the second: one reads a
    document against one field, the other reads a document against the whole distribution. All three are a
    string and a check in a file the next real slice already opens; none is small enough to be done in a commit that
-   would then have to be found again.
+   would then have to be found again. **§4.21 does all three**, in the order above, in the file §4.20 had already
+   opened; the paragraph stays as written because it is the record of why they were queued rather than folded into a
+   slice, and what changes here is only that nothing on this list is owed any more.
 2. **M3 — the Core supervisor, config compiler, keystore, prober, subscriptions**, plus the parts of it that §9 still
    leaves to a human. This read "one of the five is begun" when §4.15 landed doc 27 §2's stages 5 and 6 — the serializer
    and the hash — and stopped there, because stages 1 to 4 are what decide what the serializer would be claiming to have
@@ -2237,7 +2307,9 @@ own tests found by being written — a Core that dies again straight after a suc
 forever, and no file in this corpus names a window or a count that would make the second death a new episode. A sixth is
 new: `ODEC-39`, where the intent documents an ids-only `config.apply` cannot carry come from, which two directories the
 surface is handed, and what the compiled config file is called — found the same way, by writing a seam that three of the
-register's own rows needed named.
+register's own rows needed named. The queue's cheap tail is closed: §4.21 writes the three items §6 had queued beside
+M2, so nothing that remains is a string and a check — every surviving item is stopped by a decision above, by the Xray
+binary this host does not have, or by a browser.
 Plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish; the note under that table
 says why one ninth stopped being a question and what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the

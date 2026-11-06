@@ -1260,6 +1260,28 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       'the policy bounds ports per sender',
       'MV3 eviction overlaps exactly one reconnect; an unbounded count is a leak or a second registration',
     );
+
+    // The drift §4.12 found, pinned so it cannot come back: doc 31 §8 and
+    // framing.json#/senderPolicy/rateLimitFacts/countedWhere must name the same process for the same budget. The
+    // field used to say "the host, before dispatch" and the document repeated the field -- two sentences agreeing
+    // with each other while the code counted in the other process, which is how a contradiction of this kind
+    // survives a green suite. Each side is read out of its own text rather than compared with a constant, so
+    // renaming the process in the data alone fails here.
+    const countedWhere = sp.rateLimitFacts?.countedWhere ?? '';
+    const dataProcess = /^the ([A-Za-z][A-Za-z0-9]*),/.exec(countedWhere)?.[1];
+    const sec8Text = (await readFile(join(REPO, 'docs', 'architecture', '31-security-model.md'), 'utf8'))
+      .split(/^## 8\. /m)[1]?.split(/^## /m)[0] ?? '';
+    const docProcess = /counted by the ([A-Za-z][A-Za-z0-9]*) \*\*before dispatch\*\*/.exec(sec8Text)?.[1];
+    check(
+      !!dataProcess && !!docProcess && dataProcess === docProcess,
+      'the budget-counting process is one name in the data and in doc 31 §8',
+      `framing.json says "${dataProcess ?? '(unreadable)'}", doc 31 §8 says "${docProcess ?? '(no counted-by sentence)'}"; countedWhere=${countedWhere.slice(0, 60)}`,
+    );
+    check(
+      !!dataProcess && !/\b(shim|host)\b[^.]{0,40}counted by/i.test(sec8Text),
+      'doc 31 §8 does not hand the counting to a second process',
+      'the shim cannot open the payload, so a sentence that makes it count budgets describes a control no code can implement',
+    );
   }
 }
 
@@ -3649,6 +3671,72 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       quoted.length >= 12 && staleLabels.length === 0,
       'every mechanism doc 39 names is a check this run actually makes',
       `not an assertion label: ${staleLabels.join(' | ') || 'none'}`,
+    );
+    // §4.14's third finding, turned into a check. The three distribution assertions above name this document in
+    // their labels and compare the data against a constant, so a tally here could rot while every run stayed green
+    // -- and three of them had. This one opens the document and reads its own numbers: the state table, the owner
+    // and closing-kind lists, and every prose sentence that states one of the same counts.
+    const sec4 = text.split(/^## 4\. /m)[1]?.split(/^## 5\./m)[0] ?? '';
+    const sec5 = text.split(/^## 5\. /m)[1]?.split(/^## 6\./m)[0] ?? '';
+    const total = verif.matrix.length;
+    const tallyGaps = [];
+    let proseHits = 0;
+    const readNumbers = (label, re, expected) => {
+      const found = [...text.matchAll(re)];
+      proseHits += found.length;
+      if (!found.length) tallyGaps.push(`${label}: no line in doc 39 states it in numbers`);
+      for (const m of found) {
+        m.slice(1).forEach((g, i) => {
+          if (Number(g) !== expected[i]) tallyGaps.push(`${label}: doc 39 says ${g}, the data says ${expected[i]}`);
+        });
+      }
+    };
+    readNumbers('the deferral count', /the (\d+) deferrals the corpus says exist/g, [verif.marker.counted]);
+    readNumbers('the `N of M rows are no-code` sentence', /(\d+) of (\d+) rows are `no-code`/g,
+      [count('state', 'no-code'), total]);
+    readNumbers('the `N of M rows close by executing an existing live row` sentence',
+      /(\d+) of (\d+) rows close by executing an existing live row/g, [kindCount('live-row'), total]);
+    readNumbers('the `N rows promise a named assertion` sentence', /(\d+) rows promise a named assertion/g,
+      [kindCount('assertion')]);
+    readNumbers('the `N no-check rows` sentence', /(\d+) `no-check` rows/g, [count('state', 'no-check')]);
+    readNumbers('the `N no-code rows` sentence', /The (\d+) `no-code` rows/g, [count('state', 'no-code')]);
+    readNumbers('the `N rows say the component does not exist` sentence', /(\d+) rows say the component does not\n?\s*exist/g,
+      [count('state', 'no-code')]);
+    readNumbers('the `N rows are needs-human` sentence', /(\d+) rows are `needs-human`/g,
+      [count('state', 'needs-human')]);
+    const stateRows = [...sec4.matchAll(/^\| `(no-code|no-check|no-run|no-fixture|needs-human)` \| (\d+) \|/gm)];
+    if (stateRows.length !== verif.states.values.length) {
+      tallyGaps.push(`§4's state table names ${stateRows.length} states; the data declares ${verif.states.values.length}`);
+    }
+    for (const [, state, n] of stateRows) {
+      if (Number(n) !== count('state', state)) {
+        tallyGaps.push(`§4's table says ${n} ${state} rows, the data says ${count('state', state)}`);
+      }
+    }
+    const pairsIn = (src) => new Map([...src.matchAll(/`([a-z][a-z-]+)` (\d+)/g)].map((m) => [m[1], Number(m[2])]));
+    const ownersInDoc = pairsIn(sec5.split('`closingKinds`')[0] ?? '');
+    const kindsInDoc = pairsIn((sec5.split('`closingKinds`')[1] ?? '').split('Three consequences')[0] ?? '');
+    if (ownersInDoc.size !== verif.owners.values.length) {
+      tallyGaps.push(`§5 lists ${ownersInDoc.size} owners; the vocabulary declares ${verif.owners.values.length}`);
+    }
+    if (kindsInDoc.size !== verif.closingKinds.values.length) {
+      tallyGaps.push(`§5 lists ${kindsInDoc.size} closing kinds; the vocabulary declares ${verif.closingKinds.values.length}`);
+    }
+    for (const owner of verif.owners.values) {
+      if (ownersInDoc.get(owner) !== count('owner', owner)) {
+        tallyGaps.push(`§5 says ${ownersInDoc.get(owner) ?? 'absent'} rows are owned by ${owner}; the data says ${count('owner', owner)}`);
+      }
+    }
+    for (const kind of verif.closingKinds.values) {
+      if (kindsInDoc.get(kind) !== kindCount(kind)) {
+        tallyGaps.push(`§5 says ${kindsInDoc.get(kind) ?? 'absent'} rows close by ${kind}; the data says ${kindCount(kind)}`);
+      }
+    }
+    check(
+      tallyGaps.length === 0,
+      'doc 39 reads aloud the tallies the data has, and this check reads them out of the document',
+      tallyGaps.join('; ') ||
+        `${stateRows.length} states, ${ownersInDoc.size} owners, ${kindsInDoc.size} kinds and ${proseHits} prose counts agree with ${total} rows`,
     );
     const layoutDoc = await readFile(join(REPO, 'docs', 'architecture', '20-target-repository-layout.md'), 'utf8');
     check(

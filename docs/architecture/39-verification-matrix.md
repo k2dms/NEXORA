@@ -47,7 +47,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
   exist; that is the queue reporting the phase boundary, not endorsing what comes after it.
 - **Repeating the argument.** Why a claim is made lives in the document that carries the label. This document
   quotes the line and points at it; it does not re-litigate it.
-- **Rounding a number into existence.** Five rows are `needs-human`. Their value is that they stay unnumbered.
+- **Rounding a number into existence.** 5 rows are `needs-human`. Their value is that they stay unnumbered.
 
 ---
 
