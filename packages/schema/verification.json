@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 202
+    "counted": 196
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -114,10 +114,28 @@
         "artefact": "tools/check-adr-shape.mjs -- ADR-0001 rules 1-4, 10 and 11 over docs/adr, including the 60-140 line bound and the index's own Status and Date cells, which the two inline shell steps it replaced did not read, plus a --selftest that injects one defect per rule and refuses each; it is the `VER-01` step of .github/workflows/verify.yml and is green here on the 20 records on disk, where these same checks went green on all three runner images since 2026-11-05 as shell; the labelled sentence it anchored became a `Verified: YES` in docs/adr/0001-adr-practice.md ## Verification"
       },
       {
+        "id": "VER-04",
+        "closed": "2026-11-06",
+        "was": "nothing prevents a root `package.json`, `go.work` or `.npmrc` from appearing",
+        "artefact": "tools/check-layout-guards.mjs -- its root-bare rule refuses package.json, package-lock.json, go.work, go.mod and .npmrc at the repository root: the same five paths the `VER-04` shell loop of .github/workflows/verify.yml refused in bash until 2026-11-06, green on all three runner images since 2026-11-05, now gathered into the script the row always named as its closer, which the step runs after its own --selftest and which keeps the row's id in its step name. Its three labelled sentences became `Verified: YES` in docs/adr/0018-workspace-roots-and-no-root-package-json.md ## Verification and in docs/architecture/20-target-repository-layout.md §8 and §11"
+      },
+      {
+        "id": "VER-05",
+        "closed": "2026-11-06",
+        "was": "nothing asserts that the eleven coupled legacy files, and the six legacy directories, still sit at their cited paths",
+        "artefact": "tools/check-layout-guards.mjs -- its coupling, legacy-roots and locale-chain rules read the 23-row enumeration out of docs/audit/01-repository-and-build-graph.md §7 rather than copying it, and refuse a cited file that has left the tree, a cited range that has drifted past its file, a coupling literal edited out of the line that carried it, a legacy root that is not a directory, a package that renamed itself away from its own directory (ADR-0002: the name, not the folder, resolves the symlink), and a `../omega-locales/**.po` path the po2crx task reads that no longer resolves. It counts 13 distinct files where that section's headline counts 11, prints the difference instead of adopting it, and runs green here behind a --selftest that injects one defect per rule; the indirect tripwire of check-doc-evidence.mjs remains, no longer alone. Its two labelled sentences became `Verified: YES` in docs/architecture/20-target-repository-layout.md §4 and §11"
+      },
+      {
         "id": "VER-06",
         "closed": "2026-11-06",
         "was": "the commit-shape rules (one concern per commit, conventional label, no drive-by edit) are review-only",
         "artefact": "the `VER-06` step of .github/workflows/verify.yml, green on the `contracts` cells of every recorded run since a7627ae stated the label vocabulary that step enforces -- the run before it, 42015170195, is the one that found the rule unstated in the document the step cites; the labelled sentence it anchored became a `Verified: YES` in docs/architecture/20-target-repository-layout.md §6"
+      },
+      {
+        "id": "VER-07",
+        "closed": "2026-11-06",
+        "was": "`grunt watch` scope over the new roots is unguarded -- it would pick up `packages/**` the moment a `Gruntfile.*` appears there",
+        "artefact": "tools/check-layout-guards.mjs -- its watcher-scope rule, which refuses a `Gruntfile.*` anywhere outside the six legacy roots, because omega-build's `watch` is `hub:all:watch` over the catch-all `../*/Gruntfile.*` and any sibling that grows a Gruntfile joins the legacy dev loop by accident, and refuses a glob in either watch.coffee that leaves its own project except the declared `../omega-locales/` or that names a new root; green here over the five tracked Gruntfiles, every one of them legacy, and it walks `git ls-files` so a scratch archive cannot trip it. Its labelled sentence became a `Verified: YES` in docs/architecture/20-target-repository-layout.md §7"
       },
       {
         "id": "VER-08",
@@ -159,40 +177,6 @@
         { "doc": "docs/architecture/21-system-context.md", "anchor": "No protocol code in `nexora/**`" }
       ],
       "why": "Constraint 1 is the reason the Connector exists. A violation is a rewrite of the architecture, so it is guarded by a machine and not by review."
-    },
-    {
-      "id": "VER-04",
-      "subject": "nothing prevents a root `package.json`, `go.work` or `.npmrc` from appearing",
-      "state": "no-check",
-      "owner": "tools",
-      "closesBy": { "kind": "tool", "ref": "tools/check-layout-guards.mjs" },
-      "at": [
-        { "doc": "docs/adr/0018-workspace-roots-and-no-root-package-json.md", "anchor": "- Verified: NO -- deferred to Phase 2: a CI guard that fails if a root" },
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "Verified: NO — deferred to Phase 2: no guard fails when a root `packag" },
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "No `package.json` / `go.work` / `.npmrc` at the repository root" }
-      ],
-      "why": "A root manifest silently changes which `node_modules` every legacy project resolves against; the five-workspace rule is invisible in a diff that adds one file."
-    },
-    {
-      "id": "VER-05",
-      "subject": "nothing asserts that the eleven coupled legacy files, and the six legacy directories, still sit at their cited paths",
-      "state": "no-check",
-      "owner": "tools",
-      "closesBy": { "kind": "tool", "ref": "tools/check-layout-guards.mjs" },
-      "at": [
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "Verified: NO — deferred to Phase 2: nothing asserts the eleven coupled" },
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "The six legacy directories have not moved" }
-      ],
-      "why": "Every `path:line` in docs/audit/ is a claim about a file that can be moved by an unrelated refactor; `check-doc-evidence.mjs` proves the line has content, not that the file is load-bearing where the layout says it is."
-    },
-    {
-      "id": "VER-07",
-      "subject": "`grunt watch` scope over the new roots is unguarded -- it would pick up `packages/**` the moment a `Gruntfile.*` appears there",
-      "state": "no-check",
-      "owner": "tools",
-      "closesBy": { "kind": "tool", "ref": "tools/check-layout-guards.mjs" },
-      "at": [{ "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "sweep it into `grunt watch` the moment it grew a `Gruntfile.*`. Verifi" }],
-      "why": "The legacy watcher is the one build mechanism that reaches outside its own project by accident."
     },
     {
       "id": "VER-09",

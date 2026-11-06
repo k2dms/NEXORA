@@ -197,8 +197,8 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `202` labelled lines over `44` documents partitioned into `77` live rows — the issued range is still
-`VER-01…VER-81`, and `4` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+The queue is `196` labelled lines over `43` documents partitioned into `74` live rows — the issued range is still
+`VER-01…VER-81`, and `7` of those ids now sit in `verification.json#/retired` — `26` vocabulary
 sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
 sites over `14` documents partitioned into `40` entries `ODEC-01…ODEC-40`, each naming who can answer it
 (`product` 14, `contract` 16, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-seven of the forty,
@@ -447,6 +447,19 @@ place, the citation rule says cite it by section, and this slice is the one that
 a slice whose evidence is the names of files, not addresses inside them, and the one address it does add is a JSON
 pointer into the ledger. The fourth figure did not move, and the reason is the arithmetic §4.25 gives for the same
 silence — the harness gained no check and lost none, it re-listed four distributions.
+§4.27 moves the set a twenty-fourth time, and for the third time running the first figure does not move at all —
+**2311 / 541 / 1513**, 68 labels, measured after this paragraph was written, so the paragraph reports the set the tool
+prints rather than the set its own sentences produced. Per file against a clean `git archive` of the commit before: this
+file `+0 / +1 / +11` — the pointer is §5's new bullet naming the retired ledger, and the eleven names are §4.27's own
+tool cited four times plus seven passing mentions, the audit section it reads, the ADR it made honest, doc 20, the
+harness, the ADR-shape script and this file; doc 39 `+0 / +0 / +9`, eight of them that same tool — three tombstones,
+the Retired rows, §4, §8, §10 and §13's sixth amendment — and the ninth doc 20, cited once more by the sentence that
+now reads its §7 table instead of its headline; doc 20 `+0 / +3 / +1`, the three pointers being the retired ledger named
+inside each sentence that changed state and the one name the audit file it now reads; and the ADR itself `+0 / +0 / +1`,
+the tool. No `path:line` citation moved in any of the four, which is the shape §4.26 gives for one closure by tool and
+holds three times now: a row that dies because a file arrived adds no address inside code, because its evidence is the
+name of that file and a pointer into the ledger. The fourth figure did not move for the reason §4.25 gives — the
+harness gained no check and lost none while deleting three rows and re-listing four distributions.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1999,6 +2012,70 @@ only content added to the tree and it is source, not bytes. `go -C connector tes
 and `go -C connector vet ./...` → the eleven `ok` lines, the empty list and the silence, unchanged: this slice touches no
 Go file.
 
+### 4.27 The three rows the layout contract had been waiting for — `VER-04`, `VER-05`, `VER-07`, and `tools/check-layout-guards.mjs` (2026-11-06)
+
+**What the three rows claimed, measured against the tree before anything was written.** `VER-04` said nothing prevents
+a root `package.json`, `go.work` or `.npmrc` from appearing — while a five-path bash loop in
+`.github/workflows/verify.yml` had refused exactly those five paths, green on three runner images since 2026-11-05, and
+the row's own `closesBy` named a `check-layout-guards` tool that did not exist. `VER-05` said nothing asserts the
+coupled legacy files and the six legacy directories still sit at their cited paths, with only an indirect tripwire:
+delete one and a citation breaks in `tools/check-doc-evidence.mjs`. `VER-07` said `grunt watch`'s reach over the new
+roots was unguarded — `omega-build`'s hub watch is `hub:all:watch` over the catch-all `../*/Gruntfile.*`, so a sibling
+that grows a Gruntfile joins the legacy dev loop by accident, and the two `watch.coffee` files could each widen that
+reach in one line. So these were the same shape as `VER-01`: not waiting for a pipeline, waiting for a file.
+
+**What the reading found, before the writing.** `docs/audit/01-repository-and-build-graph.md` §7's headline counts
+**eleven** coupled files; the table under that headline has **23** rows, and those rows name **13** distinct files. The
+tool reads the table rather than the headline, and prints the difference as a note — `23 coupling rows over 13 distinct
+files (the audit's headline counts 11; this census counts 13)` — and the audit's own sentence was left exactly as Phase 0
+wrote it. Four of those 23 rows (2, 3, 10, 23) carry no `omega` literal at all, so the guard checks the coupling token
+each row declares instead of assuming the substring; the `po2crx` chain is 7 `../omega-locales/**.po` paths, 6 of them
+distinct, all present; and 5 `Gruntfile.*` files are tracked, every one inside the six legacy roots. Registering the
+13-vs-11 split in the tool, the tombstone and doc 20 §4 is the honest half of the finding: a checker that quietly
+adopted a count different from the document it cites is a second wrong answer, not a correction.
+
+**What landed.** `tools/check-layout-guards.mjs`, 372 lines, five refusals over the layout contract: `root-bare` (the
+five root paths ADR-0018 rule 1 forbids), `coupling` (each §7 row still names a real file, its cited range is inside
+that file, and the literal that makes it a coupling is still on the line), `legacy-roots` (each of the six is still a
+directory, and the five that are npm packages still answer to their own directory name — ADR-0002 makes the *name*, not
+the folder, the thing the symlinks resolve through), `locale-chain` (every `../omega-locales/**.po` the `po2crx` task
+reads still resolves, and nothing else may escape its project), and `watcher-scope` (no `Gruntfile.*` outside the six
+legacy roots, and neither `watch.coffee` glob may name a new root). It ends with a `--selftest` that injects one defect
+per rule — 9 cases, nine refusals, then a clean fixture — so the CI step proves the guard bites rather than merely
+executes. One design decision came from a false alarm: the first draft walked the filesystem and tripped on the scratch
+archives under `tmp/`, which contain real legacy `Gruntfile`s, so the tool now walks `git ls-files` for the real tree and
+a fixture directory for the selftest. A guard that fails because of an untracked experiment is a guard people route
+around, and the rule it enforces stops being a rule.
+
+**The shell went rather than stayed beside the script,** for the reason §4.26 gives: 11 lines of bash became 2 lines
+calling the tool the row already named, so the bare-root rule has one statement in one language instead of two owners
+with one of them a copy nobody edits. The step keeps its name as `VER-04, VER-05, VER-07 -- the layout guards (…)`,
+because doc 39 §9 rule 8 makes an issued id an address and the runner logs have already used all three. The workflow's
+header comment was re-flowed to exactly eight lines rather than rewritten freely, for the second slice in a row: the
+cited `:31-33` of that file must still land on the `concurrency` block.
+
+**What closed, and what this closure does not claim.** `marker.counted` moves 202 → 196 for the six labelled sentences
+these rows owned — three, two and one — and `docs/PROJECT-STATE.md` §4.4's queue sentence, doc 39 §2, §4, §5, §6, §8,
+§10, §11 and §13 and the four distribution constants in `packages/schema/scripts/verify.mjs` moved with them: the queue
+is 74 rows, `no-check` 9 → 6, the `tools` owner 5 → 2, the `tool` mechanism 5 → 2, and `#/retired` has five, six and
+seven tombstones and §10's Retired table the matching three rows. Six sentences became `Verified: YES`: ADR-0018 ##
+Verification — whose "(green: 504 checks)" figure, last true in Phase 1, now reads 1 220, with the file staying exactly
+121 lines because doc 39 §13 line-cites it at `:55` and `:121` — and doc 20 §4, §7, §8 plus two rows of §11. One
+document leaves the census with that: ADR-0018 held a single label and now holds none, which is why the corpus is 196
+lines over **43** documents rather than 44. What is *not* claimed is a runner execution of either script: the checks
+have run on GitHub as shell, `tools/check-adr-shape.mjs` and this file have run only here, and the next execution of
+that workflow is the first that prints them. That is said in the tombstones, in doc 39 §8 and §13, and in §5 below,
+because a closure whose evidence is a local green run has to say so or it is what §9 rule 5 was written against.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1220 checks**, four of them the distributions this
+slice moved. `node tools/check-layout-guards.mjs` and its `--selftest` → both green, described above.
+`node tools/check-adr-shape.mjs` (and `--selftest`) → green: 20 records, 102-140 lines, 15 injected defects refused —
+including this ADR, whose rewritten `## Verification` bullet the line bound still accepts. `node tools/check-doc-evidence.mjs`
+→ green; §4.4's final ledger paragraph has the per-file deltas and the set it prints. `node tools/check-no-secrets.mjs`
+(and `--selftest`, 13 cases) → green, one file more than §4.26 recorded, because this slice adds source and no bytes.
+`go -C connector test -count=1 ./...`, `gofmt -l connector` and `go -C connector vet ./...` → the eleven `ok` lines, the
+empty list and the silence, unchanged: this slice touches no Go file.
+
 ---
 
 ## 5. Verification state to the letter
@@ -2083,7 +2160,7 @@ Go file.
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 537 pointers, 1491 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 541 pointers, 1513 doc-and-script
   names, 68 harness assertion labels — the fourth figure is new with §4.22 and no GitHub runner has printed it yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
@@ -2101,6 +2178,15 @@ Go file.
   and the push that would show it asks for its confirmation each time — while the checks themselves have run there since
   2026-11-05 as the two shell steps §4.26 replaces. It is the `VER-01` step of the workflow bullet below, and `VER-01` is
   in `verification.json#/retired`.
+- `node tools/check-layout-guards.mjs --selftest` and `node tools/check-layout-guards.mjs` → **green here**: 9 injected
+  defects refused, one per rule (a root manifest, a moved file, a drifted line, an edited-out coupling literal, a renamed
+  package, a missing locale, a `Gruntfile` in a new root and two watcher globs out of scope) and then the clean fixture;
+  the real run prints four census notes — 23 coupling rows over 13 distinct files against the audit's headline of 11, the
+  four name-free rows, 7 `po` paths of which 6 are distinct, and 5 tracked `Gruntfile`s all legacy. As with the ADR
+  script, no runner has printed these lines: the file arrived today, the push that would show it asks for its
+  confirmation each time, and the root-path half of its rules has run on GitHub since 2026-11-05 as the bash loop this
+  slice deleted. It is the `VER-04, VER-05, VER-07` step of the workflow bullet below, and all three ids are in
+  `verification.json#/retired`.
 - `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners since 2026-11-05 —
   §12 tabulates ten of those runs: three red, six times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
   §4.5 and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 used to leave open — a clean image can install and build
@@ -2119,6 +2205,11 @@ Go file.
   §4.26 is the second such commit and the first whose closer is a file rather than a run: `VER-01` is the fourth id in
   that ledger, retired on the day `tools/check-adr-shape.mjs` arrived, with the runner half of its evidence still owed
   to the next execution of this workflow and said so in the tombstone.
+  §4.27 is the third, and the first that deletes three rows in one commit: `VER-04`, `VER-05` and `VER-07` are the fifth,
+  sixth and seventh ids in that ledger, the bash loop that enforced the root-path half of them is gone from this file, and
+  the step that ran it now runs `tools/check-layout-guards.mjs` under the same three names — the names the run logs
+  already carry, which is why a deletion changes the step's body and not its title. Ten of the queue's ids appear in this
+  file's step names and seven of them are retired.
 
 ---
 
@@ -2341,12 +2432,19 @@ place, and neither is a status edit:
    `verification.json#/retired` ledger, and the assertion reads `"every VER id the queue ever issued is live or retired,
    no id is recycled, and a retired one says what it was and what closed it"`. `VER-11` reached the same green and stayed,
    because the half its subject still owes is a lockfile and `package-lock.json` is untracked by design (§9.2).
-   `VER-02`/`03` stay (they scanned roots that hold no code yet), and `VER-04`/`05` stay queued against a
-   `check-layout-guards` tool that has not been written.
+   `VER-02`/`03` stay (they scanned roots that hold no code yet), and `VER-04`/`05` stayed queued against a
+   `check-layout-guards` tool that had not been written.
    The same bookkeeping ran a second time the next sitting, one row at a time and with a different kind of evidence:
    **§4.26 closes `VER-01`**, whose closer was a file rather than a run — `tools/check-adr-shape.mjs`, the artefact the
    row's own `closesBy` names. The ledger has four ids, the queue is 77 rows, `marker.counted` moved 203 → 202, and doc
    39 §8's first step is nine rows wide instead of the ten it listed while `VER-01` was one of them.
+   It ran a third time in the same sitting, three rows at once and against the tool those two sentences were waiting
+   for: **§4.27 closes `VER-04`, `VER-05` and `VER-07`** with `tools/check-layout-guards.mjs`, six labelled sentences
+   leave `docs/adr/0018-workspace-roots-and-no-root-package-json.md` and `docs/architecture/20-target-repository-layout.md`
+   §4, §7, §8 and §11, `marker.counted` is re-derived 202 → 196, `no-check` goes 9 → 6, the `tools` owner and the `tool`
+   mechanism both 5 → 2, the queue is 74 rows, and the ledger has seven. §8's first step is six rows wide, and the two
+   that remain in it from this family are `VER-56` and `VER-58` — the manifest guards, the only rows left that a tool
+   over files already on disk can still close.
 2. **The browser half.** `LIVE-01…24`, unchanged and `SKIPPED`, need a person with a real Chrome, and `LIVE-14`
    needs the export that would replace the fixtures' exporter-shaped values.
 
@@ -2415,14 +2513,15 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`** at `4250893`. The remote is not where this bullet last left it: `git ls-remote nexora
-  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 9 — the config.apply surface
+- Branch: **`nexora/architecture`** at `25ae919`. The remote is not where this bullet last left it: `git ls-remote nexora
+  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 10 — the config.apply surface
   (`293cb73`), M2's cheap tail (`d1d22bb`), the citation conversion (`31008a5`), the ledger line that recorded those
   three (`18f1e1b`), `VER-81`'s registration (`f4cac24`), the three ledger lines after it (`e1020b5`, `8730c7a`,
-  `6d222ae`) and the commit that deleted `VER-06`, `VER-08` and `VER-10` (`4250893`) are committed here and unpushed,
+  `6d222ae`), the commit that deleted `VER-06`, `VER-08` and `VER-10` (`4250893`) and the one that closed `VER-01`
+  (`25ae919`) are committed here and unpushed,
   because the rule further
-  down this list asks for its own confirmation each time and none was given for these nine. A bullet written by the slice
-  it describes cannot name the sha it lands under, so the number beside it is the count at `4250893` rather than the
+  down this list asks for its own confirmation each time and none was given for these ten. A bullet written by the slice
+  it describes cannot name the sha it lands under, so the number beside it is the count at `25ae919` rather than the
   count at the commit carrying the sentence, and it widens by one with every commit after — which is why the query, and
   not the number, is the fact this bullet keeps. When this bullet was written
   the remote was at `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer,

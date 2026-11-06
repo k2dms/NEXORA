@@ -3,13 +3,13 @@
 # actions/upload-artifact, and release.yml stays the sole thing that reacts to a `v*` tag.
 #
 # Steps are named after the row of docs/architecture/39-verification-matrix.md they were written to close
-# (VER-01, VER-02, VER-03, VER-04, VER-06, VER-08, VER-10, VER-11). Writing a workflow is not running one, and
-# running it is not closing a row. This file has run on runners since 2026-11-05, and the report at
-# docs/audit/99-baseline-report.md §12 tabulates ten of those runs -- three red, six times green, once cancelled
-# by the concurrency block below -- counting its table, not the executions, because a commit recording a run of
-# this workflow is itself one. packages/schema/verification.json has no state meaning closed, so a row closes by
-# deletion; VER-01, VER-06, VER-08 and VER-10 were deleted that way on 2026-11-06 and these step names stay, as
-# the logs cite them and an id once issued is never reissued. VER-11 is green too: its lockfile half is untracked.
+# (VER-01, VER-02, VER-03, VER-04, VER-05, VER-06, VER-07, VER-08, VER-10, VER-11 -- ten of the queue's ids).
+# Writing a workflow is not running one, and running it is not closing a row: this file has run on runners since
+# 2026-11-05, and docs/audit/99-baseline-report.md §12 tabulates ten of those runs -- three red, six green, one
+# cancelled by the concurrency block below -- counting its table, not the executions, because a commit recording
+# a run of this workflow is itself one. packages/schema/verification.json has no state meaning closed, so a row
+# closes by deletion: VER-01, VER-04, VER-05, VER-06, VER-07, VER-08 and VER-10 were deleted that way on
+# 2026-11-06, their step names stay because the logs cite them, and VER-11 is green but owes a lockfile.
 #
 # Floors and expected artifact shapes below are measured values, each with its source:
 #   docs/audit/99-baseline-report.md §5   -- the legacy test floor (142/1, 8/5) and the 0-test-file projects
@@ -89,17 +89,12 @@ jobs:
           node tools/check-no-secrets.mjs --selftest
           node tools/check-no-secrets.mjs
 
-      - name: VER-04 -- the repository root stays bare (ADR-0018 rule 1, doc 20 §8)
+      # ADR-0018 rule 1's five root paths lived here as a shell loop until 2026-11-06, when the same rule became
+      # one of five in tools/check-layout-guards.mjs; the step keeps its name because the run logs already cite it.
+      - name: VER-04, VER-05, VER-07 -- the layout guards (root bare, couplings intact, watcher contained)
         run: |
-          for f in package.json package-lock.json go.work go.mod .npmrc; do
-            if [ -e "$f" ]; then
-              echo "::error::$f exists at the repository root. A root manifest lets any tool reach the" \
-                   "legacy grunt graph and rewrites the node_modules layout the prebuilt bundles resolve" \
-                   "against (docs/adr/0018-workspace-roots-and-no-root-package-json.md rule 1)."
-              exit 1
-            fi
-          done
-          echo "OK: no root package.json / package-lock.json / go.work / go.mod / .npmrc."
+          node tools/check-layout-guards.mjs --selftest
+          node tools/check-layout-guards.mjs
 
       - name: VER-02 -- nothing under packages/ or nexora/ imports from omega-* (ADR-0018 rule 4)
         run: |

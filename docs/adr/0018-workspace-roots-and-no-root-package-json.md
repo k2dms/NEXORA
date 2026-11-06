@@ -113,9 +113,9 @@ live under `nexora/extension`, and the Connector is Go under `connector/`. There
 ## Verification
 
 - Existing check: `npm --prefix packages/schema run verify` proves a per-root install-and-verify cycle works
-  with no root manifest present (green: 504 checks).
+  with no root manifest present (green: 1 220 checks).
 - Existing check: `node tools/check-doc-evidence.mjs` is itself a rootless script (`node tools/...`), which
   is rule 6 demonstrated.
-- Verified: NO -- deferred to Phase 2: a CI guard that fails if a root `package.json`, root `go.work` or
-  root `.npmrc` appears, and the per-root invocation of rules 2 and 7. Both belong to
-  `.github/workflows/verify.yml`, which is not written in this iteration.
+- Verified: YES -- a root `package.json`, `go.work` or `.npmrc` now fails a guard: the `root-bare` rule of
+  `tools/check-layout-guards.mjs`, the `VER-04` step of `.github/workflows/verify.yml` -- a file this
+  iteration did not write, run by CI since 2026-11-05 -- and rules 2 and 7's per-root calls.
