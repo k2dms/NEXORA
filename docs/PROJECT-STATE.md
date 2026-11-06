@@ -197,10 +197,10 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `207` labelled lines over `44` documents partitioned into `80` rows `VER-01…VER-80`, `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
-sites over `14` documents partitioned into `39` entries `ODEC-01…ODEC-39`, each naming who can answer it
-(`product` 14, `contract` 15, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-six of the thirty-nine,
+The queue is `208` labelled lines over `44` documents partitioned into `81` rows `VER-01…VER-81`, `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
+sites over `14` documents partitioned into `40` entries `ODEC-01…ODEC-40`, each naming who can answer it
+(`product` 14, `contract` 16, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-seven of the forty,
 since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
 unwritten, `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
 records as absent on this host, and `ODEC-39` carries a fourth that answers only the second half of its own question —
@@ -209,7 +209,7 @@ different owners — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
-`npm --prefix packages/schema run verify` → **green: 1217 checks, 13 schemas, 19 command docs,
+`npm --prefix packages/schema run verify` → **green: 1220 checks, 13 schemas, 19 command docs,
 20 valid examples, 24 invalid rejected, 112 frames replayed**. The only note printed is `compiled 13 schemas`;
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
@@ -387,6 +387,29 @@ pushed, since §7's rule asks for a confirmation per push and none has been give
 still named `cf7e56d` as the remote's head, which was true when it was written and is two commits behind the present;
 the bullet now states what the remote prints instead, for the reason the fifteenth entry gave — a sha and the output of a
 query against the remote are prose about the remote, and the remote is the only witness.
+§4.23 moves the set a twentieth time — **2312 / 528 / 1471**, 68 labels — and it is the first entry in this series whose
+subject is a sentence rather than a file: no Go was written, no contract changed, no assertion added, and the first
+number does not move because a slice that adds no address cannot add a `path:line`. Per file against a clean tree at the
+commit before: doc 29 `+0 / +0 / +1`, the one name its new §13 row points at the register; doc 39 `+0 / +0 / +1`, the
+amendments paragraph naming the document whose §5 gained the label; doc 40 `+0 / +1 / +2`, the refresh contract's result
+pointer plus doc 29 and doc 34 in the new entry's argument; and this file `+0 / +3 / +4` — the three pointers §4.23
+measures into the refresh contract, the source schema and the register's own scope, its heading and its body naming doc
+29 twice and doc 34 once, and the harness file named once for the four constants it grew. That last clause is also the
+slice's one lesson in the guard's own grammar: the first draft named the register by path in a sentence *about* naming
+the register, and the run counted that line as a deferral this file owes — `derived 62, declared 61`, with
+`unowned: docs/PROJECT-STATE.md:1773` pointing at the sentence. A description of a deferral is not a deferral, and the
+membership rule cannot tell them apart; the prose now says "names the register". What the corpus counts moved for is the queue and the register rather than the
+citations: one labelled line in doc 29 §5 and one deferral site in its §13, so `marker.counted` goes
+207 → 208, `citation.counted` 60 → 61, and doc 39's partition sentence reads rows (158) + vocabulary (26) + live (24) =
+208. §4.20's third failure mode — the file a number points into grew for a reason belonging to the next slice — did not
+recur, because nothing in this slice points into a file that grew; what did recur is its cousin, and this ledger has not
+seen it before: **a citation that collides with the anchor it describes**. The first draft of §13's seventh row quoted
+§5's own words to say what §5 says, and those words are `VER-81`'s anchor, so one anchor landed on two lines of one
+document. No prose review can see that, and the registration would have looked *complete* — a row, an entry, a site, a
+label — while the queue silently lost §5's claim. It was found by a throwaway census that printed 158 anchors landing on
+159 lines, and proven to be caught rather than merely noted by restoring the collision and running the harness, which
+fails three checks and names the document, the line and the arithmetic. The 68 labels are the unchanged fourth figure: a
+slice that changes four constants in the harness quotes no new label.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1741,6 +1764,66 @@ convention and the checker describe one thing.
 
 ---
 
+### 4.23 The format an `auto` parse resolves to, and the contract field that has nowhere to put it (`docs/architecture/29-subscriptions-and-servers.md`, 2026-11-06)
+
+**What landed.** No Go file, no contract change, and no decision. §6's M3 item names five components; four are packages
+on disk and the fifth — subscriptions — is the one no slice had opened, which is what §4.14 and §4.20 did with the
+other gaps: read the document against the data until a sentence turns out to have no artefact. This one is in
+`docs/architecture/29-subscriptions-and-servers.md` §5, and it is two claims in one sentence. The first — `auto` is
+legal only while exactly one parser's detector answers true — is a behaviour the Connector would implement, and doc 29 §2
+already assigns it there. The second — that `auto` therefore never survives into a stored source, because the parser
+records which detector won — is a promise about *where a value rests*, and nothing in this repository is that place. The
+registration is the deliverable: §5's sentence now carries the label, §13 gains a seventh row that names the register as
+where the answer belongs, `VER-81` enters `packages/schema/verification.json` (`no-code`, `contracts`, closes by
+decision), `ODEC-40` enters
+`packages/schema/open-decisions.json` (`contract`, three options, gates `VER-81`), `marker.counted` moves 207 → 208 and
+`citation.counted` 60 → 61, doc 39 and doc 40 are re-typed to match, and four constants in
+`packages/schema/scripts/verify.mjs` move: `54 → 55` and `80 → 81` in the state assertion, `contracts 6 → 7` in the
+owner one, `decision 4 → 5` in the closing-mechanism one. That is the whole of the code this slice changes.
+
+**What the data says, measured rather than remembered.** Four artefacts, and the gap is between them, not inside any
+one. `packages/schema/protocol/commands/subscription.refresh.json#/result` bounds a `refreshed[]` item with
+`additionalProperties: false` over exactly eight properties — `subscriptionId`, `sha256`, `serverCount`, `added`,
+`removed`, `duplicates`, `lossyFields`, `servers` — and none of them is a format. The same file's `#/args` description
+states the opposite duty in its own words: the Connector reads `format` and "writes none of them back — the result is
+not a mutated source". `packages/schema/subscription-source.schema.json#/properties/format` carries `auto` in its enum
+with `default: auto`, so the ambiguous value is the *default*. And the two planes are separated by design: doc 29 §2
+gives the Connector the format detection and the parse, while `docs/architecture/34-data-split.md` §6's table puts every
+intent store — the source document included — in the browser plane. So the value that would decide what a stored
+`format` should say is computed one plane away from the document it would correct, and the only channel between the
+planes is those eight fields and refuses a ninth.
+
+**Why this is a row and not a fix.** Three readings survive the gap, and all three are a property plus the sentences
+that read it: `refreshed[]` gains `format` and the args description gains the exception it currently denies; the
+verdict travels beside the servers instead of beside the source, which makes it a fact about the feed rather than about
+the row the user sees; or `auto` is kept, §5 loses its storage claim, and an ambiguous feed fails once per refresh
+rather than once per source. Writing any of them into a schema in this slice would be the thing
+`packages/schema/open-decisions.json#/scope` refuses — an answer invented by the report. What is owed is a choice, and
+the queue now names which artefact has to change once it is made.
+
+**What the harness caught while the registration was being written.** A registration is a set of pointers, and pointers
+collide. The first draft of §13's seventh row described §5 with §5's own phrase, "records which detector won", and that
+phrase is `VER-81`'s anchor — so the anchor matched two lines of one document. A throwaway census printed it before any
+run did: 158 anchors landing on 159 lines, one anchor with two hits, no line claimed by two rows. The row was reworded,
+and then the collision was deliberately restored to check that the guard, not the census, owns the rule. `npm --prefix
+packages/schema run verify` fails three checks on it: `VER-81 -> anchor matches 2 lines in
+docs/architecture/29-subscriptions-and-servers.md`, then `unowned: docs/architecture/29-subscriptions-and-servers.md:107`
+because the dropped anchor leaves §5's label unanswered, then `rows=157 + vocabulary=26 + live=24 = 207, derived=208`.
+One failure is the collision; the other two are what a collision costs the arithmetic, and they are the reason §6 #8's
+"exact partition" sentence is worth its machinery. Earlier in the same slice the run had printed the six the
+registration is *supposed* to fail before it is complete — derived 208 against a declared 207, the three distribution
+assertions, `absent from doc 39: VER-81`, `unowned: …29-subscriptions-and-servers.md:390` and `unregistered=VER-81` — so
+doc 39, doc 40 and the four harness constants were written against its messages rather than against a guess.
+
+**Gates.** `npm --prefix packages/schema run verify` → **1220 checks**, green: the count is unchanged because this slice
+adds no assertion, and the three checks that read doc 39 and doc 40 aloud now read the re-typed documents.
+`node tools/check-doc-evidence.mjs` → green at the four figures §4.4's twentieth paragraph carries.
+`node tools/check-no-secrets.mjs` → the same **478 files** — it enumerates `git ls-files`, and this slice stages no
+file. `go -C connector test -count=1 ./...` → the same eleven `ok` lines, `gofmt -l connector` prints nothing and
+`go -C connector vet ./...` is silent, because none of this slice is Go.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -1823,7 +1906,7 @@ convention and the checker describe one thing.
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2312 `path:line`, 524 pointers, 1463 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2312 `path:line`, 528 pointers, 1471 doc-and-script
   names, 68 harness assertion labels — the fourth figure is new with §4.22 and no GitHub runner has printed it yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
@@ -1917,9 +2000,9 @@ question existed nowhere in the corpus, only as `docs/PROJECT-STATE.md` §9's fo
 `docs/architecture/29-subscriptions-and-servers.md` §13 carries it now, the labelled corpus is `202` rather than
 `201`, and `ODEC-33` gates `VER-61`.
 
-The two figures in the paragraphs above are the ones those slices measured, and they have moved since: §5 and §4.16
-carry today's partition of the labelled corpus and today's size of the register. This block is the record of how the
-machinery was written, not a second place to read its counts.
+The two figures in the paragraphs above are the ones those slices measured, and they have moved since: §5 and §4.4's
+final ledger paragraph carry today's partition of the labelled corpus and today's size of the register. This block is
+the record of how the machinery was written, not a second place to read its counts.
 
 **Still owed in the corpus, deliberately not done here:** (a) `109 frames` / `504 checks` / `707 checks` remain in
 five ADR `## Verification` sections — ADR-0001 rule 5 forbids correcting history in place, and
@@ -2122,7 +2205,9 @@ written before any behaviour existed. What each next milestone has to make true:
    and the hash — and stopped there, because stages 1 to 4 are what decide what the serializer would be claiming to have
    compiled; §4.16 wrote those stages, §4.17 the keystore and §4.19 the supervisor, so three of the five are packages on
    disk, the compiler is begun, and what is left is the prober — whose last stage needs the Core binary §4.13 records as
-   absent — and subscriptions, which no command surface has reached yet. The order the rest builds in is §10's closing
+   absent — and subscriptions, which no command surface has reached yet and whose one registered gap is now `ODEC-40`:
+   where the format an `auto` parse resolved to is recorded. §4.23 is that change, so the fifth component is stopped by a
+   decision rather than by a document nobody had read. The order the rest builds in is §10's closing
    note.
 
 ---
@@ -2403,7 +2488,12 @@ register's own rows needed named. The queue's cheap tail is closed: §4.21 write
 M2, so nothing that remains is a string and a check — every surviving item is stopped by a decision above, by the Xray
 binary this host does not have, or by a browser. §4.22 closes the queue's other tail, the one it had carried since the
 citation convention was written: `docs/` no longer addresses `packages/schema/scripts/verify.mjs` by line number at all,
-so a rule added in the middle of the harness can move a sentence but not a citation.
+so a rule added in the middle of the harness can move a sentence but not a citation. A seventh stopped thing is
+`ODEC-40`, and it is the first that arrived without any code being written at all: doc 29 §5 promises that the format an
+`auto` parse resolved to is recorded, and the refresh contract carries eight result fields, none of them a format, plus
+an args description that refuses to write any of them back. That entry is what makes the claim two sentences above true
+rather than nearly true — until §4.23, subscriptions sat in this queue as the one component nobody had read, and the
+sentence "nothing that remains is a string and a check" was spoken about a part of the system it did not cover.
 Plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish; the note under that table
 says why one ninth stopped being a question and what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the

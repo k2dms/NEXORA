@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 60
+    "counted": 61
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -601,6 +601,21 @@
       ],
       "at": [
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "which two directories it is handed" }
+      ]
+    },
+    {
+      "id": "ODEC-40",
+      "question": "Where is the format an `auto` parse resolved to recorded -- a field in `subscription.refresh`'s result, a value the extension stores from something else, or nowhere, with `auto` simply kept and detection re-run on every refresh?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-81"], "compatibility": [] },
+      "why": "Doc 29 §5 closes its detection rule with a storage claim: 'the fifth enum value, `auto`, is meant never to survive into a stored source, because the parser records which detector won'. The half about the parser is a behaviour the Connector would implement (doc 29 §2 gives it the format detection and the parse); the half about the source has no artefact. `packages/schema/protocol/commands/subscription.refresh.json#/result` bounds each `refreshed[]` item with `additionalProperties: false` over eight properties -- `subscriptionId`, `sha256`, `serverCount`, `added`, `removed`, `duplicates`, `lossyFields`, `servers` -- and none of them names a format, while the same file's `#/args` says the Connector 'reads `url` or the address behind `urlRef`, `headersRef`, `format`, `limits` and the backoff in `status`; it writes none of them back -- the result is not a mutated source'. That is the whole difficulty: `packages/schema/subscription-source.schema.json#/properties/format` carries `auto` in its enum with `default: auto`, the extension owns the source documents (`docs/architecture/34-data-split.md` §6 puts every intent store in the browser plane), and detection belongs to the Connector, so the value that decides what the *stored* `format` should be is produced one plane away from the document it would correct, and the only channel between the planes carries eight fields. Three readings survive and they are all fields and sentences in `packages/schema`: the result gains the property and that `#/args` description gains the exception it currently denies; some other artefact records it, which today means inventing one; or the storage claim is wrong and `auto` is kept, in which case an ambiguous body fails once per refresh rather than once per source and doc 29 §5 must say that out loud instead of promising a record nobody keeps. It is `contract` for the same reason `ODEC-34`, `ODEC-38` and `ODEC-39` are: the answer costs a property, its bound and the documents that read it -- not a person, a browser or a binary.",
+      "options": [
+        "`refreshed[]` gains `format`, the resolved value the detector produced: the extension persists it into the source it owns, `auto` really does never survive, and the cost is that `subscription.refresh`'s result stops being 'not a mutated source' in exactly one field -- which its own `#/args` description and `docs/architecture/34-data-split.md` §6's ownership table then both have to allow",
+        "detection is reported beside the servers rather than per source: the parser's verdict travels inside each `Server` or a parallel list, so an ambiguous body still fails the refresh whole, at the cost of a value that describes the feed rather than the source and a second place `format` exists",
+        "`auto` is kept: doc 29 §5 loses its storage claim, every refresh re-detects from the declared value, and the corpus says plainly that an ambiguous feed fails on every attempt until the user declares a format -- no new field anywhere, and the honest cost is that the promise 'records which detector won' was never a promise about storage"
+      ],
+      "at": [
+        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "Which artefact records the format an" }
       ]
     }
   ]
