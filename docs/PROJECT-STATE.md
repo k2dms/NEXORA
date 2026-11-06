@@ -2728,19 +2728,20 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`** at `264b75a`. The remote is not where this bullet last left it: `git ls-remote nexora
-  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 11 — the config.apply surface
-  (`293cb73`), M2's cheap tail (`d1d22bb`), the citation conversion (`31008a5`), the ledger line that recorded those
-  three (`18f1e1b`), `VER-81`'s registration (`f4cac24`), the three ledger lines after it (`e1020b5`, `8730c7a`,
-  `6d222ae`), the commit that deleted `VER-06`, `VER-08` and `VER-10` (`4250893`), the one that closed `VER-01`
-  (`25ae919`) and the one that closed `VER-04`, `VER-05` and `VER-07` (`264b75a`) are committed here and unpushed,
-  because the rule further
-  down this list asks for its own confirmation each time and none was given for these eleven. A bullet written by the slice
-  it describes cannot name the sha it lands under, so the number beside it is the count at `264b75a` rather than the
-  count at the commit carrying the sentence, and it widens by one with every commit after — which is why the query, and
-  not the number, is the fact this bullet keeps. When this bullet was written
-  the remote was at `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer,
-  not this file's memory, is what says where a ref is. What the `5e59e17..cf7e56d` fast-forward carried is §4.17's
+- Branch: **`nexora/architecture`** as the working name, and one branch on the remote as the only published one. The
+  push the user asked for on 2026-11-07 ran as `git push nexora nexora/architecture:master` and fast-forwarded
+  `refs/heads/master` from `7544baa` to `84d4eda` — thirteen commits: the config.apply surface (`293cb73`), M2's cheap
+  tail (`d1d22bb`), the citation conversion (`31008a5`), the ledger line that recorded those three (`18f1e1b`),
+  `VER-81`'s registration (`f4cac24`), the three ledger lines after it (`e1020b5`, `8730c7a`, `6d222ae`), the commit that
+  deleted `VER-06`, `VER-08` and `VER-10` (`4250893`), the one that closed `VER-01` (`25ae919`), the one that closed
+  `VER-04`, `VER-05` and `VER-07` (`264b75a`), the one that answered `ODEC-02` and closed `VER-18` (`7771335`), and
+  §4.29's registration of `VER-82` and `ODEC-41` (`84d4eda`). `git ls-remote --heads nexora` printed one ref before it and
+  one ref after, and that is the whole answer to "why a second branch alongside": the local branch name is a workspace
+  convention, never a refspec, because pushing it under its own name is exactly the stray ref recorded two bullets below —
+  a second copy of the build, not a second line of work. A bullet written after the commits it counts cannot name the sha
+  it lands under, so `git rev-list --count nexora/master..HEAD` remains the fact this bullet keeps rather than any number
+  written beside it; when this bullet was written the remote was at `cf7e56d`, and the push after it carried `3b7ffb2` and
+  `7544baa` themselves. What the `5e59e17..cf7e56d` fast-forward carried is §4.17's
   keystore (`bdd7f1d`),
   §4.18's materializer
   and owner-only write (`be6ce05`) and §4.19's supervisor with its record and its two registry rows (`cf7e56d`) — three
