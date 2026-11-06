@@ -380,6 +380,13 @@ while its own cites were being converted, two addresses in doc 34 moved onto the
 saw only the third — the one that landed blank. The other two exist only because someone diffed every cite's target
 between HEAD and the worktree, which no citation checker can do: `:111` and `:112` are both legitimate lines, and only
 the sentence knows which one it means. That is the argument for −52 rather than for tidiness.
+A nineteenth entry, and the second whose headline is a remote rather than a tree, because the query that answers it
+changes none of the three figures: `git ls-remote nexora master` prints `7544baa`, and `git rev-list --count
+nexora/master..HEAD` prints **3** — §4.20's `293cb73`, §4.21's `d1d22bb` and §4.22's `31008a5` are committed and not
+pushed, since §7's rule asks for a confirmation per push and none has been given for these three. §7's opening bullet
+still named `cf7e56d` as the remote's head, which was true when it was written and is two commits behind the present;
+the bullet now states what the remote prints instead, for the reason the fifteenth entry gave — a sha and the output of a
+query against the remote are prose about the remote, and the remote is the only witness.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -2122,8 +2129,13 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`**, and `nexora/master` is at the same sha — `cf7e56d`, pushed and confirmed in this
-  sitting. What that one fast-forward carried is `5e59e17..cf7e56d`: §4.17's keystore (`bdd7f1d`), §4.18's materializer
+- Branch: **`nexora/architecture`** at `31008a5`. The remote is not where this bullet last left it: `git ls-remote nexora
+  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 3 — the config.apply surface, M2's
+  cheap tail and the citation conversion are committed here and unpushed, because the rule further down this list asks
+  for its own confirmation each time and none was given for these three. When this bullet was written the remote was at
+  `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer, not this file's
+  memory, is what says where a ref is. What the `5e59e17..cf7e56d` fast-forward carried is §4.17's keystore (`bdd7f1d`),
+  §4.18's materializer
   and owner-only write (`be6ce05`) and §4.19's supervisor with its record and its two registry rows (`cf7e56d`) — three
   slices that each waited on this file rather than on a ref of their own, because a push needs its own confirmation each
   time and this file states that rather than assuming it was given. `5e59e17` itself was reached in three pushes after
