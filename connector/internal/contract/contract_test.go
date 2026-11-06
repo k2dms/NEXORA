@@ -130,8 +130,11 @@ func TestBudgetsCoverTheSurfaceTheyClaim(t *testing.T) {
 }
 
 func TestTransportNumbersAreTheOnesTheDocumentPrints(t *testing.T) {
-	if FrameFormatVersion != 1 || ProtocolVersion != 1 || MinCompatibleProtocolVersion != 1 {
-		t.Errorf("versions are %d/%d/%d", FrameFormatVersion, ProtocolVersion, MinCompatibleProtocolVersion)
+	if FrameFormatVersion != 1 || MinPipeVersion != 1 || ProtocolVersion != 1 || MinCompatibleProtocolVersion != 1 {
+		t.Errorf("versions are %d/%d/%d/%d", FrameFormatVersion, MinPipeVersion, ProtocolVersion, MinCompatibleProtocolVersion)
+	}
+	if MinPipeVersion > FrameFormatVersion || MinCompatibleProtocolVersion > ProtocolVersion {
+		t.Error("a floor above the version it floors refuses every build that ships it")
 	}
 	if !(EffectiveCrossBrowserBytes <= ExtensionToHostBytes && ExtensionToHostBytes <= HostToExtensionBytes) {
 		t.Errorf("limits out of order: %d %d %d", EffectiveCrossBrowserBytes, ExtensionToHostBytes, HostToExtensionBytes)

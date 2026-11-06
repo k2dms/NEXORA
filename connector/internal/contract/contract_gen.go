@@ -103,6 +103,7 @@ const (
 	ProtocolVersion                  = 1
 	MinCompatibleProtocolVersion     = 1
 	FrameFormatVersion               = 1
+	MinPipeVersion                   = 1
 	ExtensionToHostBytes             = 1048576
 	HostToExtensionBytes             = 1073741824
 	EffectiveCrossBrowserBytes       = 1048576

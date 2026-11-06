@@ -31,9 +31,9 @@ extension-to-host pipe", and `#/senderPolicy` is written from that hop as well �
 the browser side, while its budgets are spent by a sender only that hop can name and are counted in the Connector
 (`docs/architecture/31-security-model.md` §8). That is the sharper form of the same silence: the process that spends a
 sender's budget is not the process that can see which sender it is spending.
-The pipe's version *number* is already queued (`VER-18` and `ODEC-02`, both anchored on
-`docs/architecture/21-system-context.md` §12's invariant row); the other half of the same silence is not: **how the
-sender identity crosses hop 2, and what hop 2's message schema is at all.**
+The pipe's version *number* is declared now: `minPipeVersion` in `packages/schema/protocol/framing.json` closes `VER-18`
+and answers `ODEC-02` (2026-11-06), and no code compares a frame's `v` to it yet. The other half of the same silence
+is still queued: **how the sender identity crosses hop 2, and what hop 2's message schema is at all.**
 
 Four statements this corpus already makes close on each other there. (i) §2 above: the envelope crosses untranslated,
 and the process that must know the sender is the connector — `connector/internal/dispatch` takes an

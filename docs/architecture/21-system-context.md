@@ -107,9 +107,9 @@ indistinguishable from an outage from the user's side. Splitting gives:
   running instance instead of starting a second one (`CoreAlreadyRunning` is the error that says "another
   browser profile already owns the instance" — see `docs/architecture/40-open-decisions.md`).
 - **the pipe between them** carries the same envelope as the browser side, so no translation layer exists, but
-  it is versioned *separately* (`packages/schema/protocol/framing.json#/protocolVersion` for the browser side;
-  a distinct `minPipeVersion` for the shim↔connector hop) because the shim is replaced by an extension update
-  while the connector is upgraded by user action on a different schedule (ADR-0019). Consequence worth stating:
+  it is versioned *separately*, and since 2026-11-06 that separation is data:
+  `packages/schema/protocol/framing.json#/versionFloors` names the browser floor and the pipe's `minPipeVersion`,
+  on `docs/architecture/22-component-contracts.md` §2's replaceability rule. Consequence worth stating:
   a shim from NEXORA 3.7 may legally talk to a connector from 3.6 when both sides' declared floors overlap, so
   the negotiation result must be *written down* in the connector log and surfaced in `diagnostics.get`.
 
@@ -199,7 +199,7 @@ recorded in `docs/architecture/40-open-decisions.md`).
 | Reconnect adopts the running Connector instead of starting a second one | nothing | Verified: NO — deferred to Phase 2 (lock file format open, `docs/architecture/40-open-decisions.md`) |
 | No inbound binds non-loopback | asserted at `core.start` per ADR-0006; the shape is `packages/schema/protocol/commands/core.start.json#/result/properties/inboundPorts` and the compile-time rule is `packages/schema/connector-profile.schema.json#/properties/serverIds` | Verified: NO — deferred to Phase 2 (a Go test, not schema-checkable) |
 | No protocol code in `nexora/**` | the `VER-03` step of `.github/workflows/verify.yml` — the grep for transport protocol literals in executable JS, green on three runner images on 2026-11-05 (`docs/audit/99-baseline-report.md` §12) over roots that hold no code yet | Verified: NO — deferred to Phase 2 |
-| The pipe version and the browser protocol version are independent numbers | `packages/schema/protocol/framing.json#/protocolVersion` exists; `minPipeVersion` does not yet | Verified: NO — recorded as a Phase-2 contract addition, `docs/architecture/40-open-decisions.md` |
+| The pipe version and the browser protocol version are independent numbers | `packages/schema/protocol/framing.json#/versionFloors` declares two floors over four numbers -- `protocolVersion` and `minCompatibleProtocolVersion` for the browser side, negotiated in `connector.hello`, and `frameFormatVersion` and `minPipeVersion` for the pipe, carried by the `v` field of every frame -- and the assertion "the pipe floor and the protocol floor are separate numbers in the framing contract" in `packages/schema/scripts/verify.mjs` reads that shape, not the values | **GREEN** (run `npm --prefix packages/schema run verify`) |
 | The command set the worker may send is the allowlist | `packages/schema/protocol/command-allowlist.json` vs `packages/schema/protocol/commands/` — the "command-allowlist.json and protocol/commands/*.json name the same set" assertion in `packages/schema/scripts/verify.mjs` | **GREEN** (run `npm --prefix packages/schema run verify`) |
 | Nothing is dispatchable before negotiation | `packages/schema/scripts/verify.mjs` "nothing is dispatchable before negotiation except connector.hello" | **GREEN** |
 | Frame limits are the documented ones | the framing sanity block in `packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 1 MB", "the effective cross-browser limit is not larger than the smallest documented cap" and "host-to-extension cap is at least the reverse direction" | **GREEN** |

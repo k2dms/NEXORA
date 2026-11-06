@@ -197,11 +197,13 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `196` labelled lines over `43` documents partitioned into `74` live rows — the issued range is still
-`VER-01…VER-81`, and `7` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
-sites over `14` documents partitioned into `40` entries `ODEC-01…ODEC-40`, each naming who can answer it
-(`product` 14, `contract` 16, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-seven of the forty,
+The queue is `195` labelled lines over `43` documents partitioned into `73` live rows — the issued range is still
+`VER-01…VER-81`, and `8` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
+sites over `14` documents partitioned into `39` entries — its issued range is still `ODEC-01…ODEC-40`, and `ODEC-02`
+now sits in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
+register in the same sitting as the row that closed it — each naming who can answer it
+(`product` 14, `contract` 15, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-six of the thirty-nine,
 since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
 unwritten, `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
 records as absent on this host, and `ODEC-39` carries a fourth that answers only the second half of its own question —
@@ -210,7 +212,7 @@ different owners — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
-`npm --prefix packages/schema run verify` → **green: 1220 checks, 13 schemas, 19 command docs,
+`npm --prefix packages/schema run verify` → **green: 1222 checks, 13 schemas, 19 command docs,
 20 valid examples, 24 invalid rejected, 112 frames replayed**. The only note printed is `compiled 13 schemas`;
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
@@ -460,6 +462,25 @@ the tool. No `path:line` citation moved in any of the four, which is the shape �
 holds three times now: a row that dies because a file arrived adds no address inside code, because its evidence is the
 name of that file and a pointer into the ledger. The fourth figure did not move for the reason §4.25 gives — the
 harness gained no check and lost none while deleting three rows and re-listing four distributions.
+§4.28 moves the set a twenty-fifth time, and the first figure does not move for the fourth time in five entries —
+**2311 / 550 / 1531**, 68 labels — measured after this paragraph was written, so the paragraph reports the set the tool
+prints rather than the set its own sentences produced. Per file against a clean `git archive` of the commit before: doc 21
+`+0 / +0 / +1`, where the two `packages/schema/protocol/framing.json#/protocolVersion` pointers became two
+`#/versionFloors` ones and the net name is three names — `docs/architecture/22-component-contracts.md` arriving, the
+register's basename leaving the §12 row that stopped deferring, and that row gaining the harness's own file name; doc 25 `+0 / +0 / -1`, the
+name it loses being doc 21 §12, which the rewritten sentence no longer needs as the anchor of a queued row; doc 39
+`+0 / +2 / +2` and doc 40 `+0 / +1 / +1`, the pointers both halves of the new retirement ledger and the floor itself, the
+names the two documents the amendment re-reads; and this file `+0 / +6 / +15`, which is §4.28's record, this paragraph,
+and the two §10 rows plus the tail clause that carry the rule the append taught.
+The reason the first figure is still 2311 is §4.26's reason one slice later: a row closed by a contract addition leaves
+pointers into the contract and names of the files carrying it, not addresses inside code — and the three line numbers
+this file re-reads in `connector/internal/contract` and `connector/internal/contractgen` are re-reads, which §4.11 long
+ago established is not a delta. The fourth figure stayed at 68 while one harness assertion was deleted and two arrived,
+and that arithmetic is the slice's finding rather than an accident: `tools/check-doc-evidence.mjs` recognises a label
+only in the double-quoted form that *follows* the harness token, doc 40 §9 carries its labels in backticks, and doc 21
+§12's new citation puts the label before the token — so the 68 counts a set this corpus has not touched, and the
+substitution §4.25 could prove by that number could not be proved here. That is what the new §9 assertion is for: the
+guard cannot see the rot, so the harness reads the section itself.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -764,7 +785,8 @@ with the capability set; incompatible → `VersionMismatch` in **both** directio
 "Go table test **+ TS client test**". The Go half exists and runs on this host; the TS half is a `nexora/` client,
 which §6 keeps out of this iteration, and a `YES` in that legend means executed and recorded — for a negotiation, two
 endpoints agreeing. No `VER-NN` row covers the window rule at all: `VER-13` is the reconnect that re-runs this frame,
-`VER-18` is the pipe version that does not exist, and `VER-49` is the framing row §4.7 left open on a heartbeat this
+`VER-18` is the pipe version that did not exist then and does now — §4.28 wrote it into the framing contract as
+`minPipeVersion` and retired the row — and `VER-49` is the framing row §4.7 left open on a heartbeat this
 package never sees. So there is nothing here to close, and nothing here to reopen.
 
 ---
@@ -1213,11 +1235,11 @@ rule 6, turned into three test names.
 **The grammar is projected, so it cannot be copied twice.** doc 32 §5 says the reference vocabulary is data, and
 `packages/schema/envelope-keys.schema.json:143` is the line holding it: scheme, floor and shape as three `const`s, read
 by ajv, read by `packages/schema/scripts/verify.mjs`, and now read by the Go generator into
-`connector/internal/contract/contract_gen.go:139`. `connector/internal/contractgen/contractgen.go:283` is where the
+`connector/internal/contract/contract_gen.go:140`. `connector/internal/contractgen/contractgen.go:284` is where the
 projection refuses instead of copies: both floors must be built on the scheme they are anchored to, the entity and field
 lists must agree with the registry's own, the identifier segment of the shape must be the ingest document's pattern
 byte-for-byte (`packages/schema/protocol/commands/profile.import.json:85`), and
-`connector/internal/contractgen/contractgen.go:304` will not emit a vocabulary with more — or fewer — than one
+`connector/internal/contractgen/contractgen.go:305` will not emit a vocabulary with more — or fewer — than one
 object-shaped field, because `headers` is the one ODEC-36 is about. One artefact, three readers, a build that stops when
 they drift: §4.16's golden rule applied to a grammar rather than a fixture. The other half of that claim is a test, not
 a generator: `connector/internal/keystore/vocabulary_test.go:108` walks every JSON file under `packages/schema/`,
@@ -2076,6 +2098,91 @@ including this ADR, whose rewritten `## Verification` bullet the line bound stil
 `go -C connector test -count=1 ./...`, `gofmt -l connector` and `go -C connector vet ./...` → the eleven `ok` lines, the
 empty list and the silence, unchanged: this slice touches no Go file.
 
+### 4.28 The row that could only be closed by answering its question — `VER-18`, `ODEC-02`, and the second version floor (2026-11-06)
+
+**What the row claimed, measured against the tree before anything was written.** `VER-18` said the design promised two
+independent version floors and the contract carried one. Read against the files: `framing.json` held three version
+numbers on lines 6, 7 and 8 — `protocolVersion` floored by `minCompatibleProtocolVersion`, and `frameFormatVersion`
+with nothing under it; `docs/architecture/21-system-context.md` §6 named a `minPipeVersion` no file declared;
+`docs/architecture/25-native-messaging-protocol.md` §1 said the pipe's number "is already queued";
+`connector/internal/contract/contract_gen.go` projected three constants out of those three; and `VersionMismatch`'s
+meaning in the taxonomy named only `connector.hello`, which is true of exactly one of the two windows. The row's
+`closesBy.kind` was `decision`, not `assertion` — it was gated by `ODEC-02`, and `ODEC-02`'s first option was "declare
+both floors in the framing contract".
+
+**What the reading found, before the writing: the gate is load-bearing, and so is the numbering.** Two harness
+assertions had been quietly deciding what could be deleted. One refuses a register entry that names a queue row the
+matrix no longer has; the other refuses an entry that blocks nothing. They are one law read two ways, and together they
+mean a gated row cannot be closed around its question — either the question starts blocking nothing or it starts
+pointing at a phantom. So `VER-18` closed by answering `ODEC-02`, in the same commit. Answering it then hit the second
+wall: the register's ids were required *dense*, and the deletion its own description prescribes for an answered entry
+would have renumbered thirty-eight questions, every `blocks` list that cites them and every document that names one.
+The fix is not a workaround, it is doc 39 §9 rule 8 arriving one file later — `ODEC-NN` is issued once now, and an
+answered entry retires in `packages/schema/open-decisions.json#/retired` with what it asked and what decided it. §8's
+decision 21 is the law, because it is the kind that gets re-litigated: four of the seven rows §8's first step still
+lists are gated, and a reading of the queue that misses that keeps proposing deletions the harness refuses.
+
+**What landed.** `packages/schema/protocol/framing.json` gained `minPipeVersion` and a `versionFloors` block — two
+floors over four numbers, one `tooOld` code for both, and a `why` that says which window is negotiated where. It gained
+them at the **end** of the file, and the reason is the finding: three append-only ADRs address that file at six distinct
+line numbers and fourteen separate times (`docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+`docs/adr/0005-two-process-connector.md`, `docs/adr/0008-idempotency-and-replay.md`), and the first draft inserted the
+block at line 9. The guard printed one `BLANK TARGET` and stayed silent about the other five addresses, every one of
+which had moved onto a different line that was not blank and not the claim. §4.20's third failure mode — the file a
+number points into grew for a reason belonging to the next slice — has now arrived in JSON, where it is worse than in
+Go, because an ADR cannot be edited to follow: it is append-only by ADR-0001 rule 2. The append is 17 added lines and
+**no** removed one — `git diff` sees a pure insertion after line 175, which is the cheapest form the rule can take —
+and the new keys sit at 177 and 178. The taxonomy's `VersionMismatch` meaning was rewritten **in place**, one line for
+one line, for the same reason in a different file: seven ADRs and this file address it at seven line numbers
+(`:5`, `:9`, `:12`, `:14`, `:15`, `:26`, `:28`), and the code that has to cover both floors is a message problem, not a
+new code. `docs/architecture/21-system-context.md` §6 and §12 changed four lines for four,
+because doc 33 addresses that file at `:154`, `:155` and `:198` and doc 34 at `:134`;
+`docs/architecture/25-native-messaging-protocol.md` §1 changed three for three, because doc 32 addresses it at
+`:234-235`. In Go: `connector/internal/contractgen/contractgen.go` reads the fourth number and emits it (two lines),
+`contract_gen.go` regenerates with `MinPipeVersion`, and `contract_test.go` now compares four versions and refuses a
+floor above the version it floors. One attribution moved too, and it is worth the sentence: the register entry, the
+data and the document above it all said the two-schedule argument was ADR-0019's. ADR-0019 is about Core's cadence against the
+extension's; the rule that the *shim* is replaced by a store update while the Connector keeps running is
+`docs/architecture/22-component-contracts.md` §2 rule 4, which is what the `why` and §6 cite now. A citation inherited
+from the entry being answered is still a citation, and the ADR was never asked.
+
+**The harness grew two checks, and one of them is about the harness.** `npm --prefix packages/schema run verify`
+now asserts the *shape* of the floors rather than their values — four distinct numbers, each floor at or below the
+version it floors, the refusal code present in the taxonomy — because a check that pins `1/1/1/1` passes on the day
+someone raises the format version and refuses a build that is correct. The second is a guard for a blind spot this
+slice found by hitting it: doc 40 §9 lists the mechanisms that protect the register and quotes each of them as the
+harness label, in backticks. `tools/check-doc-evidence.mjs` reads labels only in the double-quoted form that follows
+the harness token, so every one of those citations was invisible to it, and replacing the dense-range assertion with
+the issued-once one would have left doc 40 naming a check that no run makes. §9's row now carries the new label
+verbatim, and the new assertion parses §9, takes every backticked string of twenty characters or more and refuses any
+that is not a label in this run's own set — with a floor of twelve, so it cannot be satisfied by a section that stopped
+being readable. That is doc 39 §11's rule, made symmetric one document down; the guard that was supposed to catch it
+cannot, and the harness is the only reader available.
+
+**What closed, and what this closure does not claim.** `VER-18` is out of `matrix` and is the queue's eighth tombstone;
+`ODEC-02` is out of `register` and is the register's first retirement, freeing the one row it gated. `marker.counted`
+moves 196 → 195 for the single labelled sentence the row owned, in doc 21 §12, which now reads `Verified: YES`; the
+queue is 73 rows, `no-check` 6 → 5, the `contracts` owner 7 → 6 and the `assertion` mechanism 18 → 17, and doc 39 and
+doc 40 read those distributions from the data again. `citation.counted` moves 61 → 60, and the attribution is one line:
+doc 21 §12's row stopped naming the register because it names the data now, while doc 25 §1's sentence was never a
+deferral site — it names ids, and the rule counts a line that names *the file*. What is *not* claimed is enforcement on
+the wire: nothing compares a frame's `v` to `minPipeVersion` yet, so the floor is declared and projected, not applied;
+`LIVE-01` and `VER-13` still own the negotiation, and `docs/architecture/25-native-messaging-protocol.md` §1 says so
+instead of leaving the number queued. Nor is a runner execution claimed: this slice's checks have run here, and the push
+that would show them there asks for its confirmation each time.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1222 checks** — the two new assertions above, and three
+distribution constants re-typed for the row that left. `node tools/check-doc-evidence.mjs` → green; §4.4's final ledger
+paragraph has the per-file deltas and the set it prints, and it is the guard whose blind spot the new §9 assertion now
+closes. `node tools/check-adr-shape.mjs` (and `--selftest`) → green: 20 records, 102-140 lines — this slice touched two
+of them, and only the check-count figure inside a `## Verification` line, with both files staying exactly as long as the
+documents that line-cite them. `node tools/check-layout-guards.mjs` (and `--selftest`) → both green, untouched.
+`node tools/check-no-secrets.mjs` → **480 files**, one more than §4.27 recorded, and the difference is that slice's own
+new script: the guard walks `git ls-files`, so a file a slice adds is counted only once the commit that tracks it
+exists — §4.27 printed the tree before its own file. This slice adds no file.
+`go -C connector test -count=1 ./...`, `gofmt -l connector` and `go -C connector vet ./...` → the same eleven `ok`
+lines, the empty list and the silence, with `internal/contract` one test richer.
+
 ---
 
 ## 5. Verification state to the letter
@@ -2126,8 +2233,8 @@ empty list and the silence, unchanged: this slice touches no Go file.
   in `config_apply_test.go` — the synthetic credential value, profile id and server id in its constant block and the second
   server's id in its fixture — because Go's test convention puts a `_test.go` beside the package it tests and therefore
   outside every path the guard exempts.
-- `npm --prefix packages/schema run verify` → **green** (1220 checks: §4.21 adds three, and what they add is the
-  harness opening two documents it used to quote; see §4.4).
+- `npm --prefix packages/schema run verify` → **green** (1222 checks: §4.28 adds two, one for the shape of the two
+  version floors and one for the freshness of the labels doc 40 §9 cites; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
   is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
@@ -2217,7 +2324,7 @@ empty list and the silence, unchanged: this slice touches no Go file.
 
 **#5 `packages/schema` — done.** It is now the green, re-runnable test of this iteration:
 `npm --prefix packages/schema run verify` → `OK: 13 schemas compile, 19 command docs conform, 20 examples
-valid, 24 invalid examples rejected, 112 protocol frames replayed.` (1220 checks; details and the 8 contract
+valid, 24 invalid examples rejected, 112 protocol frames replayed.` (1222 checks; details and the 8 contract
 defects the fixtures exposed are in §4.4). Every step the earlier draft of this block prescribed is
 implemented — `envelope` is in `SCHEMAS_BY_PREFIX`, the six `fixtures/protocol/*.jsonl` clear `frameCount`
 and `replayPairs`, `verify.mjs` validates each frame's `args`/`result` against the compiled per-command
@@ -2445,6 +2552,19 @@ place, and neither is a status edit:
    mechanism both 5 → 2, the queue is 74 rows, and the ledger has seven. §8's first step is six rows wide, and the two
    that remain in it from this family are `VER-56` and `VER-58` — the manifest guards, the only rows left that a tool
    over files already on disk can still close.
+   It ran a fourth time in the same sitting, on a row that was not in that family and did not close by a checker:
+   **§4.28 closes `VER-18` by answering `ODEC-02`**, whose first option was a pipe floor in the framing contract.
+   `minPipeVersion` and `packages/schema/protocol/framing.json#/versionFloors` exist now, the row and its one labelled
+   sentence are gone, `marker.counted` is re-derived 196 → 195, `no-check` goes 6 → 5 with one `contracts` owner and one
+   `assertion` mechanism beside it, and the queue is 73 rows with eight ids in the ledger. The deletion needed the rule
+   §8's first step had been resting on: an answered question retires rather than disappears, so `ODEC-NN` is issued
+   once too and `ODEC-02` is the first row of `packages/schema/open-decisions.json#/retired`. That same reading is what
+   makes the last sentence of this item wrong rather than stale: §8's first step is seven ids, four of them gated, and
+   the harness refuses a gated row's deletion while its question stays open — around the gate leaves a question
+   blocking nothing, which doc 40 forbids, and through it leaves the question naming a row no longer in the matrix. What
+   the step actually holds today is `VER-66`, `VER-19` and `VER-58`, and each is smaller than it reads: the first wants a
+   body detector no entity schema has a field for, the second a `dedupeWindow` field and a live run to bound it, and the
+   third a scan over a `nexora/**` that is empty.
 2. **The browser half.** `LIVE-01…24`, unchanged and `SKIPPED`, need a person with a real Chrome, and `LIVE-14`
    needs the export that would replace the fixtures' exporter-shaped values.
 
@@ -2513,15 +2633,15 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`** at `25ae919`. The remote is not where this bullet last left it: `git ls-remote nexora
-  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 10 — the config.apply surface
+- Branch: **`nexora/architecture`** at `264b75a`. The remote is not where this bullet last left it: `git ls-remote nexora
+  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 11 — the config.apply surface
   (`293cb73`), M2's cheap tail (`d1d22bb`), the citation conversion (`31008a5`), the ledger line that recorded those
   three (`18f1e1b`), `VER-81`'s registration (`f4cac24`), the three ledger lines after it (`e1020b5`, `8730c7a`,
-  `6d222ae`), the commit that deleted `VER-06`, `VER-08` and `VER-10` (`4250893`) and the one that closed `VER-01`
-  (`25ae919`) are committed here and unpushed,
+  `6d222ae`), the commit that deleted `VER-06`, `VER-08` and `VER-10` (`4250893`), the one that closed `VER-01`
+  (`25ae919`) and the one that closed `VER-04`, `VER-05` and `VER-07` (`264b75a`) are committed here and unpushed,
   because the rule further
-  down this list asks for its own confirmation each time and none was given for these ten. A bullet written by the slice
-  it describes cannot name the sha it lands under, so the number beside it is the count at `25ae919` rather than the
+  down this list asks for its own confirmation each time and none was given for these eleven. A bullet written by the slice
+  it describes cannot name the sha it lands under, so the number beside it is the count at `264b75a` rather than the
   count at the commit carrying the sentence, and it widens by one with every commit after — which is why the query, and
   not the number, is the fact this bullet keeps. When this bullet was written
   the remote was at `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer,
@@ -2717,6 +2837,15 @@ written before any behaviour existed. What each next milestone has to make true:
     Phase 2 is billed for, which is the number this whole mechanism exists to keep honest. So the rule is the second —
     quote a label only on a line a row already owns — and the general shape behind it is worth the sentence: the corpus's
     deferral total is a property of its prose style, not only of its claims.
+21. **A row gated by an open question cannot be closed around its gate** (§4.28). Two harness assertions — the one that
+    refuses a register entry naming a queue row the matrix no longer has, and the one that refuses an entry that blocks
+    nothing — are a single law read two ways, and together they make `blocks` load-bearing: to delete a gated row you
+    answer its question in the same commit, or you break the register. This was found by asking why §8's first step still
+    listed rows that looked closable, not by writing code; the answer is that `VER-20`, `VER-56`, `VER-65` and `VER-71`
+    are each named in an open decision's `blocks`, and `VER-58` is the only `no-check` row free of that. The ids are the
+    other half of the finding: an answered question leaves the register, so `ODEC-NN` now sits under the same
+    issued-once rule as `VER-NN` — retired in `open-decisions.json#/retired`, never renumbered — because a question id is
+    cited by queue rows, by documents and by this ledger before anybody remembers to change it.
 
 ---
 
@@ -2760,6 +2889,8 @@ of §6's queue was written.
 | `omega-pac/src/profiles.coffee:111-118` | the `+`-prefix filter every NEXORA key design depends on |
 | `omega-pac/test/conditions.coffee:468` | local-time parse behind the TZ fragility; changing it changes test semantics |
 | `.circleci/config.yml` | dead, pending decision §9.3 |
+| `packages/schema/protocol/framing.json` | three append-only ADRs address it at six line numbers and fourteen times — append after line 175 or re-read every one of them (§4.28) |
+| `packages/schema/protocol/error-taxonomy.json` | seven ADRs and this file address it at seven line numbers; rewrite a `meaning` in place, never insert (§4.28) |
 
 ---
 
@@ -2801,6 +2932,16 @@ so a rule added in the middle of the harness can move a sentence but not a citat
 an args description that refuses to write any of them back. That entry is what makes the claim two sentences above true
 rather than nearly true — until §4.23, subscriptions sat in this queue as the one component nobody had read, and the
 sentence "nothing that remains is a string and a check" was spoken about a part of the system it did not cover.
+A fifth stopped thing is not new but is newly *counted*: §4.28 closes `VER-18` by answering `ODEC-02` rather than by
+writing a checker, and the reading that found the route also found that the route is walled — four of the seven rows
+doc 39 §8's first step lists are named in a register entry's `blocks`, and the harness refuses a gated row's deletion
+while its question stays open. So that sentence about strings and checks needs its third clause: what remains is
+stopped by a decision, by a binary this host does not have, by a browser, or by a gate that only an answer opens. The
+corpus is 195 labelled lines over 43 documents, the queue is 73 rows with eight tombstones, and the register is 39
+questions with one retirement — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+`docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
+`packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
+about that file.
 Plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish; the note under that table
 says why one ninth stopped being a question and what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the

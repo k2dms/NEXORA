@@ -263,6 +263,23 @@ const framing = await readJson(join(PKG, 'protocol', 'framing.json'));
     'oversized payloads are chunked, not handed off out-of-band',
     'ADR-0004: a temp file is not an authenticated channel',
   );
+  // Two floors rather than one, because the two ends of the port are replaced on different schedules
+  // (docs/architecture/22-component-contracts.md §2 rule 4): the browser-side floor is negotiated in hello, the pipe
+  // floor is the `v` field every frame carries. This is the reading that makes `VER-18`'s closure a check instead of a
+  // sentence, so it checks the shape rather than the values: four distinct numbers, each floor at or below the version
+  // it floors, one refusal code and that code in the taxonomy.
+  const floors = framing.versionFloors;
+  const floorPairs = ['protocol', 'pipe'].map((k) => [floors?.[k]?.own, floors?.[k]?.floor]);
+  check(
+    !!floors &&
+      floorPairs.every(([own, floor]) => typeof framing[own] === 'number' && typeof framing[floor] === 'number') &&
+      new Set(floorPairs.flat()).size === 4 &&
+      floorPairs.every(([own, floor]) => framing[floor] <= framing[own]) &&
+      taxonomy.codes.some((c) => c.code === floors.tooOld),
+    'the pipe floor and the protocol floor are separate numbers in the framing contract',
+    `protocol ${framing.protocolVersion}..${framing.minCompatibleProtocolVersion}, ` +
+      `pipe ${framing.frameFormatVersion}..${framing.minPipeVersion}, tooOld=${floors?.tooOld ?? '(absent)'}`,
+  );
 }
 
 // ---------------------------------------------------------------- entity examples
@@ -3633,15 +3650,15 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 55 && count('state', 'no-check') === 6 && count('state', 'no-run') === 6 &&
-      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 74,
+    count('state', 'no-code') === 55 && count('state', 'no-check') === 5 && count('state', 'no-run') === 6 &&
+      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 73,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
   );
   check(
     count('owner', 'connector') === 39 && count('owner', 'extension') === 11 && count('owner', 'packages') === 3 &&
-      count('owner', 'ui') === 3 && count('owner', 'contracts') === 7 && count('owner', 'tools') === 2 &&
+      count('owner', 'ui') === 3 && count('owner', 'contracts') === 6 && count('owner', 'tools') === 2 &&
       count('owner', 'ci') === 4 && count('owner', 'human') === 2 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
     `connector=${count('owner', 'connector')} extension=${count('owner', 'extension')} ` +
@@ -3649,7 +3666,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
   );
   check(
-    kindCount('live-row') === 39 && kindCount('new-live-row') === 1 && kindCount('assertion') === 18 &&
+    kindCount('live-row') === 39 && kindCount('new-live-row') === 1 && kindCount('assertion') === 17 &&
       kindCount('gate') === 3 && kindCount('tool') === 2 && kindCount('ci-step') === 3 &&
       kindCount('decision') === 5 && kindCount('external-measurement') === 3,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',
@@ -3877,12 +3894,25 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   );
 
   const oIds = odec.register.map((o) => o.id);
+  // The register's ids used to be required dense, which made the deletion its own description prescribes for an
+  // answered entry a renumbering of every question after it -- and an `ODEC-NN` is cited by `verification.json`
+  // rows, by doc 39 and by this repository's ledger. Doc 39 §9 rule 8 settled that argument for `VER-NN`; the
+  // same reasoning applies here, so an answered id retires in `#/retired` and the numbering is gap-allowed.
+  const oRetired = (odec.retired?.rows ?? []).map((r) => r.id);
+  const oDupes = [...oIds.filter((id, i) => oIds.indexOf(id) !== i), ...oRetired.filter((id, i) => oRetired.indexOf(id) !== i)];
+  const oRecycled = oIds.filter((id) => oRetired.includes(id));
+  const oHoles = Array.from({ length: oIds.length + oRetired.length }, (_, i) => `ODEC-${String(i + 1).padStart(2, '0')}`)
+    .filter((id) => !oIds.includes(id) && !oRetired.includes(id));
+  const thinRetired = (odec.retired?.rows ?? []).filter((r) =>
+    !/^ODEC-\d\d$/.test(r.id ?? '') || !r.decided || (r.was ?? '').length < 20 || (r.artefact ?? '').length < 40);
   check(
-    oIds.every((id, i) => id === `ODEC-${String(i + 1).padStart(2, '0')}`) &&
-      new Set(oIds).size === oIds.length &&
+    oIds.every((id) => /^ODEC-\d\d$/.test(id)) && oIds.length >= 30 && oDupes.length === 0 &&
+      oRecycled.length === 0 && oHoles.length === 0 && thinRetired.length === 0 &&
       odec.register.every((o) => o.at.length >= 1),
-    'the register is a closed, gapless set of questions and every question was born from a line that deferred to it',
-    `${oIds.length} entries, dense=${oIds.every((id, i) => id === `ODEC-${String(i + 1).padStart(2, '0')}`)}`,
+    'every ODEC id the register ever issued is live or retired, no id is recycled, a retired one says what it was and what answered it, and every live question was born from a line that deferred to it',
+    `${oIds.length} live, ${oRetired.length} retired, duplicates=${oDupes.join(',') || 'none'}, ` +
+      `recycled=${oRecycled.join(',') || 'none'}, unaccounted=${oHoles.join(',') || 'none'}, ` +
+      `thin tombstones=${thinRetired.map((r) => r.id).join(',') || 'none'}`,
   );
   const thin = odec.register.filter((o) =>
     !/\?\s*$/.test(o.question) || o.options.length < 2 || (o.why ?? '').length < 40 ||
@@ -3939,6 +3969,17 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       !/Verified: *(?:NO|PARTIAL)/i.test(text),
       'the register document is a list of questions, not a source of deferred verification claims of its own',
       'doc 40 carries a `Verified:` label; the queue in verification.json owns those, and this document is not in it',
+    );
+    // §9 of doc 40 cites its labels in backticks, where tools/check-doc-evidence.mjs cannot see them, so a
+    // question answered in the register would otherwise leave this run pointing at an assertion that stopped
+    // existing -- the same rot doc 39 §11 refuses, one document down.
+    const sec9 = text.split(/^## 9\. /m)[1]?.split(/^## 10\./m)[0] ?? '';
+    const citedLabels = [...sec9.matchAll(/`([^`]{20,})`/g)].map((m) => m[1]);
+    const staleCites = citedLabels.filter((c) => !labels.has(c));
+    check(
+      citedLabels.length >= 12 && staleCites.length === 0,
+      'every mechanism doc 40 names is a check this run actually makes',
+      `cited=${citedLabels.length} not an assertion label: ${staleCites.join(' | ') || 'none'}`,
     );
   } else {
     note('DEFERRED: 40-open-decisions.md cross-check (file not present yet)');

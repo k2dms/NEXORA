@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 61
+    "counted": 60
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -61,19 +61,6 @@
         { "doc": "docs/architecture/21-system-context.md", "anchor": "Reconnect adopts the running Connector instead of starting a second one" },
         { "doc": "docs/architecture/30-failure-policy.md", "anchor": "- **Two browser profiles, one Connector.**" }
       ]
-    },
-    {
-      "id": "ODEC-02",
-      "question": "What are the two version floors -- `protocolVersion` for the browser side and `minPipeVersion` for the shim-to-connector hop -- and what does each refuse to speak?",
-      "decidedBy": "contract",
-      "blocks": { "verification": ["VER-18"], "compatibility": [] },
-      "why": "The design says the pipe is versioned separately because the shim is replaced by an extension update while the Connector is upgraded by user action on a different schedule (ADR-0019). `framing.json` carries `protocolVersion` and has no `minPipeVersion`, so the independence is a sentence, not a number.",
-      "options": [
-        "two floors in one file: `protocolVersion` and `minPipeVersion` in `framing.json`, each with an explicit 'too old' error",
-        "one version, capability-gated: keep `protocolVersion` and express pipe differences as capabilities in the hello set",
-        "no pipe floor yet: declare the shim and Connector ship together until the first release that breaks that, and say so in doc 25"
-      ],
-      "at": [{ "doc": "docs/architecture/21-system-context.md", "anchor": "The pipe version and the browser protocol version are independent numbers" }]
     },
     {
       "id": "ODEC-03",
@@ -618,5 +605,17 @@
         { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "Which artefact records the format an" }
       ]
     }
-  ]
+  ],
+  "retired": {
+    "rule": "An entry leaves this file when it is answered -- the description's own rule, and the same one doc 39 §9 rule 2 imposes on a queue row -- and the id it held retires here rather than being reused. Ids are issued once: doc 39 §9 rule 8 adopted ADR-0001 rule 2 for `VER-NN` because those ids are cited across the corpus, and an `ODEC-NN` is cited the same way, in `verification.json` rows whose `closesBy.ref` names the question it waits on, in the tables of docs/architecture/39 and 40, and in docs/PROJECT-STATE.md's ledger. A gapless, re-derived numbering would therefore make answering a question silently rewrite every answer that cited a later one, which is why this list exists and why the register's ids are no longer required to be dense.",
+    "rows": [
+      {
+        "id": "ODEC-02",
+        "decided": "2026-11-06",
+        "was": "what the two version floors are, and what each refuses to speak",
+        "artefact": "packages/schema/protocol/framing.json#/minPipeVersion and #/versionFloors -- the register's first answer by the first option its own entry listed, a contract addition; it closes VER-18, the only row that entry gated, in the same commit",
+        "freed": { "verification": ["VER-18"], "compatibility": [] }
+      }
+    ]
+  }
 }

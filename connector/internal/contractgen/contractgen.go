@@ -38,6 +38,7 @@ type framingDoc struct {
 	ProtocolVersion              int `json:"protocolVersion"`
 	MinCompatibleProtocolVersion int `json:"minCompatibleProtocolVersion"`
 	FrameFormatVersion           int `json:"frameFormatVersion"`
+	MinPipeVersion               int `json:"minPipeVersion"`
 	Limits                       struct {
 		ExtensionToHostBytes       limitValue `json:"extensionToHostBytes"`
 		HostToExtensionBytes       limitValue `json:"hostToExtensionBytes"`
@@ -391,6 +392,7 @@ func Source(repoRoot string) ([]byte, error) {
 		{"ProtocolVersion", strconv.Itoa(al.ProtocolVersion)},
 		{"MinCompatibleProtocolVersion", strconv.Itoa(fr.MinCompatibleProtocolVersion)},
 		{"FrameFormatVersion", strconv.Itoa(fr.FrameFormatVersion)},
+		{"MinPipeVersion", strconv.Itoa(fr.MinPipeVersion)},
 		{"ExtensionToHostBytes", strconv.Itoa(fr.Limits.ExtensionToHostBytes.Value)},
 		{"HostToExtensionBytes", strconv.Itoa(fr.Limits.HostToExtensionBytes.Value)},
 		{"EffectiveCrossBrowserBytes", strconv.Itoa(fr.Limits.EffectiveCrossBrowserBytes.Value)},

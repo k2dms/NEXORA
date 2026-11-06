@@ -173,5 +173,22 @@
       "onExceed": "close the oldest port",
       "why": "MV3 eviction legitimately overlaps an old port with a reconnect; three or more means either a leak the extension should fix or a second registration, and the Connector has no reason to serve both"
     }
+  },
+  "minPipeVersion": 1,
+  "versionFloors": {
+    "protocol": {
+      "own": "protocolVersion",
+      "floor": "minCompatibleProtocolVersion",
+      "negotiatedIn": "connector.hello",
+      "measures": "the command and event semantics the browser side speaks"
+    },
+    "pipe": {
+      "own": "frameFormatVersion",
+      "floor": "minPipeVersion",
+      "negotiatedIn": "the v field of every frame",
+      "measures": "the byte framing both ends of the port implement"
+    },
+    "tooOld": "VersionMismatch",
+    "why": "Four numbers, not two. The extension is replaced by a browser-store update while the connector is replaced by a user action on a different schedule (docs/architecture/22-component-contracts.md §2 rule 4), so a newer shim may legally speak to an older connector whenever the two declared floors overlap; one number would read a framing change as a protocol incompatibility and refuse a pair that works (docs/architecture/21-system-context.md §6). One refusal code covers both floors because adding an error code is breaking for clients that switch exhaustively (docs/architecture/25-native-messaging-protocol.md §7) -- which floor failed belongs in the message, not in the code."
   }
 }

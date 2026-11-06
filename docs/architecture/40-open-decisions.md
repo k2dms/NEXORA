@@ -1,6 +1,6 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 60 lines across 19 documents defer to this file as the place an answer lives, and five more name it only to
+> Purpose: 60 deferral sites in 14 documents point here as the place an answer lives, and five more lines name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
@@ -24,8 +24,8 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§9 names the assertio
 
 - The argument for each question: why it is genuinely open rather than merely unfinished, and what a reader would be
   lied to about if Phase 1 had invented an answer.
-- The grouping of the 40 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
-  pile, and so the sixteen `contract` questions do not look as expensive as the six `adr` ones.
+- The grouping of the 39 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
+  pile, and so the fifteen `contract` questions do not look as expensive as the six `adr` ones.
 - The tie backwards: which `VER-NN` rows and which `COMP-NN` rows stop moving until an entry here is answered.
 
 **Refuses.**
@@ -69,7 +69,7 @@ is worth stating precisely.
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 61 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 60 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -97,15 +97,15 @@ costs to answer:
 | `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 2 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-Fourteen of the 40 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+Fourteen of the 39 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
-Sixteen `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
+Fifteen `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without waiting on a
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
 `VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, twenty-one entries gate exactly two
-and sixteen gate one; that is the honest shape of a design phase — most open questions are one field wide, and the few
+and fifteen gate one; that is the honest shape of a design phase — most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 Two questions are cited by four or more sites each — `ODEC-15` (the built-in sync secret, five) and `ODEC-01`
@@ -241,7 +241,6 @@ them, and "gates" is what stops moving without the answer.
 | # | Question | Decided by | Gates |
 |---|---|---|---|
 | `ODEC-01` | who owns the single Connector when a second profile reaches it: adopt, refuse, replace | `contract` | `VER-12`, `VER-14` |
-| `ODEC-02` | the two version floors — `protocolVersion` and `minPipeVersion` — and what each refuses | `contract` | `VER-18` |
 | `ODEC-03` | which error code means "this intent cannot be compiled" | `contract` | `VER-16`, `VER-20` |
 | `ODEC-04` | how the block port range and the inbound allocation range stay disjoint across two files | `contract` | `VER-20` |
 | `ODEC-05` | what `localDNS` means, and whether `IPIfNonMatch` is the right default | `product` | `VER-27`, `VER-75` |
@@ -282,7 +281,19 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-40` | where the format an `auto` parse resolved to is recorded — a field in the refresh result, a value stored from something else, or nowhere | `contract` | `VER-81` |
 
 Each entry in the data also carries the options (§4's argument in three lines each), the reason it is open, and the
-sites that deferred to it; the 40 rows above are the same 40 objects, not a summary of them.
+sites that deferred to it; the 39 rows above are the same 39 objects, not a summary of them.
+
+One entry is not above, and never will be again. `ODEC-02` — what the two version floors are, and what each refuses
+to speak — was answered on 2026-11-06 by its own first option, a field in `packages/schema/protocol/framing.json`,
+and it left this file rather than acquiring a `decided` column, for the reason rule 1 forbids answering here: a
+status field is a status field you will. Its id is retired in
+`packages/schema/open-decisions.json#/retired`, which now exists because an answered entry is cited by the
+`verification.json` rows that waited on it, and a register that renumbers to stay dense silently changes what those
+citations mean — doc 39 §9 rule 8, adopted for `ODEC-NN` for exactly the reason ADR-0001 rule 2 states it for ADR
+numbers. What leaves the register is the question. What stays in the corpus is the line that asked it, and it stops
+deferring: `docs/architecture/21-system-context.md` §6 and §12 now state the two floors and the number that answers
+them, which is why `citation.counted` moved 61 → 60 in the same commit rather than leaving a site that points at an
+entry that is no longer here.
 
 `ODEC-40` (which artefact records the format an `auto` parse resolved to) is the newest, and it is the first question
 this repository raised by reading its own shipped contract — no code was written, and no code failed.
@@ -371,7 +382,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 | 5 | An entry MUST name at least two options and the cost of choosing each. | A question with one option is a decision waiting for a signature, and those belong in an ADR. |
 | 6 | A `VER-NN` row that closes by a decision MUST be gated by an entry here. | Otherwise the queue waits on a question nobody wrote down, which is how `VER-61` got mis-cited twice. |
 | 7 | This document MUST NOT carry a `Verified:` label. | The queue in `packages/schema/verification.json` owns deferred claims; a second source of them would double-count work nobody scheduled. |
-| 8 | An entry MUST NOT be deleted because the question is inconvenient or the phase ended. | Removing the register line while the corpus still defers to it fails the run, and correctly so. |
+| 8 | An entry MUST NOT be deleted because the question is inconvenient or the phase ended. | Removing the register line while the corpus still defers to it fails the run, and correctly so. An entry that has been *answered* leaves in the same commit as its artefact, with a row in `#/retired` saying what it was and what answered it; its id is never reissued, because `verification.json` rows cite it. |
 
 ---
 
@@ -384,7 +395,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 | the five excluded lines are still one line each and still would count | `each line the register declares "not a deferral" is exactly one line and really would otherwise count as one` |
 | every citing line still defers here | `every entry in the register lands on one line of one document, and that line still defers to it` |
 | no deferral is unregistered | `no deferral in the corpus is left without a register entry, so no open question is unregistered work` |
-| ids are dense and every question was born from a site | `the register is a closed, gapless set of questions and every question was born from a line that deferred to it` |
+| ids are issued once and every question was born from a site | `every ODEC id the register ever issued is live or retired, no id is recycled, a retired one says what it was and what answered it, and every live question was born from a line that deferred to it` |
 | a question is a question, with options and a reason and a decider | `every open question is a question, names who can answer it, offers the choices a reader must weigh, and says why` |
 | the who-can-decide vocabulary is closed and defined | `the register owns a closed vocabulary of who-can-decide, each member defined, and a boundary it states itself` |
 | gates point at real rows, and decision rows have a written question | `every row a question gates exists, and every row the queue says waits on a decision is gated by a written question` |
@@ -396,7 +407,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 40 questions, 61 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 39 questions, 60 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; only `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it.
 2. Every question gates at least one row. An entry that blocks nothing is a question the architecture does not need
    answered yet, and belongs in a note rather than the register.

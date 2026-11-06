@@ -113,7 +113,7 @@ live under `nexora/extension`, and the Connector is Go under `connector/`. There
 ## Verification
 
 - Existing check: `npm --prefix packages/schema run verify` proves a per-root install-and-verify cycle works
-  with no root manifest present (green: 1 220 checks).
+  with no root manifest present (green: 1 222 checks).
 - Existing check: `node tools/check-doc-evidence.mjs` is itself a rootless script (`node tools/...`), which
   is rule 6 demonstrated.
 - Verified: YES -- a root `package.json`, `go.work` or `.npmrc` now fails a guard: the `root-bare` rule of

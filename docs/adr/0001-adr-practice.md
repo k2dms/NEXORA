@@ -92,7 +92,7 @@ continuation log and a pointer, not the source of a decision).
 ## Verification
 
 Checks running today: `node tools/check-doc-evidence.mjs` validates rules 7's citation half across
-`docs/**`; `npm --prefix packages/schema run verify` (1 220 checks) is the model for rule 9's "name the check".
+`docs/**`; `npm --prefix packages/schema run verify` (1 222 checks) is the model for rule 9's "name the check".
 `node tools/check-adr-shape.mjs` checks this rule set over the directory: rule 1's filename shape, rule 2's
 sequential append-only numbering with no repeat, rule 3's one H1 and the six-section sequence, rule 4's status
 vocabulary, rule 10's index parity including the Status and Date cells, and rule 11's 60-140 line bound. The

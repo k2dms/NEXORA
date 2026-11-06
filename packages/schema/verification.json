@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 196
+    "counted": 195
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -148,6 +148,12 @@
         "closed": "2026-11-06",
         "was": "line endings and binary classification are declared in `.gitattributes` and checked by nothing",
         "artefact": "the `VER-10` step of .github/workflows/verify.yml (`git diff --check` over the range, `git ls-files --eol` over the index), green on all three runner images; its labelled sentence left docs/architecture/20-target-repository-layout.md §11"
+      },
+      {
+        "id": "VER-18",
+        "closed": "2026-11-06",
+        "was": "two version floors the design said were independent and one number that said so",
+        "artefact": "packages/schema/protocol/framing.json#/minPipeVersion, declared beside #/versionFloors as the second of two floors -- `protocol` over protocolVersion and minCompatibleProtocolVersion, negotiated in connector.hello, and `pipe` over frameFormatVersion and minPipeVersion, carried by the `v` field every frame already bears -- refused by the one code `VersionMismatch`, because a second code is breaking for a client that switches exhaustively (docs/architecture/25-native-messaging-protocol.md §7) and which floor failed is a message, not a name. The new harness assertion reads the shape rather than the values: four distinct numbers, each floor at or below the version it floors, the refusal code in the taxonomy. The question it answers is `ODEC-02`, decided by the contract addition its own first option named; the sentence that anchored it became a `Verified: YES` in docs/architecture/21-system-context.md §12. Declarative on purpose: `connector/internal/contract` now projects MinPipeVersion and its test refuses a floor above the version it floors, but nothing compares a frame's `v` to it yet, and docs/architecture/25-native-messaging-protocol.md §1 says that instead of leaving the number queued"
       }
     ]
   },
@@ -273,15 +279,6 @@
       "closesBy": { "kind": "live-row", "ref": "LIVE-03" },
       "at": [{ "doc": "docs/adr/0004-native-messaging-only-no-loopback-http-control.md", "anchor": "Verified: NO — deferred to Phase 2." }],
       "why": "ADR-0004's negative is the security property every other control assumes; a stray 127.0.0.1:8080 would be invisible to this repository's checks."
-    },
-    {
-      "id": "VER-18",
-      "subject": "the pipe version and the browser protocol version are declared to be independent numbers, and `minPipeVersion` does not exist",
-      "state": "no-check",
-      "owner": "contracts",
-      "closesBy": { "kind": "assertion", "ref": "the pipe floor and the protocol floor are separate numbers in the framing contract" },
-      "at": [{ "doc": "docs/architecture/21-system-context.md", "anchor": "The pipe version and the browser protocol version are independent numbers" }],
-      "why": "Recorded as a Phase-2 contract addition in docs/architecture/40-open-decisions.md: a framing bump today would read as a protocol incompatibility and refuse a working pair."
     },
     {
       "id": "VER-19",
