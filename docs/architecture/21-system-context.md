@@ -194,7 +194,7 @@ recorded in `docs/architecture/40-open-decisions.md`).
 | Invariant | Enforcing check today | State |
 |---|---|---|
 | Exactly one Native Messaging entry point per extension installation | nothing (no host exists yet) | Verified: NO — deferred to Phase 2 |
-| `Xray ⊆ connector ⊆ host` containment holds after a SIGKILL of the parent | nothing | Verified: NO — LIVE-13 |
+| `Xray ⊆ connector ⊆ host` containment holds after a SIGKILL of the parent | `connector/internal/supervisor`'s parent-death test, which is the innermost level only: the host that would hold the job is not written, so the chain above Core is still unheld | Verified: NO — LIVE-13 |
 | The Connector runs in the interactive user's session and never as a service/agent | nothing | Verified: NO — deferred to Phase 2 (§11); the installer must not register an SCM service or a LaunchAgent |
 | Reconnect adopts the running Connector instead of starting a second one | nothing | Verified: NO — deferred to Phase 2 (lock file format open, `docs/architecture/40-open-decisions.md`) |
 | No inbound binds non-loopback | asserted at `core.start` per ADR-0006; the shape is `packages/schema/protocol/commands/core.start.json#/result/properties/inboundPorts` and the compile-time rule is `packages/schema/connector-profile.schema.json#/properties/serverIds` | Verified: NO — deferred to Phase 2 (a Go test, not schema-checkable) |

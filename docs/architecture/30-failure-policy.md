@@ -101,6 +101,13 @@ second spawn (`docs/architecture/26-command-surface.md` §2). No jitter in this 
 in `docs/architecture/29-subscriptions-and-servers.md` §7: jitter exists to spread a herd, and there is one
 Connector per machine.
 
+What this section does not say, and the code therefore cannot be blamed for not doing: `restartAttempts` is a
+budget *per death*. No document in this repository names a window a Core must stay up for the next exit to count
+as a new episode, and no count of consecutive deaths turns the block permanent. `connector/internal/supervisor`
+implements the per-death reading literally — every observed unexpected exit starts its own ladder with its own
+attempts — which means a Core that crash-loops once a minute restarts forever, and the block is lifted by each
+recovery and re-imposed by each death. §13 carries that as the queue's row and the register's question.
+
 Visibility splits in two places, and the split is deliberate:
 
 - `notify` gates the *ladder*. A death that recovers on attempt two must not raise a system notification on a
@@ -358,6 +365,7 @@ is the shape of the answer that must keep a block in force.
 | The failure scene in the fixtures ends in a block, not a direct profile | *the recorded failure scene blocks after Core exits*, *no frame of the failure scene resolves to a direct or system gesture* | — |
 | Inaction is fail-closed | not expressible as a schema rule; rests on §1 rule 2 and §10.3 | `LIVE-11`, `LIVE-13` |
 | A grace window cannot outlive its hard cap | prose + `graceSeconds`/`hardCapSeconds` bounds | `LIVE-13` |
+| A restarted Core that dies again is one death and one fresh budget | `connector/internal/supervisor` bounds one episode's attempts and names no bound on the episodes; §4 says what the code does, not what the product wants | `Verified: NO` — the bound is `docs/architecture/40-open-decisions.md` `ODEC-38` |
 | Health never says `ok` while blocked | `packages/schema/protocol/commands/connector.health.json#/result/properties/state` is a closed enum and its description says `blocked` is working-as-designed | `LIVE-04` |
 
 The first eight rows are the ones ADR-0009's Verification section said did not exist. They exist now, they run in

@@ -113,4 +113,12 @@ The behaviour itself is not checkable without the binaries. Phase 2 must assert,
 leaves the Core PID unchanged; killing the host leaves the connector and Core serving the already-applied
 config; `contained = false` surfaces as a warning, never as a silent start.
 
+The third of those three has a producer and a check now. `connector/internal/supervisor` asks the platform
+for the containment answer after every spawn, puts it in `core.start`'s `contained` beside the reason in a
+note, and a test fails if the flag and the note ever disagree — rule 5's "report rather than assume", made
+mechanical. Rule 1's stronger reading is not satisfied by that code and is stated as the cost in doc 22 §4:
+Go's `os/exec` offers no job-list attribute, so on Windows the child is assigned after its pid exists rather
+than created into the scope. The first two assertions still need a host process this repository has not
+written and a browser session this host is not.
+
 Verified: NO — deferred to Phase 2.

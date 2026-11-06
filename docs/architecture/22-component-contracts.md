@@ -131,6 +131,12 @@ accounting.
 
 **Invariants**
 1. Core is in the same containment scope as the Connector from the instant of spawn — never adopted afterwards.
+   This is the one invariant the Go standard library will not hand over on Windows: `os/exec` carries no
+   job-list attribute in `SysProcAttr`, so a dependency-free Connector can only assign the child after its pid
+   exists, which is a window rather than a guarantee. `connector/internal/supervisor` takes that window, reports
+   the assignment's result instead of assuming it, and names the closing of that window (`STARTUPINFOEX` with
+   `PROC_THREAD_ATTRIBUTE_JOB_LIST`, or a launcher this module does not have) as platform work under ADR-0011
+   rather than something this invariant is allowed to accept.
 2. `core.start` on a running Core with the same config hash is a successful no-op returning the same PID
    (`packages/schema/protocol/commands/core.start.json#/result/properties/alreadyRunning`).
 3. Exits are classified (`exit code`, `signal`, `config rejected`, `port conflict`) and the classification is

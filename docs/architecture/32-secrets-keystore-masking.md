@@ -63,8 +63,8 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | `docs/architecture/29-subscriptions-and-servers.md:278` | `detail` masked like any other text | §8 |
 | `docs/architecture/29-subscriptions-and-servers.md:319` | M3–M5: credentials inside a subscription | §6, §14 |
 | `docs/architecture/29-subscriptions-and-servers.md:375` | the write primitive "that does not exist yet" | §6 — it exists now |
-| `docs/architecture/30-failure-policy.md:135` | a Core holding credentials with no controller | §7, §12 |
-| `docs/architecture/30-failure-policy.md:370` | what a keystore failure means for a command | §12 |
+| `docs/architecture/30-failure-policy.md:141` | a Core holding credentials with no controller | §7, §12 |
+| `docs/architecture/30-failure-policy.md:378` | what a keystore failure means for a command | §12 |
 | `docs/architecture/31-security-model.md:281` | the DPAPI residual and the full threat model | §16 here; the residual stays owned by `docs/architecture/31-security-model.md` §14 |
 | `docs/adr/0011-windows-keystore-dpapi.md:54` | "the full threat model belongs to" this document | §16 |
 
@@ -210,7 +210,7 @@ scopes are the entity classes plus two: `orphaned` and `all`.
 - **Secrets outlive extension uninstall** — deliberate, per
   `docs/adr/0011-windows-keystore-dpapi.md:59-60`. They are the user's credentials, not the extension's
   scratch state; scope `all` is the documented destruction path. This is also the answer to
-  `docs/architecture/30-failure-policy.md:135`: a Core holding credentials with no controller is forbidden, but
+  `docs/architecture/30-failure-policy.md:141`: a Core holding credentials with no controller is forbidden, but
   a *store* holding credentials with no installed extension is the intended state, because the user's server
   list may well come back.
 - **The `host` entity** holds installation-scoped material the Connector mints for itself — the fingerprint key
@@ -347,7 +347,7 @@ This is the answer to `docs/architecture/25-native-messaging-protocol.md:234-235
 
 ## 12. Per-command keystore availability
 
-`docs/architecture/30-failure-policy.md:369-370` asked this document for exactly one thing: what a keystore
+`docs/architecture/30-failure-policy.md:377-378` asked this document for exactly one thing: what a keystore
 failure means for each command. Nineteen commands, four groups.
 
 | Group | Commands | Touches the store | On failure |

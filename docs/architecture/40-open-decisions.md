@@ -1,6 +1,6 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 58 lines across 19 documents defer to this file as the place an answer lives, and five more name it only to
+> Purpose: 59 lines across 19 documents defer to this file as the place an answer lives, and five more name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
@@ -24,8 +24,8 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§9 names the assertio
 
 - The argument for each question: why it is genuinely open rather than merely unfinished, and what a reader would be
   lied to about if Phase 1 had invented an answer.
-- The grouping of the 37 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
-  pile, and so the thirteen `contract` questions do not look as expensive as the six `adr` ones.
+- The grouping of the 38 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
+  pile, and so the fourteen `contract` questions do not look as expensive as the six `adr` ones.
 - The tie backwards: which `VER-NN` rows and which `COMP-NN` rows stop moving until an entry here is answered.
 
 **Refuses.**
@@ -69,7 +69,7 @@ is worth stating precisely.
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 58 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 59 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -92,14 +92,14 @@ costs to answer:
 | Value | Count | What closing it looks like | Why it is not interchangeable with the others |
 |---|---|---|---|
 | `product` | 14 | a screen, a sentence, or a refusal the user sees — written into `docs/architecture/37-ui-architecture.md` and the command docs | no measurement can decide what the user should be told; a schema field cannot make the choice less arbitrary |
-| `contract` | 13 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
+| `contract` | 14 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
 | `adr` | 6 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
 | `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 2 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-Fourteen of the 37 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+Fourteen of the 38 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
-Thirteen `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
+Fourteen `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without touching the
 Connector.
 
@@ -274,11 +274,20 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-35` | how the sender identity crosses hop 2, and what the local pipe's message schema is | `adr` | `VER-77` |
 | `ODEC-36` | which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `contract` | `VER-78` |
 | `ODEC-37` | what bytes the Compiler emits for the four positions the corpus names and never spells | `upstream` | `VER-28`, `VER-78` |
+| `ODEC-38` | over what span the ladder's restart attempts are spent, and how long a restarted Core must stay up to earn a fresh budget | `contract` | `VER-79` |
 
 Each entry in the data also carries the options (§4's argument in three lines each), the reason it is open, and the
-sites that deferred to it; the 37 rows above are the same 37 objects, not a summary of them.
+sites that deferred to it; the 38 rows above are the same 38 objects, not a summary of them.
 
-`ODEC-37` (the four spellings a golden must pin) is the newest: it was born from the golden pass that pinned three of
+`ODEC-38` (over what span the attempts are spent) is the newest: its site is the row `docs/architecture/30-failure-policy.md` §13
+carries, and it was found the way most of these are — by writing the thing. `connector/internal/supervisor` re-arms the
+ladder on every death because doc 30 §4 counts attempts inside one death and names no denominator for the next, so the
+reading the code took is the one the corpus permits and the one a crash-looping Core lives inside indefinitely. The
+answer is a field, which is why this is `contract` and not `adr`: `failure-policy.schema.json#/properties/coreDeath`
+has one integer and no window, so none of the three readings is expressible in the shipped data, and no test can bound
+consecutive deaths until one of them is.
+
+`ODEC-37` (the four spellings a golden must pin) is the one before it: it was born from the golden pass that pinned three of
 doc 27 §3's six fixtures and found the other three unpinnable for three different reasons — shape C needs the handle
 answer in `ODEC-36`, the fail-closed fixture has no bytes to pin because `docs/architecture/30-failure-policy.md` §7
 puts the block in `chrome.proxy` rather than in Core's config, and the core-plane fixture is this entry: the rules it
@@ -287,7 +296,7 @@ would emit have no spelled form in this repository. Its citing lines are
 configs all compile, and the §9 row in `docs/architecture/27-config-compilation-pipeline.md` that defers to this
 register.
 
-`ODEC-36` (which byte string `configHash` names) is the one before it: its citing line is the §9 invariant row in
+`ODEC-36` (which byte string `configHash` names) is the one before that: its citing line is the §9 invariant row in
 `docs/architecture/27-config-compilation-pipeline.md` that defers to this register, and the claim it turns on is the
 determinism statement at `docs/architecture/27-config-compilation-pipeline.md:65` ("The hash is over the exact bytes
 written") — the run checks that this line still carries text, and that no other line names `40-open-decisions.md` at
@@ -353,7 +362,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 37 questions, 58 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 38 questions, 59 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; only `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it.
 2. Every question gates at least one row. An entry that blocks nothing is a question the architecture does not need
    answered yet, and belongs in a note rather than the register.

@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 58
+    "counted": 59
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -570,6 +570,21 @@
       "at": [
         { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "keeps the list as `ODEC-37`" },
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "The core-rule and per-tag inbound spellings a golden must pin" }
+      ]
+    },
+    {
+      "id": "ODEC-38",
+      "question": "Over what span are `restartAttempts` spent: one death, one episode, or the whole session -- and how long must a restarted Core stay up before its next exit is allowed a fresh budget?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-79"], "compatibility": [] },
+      "why": "`docs/architecture/30-failure-policy.md` §4 gives the ladder its ordering, its worst case (81 seconds) and its visibility rules, and counts attempts inside one death; it never names the denominator for a second death. `connector/internal/supervisor` therefore re-arms the full ladder on every unexpected exit, which is the reading the section permits and the one a crash-looping Core lives inside: restart, `core.started`, death, block, recovery, forever, with the block lifted and re-imposed each cycle and `server.test`'s probes answering normally in between -- the last of those being a statement about connectivity the machine does not have. `packages/schema/failure-policy.schema.json#/properties/coreDeath` holds one integer bounded 0 to 10 and no field that could express a window, a total, or a permanent-block threshold, so the three readings are not distinguishable from the shipped data and the answer costs a field plus its bound, which is what `decidedBy: contract` means here. The cost of each reading is asymmetric and worth naming: the per-death reading never gives up on a Core that is only occasionally unwell, which is what a machine that hibernates does; a total budget ends the attempts at the first bad day and forces the user to act; a stability window is the reading the fixture `packages/schema/fixtures/protocol/failure-block.jsonl` is compatible with -- it shows one death, three attempts, one block -- but it needs a number nobody in this corpus has chosen, and a window also decides whether a restart from `core.restart`, from `config.apply` or from the ladder itself resets the clock, which is three more fields or one sentence that says all three are the same.",
+      "options": [
+        "per death, as written and as implemented (`docs/architecture/30-failure-policy.md` §4): every unexpected exit gets the whole ladder, with no bound across deaths -- the simplest reading and the only one today's data expresses, at the cost of a Core that crash-loops restarting forever while the block flickers",
+        "a stability window in the policy document: `coreDeath` gains a field naming how long a Core must survive for the next exit to re-arm the attempts, so a crash loop exhausts the budget on its first episode and lands in the permanent block -- which costs a schema field, a bound on it, and a rule for what restarts the clock",
+        "a session-wide budget: the attempts are spent once until the user acts (a `config.apply`, a `core.start`, or lifting the block per `docs/architecture/30-failure-policy.md` §12), so the block's meaning is 'somebody must decide', and a machine that hibernates and wakes with a dead Core is refused until it does"
+      ],
+      "at": [
+        { "doc": "docs/architecture/30-failure-policy.md", "anchor": "the bound is `docs/architecture/40-open-decisions.md`" }
       ]
     }
   ]
