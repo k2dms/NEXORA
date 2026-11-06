@@ -3733,6 +3733,13 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       [count('state', 'no-code')]);
     readNumbers('the `N rows are needs-human` sentence', /(\d+) rows are `needs-human`/g,
       [count('state', 'needs-human')]);
+    // §4.31's two additions. The queue's own size and its retirement ledger are stated twice in prose — §10's
+    // headline and §11's last row — and neither sentence was among the counts read above, so the slice that
+    // retired `VER-81` left both saying 74 rows and eight ids behind a data set that had moved to 73 and nine.
+    readNumbers('the §10 headline', /(\d+) rows, grouped by state/g, [total]);
+    readNumbers('the §10 retired-ids count', /the (\d+) ids this queue has closed/g, [verif.retired.rows.length]);
+    readNumbers('the §11 `N live, M retired` row', /(\d+) live, (\d+) retired/g,
+      [total, verif.retired.rows.length]);
     const stateRows = [...sec4.matchAll(/^\| `(no-code|no-check|no-run|no-fixture|needs-human)` \| (\d+) \|/gm)];
     if (stateRows.length !== verif.states.values.length) {
       tallyGaps.push(`§4's state table names ${stateRows.length} states; the data declares ${verif.states.values.length}`);

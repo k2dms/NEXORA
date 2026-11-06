@@ -56,9 +56,9 @@ Each of these was a forward reference in another document. Each now has a sectio
 | `docs/adr/0010-data-split-extension-intent-connector-truth.md:112` | "the durable specification is `34-data-split.md`" — the connector side has never run, so where is it written down? | §7, and the catalogue rows carry it |
 | `docs/adr/0010-data-split-extension-intent-connector-truth.md:123` | "`34-data-split.md` will name the owner of each check" | §14 |
 | `docs/architecture/21-system-context.md:134` | "the ownership table is `34-data-split.md`" — §8 of that document is deliberately compressed | §6, §7 |
-| `docs/architecture/22-component-contracts.md:340` | "removing the Connector leaves the profiles intact and degrades to NEXORA Lite" | §11 |
-| `docs/architecture/26-command-surface.md:221` | "the Connector never learns which tab is active" — where is the browser-plane data kept out of reach? | §10 |
-| `docs/architecture/30-failure-policy.md:318` | the grace deadline is "arithmetic on data the Connector already persists" — no second copy | §10, row 5 |
+| `docs/architecture/22-component-contracts.md:346` | "removing the Connector leaves the profiles intact and degrades to NEXORA Lite" | §11 |
+| `docs/architecture/26-command-surface.md:230` | "the Connector never learns which tab is active" — where is the browser-plane data kept out of reach? | §10 |
+| `docs/architecture/30-failure-policy.md:325` | the grace deadline is "arithmetic on data the Connector already persists" — no second copy | §10, row 5 |
 | `docs/architecture/31-security-model.md:367` | "`unlimitedStorage` … removal is a data-split consequence" | §9 |
 | `docs/architecture/32-secrets-keystore-masking.md:38` | "which storage key holds which byte" | §5–§7 |
 | `docs/architecture/24-options-envelope-compat.md:229` | the envelope's compatibility half points here for placement, not for shape | §6, §8 |

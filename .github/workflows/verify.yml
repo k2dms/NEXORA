@@ -69,8 +69,14 @@ jobs:
         working-directory: packages/schema
         run: npm run verify
 
+      # The last of these modes is the one the resolution checks cannot see: a `| Cited by |` row whose cited
+      # line is real, non-blank and about something else. Of the 52 rows in the six tables that carry a line
+      # cite outside docs/adr/, 21 had drifted that way by 2026-11-07, all of them green; docs/PROJECT-STATE.md
+      # §4.31 measures it and the guard's claims mode refuses it.
       - name: Every citation in docs/ resolves to a real line or a real pointer
-        run: node tools/check-doc-evidence.mjs
+        run: |
+          node tools/check-doc-evidence.mjs --selftest
+          node tools/check-doc-evidence.mjs
 
       # ADR-0001 rules 1-3, 10 and 11 over the whole decision set: the index in docs/adr/README.md names exactly
       # the records on disk, with their Status and Date cells agreeing with the files; one `# ADR-NNNN:` heading

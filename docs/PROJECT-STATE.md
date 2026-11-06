@@ -507,6 +507,18 @@ and doc 32's `:278` was found pointing at the wrong row of §7's table entirely 
 non-blank, which is §4.15's class, the one a resolution guard cannot see — and both repairs change no figure. The
 fourth figure stayed at 68 because the slice adds no assertion: a closure by decision moves data and prose, and the
 harness's distributions moved as amended constants rather than as new checks.
+§4.31 moves the set a twenty-eighth time — **2311 / 566 / 1539**, 68 labels, and a fifth figure the guard prints for
+the first time, 52 index rows read by the new pass — measured after this paragraph was written, so the paragraph
+reports the set the tool prints rather than the set its own sentences produced. Per file against a clean `git archive`
+of the commit before, read with the guard's own three patterns: doc 27 `0 / 0 / +1`, the one name being doc 33's, which
+the `installRoot` clause gained because no line in doc 27 named it at all; docs 32, 33, 34, 35 and 36 each `0 / 0 / 0`,
+because the twenty-one drifted cites in their tables were *renumbered*, and doc 39 the same, because its two stale
+tallies were corrected in place; and this file `0 / 0 / +2`, the guard's own name and doc 33's, because a record of a
+reading change reads itself. The shape is the finding, and it is the reason the four figures were never a check on this
+class: a slice that moves twenty-four numbers and adds no citation at all leaves the first figure exactly where it was,
+green before and green after, and the only arithmetic that distinguishes the two states is the one that asks whether
+the cited line still says what the row claims it says. That question is now a pass in the tool rather than a habit of
+reading, and `--selftest` is what keeps it a pass instead of a description.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -2337,6 +2349,86 @@ silence; this slice touches no Go file.
 
 ---
 
+### 4.31 The index that could not see its own rows — the six `| Cited by |` tables, 21 drifted cites, and the guard's fifth pass (2026-11-07)
+
+**The class, measured before anything was fixed.** §4.15 named it in one sentence: the evidence guard proves a cited
+line exists and has text on it, never that the line holds the sentence the prose describes. Six documents keep a
+`| Cited by |` table — their own index of the questions other documents asked them — and those tables are where the
+corpus's line addresses are densest: 79 rows, 57 of them carrying a `path:line` cite, 52 of those pointing at a
+document rather than at an accepted ADR. Read against a clean `git archive` of `06c2507`, before this slice moved a
+number: **29** of the 52 name the document whose table cites them, **2** land on the line beside a naming line, and
+**21** name it nowhere near — 9 of them in doc 32's table, 4 in doc 33's, 3 each in docs 34 and 36, 2 in doc 35's, and
+none in doc 38's fourteen rows, which cite by section and never by address. All 21 were green. The mechanism is the
+ordinary arithmetic of a growing document: a paragraph inserted above a deferral leaves every cite below it resolving to
+a real line and pointing at the wrong one, and each repair measures exactly how far the target had grown since the row
+about it was written — seven lines between doc 32's cite and the clause it meant in doc 27, nine between doc 36's and
+its own, and five for both of the doc 32 rows citing doc 29's lower half, two of those five added by §4.30 itself.
+
+**What landed.** `tools/check-doc-evidence.mjs` has a fifth pass, and it reads the tables by the law the tables state
+for themselves. A row's first column claims that the line it cites asks this document a question; a line that asks a
+question names the document; so the cited line, or one of the two beside it because a sentence wraps, must carry this
+file's basename. `CLAIMS_HEADER_RE` finds a table, `claimsRows` walks its rows, and `claimsProblems` holds the claim
+apart from the filesystem so that `--selftest` can drive it with four fixtures — named, wrapped, drifted, and a drifted
+row whose target is an ADR — and require exactly one report, and the right one. The workflow runs that selftest before
+the real pass, which is the shape §4.26 and §4.27 arrived at for the other two guards: a green run has to be able to
+say NO. `docs/adr/` targets are exempt, because an accepted ADR is a record of a decision and is not edited to keep
+somebody else's index honest; four of the five ADR rows satisfy the naming rule anyway, so the exemption is
+load-bearing for exactly one row — doc 35's `0015`, which states a fact the ADR carries rather than a question the ADR
+asked, and says so in its own claim cell.
+
+**The repairs, and how each was decided.** Twenty index rows moved their number to the line that names the document
+whose table cites them, adjudicated row by row against the target's text rather than by a nearest-name rule — the
+mechanical match would have been glad to land on a `See also` footer or on a table cell that mentions a file in
+passing, and both of those are what this class of failure looks like. One row could not be fixed by a number: doc 33's
+cite into doc 27 §3's `installRoot` item named doc 33 nowhere in doc 27, so the claim's own sentence gained the
+reference it always owed — §3's item 3 now ends by saying that the install state it depends on is what
+`docs/architecture/33-binary-integrity.md` §7 and §11 answer, written onto the item's continuation line instead of a
+new one, because three citations into doc 27 sit below that line and moving three numbers to keep a paragraph tidy is
+how this slice's drift was made in the first place. Three further cites in doc 32 itself — §7's sink list twice and
+§9's REALITY row — carried the same neighbour-drift and are outside the new pass entirely, which reads the six indexes
+and nothing else. And one index cite moved because *this* slice made it move: doc 29 grew three lines in §12, so doc
+35's row citing that document's §13 item 5 followed it in the same sitting, which is §4.11's lesson applied on time
+instead of recorded for the next reader to find. After the repairs: 49 rows name the document on the cited line, 0
+name it nowhere, and 3 sit in the wrap allowance — each of those three cites the line on which its claim's sentence
+begins, with the basename on the sentence's continuation (doc 30 §5's unmanaged-tunnel clause, doc 27 §3's
+`installRoot` item, doc 32 §13's cleanup rule).
+
+**Two numbers, one meaning and one list item the previous slices left behind.** Doc 39's §10 headline still said
+"74 rows … the eight ids" and its §11 last row still said "74 live, 8 retired", while the data has 73 live rows and 9
+retired ids: §4.30 retired `VER-81` and neither sentence is among the tallies the harness reads aloud from that
+document, so both stayed green while moving away from the queue they describe. They are among them now — the read-aloud
+block gained three sentences to check, §10's headline, §10's retired-id count and §11's live/retired pair — and §10's
+"the nine ids" became "the 9 ids" because a spelled number is not a figure a pattern can read. Writing
+`74 / 8 / 74 / 8` back into the document fails the run and names all four gaps; the check itself is one that already
+existed, so the run is still 1223. Then two halves of the last closure that never arrived. The taxonomy's
+`SchemaMismatch` described only the schema-version case, while the same commit's new enum description and doc 29 §5
+both say a body two detectors claim is a failed entry whose code names every claimant —
+`packages/schema/protocol/error-taxonomy.json` is the data, so the data moved, one line, both halves. And doc 29's
+§12, the list of amendments that document forced on the corpus, held five items after a sixth had been made:
+`subscription.refresh`'s result and args both changed in §4.30, and the list that exists to record exactly that had
+not been told.
+
+**What this slice does not claim.** No queue row moves and no register entry changes: 73 live, 9 retired, 39 questions
+over 60 sites, `marker.counted` 195 — where §4.30 left every one of them, and the harness's distribution constants are
+untouched. The new pass covers the six indexes; a drifted cite anywhere else in the corpus, including the three in doc
+32's own prose, is still caught only by a reader. And the allowance is a wrap allowance, not a semantic test: a row
+citing the line *beside* the naming one is green whether or not it is the sentence the claim describes, so 3 of the 52
+are checked by proximity rather than by address. What the pass cannot see at all is a row whose claim cell has drifted
+from the cited line's content while the line still names the document — the index's first column is now honest about
+which document asked, and no check reads the second column against the answer.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks**, unchanged: three more sentences read by
+an assertion that already existed, and no new assertion. `node tools/check-doc-evidence.mjs` → green at the set
+§4.4's final ledger paragraph carries, now with a fifth figure — the rows its new pass reads — and `--selftest` →
+green, 3 rows evaluated and the one drifted fixture reported. `node tools/check-no-secrets.mjs` → **480 files**,
+unchanged: the guard walks `git ls-files` and this slice adds no file. `node tools/check-adr-shape.mjs` (and
+`--selftest`), `node tools/check-layout-guards.mjs` (and `--selftest`) and `node tools/check-legacy-backup.mjs` (and
+`--selftest`) → green, untouched. `go -C connector test -count=1 ./...`, `gofmt -l connector` and
+`go -C connector vet ./...` → the same eleven `ok` lines, the empty list and the silence; this slice touches no Go
+file, and the only contract artefact it touches is one `meaning` sentence in the taxonomy.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -2420,15 +2512,19 @@ silence; this slice touches no Go file.
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 566 pointers, 1536 doc-and-script
-  names, 68 harness assertion labels — the fourth figure is new with §4.22 and no GitHub runner has printed it yet;
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 566 pointers, 1539 doc-and-script
+  names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
+  figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
   `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
-  as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that moves a citation moves all three, so they are read as a
-  set and never pinned. No runner set has been *read* since: the two guard runs this host printed after that execution
-  are records of this machine, and §4.4 says which slice moved which of the three figures and in what shape.)
+  as it stood at `ceedabf` — `docs/audit/99-baseline-report.md` §12. Any commit that adds or removes a citation moves
+  all three, so they are read as a set and never pinned — and §4.31 is the slice that found the sentence too strong:
+  twenty-four citations were *renumbered* there, the first figure did not move by one, and every row of the six indexes
+  stayed green across the whole drift the pass now refuses. No runner set has been *read* since: the two guard runs
+  this host printed after that execution are records of this machine, and §4.4 says which slice moved which of the three
+  figures and in what shape.)
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
@@ -2984,7 +3080,8 @@ written before any behaviour existed. What each next milestone has to make true:
     the numbers, because a re-numbered citation moves no counter and no build output. The residual this leaves is honest
     and worth naming: a guard could compare a phrase from the citing description against the cited line, and nothing here
     does, which means the corpus has a class of defect that only the person editing catches — §4.11's finding one level
-    deeper, and the reason a re-read is recorded as work rather than skipped as a formality.
+    deeper, and the reason a re-read is recorded as work rather than skipped as a formality. §4.31 closed that residual
+    for the six `| Cited by |` indexes and no further, and decision 22 is the rule that closure wrote.
 20. **A deferral is stated, not quoted** (§4.15). Two sentences that explained why an existing row reads NO spelled the
     label inline, and the marker the queue declares in its data matches a line rather than a role, so
     the partition billed the corpus two extra deferred claims and named them unowned. The two answers were a second anchor on
@@ -3001,6 +3098,16 @@ written before any behaviour existed. What each next milestone has to make true:
     other half of the finding: an answered question leaves the register, so `ODEC-NN` now sits under the same
     issued-once rule as `VER-NN` — retired in `open-decisions.json#/retired`, never renumbered — because a question id is
     cited by queue rows, by documents and by this ledger before anybody remembers to change it.
+22. **A document's own index is a claim, and a claim is checkable** (§4.31). The first column of a
+    `| Cited by |` table states that the line it cites asks *this* document a question, and a line that asks a
+    question names the document — so the host's basename is a fact the row can be tested against, with one line of
+    allowance each way because a sentence wraps. That is the form the check took rather than a copied phrase from the
+    row's description, because a guard that compares descriptions restates the corpus instead of reading it; the tables
+    already carry their own law, and the pass reads them by it. It was worth a pass: 21 of the 52 rows it now reads
+    pointed at a neighbour, all of them green, and the renumbering that fixed them moved no figure any earlier pass
+    prints. What it does not reach is stated rather than assumed — a row whose claim cell has drifted from a line that
+    still names the host, and every citation outside the six indexes, including the three this slice repaired in one
+    document's own prose. Decision 19's re-read is still the method there.
 
 ---
 

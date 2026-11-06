@@ -56,7 +56,7 @@ The contract:
    The suffix list is kept where it is honest — `packages/schema/scripts/verify.mjs` "idempotent replay returns the same result: ${file}#${req.id}" uses it to compare two
    replayed protocol *results*, which is a fixture device, not a compile rule.
 3. **`installRoot` is not inlined** into the config (`packages/schema/connector-settings.schema.json#/properties/core/properties/installRoot`):
-   an absolute path would make the hash machine-specific, so a relocated Core changes no hash.
+   an absolute path would make the hash machine-specific, so a relocated Core changes no hash; the install state it depends on is what `docs/architecture/33-binary-integrity.md` §7 and §11 answer.
 4. **Numeric formatting is fixed** — no exponent form, no `1.0`; the port is an integer
    (`packages/schema/protocol/commands/core.start.json#/result/properties/inboundPorts/items/properties/port`).
 5. **Encoding is UTF-8 with LF**, and arrays keep input order where order is meaningful — `serverIds` ordering

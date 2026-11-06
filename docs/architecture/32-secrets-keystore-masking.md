@@ -53,19 +53,19 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | Cited by | What it deferred | Answered in |
 |---|---|---|
 | `docs/architecture/22-component-contracts.md:111` | "never returns an unmasked secret in any frame, including `diagnostics.get`" | §8, §9 |
-| `docs/architecture/22-component-contracts.md:311` | a probe must not reveal a secret in result or logs | §8 |
-| `docs/architecture/22-component-contracts.md:388` | masking happens at the sink, not the call site | §8 |
-| `docs/architecture/23-unified-server-model.md:217` | field-level rules for `publicKey`/`shortId` | §10 |
+| `docs/architecture/22-component-contracts.md:317` | a probe must not reveal a secret in result or logs | §8 |
+| `docs/architecture/22-component-contracts.md:394` | masking happens at the sink, not the call site | §8 |
+| `docs/architecture/23-unified-server-model.md:226` | field-level rules for `publicKey`/`shortId` | §10 |
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
-| `docs/architecture/25-native-messaging-protocol.md:234` | `SecretRedacted` vs a corrupt document | §11 |
-| `docs/architecture/26-command-surface.md:162` | `maskedConfig` must contain no keystore value | §13 |
-| `docs/architecture/27-config-compilation-pipeline.md:127` | mask and label rules for unrepresentable fields | §9, §10 |
+| `docs/architecture/25-native-messaging-protocol.md:238` | `SecretRedacted` vs a corrupt document | §11 |
+| `docs/architecture/26-command-surface.md:171` | `maskedConfig` must contain no keystore value | §13 |
+| `docs/architecture/27-config-compilation-pipeline.md:134` | mask and label rules for unrepresentable fields | §9, §10 |
 | `docs/architecture/29-subscriptions-and-servers.md:283` | `detail` masked like any other text | §8 |
-| `docs/architecture/29-subscriptions-and-servers.md:319` | M3–M5: credentials inside a subscription | §6, §14 |
-| `docs/architecture/29-subscriptions-and-servers.md:375` | the write primitive "that does not exist yet" | §6 — it exists now |
+| `docs/architecture/29-subscriptions-and-servers.md:324` | M3–M5: credentials inside a subscription | §6, §14 |
+| `docs/architecture/29-subscriptions-and-servers.md:380` | the write primitive "that does not exist yet" | §6 — it exists now |
 | `docs/architecture/30-failure-policy.md:141` | a Core holding credentials with no controller | §7, §12 |
 | `docs/architecture/30-failure-policy.md:378` | what a keystore failure means for a command | §12 |
-| `docs/architecture/31-security-model.md:281` | the DPAPI residual and the full threat model | §16 here; the residual stays owned by `docs/architecture/31-security-model.md` §14 |
+| `docs/architecture/31-security-model.md:283` | the DPAPI residual and the full threat model | §16 here; the residual stays owned by `docs/architecture/31-security-model.md` §14 |
 | `docs/adr/0011-windows-keystore-dpapi.md:54` | "the full threat model belongs to" this document | §16 |
 
 ## 3. What counts as secret material
@@ -243,10 +243,10 @@ does, and it needs no cooperation from the code producing the text.
 - **At the sink, not the call site**, because a call-site policy has one failure mode and it is the interesting
   one: a new `log.debug` written by someone who forgot the helper leaks. A sink cannot be forgotten — there are
   a fixed number of them; `packages/schema/observability.json#/sinks` closes the list. This is the mechanism
-  `docs/architecture/22-component-contracts.md:388` promised.
+  `docs/architecture/22-component-contracts.md:394` promised.
 - **The sinks**: the log ring buffer, `diagnostics.get`'s payload
   (`packages/schema/protocol/commands/diagnostics.get.json#/result/properties/masked`), a structured error's
-  `detail` (`docs/architecture/29-subscriptions-and-servers.md:278`), `config.snapshot`'s `maskedConfig` (§13),
+  `detail` (`docs/architecture/29-subscriptions-and-servers.md:283`), `config.snapshot`'s `maskedConfig` (§13),
   an exported file, and a UI text node. The Connector owns the first five — it is the only process that has the
   values, so it is the only process that *can* build the table. The extension cannot mask what it never received,
   which is a second reason ADR-0010's split is a security decision and not only a cleanliness one.
@@ -303,7 +303,7 @@ The other half of the policy, and the half that protects the user from the engin
 
 | Field | Class | Why it stays legible |
 |---|---|---|
-| `publicKey`, `shortId` | REALITY parameters | public by construction; masking makes a REALITY handshake undiagnosable — the case `docs/architecture/23-unified-server-model.md:215-217` names |
+| `publicKey`, `shortId` | REALITY parameters | public by construction; masking makes a REALITY handshake undiagnosable — the case `docs/architecture/23-unified-server-model.md:216-218` names |
 | `address`, `port` | server location | the user must be able to say which server failed; they identify a VPS, they do not authorise anything |
 | `serverName`, `alpn`, TLS `fingerprint` | transport parameters | SNI is on the wire in clear anyway; pinning a CA-style fingerprint is integrity, not confidentiality |
 | entity ids, tags, `displayName` | identity | they are how a UI refers to a thing; the identifier inside a reference is *derived from* the value's owner, never from the value (§5) |

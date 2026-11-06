@@ -9,6 +9,13 @@
 // Paths under FUTURE_PREFIX are exempt from "unresolved" only: they are target
 // layout described in docs/architecture/20-target-repository-layout.md and does
 // not exist yet. An out-of-range citation is never excused.
+//
+// Four more passes have joined that first test as the corpus grew each other kind of
+// citation, and each refuses what the passes above it cannot see:
+//   POINTER   a `file.json#/a/b` pointer must resolve inside a file that parses
+//   DOCNAME   a document or script named in prose must exist
+//   LABEL     a harness assertion quoted by its label must be a check the harness makes
+//   CLAIMS    a `| Cited by |` row must cite a line that names the document whose index it is
 
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -64,6 +71,83 @@ const POINTER_RE = /`([^`\s#]+?)#([A-Za-z0-9_$\-~%.\/]*)`/g;
 // `.mjs` joins `.md` here.
 // `tools/*.mjs` is a glob in a layout table, not a file, so `*` is outside the path class.
 const DOCNAME_RE = /`((?:docs|tools|packages)\/[^`\s:#*][^`\s:#*]*?\.(?:md|mjs))(?:[#:]?\d*)`/g;
+
+// A `| Cited by |` table is the corpus's own index of the questions other documents asked this
+// one. Its first column is a line cite, and every check above proves about that cite is only
+// that the line still has text on it -- so a paragraph inserted above a deferral leaves the row
+// green while pointing at its neighbour. That is the class §4.15 named and §4.31 measured: the
+// six tables hold 79 rows, 57 of them carry a `path:line` cite, and 21 of the 52 outside
+// `docs/adr/` pointed at a neighbour on 2026-11-07. All 21 were green.
+//
+// The tables state their own law, and this mode reads them by it: a row claims that the line it
+// cites asks this document a question, and a line that asks a question NAMES this document. So
+// the cited line, or one of the two lines around it (a sentence wraps), must carry this file's
+// basename. Targets under `docs/adr/` are exempt -- an accepted ADR is a record of a decision,
+// and it is not edited to keep somebody else's index honest. Four of the five ADR rows name the
+// host anyway; the exemption is load-bearing for one only, doc 35's `0015` row, which states a
+// fact the ADR carries rather than a question the ADR asked, and says so in the table.
+const CLAIMS_HEADER_RE = /^\|\s*Cited by\s*\|/;
+const CLAIMS_ROW_RE = /^\|/;
+// `docs/audit/**` is a baseline record read by section, never by row index, and
+// `docs/PROJECT-STATE.md` is on the mutable-target list above: a line cite out of either is
+// already refused, so a table there could not be claims-checked anyway.
+const CLAIMS_HOST_EXEMPT = ['docs/PROJECT-STATE.md', 'docs/audit/'];
+const CLAIMS_TARGET_EXEMPT = ['docs/adr/'];
+
+const linesCache = new Map();
+async function citedLines(rel) {
+  if (linesCache.has(rel)) return linesCache.get(rel);
+  let l = null;
+  try {
+    l = (await readFile(join(REPO, rel), 'utf8')).split('\n');
+  } catch {
+    l = null;
+  }
+  linesCache.set(rel, l);
+  return l;
+}
+
+// Every `path:line` cite in a `Cited by` row, with the row's own claim cell for the message.
+function claimsRows(src, startIdx) {
+  // Returns [rowIndex, citePath, citeLine] for the table whose header is at startIdx.
+  const out = [];
+  for (let i = startIdx + 2; i < src.length; i++) {
+    if (!CLAIMS_ROW_RE.test(src[i])) break;
+    if (/^\|[-:\s|]+\|\s*$/.test(src[i])) continue;
+    const cells = src[i].split('|');
+    for (const m of cells[1].matchAll(CITATION_RE)) {
+      if (!looksLikePath(m[1]) || !m[1].endsWith('.md')) continue;
+      out.push([i, m[1], Number(m[2]), cells[2] ? cells[2].trim() : '']);
+    }
+  }
+  return out;
+}
+
+// The claim itself, split from the filesystem so `--selftest` can drive it with fixtures and prove
+// the check can say NO. Returns {checked, stale}.
+async function claimsProblems(label, src, readTarget) {
+  const host = label.split('/').pop();
+  const stale = [];
+  let checked = 0;
+  for (let i = 0; i < src.length; i++) {
+    if (!CLAIMS_HEADER_RE.test(src[i])) continue;
+    for (const [row, citePath, citeLine, claim] of claimsRows(src, i)) {
+      if (CLAIMS_TARGET_EXEMPT.some((p) => citePath.startsWith(p))) continue;
+      const tl = await readTarget(citePath);
+      if (!tl) continue; // already reported as UNRESOLVED by the citation scan
+      checked++;
+      const window = [tl[citeLine - 2], tl[citeLine - 1], tl[citeLine]].filter(Boolean);
+      if (window.some((x) => x.includes(host))) continue;
+      const nearby = tl
+        .map((x, k) => (x.includes(host) ? k + 1 : 0))
+        .filter(Boolean)
+        .slice(0, 4)
+        .join(', ');
+      stale.push([label, row + 1, citePath, citeLine, claim, (tl[citeLine - 1] || '').trim().slice(0, 100), nearby]);
+    }
+  }
+  return { checked, stale };
+}
 
 async function* mdFiles(dir) {
   let entries;
@@ -131,10 +215,51 @@ const HARNESS_TOKEN_RE = /`packages\/schema\/scripts\/verify\.mjs`(?:'s)?/g;
 const LABEL_RUN_RE = /^(?:[ \t\n]+|,[ \t\n]*|(?:and|—)[ \t\n]+)"([^"\n|]{6,200})"/;
 const staleLabel = [];
 let labelCitesChecked = 0;
+const claimsStale = [];
+let claimsChecked = 0;
+
+// A green run must be able to say NO. Four fixtures, all of them the shape a real table has:
+//   named    -- the cited line names the host
+//   wrapped  -- the name is on the line above the cite, inside the one-line wrap allowance
+//   drift    -- the cited line is a non-blank neighbour (so the resolution checks stay green)
+//               while the naming line sits three lines below: the exact class §4.15 named
+//   adr      -- the same drift, into docs/adr/, which the rule deliberately does not reach
+const SELFTEST_HOST = [
+  '# host',
+  '',
+  '| Cited by | What it deferred | Answered in |',
+  '|---|---|---|',
+  '| `docs/architecture/named.md:2` | names it | §1 |',
+  '| `docs/architecture/wrapped.md:3` | names it one line up | §2 |',
+  '| `docs/architecture/drift.md:2` | drifted to the neighbour | §3 |',
+  '| `docs/adr/0001-x.md:2` | an ADR is exempt | §4 |',
+];
+const SELFTEST_TARGETS = {
+  'docs/architecture/named.md': ['', 'the question `docs/architecture/host.md` §1 answers', ''],
+  'docs/architecture/wrapped.md': ['', 'nothing here', 'asked of `docs/architecture/host.md`', 'and the sentence continues'],
+  'docs/architecture/drift.md': ['', 'a different question entirely', 'nothing to see', 'and here too', 'asked of `docs/architecture/host.md`'],
+  'docs/adr/0001-x.md': ['', 'a different question entirely', 'nothing to see', 'and here too', 'asked of `docs/architecture/host.md`'],
+};
+const selfLines = async (rel) => SELFTEST_TARGETS[rel] || null;
+
+if (process.argv.includes('--selftest')) {
+  const { checked, stale } = await claimsProblems('docs/architecture/host.md', SELFTEST_HOST, selfLines);
+  const expect = (what, got, want) => {
+    if (got !== want) {
+      console.error(`SELFTEST FAILED: ${what} -- got ${got}, want ${want}`);
+      process.exit(1);
+    }
+  };
+  expect('rows read', checked, 3);
+  expect('drift reported', stale.length, 1);
+  expect('the drifted row is the one named', stale[0] && stale[0][2], 'docs/architecture/drift.md');
+  console.log('SELFTEST OK: 3 rows evaluated and the exempt ADR row skipped, the named and wrapped rows pass, and the one drifted row is reported.');
+  process.exit(0);
+}
 
 for await (const doc of mdFiles(join(REPO, 'docs'))) {
   const text = await readFile(doc, 'utf8');
-  const label = relative(REPO, doc);
+  const label = relative(REPO, doc).replace(/\\/g, '/');
   for (const match of text.matchAll(CITATION_RE)) {
     const [, raw, from, to] = match;
     if (!looksLikePath(raw)) continue;
@@ -240,6 +365,14 @@ for await (const doc of mdFiles(join(REPO, 'docs'))) {
       rest = rest.slice(step.index + step[0].length);
     }
   }
+
+  // CLAIMS: the `Cited by` tables. Walked line by line, because a table is a region of a file and
+  // the regex scans above have no notion of the row a citation sits in.
+  if (!CLAIMS_HOST_EXEMPT.some((p) => label.startsWith(p) || label === p)) {
+    const found = await claimsProblems(label, text.split('\n'), citedLines);
+    claimsChecked += found.checked;
+    claimsStale.push(...found.stale);
+  }
 }
 
 const pointerProblems = pointerUnresolved.length;
@@ -251,17 +384,27 @@ const problems =
   missingDocs.length +
   selfCite.length +
   mutableCite.length +
-  staleLabel.length;
+  staleLabel.length +
+  claimsStale.length;
 console.log(
-  `checked ${checked} path:line citations, ${pointerChecked} path#pointer citations, ${docNameChecked} doc-name references and ${labelCitesChecked} harness assertion labels in docs/`,
+  `checked ${checked} path:line citations, ${pointerChecked} path#pointer citations, ${docNameChecked} doc-name references, ${labelCitesChecked} harness assertion labels and ${claimsChecked} \`Cited by\` rows in docs/`,
 );
 if (plannedSeen.size) {
   console.log(`planned, not yet written (${plannedSeen.size}): ${[...plannedSeen].sort().join(', ')}`);
 }
 
 if (problems === 0) {
-  console.log('OK: every citation resolves to a real, non-blank line, every pointer resolves, and every harness label cited is a check the harness has.');
+  console.log('OK: every citation resolves to a real, non-blank line, every pointer resolves, every harness label cited is a check the harness has, and every `Cited by` row cites a line that names the document whose table it is.');
   process.exit(0);
+}
+
+if (claimsStale.length) {
+  console.error(`\nSTALE CLAIM (${claimsStale.length}) -- a \`Cited by\` row cites a line that does not name this document:`);
+  for (const [doc, row, citePath, citeLine, claim, at, nearby] of claimsStale) {
+    console.error(`  ${doc}:${row}  claims "${claim.slice(0, 70)}"  but cites ${citePath}:${citeLine}`);
+    console.error(`      that line says: ${JSON.stringify(at)}`);
+    console.error(`      this document is named at: ${nearby || 'nowhere in the file'}`);
+  }
 }
 
 if (staleLabel.length) {

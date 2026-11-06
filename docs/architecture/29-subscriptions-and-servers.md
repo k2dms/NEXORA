@@ -378,6 +378,9 @@ Each was found by reading one artefact against another, not by running anything.
    and `import-staging.schema.json#/description` was corrected to match: a feed body is no longer something this
    pipe chunks. `secretsExtracted` now names the ingest path that satisfies it -- `profile.import`'s
    `credentials` array (`docs/architecture/32-secrets-keystore-masking.md` §6) -- and bars that field from chunked frames.
+6. `subscription.refresh`'s result gained `refreshed[].format`, and its args' "the result is not a mutated source"
+   description gained the single exception it needed: the format an `auto` declaration resolved to is the one value
+   the Connector hands back, and the extension is the hand that persists it into the source it owns (§5, §7).
 
 ## 13. Open items
 
