@@ -44,6 +44,13 @@ var ErrAlreadyRunning = errors.New("supervisor: Core is already running with a d
 // is not running and holds no ladder for.
 var ErrNotRunning = errors.New("supervisor: Core is not running")
 
+// ErrIntegrity marks the one spawn refusal that is not a failure of the config or of the machine: doc 33 §6's
+// pre-exec hash did not match the install receipt. The sentinel exists because the command surface has to answer
+// `IntegrityMismatch` — doc 22 §4's "an unbootable Core is surfaced as IntegrityMismatch" — and reading that out
+// of a verifier's own words would be a string match on somebody else's error. The verifier's reason is wrapped
+// beside it, so a caller that wants to say which hash moved can still ask.
+var ErrIntegrity = errors.New("supervisor: the binary did not pass the pre-exec integrity proof")
+
 // Death is `packages/schema/failure-policy.schema.json#/properties/coreDeath` in durations rather than in the
 // schema's integer seconds, because the ladder waits instead of counting.
 //
@@ -333,7 +340,7 @@ func (s *Supervisor) spawnLocked(ctx context.Context, p StartParams, attempt int
 		return nil, errors.New("supervisor: the command line names no binary to verify or run")
 	}
 	if err := s.cfg.Verify(cmd.Path); err != nil {
-		return nil, fmt.Errorf("supervisor: refusing to spawn %s: %w", cmd.Path, err)
+		return nil, fmt.Errorf("supervisor: refusing to spawn %s: %w: %w", cmd.Path, ErrIntegrity, err)
 	}
 
 	// Containment is attempted and its outcome reported, never assumed and never a reason not to start:

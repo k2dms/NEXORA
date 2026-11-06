@@ -174,8 +174,9 @@ are the same principle at two layers, which is why neither is allowed to be "bes
 The fsync above is the file's: a directory-level flush has no Windows equivalent, so a power loss between the rename
 and the metadata flush can lose the rename — and the config is re-derivable from intent plus keystore, so the answer
 is a re-apply, not a recovery.
-`Verified: NO — deferred to Phase 2` (the writer and its rollback are Go tests in `connector/internal/apply`; no
-live apply has run, and no command surface calls either).
+`Verified: NO — deferred to Phase 2` (the writer and its rollback are Go tests in `connector/internal/apply`, and
+`connector/cmd/nexora-connector/config_apply.go` now calls them from inside one command frame; what no test can show
+is an apply that failed while a real Core was loading the previous config).
 
 ## 9. Invariants of this pipeline and their checks
 
@@ -184,7 +185,7 @@ live apply has run, and no command surface calls either).
 | `ports.host` is a `const`, not an enum with two values | `#/properties/ports/properties/host` | **GREEN** |
 | Port range is bounded and sane | `connector-settings.schema.json#/allOf` | **GREEN** |
 | `domainStrategy` accepts only Xray's three values | "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" in `packages/schema/scripts/verify.mjs:847-890` | **GREEN** |
-| `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256`; `connector/internal/compile/split.go` fills it and its bounds are tested | **GREEN** for the shape; the *reporting behaviour* is Verified: NO — no command surface reads it yet |
+| `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256`; `connector/internal/compile/split.go` fills it and its bounds are tested, and `connector/cmd/nexora-connector/config_apply.go` carries what it fills into the command answer | **GREEN** for the shape; the *reporting behaviour* is Verified: NO — no session shows a browser reporting rather than dropping it |
 | Every `*Hash` field is one canonical lowercase sha256 pattern | the "`<field>` uses the canonical sha256 pattern" coverage check at `packages/schema/scripts/verify.mjs:750` | **GREEN** |
 | Compilation is byte-deterministic | the serializer and three goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
 | Non-loopback bind is impossible to emit | `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before stage 7 returns, and `compile_test.go` shows an `0.0.0.0` inbound cannot survive it | Verified: NO — deferred to Phase 2 |
@@ -192,6 +193,7 @@ live apply has run, and no command surface calls either).
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | `ports.go` refuses the whole set naming the count, so no partial document is ever emitted; whether `QuotaExceeded` is that count's code is `ODEC-03`'s question | Verified: NO — deferred to Phase 2 |
 | The core-rule and per-tag inbound spellings a golden must pin | none of §2–§7 states them, so `split.go` reports the rule instead of inventing its bytes | open decision, `docs/architecture/40-open-decisions.md` |
 | A failed apply leaves the previous config applied | `connector/internal/apply/write_test.go` writes a document whose secret is missing over a good config and re-reads the file, byte-for-byte, plus the hash the contract would report | Verified: NO — deferred to Phase 2 |
+| §2's seven stages and §8's write are reachable from one command frame | `connector/cmd/nexora-connector/config_apply.go` — compare-and-swap against the applied-state record, intent read, compile, atomic write, port reservation, stop-then-start — with `config_apply_test.go` showing a compiled file on disk, a child handed that path, and each refusal leaving everything after it untouched | Verified: NO — deferred to Phase 2 (`docs/architecture/40-open-decisions.md`): the frame arrives from a test seam, and `ODEC-39` still owes where a production surface reads the intent documents an ids-only call cannot carry, and which two directories it is handed |
 | `localDNS` semantics decided before Phase 2 ships | — | open decision, `docs/architecture/40-open-decisions.md` |
 | Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `compile.go` hashes exactly what `Emit` returned, and `emit_test.go` pins that hash for shape A; the row's own question is which of the two byte strings the field is supposed to mean | Verified: NO — deferred to Phase 2 (`docs/architecture/40-open-decisions.md`) |
 

@@ -62,9 +62,19 @@ func TestFakeCore(t *testing.T) {
 			}
 			os.Exit(defaultExit)
 		}
-		select {}
+		stayUp()
 	default:
-		select {}
+		stayUp()
+	}
+}
+
+// stayUp is a child's "run until asked to stop". A bare `select {}` is the honest expression of forever and Go's
+// deadlock detector turns it into a fatal error inside a test binary, so every modeWait child would die on its own
+// and a test that meant to stop a live Core would be reporting an exit it caused nothing. A sleep is the same wait
+// with a wake-up the runtime owes the goroutine, which keeps the child a process that is merely alive.
+func stayUp() {
+	for {
+		time.Sleep(time.Hour)
 	}
 }
 
@@ -342,7 +352,12 @@ func TestUnexpectedExitIsRestartedByTheLadderAndRecoveryIsPublished(t *testing.T
 	}
 	later := s.Status()
 	if !later.Running || later.PID == first {
-		t.Fatalf("the ladder left the process at %+v after the first child exited", later)
+		exit := "none"
+		if later.LastExit != nil {
+			exit = fmt.Sprintf("code %d, signalled %v %q", later.LastExit.Code, later.LastExit.Signalled, later.LastExit.Signal)
+		}
+		t.Fatalf("the ladder left the process at %+v after the first child exited (events %v, last exit %s)",
+			later, ev.kinds(), exit)
 	}
 	if later.Blocked {
 		t.Error("the block declared for the death was still in force after the recovery lifted it")

@@ -27,7 +27,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 206
+    "counted": 207
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -475,15 +475,15 @@
     },
     {
       "id": "VER-32",
-      "subject": "the `unrepresentable[]` shape is validated as data; nothing shows the behaviour of reporting rather than dropping",
-      "state": "no-code",
+      "subject": "the `unrepresentable[]` shape is validated as data and the command answer now carries it; nothing shows a browser reporting rather than dropping",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": { "kind": "live-row", "ref": "LIVE-04" },
       "at": [
         { "doc": "docs/architecture/26-command-surface.md", "anchor": "`{source, reason}`, never silently discarded. **Verified as data; the " },
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`unrepresentable` shape is identical in policy and command" }
       ],
-      "why": "ADR-0013's promise is 'report instead of drop'. The shape being identical in two files is the cheap half; a compiler that silently omits a rule is the defect the promise is about. The promise now has a producer -- `connector/internal/compile/split.go` turns a built-in tag, an undecided match spelling or the policy's own note into an `unrepresentable[]` entry and enforces doc 27 §7's 200-character and 256-entry bounds rather than truncating -- and keeps authored order, so a report can be read against the rule list. What is unmeasured is the command answer: no `config.apply` handler reads `Result.Unrepresentable` into a frame yet, which is the live half of this row."
+      "why": "ADR-0013's promise is 'report instead of drop'. The shape being identical in two files is the cheap half; a compiler that silently omits a rule is the defect the promise is about. The promise has a producer -- `connector/internal/compile/split.go` turns a built-in tag, an undecided match spelling or the policy's own note into an `unrepresentable[]` entry and enforces doc 27 §7's 200-character and 256-entry bounds rather than truncating -- and it now has an answer: `connector/cmd/nexora-connector/config_apply.go` puts `Result.Unrepresentable` into the `config.apply` result, and `config_apply_test.go` shows the shipped policy's built-in-tag rule and a control enabled on top of it both arriving in one frame while the config stays applied, so a report with one entry in it cannot be a report that dropped the other. What is unmeasured is the half this row was always about: `LIVE-04`, a real extension reading that array and a real user being shown it. ADR-0013 forbids the drop, not the silence at the far end."
     },
     {
       "id": "VER-33",
@@ -969,6 +969,17 @@
       "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-38`, read with `docs/architecture/30-failure-policy.md` §4" },
       "at": [{ "doc": "docs/architecture/30-failure-policy.md", "anchor": "one death and one fresh budget" }],
       "why": "`connector/internal/supervisor` re-arms the ladder on every observed unexpected exit, because doc 30 §4 counts attempts inside one death and says nothing about the deaths after the recovery. A test would need the rule before it could assert it: with the per-death reading written down, a crash-looping Core restarts every backoff cycle for as long as the Connector lives, the block is lifted and re-imposed each time, and `server.test`'s probes resume between the two. The corpus admits two other readings -- a total budget for the session, and a Core that stayed up for some window before it died starting a new one -- and they cannot be distinguished from `failure-policy.schema.json`, which has one `restartAttempts` integer and no denominator. The component the row is about is that denominator."
+    },
+    {
+      "id": "VER-80",
+      "subject": "the command path from a `config.apply` frame to a replaced config and a restarted Core has no production caller: nothing registers the method, and nothing supplies the intent documents an ids-only call cannot carry",
+      "state": "no-code",
+      "owner": "connector",
+      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-39`" },
+      "at": [
+        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reachable from one command frame" }
+      ],
+      "why": "`connector/cmd/nexora-connector/config_apply.go` is the whole of doc 27 §2 and §8 in one `Handle`: compare-and-swap against the applied-state record, read the intent, compile, write atomically, reserve the ports, stop and start Core -- and `config_apply_test.go` refuses each of those steps in turn to show nothing after it moved. The half that does not exist is who calls it. `connector/cmd/nexora-connector/main.go` registers `connector.hello` and `connector.version` and nothing else, so a real frame for this method answers `UnknownMethod` at the dispatch door; and the surface's one input seam -- an intent source that turns `profileIds` into the profiles, servers, routing, settings and failure policy stage 1 resolves -- is satisfied only by a test double that returns what the test put in it. That is not a missing file the design could fill in: `packages/schema/protocol/commands/config.apply.json#/args` is `additionalProperties: false` over ids, while the `intent-down` entry of `packages/schema/protocol/data-ownership.json#/movements` says the payload of this very command is 'intent documents: profiles, servers, routing, settings -- references, never values' from the browser plane, where every one of those stores lives (`docs/architecture/34-data-split.md` §6). Whichever way the documents arrive, the same row then needs the two directories the surface is constructed with -- no contract names the state directory or the compiled-config directory, and `compiled-config.location` ('name derived from the config hash') disagrees with `connector/internal/apply`'s one stable file name, which is the shape doc 27 §8's rename depends on. The test seam chose all three; `ODEC-39` is the register saying which choices are the contract's."
     }
   ]
 }

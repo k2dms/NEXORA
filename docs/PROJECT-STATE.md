@@ -195,13 +195,15 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `206` labelled lines over `44` documents partitioned into `79` rows `VER-01…VER-79`, `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `59` deferral
-sites over `14` documents partitioned into `38` entries `ODEC-01…ODEC-38`, each naming who can answer it
-(`product` 14, `contract` 14, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-six of the thirty-eight,
+The queue is `207` labelled lines over `44` documents partitioned into `80` rows `VER-01…VER-80`, `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
+sites over `14` documents partitioned into `39` entries `ODEC-01…ODEC-39`, each naming who can answer it
+(`product` 14, `contract` 15, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-six of the thirty-nine,
 since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
-unwritten and `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
-records as absent on this host — and the `VER`/`COMP` rows it
+unwritten, `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
+records as absent on this host, and `ODEC-39` carries a fourth that answers only the second half of its own question —
+which two directories and which file name — because the seam that carries an intent and the layout that holds it have
+different owners — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
@@ -328,6 +330,23 @@ The push that carried §4.17 through §4.19 moves the set a fifteenth time and c
 **2347 / 520 / 1402** — which is the first entry in this ledger whose headline is that nothing moved: a commit sha, a
 refspec and a line of remote output are prose about the remote, not addresses into this tree, and the three numbers count
 only the second kind.
+§4.20 moves the set a sixteenth time — **2362 / 523 / 1408** — in §4.17's shape, a code slice whose new addresses are all
+inside the code it just wrote, and measured per file against a clean worktree at the commit before. Reading that worktree
+is not only the attribution method: it printed exactly the three figures §4.19 recorded, so the delta is a difference
+between two runs of the same guard rather than a claim about prose. This file moves all fifteen `path:line` addresses,
+plus one pointer and one name; doc 26 and doc 40 gain one pointer each — the same `[string, null]` type, cited once in
+the contract sentence that now states what an unstated belief is and once in the register entry that turns the intent
+seam into a decision — doc 27 one name, doc 40 one name, and doc 39 `+0 / +0 / +0` for the seventh slice running, while
+its `no-code` table loses a row, gains one and has six of its distributions re-typed. The sixth name belongs to `README.md`:
+three of its `connector/` rows ended with "no command surface calls it", and a row that says that while §4.20 exists is
+not a slow claim but a false one, so each now points at this file instead of at nothing. What this ledger cannot see is
+the half of the slice that was a repair: two addresses in this file into
+`connector/internal/supervisor/supervisor_test.go`
+had gone wrong when the fake child gained fifteen lines above them, and fixing them moves nothing. §4.11's case was a
+citation somebody re-read and did not update; §4.19's was a citation nobody re-read, green because the sentence under it
+was untouched; this is the third way a number can be wrong while the ledger stays silent — the *file the number points
+into grew for a reason belonging to the next slice*, and both figures and prose read fine until a test starts needing a
+process that stays alive.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1312,7 +1331,7 @@ not excused. (2) `AssignProcessToJobObject` answers `ERROR_ACCESS_DENIED` for a 
 to `0x0010`, which is `PROCESS_VM_READ`; `PROCESS_TERMINATE` is `0x0001`
 (`connector/internal/supervisor/contain_windows.go:43`). `PROCESS_ALL_ACCESS` "worked" only because it contains that bit.
 The proof is end to end, not API by API: `TestParentDeathEndsTheContainedChild`
-(`connector/internal/supervisor/supervisor_test.go:556`) has a holder process put a child in a job, watches it alive,
+(`connector/internal/supervisor/supervisor_test.go:571`) has a holder process put a child in a job, watches it alive,
 exits, and then polls `processAlive` until the child is gone — the child is orphaned by nothing, because the only
 process it could outlive is the one that held the handle. `IsProcessInJob` on this host answers zero for the Connector
 and its children, so the inheritance branch `attach` also implements (`:103`) — the case where the host's own job
@@ -1328,7 +1347,7 @@ does about it is the part rule 5 can require today: `spawnLocked` creates the sc
 (`connector/internal/supervisor/supervisor.go:343`), attaches after, and reports the answer — `contained` beside a note
 in the platform's own words — and a scope that cannot be made is *not* a refused start, because `core.start`'s own gloss
 says `false` "is a reported condition, not a silent one". `TestStartReportsContainmentAsThePlatformAnswersIt`
-(`connector/internal/supervisor/supervisor_test.go:537`) fails if the flag and the note ever disagree, on any platform,
+(`connector/internal/supervisor/supervisor_test.go:552`) fails if the flag and the note ever disagree, on any platform,
 including the two that answer false.
 
 **The ladder runs in doc 30 §4's order, and the order was the finding.** Read verbatim, that section does not describe
@@ -1420,6 +1439,154 @@ make `compile`, `apply` and this package one path rather than three tested neigh
 which is the row `ODEC-35` still stops and the process `VER-14`'s chain needs above Core, then stage 7's probe, whose
 binary this host still does not have.
 
+### 4.20 M3's sixth slice: the command surface that joins compile, apply and supervisor (`connector/cmd/nexora-connector/`, 2026-11-06)
+
+**What landed.** Two files, 1 761 lines, sixteen test functions, and no fourth package. `config_apply.go` (523 lines) is
+`Handle` (`connector/cmd/nexora-connector/config_apply.go:288`) over the three things §4.15 to §4.19 built: the seams
+`intentSource` (`:58`) and `coreProcess` (`:66`), the wiring `applyConfig` (`:101`), the hand-decoded args
+(`readApplyArgs`:172), the answer struct (`applyAnswer`:271), the reconciliation (`reconcile`:360) and the classification
+table (`codeMarkers`:478, `codeForApply`:499). `config_apply_test.go` (1 238 lines) is the slice's claim. `go test
+-count=1 ./...` still prints eleven `ok` lines — this is the eleventh package's second file, not a twelfth package — and
+the `cmd` line moved from hundredths of a second to 0.265 s, because two of the sixteen tests spawn real children.
+
+**The order is the contract, and the refusal tests are the proof of the order.** Args, then the record, then
+compare-and-swap, then the intent, then the compile, then the file, then the reservation table, then the process —
+"compare-and-swap first … a refusal at any of those points has touched nothing after it" is doc 27 §8's atomicity rule
+restated as a sequence rather than as a rename, and `Handle` keeps the shape of that sentence.
+`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:671`) is the one that makes it
+observable: after the Busy it asserts the intent source was never asked (`asks != 0 || records != 0`), Core was never
+touched (`starts != 0 || stops != 0`) and no config file exists — three negative assertions against the packages behind
+the surface, not against a mock's call log. The same shape recurs in `TestDryRunTouchesNothing` (`:624`) and in
+`TestRestartPolicyNeverLeavesTheProcessAlone` (`:695`), whose last assertion is the subtle one: with
+`restartPolicy: never` the file *is* applied, and the applied-state record stays empty (`:715`) because that record is
+the supervisor's to write and no process was ever spawned. A surface that wrote the hash itself would be a surface that
+could make the next apply believe a config is in force that nothing loads.
+
+**`expectedAppliedHash` is `[string, null]`, and that type is the sentence the CAS needed.** The arg's own schema
+(`packages/schema/protocol/commands/config.apply.json#/args/properties/expectedAppliedHash`) is a pattern
+`^([0-9a-f]{64})?$` over a type that admits absence, so an empty value is not "I believe nothing is applied" — it is no
+belief at all. `Handle` therefore compares only when the caller stated something
+(`connector/cmd/nexora-connector/config_apply.go:302`), and the reason is not tidiness: were an unstated belief read as
+a claim about an empty record, every second apply from the same tab would have to call `core.status` first just to be
+allowed to speak, and doc 26 §2.1's CAS would have become a lock. `docs/architecture/26-command-surface.md` §2.1 now
+says that out loud beside the rule it qualifies, because the code and the sentence had to move together or the next
+reader would "fix" the `!= ""` guard into a bug.
+
+**ODEC-36 is a knob, and the knob is required.** `hashSpan` (`:74`) has two live values and a zero value that
+`newConfigApply` refuses (`:126`), so a build that has not read the register cannot answer `config.apply` at all —
+`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:1003`) walks all seven
+wiring cases including the four nil seams, and each refusal's message names the decision or the directory it is missing.
+The two spans are then measured against each other rather than argued: the same intent gives two different
+lowercase-sha256 strings (`TestHashesDifferBetweenTheTwoSpans`:600), because `internal/apply` reports both digests
+(`connector/internal/apply/write.go:103`) and `span` (`connector/cmd/nexora-connector/config_apply.go:404`) drops
+exactly one — "which is exactly what ODEC-36 says is undecided" is what that function's comment claims, and the test is
+what makes it a claim about code. The slice also paid ODEC-36's consequence forward into the register's `why`: under
+`hashValues` a *preview* has to materialize to know what the file would hash to (`previewHash`:387), so a dryRun can
+refuse for keystore reasons. That asymmetry is now pinned both ways — `TestValuesSpanPreviewReadsTheStore` (`:653`) and
+`TestDryRunTouchesNothing` (`:624`) — because a decision argued only in prose is a decision that gets reversed by a
+tidy-up.
+
+**The classification table is the slice's real output, and fourteen cases drive it.** `codeForApply`'s order is the
+argument: `errors.As` on `*keystore.Error` first (`:500`), because a keystore refusal already carries its registered
+code; then `errors.Is(err, supervisor.ErrIntegrity)` (`:505`), because doc 22 §4's "an unbootable Core is surfaced as
+`IntegrityMismatch`" is a security answer rather than a config one; then the six markers (`:478`), then the `compile: `
+prefix as `InvalidProfile` (`:517`), then `ConfigApplyFailed` (`:522`). `TestRefusalCodesDrivesTheRealRefusals`
+(`connector/cmd/nexora-connector/config_apply_test.go:771`) makes each of the three packages refuse *for real* — a stage
+of the pipeline, the keystore, the writer, the reservation store, the process owner — and asserts the code plus the
+cause that survived into the message, so a reworded refusal fails a row there instead of quietly changing an answer a
+client acts on. Two rows of that table are worth the sentence: doc 32 §11's missing secret answers `InvalidProfile` (the
+user's problem, and retyping helps) while a store the platform will not open answers `KeystoreUnavailable` (retyping
+does not), and the grammar-rejected reference answers `SchemaMismatch` from the keystore's own table, which is a code
+this command declares and doc 32 §11 does not name. `DiskFull` is declared by `config.apply` and unreachable from here
+(`:519-522`) — stated, because an unclaimed code in a schema is either a gap or a lie and a reader cannot tell which
+without the sentence.
+
+**`ErrIntegrity` had to be added to the supervisor, and it is a sentinel for a reason.** doc 33 §6's pre-exec proof is
+the verifier's own error, and reading `IntegrityMismatch` out of its *words* would be a string match on somebody else's
+message — the same failure §4.11 records a green check hiding. So the supervisor wraps it beside the cause
+(`connector/internal/supervisor/supervisor.go:343`, `%w: %w` around `:52`) and the surface matches the sentinel, which
+keeps the verifier's reason available in the message and the taxonomy code out of anybody's prose.
+
+**`clip` keeps the tail, which is a decision with a consequence attached.** `maxApplyMessage` (`:438`) is the envelope
+schema's own `maxLength` for an error message, and a refusal that quoted a whole pipeline error would be a frame the codec
+refuses — the worse of the two answers. The cut walks forward to a rune start (`:463`) because a message that is not
+valid UTF-8 is that same refused frame; and it keeps the end because these errors are
+`surface: context: cause: cause`, where the end is the one part a caller cannot reconstruct — which document, field or
+stage refused — while the head is the surface naming itself, which the code already says.
+
+**One of the sixteen tests is not a test, and writing it found a bug in the slice before it.** The fake Core is this
+test binary re-executed (`TestFakeCoreAgent`:56), the device §4.19 uses for the same two ADRs. Its first body was the
+honest expression of forever — `select {}` — and every test that needed a live child died. The cause is Go's runtime,
+not this repository: in a re-execed test binary whose only goroutine parks with nothing the runtime owes it, the
+deadlock detector fires, and the child exits 2 with `fatal error: all goroutines are asleep - deadlock!`. Measured
+against the *committed* tree, in a clean worktree at `7544baa`: that tree's own compiled test binary run as its `wait`
+mode child exits 2 and prints nothing else, and a 4-second-budget probe of both bodies gives `select {}` → exit 2 with
+the fatal error and `for { time.Sleep(time.Hour) }` → still alive at four seconds. The fix belongs to both files
+(`connector/cmd/nexora-connector/config_apply_test.go:75`, and `stayUp` in
+`connector/internal/supervisor/supervisor_test.go:75`) — but the finding is the other half: `go test
+./connector/internal/supervisor` was green, and stays green, with the dying child, because nothing in that package
+waited for a child to *stay* alive. `Stop`'s `WasRunning` reads the supervisor's own bookkeeping, and
+`TestParentDeathEndsTheContainedChild`'s ten-second poll was waiting for a death the child had already caused itself. A
+command surface that stops a running Core cannot be tested that way, which is the ordinary fact that §4.19's device
+becomes this slice's bug: a test of *ordering* is the first test of *still being alive*.
+
+**Three assertions had to move before the reconciliation test meant anything.** (1) The launch closure picks a record
+slot by spawn count and clamps it (`connector/cmd/nexora-connector/config_apply_test.go:496-507`), because the ladder is
+entitled to spawn a third child and a closure that indexed by call count would have handed the third one the second
+record — a proof of a handover that never happened. (2) The test waits for the *first* child's record before issuing the
+second apply (`:530`, 20 s): the second apply ends that process, so a child that had not finished booting would leave no
+record at all and the assertion would become a race instead of a proof. (3) The new server had to join the profile's own
+list (`intent.Profiles[0].ServerIDs`, `:538`) as well as the registry, because membership is what the compiler reads —
+an intent that only gained a registry entry compiles the identical config, and `:547`'s `t.Fatal` on an unmoved hash
+exists to say that this test then proves nothing. Beside them, `secondServer` (`:570`) sets `s.Tag = ""` because doc 23
+§6 derives the tag; a test that pinned a tag would be pinning a value the compiler computes.
+
+**The promise ADR-0013 made at the layer it was made for.** `split.go` producing an `unrepresentable[]` entry is half of
+"report, do not drop"; the other half is that the entry leaves the Connector in the frame the extension reads.
+`TestAReportedRuleTravelsInTheAnswer` (`:1079`) asserts both in one answer: `applied: true`, two entries whose sources
+are the shipped policy's built-in-tag rule and the control enabled on top of it, and a config on disk that contains no
+`sniffing` block. The test was written expecting one entry and found two — the shipped `routing.minimal.json` already
+reports a rule — which is the stronger version of the assertion and the reason it is worth stating: the answer's list is
+the *compile's* list, not a test's fixture.
+
+**The prose this slice had to move.** doc 27 §8's tail stopped describing an unwired writer and says now that
+`config_apply.go` calls it from inside one command frame, with the honest remainder (an apply that failed while a *real*
+Core held the previous config); doc 27 §9 gained its fourteenth row, and that row is `VER-80`'s anchor and `ODEC-39`'s
+site at once; doc 26 §2.1 gained the `[string, null]` sentence; doc 39 moved `VER-32` between its tables, added `VER-80`,
+and restated every distribution in it; doc 40 gained `ODEC-39`, its counts, and the newest-entry paragraph that passed
+from `ODEC-38` — and this file's own two citations into `supervisor_test.go` moved (`:537`→`:571`, `:556`→`:552`),
+because inserting `stayUp` shifted that file by fifteen lines. §4.11's lesson a seventh time, and a new twist on it: the
+stale addresses were not in a document citing a document, they were in the record of the slice that inserted the lines.
+
+**Queue arithmetic, stated so the next slice can check it.** 79 rows → 80: `VER-32` moves `no-code` → `no-run` (the
+envelope→Xray compiler now has an answer for ADR-0013's promise — `Unrepresentable`
+(`connector/cmd/nexora-connector/config_apply.go:421`) carries the compile's report into the result, proven at
+`connector/cmd/nexora-connector/config_apply_test.go:1079` — and what no test here can show is a real Core holding the
+previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
+and `connector.version` only, `connector/cmd/nexora-connector/main.go:79-80`, and `intentSource` has no production
+implementation). `no-code` is therefore 54 → 53 → 54 and `no-run` 5 → 6, `connector` 37+1 → 39 and `decision` 3 → 4.
+`marker.counted` 206 → 207 for doc 27 §9's one new label (the partition is 157 + 26 + 24), and the register 38 → 39
+entries over 59 → 60 sites with `contract` 14 → 15. `verify.mjs`'s literals moved to those numbers; the check count did
+not, because a slice that adds a row and a site adds no assertion.
+
+**Gates.** `gofmt -l connector` prints nothing; `go -C connector vet ./...` is silent for windows and linux; `go -C
+connector test -count=1 ./...` prints eleven `ok` lines, the supervisor still at 3.2 s and still slower than the other
+ten put together — 0.75 s and 0.91 s in the two runs this slice measured, the difference being the command package's own
+child processes rather than any assertion — which is what §4.19's claim now has to survive a second process-spawning
+package. `npm --prefix packages/schema run verify` is green on the first attempt after the doc 39 and doc 40 numbers
+moved. `node tools/check-no-secrets.mjs` counts the two new files once they are staged — 478 files after §4.19's 476 —
+and found four `uuid-literal` lines in `config_apply_test.go` on the first run: the synthetic credential value, the
+profile id, the server id and the second server's id. Each carries a `nexora-secret-allow` line now, the corpus's
+thirteenth through sixteenth annotation, because a command-surface test cannot put its fixtures under
+`connector/testdata/` and stay a test of the compiler's real examples; the reference URI at
+`connector/cmd/nexora-connector/config_apply_test.go:49` needed nothing, the guard not reading a `keystore://` handle as
+an identifier. `node tools/check-doc-evidence.mjs` → the figures in §4.4's sixteenth paragraph.
+
+What is next is §6's queue, and the first item on it is unchanged: `connector/cmd/nexora-host`, the row `ODEC-35` stops —
+the process that reads the pipe, owns the dispatcher and would hand a frame to the surface this slice wrote, which is now
+the second-to-last thing standing between `config.apply` and a running Core. Then stage 7's probe, whose binary this host
+still does not have, and `internal/chunk`, which `ODEC-34` still stops.
+
 ---
 
 ## 5. Verification state to the letter
@@ -1462,12 +1629,14 @@ binary this host still does not have.
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **476** files — §4.18's 468 plus
-  the eight `connector/internal/supervisor` files §4.19 stages, because the guard walks `git ls-files` and so counts a file
-  when it is staged, not when it is thought of. It carries twelve `nexora-secret-allow` annotations now: the eight
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **478** files — §4.19's 476 plus
+  the two `connector/cmd/nexora-connector` files §4.20 stages, because the guard walks `git ls-files` and so counts a file
+  when it is staged, not when it is thought of. It carries sixteen `nexora-secret-allow` annotations now: the eight
   documented constants in `connector/internal/compile/resolve_test.go` that §4.16 lists, §4.17's three in
-  `keystore_test.go` and `ref_test.go` twice, and §4.18's one in `connector/internal/apply/apply_test.go:17`, because
-  Go's test convention puts a `_test.go` beside the package it tests and therefore outside every path the guard exempts.
+  `keystore_test.go` and `ref_test.go` twice, §4.18's one in `connector/internal/apply/apply_test.go:17`, and §4.20's four
+  in `config_apply_test.go` — the synthetic credential value, profile id and server id in its constant block and the second
+  server's id in its fixture — because Go's test convention puts a `_test.go` beside the package it tests and therefore
+  outside every path the guard exempts.
 - `npm --prefix packages/schema run verify` → **green** (1217 checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
@@ -1494,8 +1663,12 @@ binary this host still does not have.
   ninth package, and the first slice to move a row's *state* rather than its count: `VER-23` leaves `no-code` for
   `no-run`, which is the one subtraction the queue's `no-code` column has had, and why doc 39's distribution and the
   harness assertion that reads it both move by one. §4.18 is the tenth package and the second such subtraction — the
-  materializer and the owner-only write, with `VER-29` following `VER-23` out of the same column.
-- `node tools/check-doc-evidence.mjs` → **green** (2347 `path:line`, 520 pointers, 1402 doc-and-script
+  materializer and the owner-only write, with `VER-29` following `VER-23` out of the same column — and §4.19 the eleventh
+  and the third, with `VER-14`. §4.20 moves no `ok` line, because it is the seventh package's second file rather than a
+  twelfth package: sixteen test functions inside `cmd/nexora-connector`, its compile-and-apply-and-supervisor path, and
+  the slice that turned a *runtime* fact about this repository's own test device into a code change two packages away —
+  the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
+- `node tools/check-doc-evidence.mjs` → **green** (2362 `path:line`, 523 pointers, 1408 doc-and-script
   names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
@@ -2036,28 +2209,35 @@ of §6's queue was written.
 
 ---
 
-*End of handoff log. The remaining work order is §6's, and §4.19 closes the shape §4.18 opened: the process that holds
-Core, the scope it is asked to live in and the ladder doc 30 §4 orders are now code, so all three halves the compiled
-config was waiting for — the store, the writer, and the supervisor that would have run what it writes — exist and are
-tested. The Connector queue now runs: the command surface that makes `config.apply` call `Compile`, `connector/internal/apply`
-and this package one path rather than three tested neighbours, including the directory no document names, which §4.18
-deliberately did not choose — then `connector/cmd/nexora-host`, the process `VER-14`'s containment chain needs above
+*End of handoff log. The remaining work order is §6's, and §4.20 closes the item §4.19 left first in it: the command
+surface that makes doc 27 §2's stages, `connector/internal/apply`'s write and `connector/internal/supervisor`'s process
+one path rather than three tested neighbours is written, sixteen tests deep, and answers a frame with a config file, a
+hash and a different Core. All four halves the compiled config was waiting for — the store, the writer, the supervisor
+that runs what it writes, and the surface that calls all three — now exist and are tested. The Connector queue now runs:
+`connector/cmd/nexora-host`, the process `VER-14`'s containment chain needs above
 Core — then stage 7's probe, which needs a binary
 `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md` §Evidence records as absent from this host. Stages 1 to 4,
 the document half of 5, the serializer of §4.15, three of doc 27 §3's six golden configs (§4.16), the store that holds
 every credential a config points at (§4.17), the materialize-and-rename that turns one into a file Core can read
-(§4.18) and the supervisor that spawns that file's process (§4.19) are written; `VER-28` and `VER-78` describe three fixtures rather than none and
-stay open for the two reasons §4.16 names, and `VER-23`, `VER-29` and `VER-14` have all moved from `no-code` to `no-run`
-because the round trip, the rollback and the parent-death window are measured while the session around them is not. `internal/chunk` and
+(§4.18), the supervisor that spawns that file's process (§4.19) and the `config.apply` frame that drives them in order
+(§4.20) are written; `VER-28` and `VER-78` describe three fixtures rather than none and
+stay open for the two reasons §4.16 names; `VER-23`, `VER-29`, `VER-14` and now `VER-32` have moved from `no-code` to
+`no-run` because the round trip, the rollback, the parent-death window and the unrepresentable-rule report are measured
+while the session around them is not — and `VER-80` is the row that replaced one: the surface exists, and no `main.go`
+registers it, because the intent seam and the two directories are `ODEC-39`. `internal/chunk` and
 `cmd/nexora-host` stay where they were: the first is stopped by `ODEC-34`, and the second by `ODEC-35` — a decision with
 three surviving answers, which is the first time this queue has been blocked by an ADR rather than by a gap in the data.
 `ODEC-36` is the third stopped thing and the cheapest, with one third of its reason now gone: the mechanism that reads an
 object handle out of the store exists, and what is owed is the sentence that says whether the map it returns belongs to
-the hashed bytes or only to the file. A fourth sits beside it — `ODEC-37`, the four byte positions the corpus names and
-never spells, which `§4.16`'s goldens found by refusing to guess and which only Xray's own accepted config can settle.
-A fifth is new: `ODEC-38`, over what span the ladder's restart attempts are spent, which §4.19's own tests found by
-being written — a Core that dies again straight after a successful restart is handed the budget again, forever, and no
-file in this corpus names a window or a count that would make the second death a new episode.
+the hashed bytes or only to the file — a sentence §4.20's `hashSpan` refuses to write for it, and instead measures: under
+the written-bytes span even a dryRun has to open the keystore. A fourth sits beside it — `ODEC-37`, the four byte
+positions the corpus names and never spells, which `§4.16`'s goldens found by refusing to guess and which only Xray's own
+accepted config can settle. A fifth is `ODEC-38`, over what span the ladder's restart attempts are spent, which §4.19's
+own tests found by being written — a Core that dies again straight after a successful restart is handed the budget again,
+forever, and no file in this corpus names a window or a count that would make the second death a new episode. A sixth is
+new: `ODEC-39`, where the intent documents an ids-only `config.apply` cannot carry come from, which two directories the
+surface is handed, and what the compiled config file is called — found the same way, by writing a seam that three of the
+register's own rows needed named.
 Plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish; the note under that table
 says why one ninth stopped being a question and what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
