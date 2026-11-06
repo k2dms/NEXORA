@@ -1843,7 +1843,8 @@ file. `go -C connector test -count=1 ./...` → the same eleven `ok` lines, `gof
 §4.20's surface, §4.21's tail, §4.22's conversion, the ledger line that recorded those three, and §4.23's
 registration. No push has been confirmed for any of them, and §4.23 is the reason a bullet written yesterday was stale
 today: a sentence about a remote ages at the rate this repository commits, which is the whole case for asking the remote
-instead of reading the file.
+instead of reading the file. The bullet now also states its own limit: a commit cannot count itself into the sentence it
+carries, so the number is one behind by construction, and the query rather than the number is the fact.
 
 **The convention, now that it has bitten twice.** §4.22's entry — the nineteenth in this series — refreshed this same
 bullet for this same reason, and left behind the residue every such refresh leaves: its own paragraph still reads
@@ -2261,10 +2262,12 @@ written before any behaviour existed. What each next milestone has to make true:
   master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 5 — the config.apply surface
   (`293cb73`), M2's cheap tail (`d1d22bb`), the citation conversion (`31008a5`), the ledger line that recorded those
   three (`18f1e1b`) and `VER-81`'s registration (`f4cac24`) are committed here and unpushed, because the rule further
-  down this list asks for its own confirmation each time and none was given for these five. When this bullet was
-  written the remote was at
-  `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer, not this file's
-  memory, is what says where a ref is. What the `5e59e17..cf7e56d` fast-forward carried is §4.17's keystore (`bdd7f1d`),
+  down this list asks for its own confirmation each time and none was given for these five. A bullet written by the slice
+  it describes cannot count the commit that carries it, so the number above is one behind by construction — which is why
+  the query, and not the number, is the fact this bullet keeps. When this bullet was written
+  the remote was at `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer,
+  not this file's memory, is what says where a ref is. What the `5e59e17..cf7e56d` fast-forward carried is §4.17's
+  keystore (`bdd7f1d`),
   §4.18's materializer
   and owner-only write (`be6ce05`) and §4.19's supervisor with its record and its two registry rows (`cf7e56d`) — three
   slices that each waited on this file rather than on a ref of their own, because a push needs its own confirmation each
