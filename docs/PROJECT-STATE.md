@@ -1795,19 +1795,18 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`**. `nexora/master` was last
-  fast-forwarded to `5e59e17`, in three pushes after `96d1613` — `96d1613..f2a5826` (§4.15's serializer and its
+- Branch: **`nexora/architecture`**, and `nexora/master` is at the same sha — `cf7e56d`, pushed and confirmed in this
+  sitting. What that one fast-forward carried is `5e59e17..cf7e56d`: §4.17's keystore (`bdd7f1d`), §4.18's materializer
+  and owner-only write (`be6ce05`) and §4.19's supervisor with its record and its two registry rows (`cf7e56d`) — three
+  slices that each waited on this file rather than on a ref of their own, because a push needs its own confirmation each
+  time and this file states that rather than assuming it was given. `5e59e17` itself was reached in three pushes after
+  `96d1613` — `96d1613..f2a5826` (§4.15's serializer and its
   self-quoting label), `f2a5826..ef9792e` (§4.16's stages 1 to 4 and three goldens, with the bookkeeping that moved the
   queue's tallies for them) and `ef9792e..5e59e17` (the byte-budget test that waits on the wire rather than on the
-  scheduler, and the ledger's two new rows and the collision that killed a law). Before that, the runner-record commit
-  `f1a3829` and the eight slices
+  scheduler, and the ledger's two new rows and the collision that killed a law) — and `96d1613` was the twelfth of the
+  pushes enumerated below, the runner-record commit `f1a3829` and the eight slices
   §4.7 to §4.14 record — five of them code, three found by reading: two before a line of Go was written and one while
-  the seventh was still running — are on both, because that push was asked for and confirmed before it happened. What is
-  on this branch and not there is three commits: `bdd7f1d` (§4.17's keystore), `be6ce05` (§4.18's materializer and
-  owner-only write) and §4.19's supervisor with the record and the two new registry rows beside it — §4.15's, §4.16's and
-  §4.18's bookkeeping commits having each been confirmed and fast-forwarded in their own sitting, because a push needs
-  its own confirmation each time
-  and this file states that rather than assuming it was given. Local `master`
+  the seventh was still running — among them. Local `master`
   still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
   so the local branch pointer was never moved.
   Main branch for PRs upstream: `master`.
@@ -1848,14 +1847,19 @@ written before any behaviour existed. What each next milestone has to make true:
   No `--force`, no `--no-verify`, no amend of anything already published: the
   commit that first tripped the label guard stayed on `master` with its label, and the document moved to match the
   guard instead.
-- **A ref on the remote that this session did not mean to make, and has not deleted.** The first attempt at the
+- **The ref on the remote this session did not mean to make is deleted.** The first attempt at the
   `1004c4e..96d1613` push used the refspec `nexora/architecture:nexora/master` — the local branch name pasted after a
   colon — so GitHub created `refs/heads/nexora/master` rather than moving `refs/heads/master`. The corrected
-  `nexora/architecture:master` fast-forward followed it inside a minute, both refs carry `96d1613`, and neither holds a
-  commit the other lacks, so no work hangs on the stray one. What it does cost is the duplicate execution named above:
+  `nexora/architecture:master` fast-forward followed it inside a minute, both refs carried `96d1613`, and neither held a
+  commit the other lacked. What it did cost was the duplicate execution named above:
   `.github/workflows/verify.yml` reacts to a push on any ref, so a branch whose name repeats its remote's is a second
-  copy of the build. Removing it is `git push nexora --delete nexora/master` — a delete of published state, so it goes
-  on this list rather than into a command this file ran, and waits for the same confirmation every push here waits for.
+  copy of the build. The safety check was the remote's own list, not this file's memory of it: `git ls-remote` printed
+  two refs before the delete, `refs/heads/master` at `5e59e17` and the stray at `96d1613` — an ancestor
+  of that tip, so nothing hung on it and nothing needed merging. The delete then ran as
+  `git push nexora :refs/heads/nexora/master`, the fully spelled ref rather than the `--delete nexora/master` form this
+  bullet used to recommend, because a bare `nexora/master` is precisely the ambiguous name that made the stray ref, and
+  removing published state should not depend on which ref the resolver happens to pick. `git ls-remote --heads nexora`
+  after it prints one ref, and the local tracking ref was pruned rather than left to argue with it.
 - **The enumerated list above is authoritative only up to the sha it names, and the reason is worth stating once:**
   every commit that records a run of this workflow is itself a commit that runs it, so no sentence in this repository
   can state a final count of executions and survive its own push. This file's next push is therefore one more
