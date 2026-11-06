@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 60
+    "counted": 61
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -603,6 +603,21 @@
       ],
       "at": [
         { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "Which artefact records the format an" }
+      ]
+    },
+    {
+      "id": "ODEC-41",
+      "question": "Which artefact carries the pipe half of the version negotiation -- a field on the event that already writes the browser half down, a declared shape for the diagnostics section that would hold it, or nothing, with `docs/architecture/21-system-context.md` §6's promise narrowed to `protocolVersion` alone?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-82"], "compatibility": [] },
+      "why": "`docs/architecture/21-system-context.md` §6 makes the two-process design legible by a risk: the extension is replaced by a browser-store update and the connector by a user action, on different schedules, so 'a shim from NEXORA 3.7 may legally talk to a connector from 3.6 when both sides' declared floors overlap, so the negotiation result must be *written down* in the connector log and surfaced in `diagnostics.get`'. That consequence belongs to the pipe -- the shim and the connector are joined by it, and the browser-side window is negotiated in `connector.hello` between the extension and the connector, over the same pipe. `packages/schema/protocol/framing.json#/versionFloors` then made the separation normative on 2026-11-06: four numbers over two floors, `protocol` 'negotiatedIn: connector.hello' and `pipe` 'negotiatedIn: the v field of every frame', refused by one `VersionMismatch` whose `meaning` in `packages/schema/protocol/error-taxonomy.json#/codes` says outright that 'today the window that is negotiated is the protocol one'. So the contract now names two outcomes and the observability vocabulary can report one. `connector.connected` is the event `packages/schema/observability.json#/events` nominates for the job -- its `why` cites §6 by line and calls itself 'the event that writes it down' -- and its payload is `additionalProperties: false` with `protocolVersion` required and `capabilities` and `adoptedExisting` optional; the `versions` entry of `#/diagnosticsSections` lists 'extension version, Connector version, Core version, protocolVersion, negotiated capabilities'; `#/export/footer/fields` names `protocolVersion` once. `framing.json#/versionFloors/why` adds that 'which floor failed belongs in the message, not in the code', and the record vocabulary makes that hard to read: `#/record/fields` gives an error record a `code` bound to the taxonomy and exactly one free-text `msg`, capped at 500 characters, whose sibling note says a record carries 'the taxonomy code, never a rendered message'. Three answers survive, and all three are fields and sentences in `packages/schema`. It is `contract` for the reason `ODEC-34`, `ODEC-38`, `ODEC-39` and `ODEC-40` are: the artefact that would close `VER-82` is a property, a bound and the two documents that read them, which costs a commit and a verifier run rather than a person, a browser or a binary. What this entry does not ask is whether anything writes a record at all -- no file under `connector/**` imports a logging package and nothing emits a `connector.connected` frame -- because that is doc 36 §16's fifth open item, and a decision here cannot make it true.",
+      "options": [
+        "`connector.connected`'s payload gains the pipe number it settled on, and the `versions` section's `contains` and `#/export/footer/fields` name it beside `protocolVersion` -- the answer that keeps the promise one sentence, at the cost of a new field on a wire-visible closed payload that `docs/verification/live-matrix.md` and `packages/schema/fixtures/protocol/handshake.jsonl` both already record, so the recorded handshake, the event schema, doc 36 §8's table and the footer all move in the same commit, and an older subscriber meets a key its copy of the contract never declared",
+        "`packages/schema/protocol/commands/diagnostics.get.json#/result/properties/payload` stops being an undeclared `['object', 'null']` and gains a per-section shape, of which the versions body carries both floors -- the answer that touches no event and no fixture, at the cost of bounding ten section bodies when only one is the reason for the question, and of leaving the log half of §6's promise still unspoken",
+        "nothing carries it: the pipe floor stays a number the framing contract declares and doc 21 §6's 'written down' is narrowed, honestly, to the protocol window it names today -- no field anywhere, at the cost that a support bundle cannot distinguish 'your extension is too old' from 'your connector binary is too old', and the one `VersionMismatch` code that both floors share then has no retained evidence of which one refused"
+      ],
+      "at": [
+        { "doc": "docs/architecture/36-observability.md", "anchor": "to say, and not a sentence this document may settle" }
       ]
     }
   ],

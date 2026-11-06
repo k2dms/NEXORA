@@ -556,6 +556,7 @@ and each names the mechanism it prevents:
 | A trace id survives the boundary unchanged and a migration keeps the history | a two-plane fixture assertion, then the migration runner's before/after store diff | Extension | **NO — Phase 2**, `LIVE-23` |
 | Xray's `log` section as emitted really suppresses the access log | one started Core and a directory listing of its state dir | Connector | **NO — Phase 2**; the config half is green, the runtime half needs the binary (ADR-0019) |
 | The export never uploads anything | no network call in the export path, plus a review of the options page bundle | Extension | **NO — Phase 2**; `docs/architecture/31-security-model.md` owns the network surface |
+| The negotiated versions reach the connector log and the answer to `diagnostics.get` | nothing in this document's own vocabulary can say it: the pipe floor has no field, only the protocol number has a name | Connector + Schema | **NO — Phase 2**, deferred to §16's sixth open item |
 
 ## 15. Threat, control, check
 
@@ -627,6 +628,16 @@ and each names the mechanism it prevents:
    depends on comparing them.
 5. The runtime half of every row in §14 marked **NO — Phase 2**, which is most of them: there is no Connector to
    write a record yet. `Verified: NO — deferred to Phase 2`.
+6. Where the pipe half of the negotiation is written down. `docs/architecture/21-system-context.md` §6 gives its reason
+   for promising that the negotiation result reaches the connector log and `diagnostics.get` in the pipe, not the
+   browser: a shim from NEXORA 3.7 talking to a connector from 3.6. Since 2026-11-06 the framing contract says there
+   are two floors — `packages/schema/protocol/framing.json#/versionFloors` declares four numbers over `protocol` and
+   `pipe`, and `packages/schema/protocol/error-taxonomy.json#/codes` refuses both with one `VersionMismatch` while its
+   own `meaning` states that "today the window that is negotiated is the protocol one". Every artefact this document
+   owns names that one number: the `versions` entry of `packages/schema/observability.json#/diagnosticsSections`, the
+   `protocolVersion` of `packages/schema/observability.json#/export/footer/fields`, and the closed payload of
+   `connector.connected` in `packages/schema/observability.json#/events`. Which of them carries the pipe number is for
+   `docs/architecture/40-open-decisions.md` (`ODEC-41`) to say, and not a sentence this document may settle.
 
 ---
 

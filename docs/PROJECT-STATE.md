@@ -197,13 +197,13 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `195` labelled lines over `43` documents partitioned into `73` live rows — the issued range is still
-`VER-01…VER-81`, and `8` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
-sites over `14` documents partitioned into `39` entries — its issued range is still `ODEC-01…ODEC-40`, and `ODEC-02`
+The queue is `196` labelled lines over `43` documents partitioned into `74` live rows — the issued range is still
+`VER-01…VER-82`, and `8` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
+sites over `15` documents partitioned into `40` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`
 now sits in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 15, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-six of the thirty-nine,
+(`product` 14, `contract` 16, `adr` 6, `measurement` 2, `upstream` 2), three options — 37 of the 40,
 since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
 unwritten, `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
 records as absent on this host, and `ODEC-39` carries a fourth that answers only the second half of its own question —
@@ -212,7 +212,7 @@ different owners — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
-`npm --prefix packages/schema run verify` → **green: 1222 checks, 13 schemas, 19 command docs,
+`npm --prefix packages/schema run verify` → **green: 1223 checks, 13 schemas, 19 command docs,
 20 valid examples, 24 invalid rejected, 112 frames replayed**. The only note printed is `compiled 13 schemas`;
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
@@ -481,6 +481,19 @@ only in the double-quoted form that *follows* the harness token, doc 40 §9 carr
 §12's new citation puts the label before the token — so the 68 counts a set this corpus has not touched, and the
 substitution §4.25 could prove by that number could not be proved here. That is what the new §9 assertion is for: the
 guard cannot see the rot, so the harness reads the section itself.
+§4.29 moves the set a twenty-sixth time, and the first figure does not move for the fifth time in six entries —
+**2311 / 562 / 1537**, 68 labels — measured after this paragraph was written, so the paragraph reports the set the tool
+prints rather than the set its own sentences produced. Per file against a clean `git archive` of the commit before: doc 36
+`+0 / +5 / +2`, doc 40 `+0 / +3 / +0` and this file `+0 / +4 / +4`, which together are the twelve pointers and the six
+names the totals moved by. The shape is the finding again: a slice that registers a gap rather than closing one adds
+pointers into the contract it read and no address inside code, because the evidence is five JSON pointers in doc 36's new
+open item — the two floors, the taxonomy code, the event, the sections, the footer — three of them repeated in doc 40's
+argument, and here four more, one of them a pointer into the queue's own `marker.counted`. The first figure has now
+survived five of the last six closures for the reason §4.26 gives and §4.28 restates: no `path:line` citation is added or
+removed when nothing in `connector/**` or `packages/**` is edited, and a re-read of an existing line is not a delta. The
+fourth figure stayed at 68 because this slice added one assertion label to doc 40's §9 table in backticks — the form
+`tools/check-doc-evidence.mjs` cannot see, which is the exact blind spot §4.28's new §9 assertion exists to close — so the
+census is blind to a label this corpus just grew, and the harness, not the guard, is what proves it real.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -2183,6 +2196,87 @@ exists — §4.27 printed the tree before its own file. This slice adds no file.
 `go -C connector test -count=1 ./...`, `gofmt -l connector` and `go -C connector vet ./...` → the same eleven `ok`
 lines, the empty list and the silence, with `internal/contract` one test richer.
 
+### 4.29 The half of `ODEC-02` the answer forgot to write down — `VER-82`, `ODEC-41`, and the first tally assertion on doc 40 (2026-11-07)
+
+**What the queue found, measured against the tree before anything was written.** §4.28 closed `VER-18` by answering
+`ODEC-02`: `packages/schema/protocol/framing.json` now declares four numbers over two floors, `protocol` and `pipe`. The
+next read of the corpus is that nothing else in it learned this. `docs/architecture/21-system-context.md` §6 justifies
+the two-process split with a schedule risk — the extension is replaced by a browser-store update, the Connector by a user
+action — and ends with a promise: the negotiation result "must be *written down* in the connector log and surfaced in
+`diagnostics.get`". That sentence is about the pipe, since the pipe is what joins the two processes; the browser-side
+window is negotiated in `connector.hello`, also over that pipe. Read against the observability vocabulary, every artefact
+that could keep the promise names one number and only one: `connector.connected` in
+`packages/schema/observability.json#/events` is `additionalProperties: false` over `protocolVersion`, `capabilities` and
+`adoptedExisting`; the `versions` entry of `#/diagnosticsSections` lists five things, one of them a version;
+`#/export/footer/fields` names `protocolVersion` once among ten; and
+`packages/schema/protocol/commands/diagnostics.get.json#/result` leaves `payload` as `type: ['object', 'null']` with no
+shape at all. `packages/schema/protocol/error-taxonomy.json#/codes` then refuses both
+floors with the same `VersionMismatch`, and its own `meaning` says outright that "today the window that is negotiated is
+the protocol one". So the contract names two outcomes and the observable surface can report one — a gap nobody had
+registered, because it is not a place where a document over-promises, it is a place where a promise has no name.
+
+**The reading's second finding: the documents state numbers no run reads.** Two of them were already wrong when this
+slice started, and both were found by measuring rather than by reading. doc 40's §3 table had carried `contract` 16
+against a register of 15 since the commit that retired `ODEC-02`, and the next commit happened to make the figure correct
+again by arriving — so the rot had survived one slice entirely unnoticed. doc 39's invariant 5 printed a count of 196
+against `packages/schema/verification.json#/marker/counted` 195, one ahead of the data. doc 39 has had a guard against
+exactly this since §4.21, and doc 40 had none, which is the asymmetry this slice removes.
+
+**What landed.** `docs/architecture/36-observability.md` gained a §14 row — the labelled anchor `VER-82` needs to exist
+somewhere — and a sixth open item in §16 whose last line names the register, which is what makes it a deferral site and
+therefore the anchor `ODEC-41` points at. `packages/schema/verification.json` gained `VER-82` (`no-code`, owner
+`contracts`, `closesBy.kind` `decision`), and `packages/schema/open-decisions.json` gained `ODEC-41` (`decidedBy`
+`contract`, blocking that one row) with three answers: a field on `connector.connected` plus the two `contains` and
+footer sentences that must follow it; a declared per-section shape for `diagnostics.get`'s `payload`; or nothing, with
+doc 21 §6's promise narrowed honestly to the protocol window. The register now has 40 entries and 61 sites in 15
+documents; the queue has 74 rows, of which 56 are `no-code` and 7 owned by `contracts`. Both stale tallies are now true,
+and doc 40's §3 prose was converted from words to digits — `14 of the 40 are 'product'`, `21 entries gate exactly 2 and
+16 gate 1` — because a number a check reads must be a number a check can parse, and house style already does this in
+doc 39. The one word tally no regex was written for, "the fifteen `contract` questions" in §1's bullet, is now `16`.
+
+**The harness grew one check, and it is the one that would have caught this slice's two defects.** `npm --prefix
+packages/schema run verify` reads doc 40 §3's kind table against `decidedBy` counts, and six sentences of doc 40's own
+prose against the data: the Purpose tally, the site-rule tally, the invariant tally, the `product` tally, the `contract`
+tally and the gating tally — the last of them computed, not stored, as the number of entries whose two `blocks` lists
+total exactly two and exactly one. It refuses a kind the vocabulary does not declare and a table that stopped naming every
+kind. It sits alongside one line added to doc 39's existing `readNumbers`: the invariant-5 count, `/The count `(\d+)` is
+an output of the harness/`, compared to the figure the run derives rather than to the one the document remembers.
+
+**The constraint that decided where the new check lives.** doc 40's §9 table is checked by an assertion that parses the
+section, takes every backticked string of twenty characters or more and refuses any that is not a label **in this run's
+own set** — the guard §4.28 added because `tools/check-doc-evidence.mjs` cannot see a label in backticks. That set is
+built as the run proceeds, so a `check()` added *below* that assertion names a label that does not exist yet at the
+moment it is compared, and the new row in §9 failed its own protection. The tally block therefore sits above it. The
+rule is worth keeping: an assertion whose subject is the set of assertion labels is a consumer of the harness's own
+output, and must run after everything it enumerates — which means the ordering inside `verify.mjs` is now load-bearing in
+a way it was not when the file only checked the protocol.
+
+**What closed, and what this slice does not claim.** Nothing closed. `VER-82` and `ODEC-41` are both live, which is the
+correct outcome for a gap whose every answer is a reserved decision: the register's own rule is that it reports what
+the corpus deferred, and a fourth reading of this file inventing a field name would be
+the register disagreeing with itself. `marker.counted` moves 195 → 196 for the one labelled sentence `VER-82` owns, in
+doc 36 §14; `citation.counted` 60 → 61 for the new site. Three things stay unclaimed: no field was added to any contract,
+so the pipe floor is still declared and projected but nowhere reported; nothing compares a frame's `v` to
+`MinPipeVersion`, which `VER-82` deliberately is not about and `VER-18`'s tombstone already says; and no record is
+written at all, since no file under `connector/**` imports a logging package and nothing emits a `connector.connected`
+frame — doc 36 §16's fifth open item, which no decision here can make true.
+
+**The site rule reached this file, and the run was right.** One sentence of the record above named the register to quote
+its own rule about what a report is, and the harness refused the corpus: 61 sites had become 62 in 16 documents, because a
+deferral site is any line that names that file, in any document, including the one whose job is to describe the slice. The
+alternative the register offers is its `notADeferral` list, which exists for lines that merely mention the file while
+listing documents — and this line was not that: it deferred nothing, so the honest fix was the four words that stop it
+naming anything. `citation.counted` therefore stayed at 61, and §4.29 is the first slice whose own record had to be
+written around a guard rather than checked by one afterwards.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks**, one more than §4.28's run and all of it
+the two tallies above. `node tools/check-doc-evidence.mjs` → green; §4.4's final ledger paragraph has the per-file
+deltas and the set it prints. `node tools/check-no-secrets.mjs` → **480 files**, unchanged, and the reason is §4.28's:
+the guard walks `git ls-files`, and this slice adds no file. `node tools/check-adr-shape.mjs` (and `--selftest`),
+`node tools/check-layout-guards.mjs` (and `--selftest`) and `node tools/check-legacy-backup.mjs` → green, untouched.
+`go -C connector test -count=1 ./...`, `gofmt -l connector` and `go -C connector vet ./...` → the same eleven `ok` lines,
+the empty list and the silence; this slice touches no Go file.
+
 ---
 
 ## 5. Verification state to the letter
@@ -2233,8 +2327,9 @@ lines, the empty list and the silence, with `internal/contract` one test richer.
   in `config_apply_test.go` — the synthetic credential value, profile id and server id in its constant block and the second
   server's id in its fixture — because Go's test convention puts a `_test.go` beside the package it tests and therefore
   outside every path the guard exempts.
-- `npm --prefix packages/schema run verify` → **green** (1222 checks: §4.28 adds two, one for the shape of the two
-  version floors and one for the freshness of the labels doc 40 §9 cites; see §4.4).
+- `npm --prefix packages/schema run verify` → **green** (1223 checks: §4.29 adds one, the assertion that reads doc 40's
+  own tallies out of its sentences; §4.28's two are the shape of the two version floors and the freshness of the labels
+  doc 40 §9 cites; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
   is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
@@ -2267,7 +2362,7 @@ lines, the empty list and the silence, with `internal/contract` one test richer.
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 541 pointers, 1513 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 562 pointers, 1537 doc-and-script
   names, 68 harness assertion labels — the fourth figure is new with §4.22 and no GitHub runner has printed it yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
@@ -2324,7 +2419,7 @@ lines, the empty list and the silence, with `internal/contract` one test richer.
 
 **#5 `packages/schema` — done.** It is now the green, re-runnable test of this iteration:
 `npm --prefix packages/schema run verify` → `OK: 13 schemas compile, 19 command docs conform, 20 examples
-valid, 24 invalid examples rejected, 112 protocol frames replayed.` (1222 checks; details and the 8 contract
+valid, 24 invalid examples rejected, 112 protocol frames replayed.` (1223 checks; details and the 8 contract
 defects the fixtures exposed are in §4.4). Every step the earlier draft of this block prescribed is
 implemented — `envelope` is in `SCHEMAS_BY_PREFIX`, the six `fixtures/protocol/*.jsonl` clear `frameCount`
 and `replayPairs`, `verify.mjs` validates each frame's `args`/`result` against the compiled per-command
@@ -2936,9 +3031,12 @@ A fifth stopped thing is not new but is newly *counted*: §4.28 closes `VER-18` 
 writing a checker, and the reading that found the route also found that the route is walled — four of the seven rows
 doc 39 §8's first step lists are named in a register entry's `blocks`, and the harness refuses a gated row's deletion
 while its question stays open. So that sentence about strings and checks needs its third clause: what remains is
-stopped by a decision, by a binary this host does not have, by a browser, or by a gate that only an answer opens. The
-corpus is 195 labelled lines over 43 documents, the queue is 73 rows with eight tombstones, and the register is 39
-questions with one retirement — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+stopped by a decision, by a binary this host does not have, by a browser, or by a gate that only an answer opens. A
+sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped contract against itself: §4.29 registers
+`ODEC-41`, the pipe half of the negotiation `ODEC-02` wrote floors for but nobody wrote a field, and with it `VER-82` —
+so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. The
+corpus is 196 labelled lines over 43 documents, the queue is 74 rows with eight tombstones, and the register is 40
+questions over 61 sites with one retirement — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file.

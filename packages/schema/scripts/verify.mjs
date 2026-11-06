@@ -3650,15 +3650,15 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 55 && count('state', 'no-check') === 5 && count('state', 'no-run') === 6 &&
-      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 73,
+    count('state', 'no-code') === 56 && count('state', 'no-check') === 5 && count('state', 'no-run') === 6 &&
+      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 74,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
   );
   check(
     count('owner', 'connector') === 39 && count('owner', 'extension') === 11 && count('owner', 'packages') === 3 &&
-      count('owner', 'ui') === 3 && count('owner', 'contracts') === 6 && count('owner', 'tools') === 2 &&
+      count('owner', 'ui') === 3 && count('owner', 'contracts') === 7 && count('owner', 'tools') === 2 &&
       count('owner', 'ci') === 4 && count('owner', 'human') === 2 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
     `connector=${count('owner', 'connector')} extension=${count('owner', 'extension')} ` +
@@ -3668,7 +3668,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   check(
     kindCount('live-row') === 39 && kindCount('new-live-row') === 1 && kindCount('assertion') === 17 &&
       kindCount('gate') === 3 && kindCount('tool') === 2 && kindCount('ci-step') === 3 &&
-      kindCount('decision') === 5 && kindCount('external-measurement') === 3,
+      kindCount('decision') === 6 && kindCount('external-measurement') === 3,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',
     `live=${kindCount('live-row')} new-live=${kindCount('new-live-row')} assertion=${kindCount('assertion')} ` +
       `gate=${kindCount('gate')} tool=${kindCount('tool')} ci=${kindCount('ci-step')} ` +
@@ -3720,6 +3720,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       }
     };
     readNumbers('the deferral count', /the (\d+) deferrals the corpus says exist/g, [verif.marker.counted]);
+    readNumbers('the invariant-5 count', /The count `(\d+)` is an output of the harness/g, [derived]);
     readNumbers('the `N of M rows are no-code` sentence', /(\d+) of (\d+) rows are `no-code`/g,
       [count('state', 'no-code'), total]);
     readNumbers('the `N of M rows close by executing an existing live row` sentence',
@@ -3970,6 +3971,45 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       'the register document is a list of questions, not a source of deferred verification claims of its own',
       'doc 40 carries a `Verified:` label; the queue in verification.json owns those, and this document is not in it',
     );
+    // The register's own tallies, read out of the document that states them. doc 39 §11 has had this since it
+    // caught three stale distributions; doc 40 had not, and its §3 table said `contract` 16 against a data of 15
+    // from the commit that retired `ODEC-02` until the next one happened to make the number right again.
+    const sec3 = text.split(/^## 3\. /m)[1]?.split(/^## 4\./m)[0] ?? '';
+    const gaps = [];
+    const byKind = (k) => odec.register.filter((e) => e.decidedBy === k).length;
+    const kindsIn = [...sec3.matchAll(/^\| `([a-z-]+)` \| (\d+) \|/gm)];
+    if (kindsIn.length !== odec.decidedBy.values.length) {
+      gaps.push(`§3's table names ${kindsIn.length} kinds; the vocabulary declares ${odec.decidedBy.values.length}`);
+    }
+    for (const [, kind, n] of kindsIn) {
+      if (!odec.decidedBy.values.includes(kind)) gaps.push(`§3's table names ${kind}, the vocabulary does not`);
+      else if (Number(n) !== byKind(kind)) gaps.push(`§3's table says ${n} ${kind} questions; the data says ${byKind(kind)}`);
+    }
+    const siteDocs = new Set([...deferralSites.keys()].map((k) => k.slice(0, k.lastIndexOf(':'))));
+    const gatedBy = (m) => odec.register.filter((e) => e.blocks.verification.length + e.blocks.compatibility.length === m).length;
+    const readTally = (label, re, expected) => {
+      const found = [...text.matchAll(re)];
+      if (!found.length) gaps.push(`${label}: no line in doc 40 states it in numbers`);
+      for (const f of found) {
+        f.slice(1).forEach((g, i) => {
+          if (Number(g) !== expected[i]) gaps.push(`${label}: doc 40 says ${g}, the data says ${expected[i]}`);
+        });
+      }
+    };
+    readTally('the Purpose tally', /Purpose: (\d+) deferral sites in (\d+) documents/g, [deferralSites.size, siteDocs.size]);
+    readTally('the site-rule tally', /The result is (\d+) sites/g, [deferralSites.size]);
+    readTally('the invariant tally', /(\d+) questions, (\d+) sites, one owner per site/g, [odec.register.length, deferralSites.size]);
+    readTally('the `product` tally', /(\d+) of the (\d+) are `product`/g, [byKind('product'), odec.register.length]);
+    readTally('the `contract` tally', /(\d+) `contract` questions look different/g, [byKind('contract')]);
+    readTally('the gating tally', /(\d+) entries gate exactly (\d+) and (\d+) gate (\d+)/g,
+      [gatedBy(2), 2, gatedBy(1), 1]);
+    check(
+      gaps.length === 0,
+      'doc 40 reads aloud the register tallies the data has, and this check reads them out of the document',
+      gaps.join('; ') ||
+        `${kindsIn.length} kinds, ${odec.register.length} questions, ${deferralSites.size} sites in ${siteDocs.size} documents agree`,
+    );
+
     // §9 of doc 40 cites its labels in backticks, where tools/check-doc-evidence.mjs cannot see them, so a
     // question answered in the register would otherwise leave this run pointing at an assertion that stopped
     // existing -- the same rot doc 39 §11 refuses, one document down.
