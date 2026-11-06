@@ -1,6 +1,6 @@
 # 39 — The queue: every claim this repository makes that nothing checks, and the artefact that closes it
 
-> Purpose: 203 lines across 44 documents say `Verified: NO — deferred to Phase 2`. `docs/adr/0001-adr-practice.md`
+> Purpose: 202 lines across 44 documents say `Verified: NO — deferred to Phase 2`. `docs/adr/0001-adr-practice.md`
 > rule 9 put the label there; `docs/adr/README.md` step 4 makes it the only honest alternative to naming a check;
 > `docs/audit/00-scope-and-method.md` requires it of every `UNVERIFIED` finding it hands forward;
 > `docs/architecture/20-target-repository-layout.md` §13 makes this document the owner of every one of them and
@@ -55,7 +55,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
 
 | # | Question a document could not answer itself | Answered by |
 |---|---|---|
-| 1 | Who owns the 203 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
+| 1 | Who owns the 202 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
 | 2 | Is a deferral the same thing as unfinished work? | No: §4 splits it five ways; the split *is* the useful content |
 | 3 | Can a document claim a check exists when it does not? | §6 — anchors resolve or the run fails |
 | 4 | Can one obligation be counted twice, so the queue looks shorter than it is? | §6 — the same partition check refuses it |
@@ -95,16 +95,17 @@ would have to be re-derived from the design, which is how a verification matrix 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
 | `no-code` | 55 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
-| `no-check` | 10 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
+| `no-check` | 9 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
 | `no-run` | 6 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 2 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 5 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **55 of 78 rows are `no-code`**: this iteration's claims are overwhelmingly
-blocked on the Connector, the compiler and the UI existing, not on tests being clever. 10 `no-check` rows are the
-part that could be closed *before* Phase 2 writes a line of product code — `VER-01`, `VER-04`, `VER-05`, `VER-07`,
+The distribution is the finding. **55 of 77 rows are `no-code`**: this iteration's claims are overwhelmingly
+blocked on the Connector, the compiler and the UI existing, not on tests being clever. 9 `no-check` rows are the
+part that could be closed *before* Phase 2 writes a line of product code — `VER-04`, `VER-05`, `VER-07`,
 `VER-56` and `VER-58` are guards over files already on disk; `VER-19` and `VER-66` need one example file each, and
-`VER-18` and `VER-20` one contract field. Three of this column — `VER-06`, `VER-08`, `VER-10` — closed on 2026-11-06.
+`VER-18` and `VER-20` one contract field. Four of this column — `VER-01`, `VER-06`, `VER-08`, `VER-10` — closed on
+2026-11-06.
 
 That ordering is not advice; it is what the states say.
 
@@ -112,15 +113,15 @@ That ordering is not advice; it is what the states say.
 
 ## 5. Nine owners, eight closing mechanisms
 
-`owners` — who can close the row: `connector` 39, `extension` 11, `contracts` 7, `tools` 6, `ci` 4, `packages` 3,
+`owners` — who can close the row: `connector` 39, `extension` 11, `contracts` 7, `tools` 5, `ci` 4, `packages` 3,
 `ui` 3, `external` 3, `human` 2.
 
-`closingKinds` — with what: `live-row` 39, `assertion` 18, `tool` 6, `gate` 3, `ci-step` 3,
+`closingKinds` — with what: `live-row` 39, `assertion` 18, `tool` 5, `gate` 3, `ci-step` 3,
 `external-measurement` 3, `decision` 5, `new-live-row` 1.
 
 Three consequences worth stating out loud:
 
-- **39 of 78 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **39 of 77 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -158,10 +159,10 @@ The harness then refuses three failures no prose review can see:
 | one line claimed by two rows | both rows read correctly, and the queue is a lie about its length | `no deferred claim is counted as owned by two rows, or by a row and the vocabulary` |
 | a row deleted so its obligation disappears with it | the queue gets shorter and nobody can say which claim it lost | `every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it` |
 
-Plus the exact-partition assertion: rows (153) + vocabulary (26) + inherited live rows (24) = 203 = the number the
+Plus the exact-partition assertion: rows (152) + vocabulary (26) + inherited live rows (24) = 202 = the number the
 corpus is re-read to, which `marker.counted` declares and the run compares. An unowned line is unowned work. A
-stale anchor is finished work nobody deleted. A double claim is the queue lying about its own size — and 153 of
-these claims come from 38 documents, 18 of which carry more than one, so the arithmetic cannot be done
+stale anchor is finished work nobody deleted. A double claim is the queue lying about its own size — and 152 of
+these claims come from 37 documents, 18 of which carry more than one, so the arithmetic cannot be done
 by eye.
 
 The **vocabulary** list is the fourth thing: 26 lines carry the label because they *define* it — the rule in
@@ -200,11 +201,14 @@ The queue adds nothing to the live matrix and takes nothing from it. Environment
 
 Not a schedule — a dependency graph the states impose:
 
-1. **`VER-01`, `VER-04`, `VER-05`, `VER-07`, `VER-56`, `VER-58`, `VER-71`, `VER-18`, `VER-66`, `VER-19`** close
+1. **`VER-04`, `VER-05`, `VER-07`, `VER-56`, `VER-58`, `VER-71`, `VER-18`, `VER-66`, `VER-19`** close
    before any product code exists. They are guards over files already on disk and two contract additions. They are
-   the queue's own integrity, and they are why the rest of this list can be trusted later. Three rows of this first
-   step — `VER-06`, `VER-08`, `VER-10` — closed on 2026-11-06, their steps having gone green on the runner; `VER-11`
-   did not, because its own record keeps the half a run cannot give it while no lockfile is tracked.
+   the queue's own integrity, and they are why the rest of this list can be trusted later. Four rows of this first
+   step — `VER-01`, `VER-06`, `VER-08`, `VER-10` — closed on 2026-11-06. The last three went with their steps green
+   on the runner; `VER-01` went with its checks green on the runner as inline shell and, in the same commit, gathered
+   into `tools/check-adr-shape.mjs` — a script the line bound and the index's own cells had been waiting for, which
+   no pipeline has executed yet and the next run of this workflow will. `VER-11` did not close, because its own
+   record keeps the half a run cannot give it while no lockfile is tracked.
 2. **`LIVE-04` is the gate.** Promotion rule 2 of the live matrix makes egress proof a precondition of
    `LIVE-05…LIVE-09`. `VER-27`, `VER-32` and `VER-68` close by executing `LIVE-04` itself, and `VER-50` hangs on
    `LIVE-05` — behind the gate twice. Until an egress IP equals the VPS IP, no transport row may be reported,
@@ -232,8 +236,8 @@ Not a schedule — a dependency graph the states impose:
    `VER-80` are connector rows, `VER-54` and `VER-61` are `needs-human`. What does not exist here is a place to put the
    answer, not the code that would compute it.
 
-The queue does not pretend this is fast. It is the reason the queue exists: 78 named obligations with 39 of them
-pointing at one executable matrix is a plan; the same 78 as 203 scattered phrases is a mood.
+The queue does not pretend this is fast. It is the reason the queue exists: 77 named obligations with 39 of them
+pointing at one executable matrix is a plan; the same 77 as 202 scattered phrases is a mood.
 
 ---
 
@@ -254,7 +258,7 @@ pointing at one executable matrix is a plan; the same 78 as 203 scattered phrase
 
 ## 10. The queue
 
-78 rows, grouped by state; the three ids this queue has closed are in `packages/schema/verification.json#/retired`,
+77 rows, grouped by state; the four ids this queue has closed are in `packages/schema/verification.json#/retired`,
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
@@ -318,11 +322,10 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-80 | the `config.apply` path from a frame to a replaced config and a restarted Core has no production caller: the method is not registered, and nothing supplies the intent an ids-only call cannot carry | `connector` · decision (`ODEC-39`) | 1 · 1 |
 | VER-81 | the format an `auto` parse resolves to has nowhere to be recorded: doc 29 §5 promises `auto` never survives into a stored source, and no contract field carries the detector that won | `contracts` · decision (`ODEC-40`) | 1 · 1 |
 
-### `no-check` — 10
+### `no-check` — 9
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
-| VER-01 | no script checks the ADR index, one heading per file, the six sections, or the 60-140 line bound | `tools` · tool | 1 · 1 |
 | VER-04 | nothing prevents a root `package.json`, `go.work` or `.npmrc` from appearing | `tools` · tool | 2 · 3 |
 | VER-05 | nothing asserts the eleven coupled legacy files and six legacy directories still sit at their cited paths | `tools` · tool | 1 · 2 |
 | VER-07 | `grunt watch` scope over the new roots is unguarded | `tools` · tool | 1 · 1 |
@@ -361,12 +364,13 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-61 | whether the Connector owns subscriptions end to end is undecided, so the boundary that follows from the answer cannot be asserted | `human` · decision (`ODEC-33`) | 1 · 1 |
 | VER-74 | `COMP-07`, `COMP-10`, `COMP-14`, `COMP-18` — browser floor, cohort count, envelope sizes, `unlimitedStorage` ceiling | `external` · external-measurement | 3 · 3 |
 
-### Retired — 3
+### Retired — 4
 
-Closed on 2026-11-06, in the first deletion this queue has ever performed. The id stays retired: §9 rule 8.
+Closed on 2026-11-06, in the first deletions this queue has ever performed. The id stays retired: §9 rule 8.
 
 | Row | What it claimed was unchecked | What closed it |
 |---|---|---|
+| VER-01 | no script checked the ADR index, the one-heading rule, the six sections or the 60-140 line bound | `tools/check-adr-shape.mjs` — ADR-0001 rules 1-4, 10 and 11 over `docs/adr`, with a `--selftest` that injects one defect per rule and refuses each — and the `VER-01` step of `.github/workflows/verify.yml` that runs it; the same checks ran on all three runner images as inline shell since 2026-11-05, and the shell became this script rather than stay a second copy of the rule |
 | VER-06 | the commit-shape rules were review-only | the `VER-06` step of `.github/workflows/verify.yml` — label, `CUT-OVER:` scope, one cut-over per range — green on the `contracts` cells of every recorded run since `a7627ae` stated the vocabulary that step enforces |
 | VER-08 | no assertion inspected an artifact's contents, and nothing enforced 'no binary in a tracked path' | the magic-byte scan of every tracked file and the `check_zip` of the `legacy-chain` job, green on all three runner images since `ceedabf` — the uncompressed total is a printed NOTE, not a floor — plus the `.gitattributes` executable suffixes ADR-0019 rule 1 asked for |
 | VER-10 | `.gitattributes` declared line endings and binary classes that nothing checked | the `VER-10` step of `.github/workflows/verify.yml` — `git diff --check` over the range, `git ls-files --eol` over the index — green on all three runner images |
@@ -398,7 +402,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-81` beyond the contract layer — 78 live, 3 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-81` beyond the contract layer — 77 live, 4 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 
@@ -424,7 +428,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 2. A row is closed by its artefact, and closing deletes the row in the same commit.
 3. Nothing in this document or its data asserts that a check ran. `no-run` is a state, not a result.
 4. The live matrix owns the live rows; this document owns what the rest of the corpus owes them.
-5. The count `203` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
+5. The count `202` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
    when a row is honestly closed. Nothing outside `packages/schema/verification.json#/marker/counted` may depend on it.
 6. This document's §11 table is checked by an assertion whose label is `"every mechanism doc 39 names is a check
    this run actually makes"` — it lives outside the table so it cannot certify itself.
@@ -460,14 +464,26 @@ tombstone per closed row -- the date, what the row claimed, and the artefact tha
 the dense-id check is `"every VER id the queue ever issued is live or retired, no id is recycled, and a retired one
 says what it was and what closed it"`, and it is the reason §9 rule 2 could be obeyed here at all: the row leaves, the
 record stays, and a deletion becomes a named fact.
+A fifth amendment the same day, and the first row closed by a tool rather than by a run: `VER-01` is gone from
+`matrix` and is the first tombstone in `#/retired`, `marker.counted` moves 203 → 202 for the one labelled sentence
+`docs/adr/0001-adr-practice.md` ## Verification lost, and the distribution §4 and §5 read aloud moves with it
+(`no-check` 10 → 9, `tools` 6 → 5, `tool` 6 → 5, 78 rows → 77). What makes it different from the three above is the
+evidence: the checks it names already ran, as two inline shell steps of `.github/workflows/verify.yml`, on every
+runner image since 2026-11-05 — the row was not waiting for a pipeline, it was waiting for a script, and the bound
+it named (rule 11's 60-140 lines) and the index's own `Status` and `Date` cells had no checker at all until
+`tools/check-adr-shape.mjs`. The shell is gone instead of staying beside the script: two statements of one rule is
+the failure ADR-0001 was written to prevent. What this closure does not claim is a runner execution of the script
+itself; the next run of the workflow is that, and a push is confirmed each time.
 
 **Open items.**
 
 1. 18 rows promise a named assertion. 13 of them can only be written once the code they test exists; `VER-18`,
    `VER-20` and `VER-71` promise an assertion over a contract already on disk, and `VER-19` and `VER-66` need one
-   fixture file each. Six more (`VER-01`, `VER-04`, `VER-05`, `VER-07`, `VER-56`, `VER-58`) promise a guard under
-   `tools/` over files already on disk. Those nine are the rows a Phase-2 commit can delete without writing a line
-   of product code.
+   fixture file each. Five more (`VER-04`, `VER-05`, `VER-07`, `VER-56`, `VER-58`) promise a guard under
+   `tools/` over files already on disk — `VER-01` was the sixth and closed on 2026-11-06 with
+   `tools/check-adr-shape.mjs`. Those ten — three assertions, two fixtures, five guards — are the rows a Phase-2
+   commit can delete without writing a line of product code. This item counted them as nine until that same day,
+   which was an arithmetic slip and not a row that had already left: the list has been ten since it was written.
 2. `VER-65` needs a new live row, which means `docs/verification/live-matrix.md` gains `LIVE-25` — at which point
    §7's dense-id assertion must be amended in the same commit, deliberately, rather than allowed to drift.
 3. `VER-09` and `VER-74` cannot be closed in-repo at all; they are the two places where this queue's answer is
@@ -493,7 +509,9 @@ record stays, and a deletion becomes a named fact.
    lockfile that `.gitignore:3` refuses to track, and a run over an absent artefact is not that artefact.
    `VER-02` and `VER-03` ran over roots that hold no code yet; `VER-04` and `VER-05` are queued against a
    `check-layout-guards` tool that has not been written; `VER-57` names a CSP load test the workflow does not
-   contain. The same reading applies to the sentences in `docs/architecture/20-target-repository-layout.md` §7 and §8
+   contain. `VER-01` was the one row of that group whose run did not need to be waited for: its checks were
+   already shell steps of the workflow and green on every image, and the row named a script rather than a
+   pipeline, so it closed when the script arrived (§13's fifth amendment). The same reading applies to the sentences in `docs/architecture/20-target-repository-layout.md` §7 and §8
    whose deferral explains that no checker or guard exists yet for the import boundary or the bare root: the scan and
    the guard are steps of that workflow and they are green on a runner, and the deferral is still honest for the
    different reason each row now gives — an empty `nexora/**`, and an unwritten tool.

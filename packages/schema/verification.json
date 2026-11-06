@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 203
+    "counted": 202
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -108,6 +108,12 @@
     "rule": "A row closes by deletion -- §9 rule 2 of docs/architecture/39-verification-matrix.md forbids closing it by editing its state -- and the id it held retires here. Ids are never renumbered or recycled: that is ADR-0001 rule 2 for ADR numbers, and the queue takes it because a `VER-NN` is cited across the corpus, in the step names of .github/workflows/verify.yml, and verbatim in runner logs, so renumbering would silently change what every earlier citation means. The harness refuses an id that is both live and retired, a retired id that is not in the issued range, and any hole in that range this list does not name -- which is what keeps a deletion a declared closure rather than a disappearance.",
     "rows": [
       {
+        "id": "VER-01",
+        "closed": "2026-11-06",
+        "was": "no script checks the ADR index, the one-heading-per-file rule, the six section headings or the 60-140 line bound",
+        "artefact": "tools/check-adr-shape.mjs -- ADR-0001 rules 1-4, 10 and 11 over docs/adr, including the 60-140 line bound and the index's own Status and Date cells, which the two inline shell steps it replaced did not read, plus a --selftest that injects one defect per rule and refuses each; it is the `VER-01` step of .github/workflows/verify.yml and is green here on the 20 records on disk, where these same checks went green on all three runner images since 2026-11-05 as shell; the labelled sentence it anchored became a `Verified: YES` in docs/adr/0001-adr-practice.md ## Verification"
+      },
+      {
         "id": "VER-06",
         "closed": "2026-11-06",
         "was": "the commit-shape rules (one concern per commit, conventional label, no drive-by edit) are review-only",
@@ -128,15 +134,6 @@
     ]
   },
   "matrix": [
-    {
-      "id": "VER-01",
-      "subject": "no script checks the ADR index, the one-heading-per-file rule, the six section headings or the 60-140 line bound",
-      "state": "no-check",
-      "owner": "tools",
-      "closesBy": { "kind": "tool", "ref": "tools/check-adr-shape.mjs" },
-      "at": [{ "doc": "docs/adr/0001-adr-practice.md", "anchor": "Verified: NO — deferred to Phase 2 (planned as steps in `.github/workf" }],
-      "why": "ADR-0001 is append-only by construction, so a broken index is invisible until someone reads 20 files; the rule that names the check has no checker."
-    },
     {
       "id": "VER-02",
       "subject": "the import boundary -- nothing under `nexora/**` or `packages/**` may import from `omega-*` -- is asserted by nothing",

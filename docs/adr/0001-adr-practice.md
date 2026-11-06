@@ -92,9 +92,14 @@ continuation log and a pointer, not the source of a decision).
 ## Verification
 
 Checks running today: `node tools/check-doc-evidence.mjs` validates rules 7's citation half across
-`docs/**`; `npm --prefix packages/schema run verify` (504 checks) is the model for rule 9's "name the check".
-`docs/adr/README.md` index parity, the 60-140 line bound and the section-sequence check have no script in
-this tree.
+`docs/**`; `npm --prefix packages/schema run verify` (1 220 checks) is the model for rule 9's "name the check".
+`node tools/check-adr-shape.mjs` checks this rule set over the directory: rule 1's filename shape, rule 2's
+sequential append-only numbering with no repeat, rule 3's one H1 and the six-section sequence, rule 4's status
+vocabulary, rule 10's index parity including the Status and Date cells, and rule 11's 60-140 line bound. The
+workflow runs it as its `VER-01` step, after that script's own `--selftest` injects one defect per rule and
+refuses each — the standard `tools/check-no-secrets.mjs` is held to.
 
-Verified: NO — deferred to Phase 2 (planned as steps in `.github/workflows/verify.yml`: index lists exactly
-the files present, one `# ADR-NNNN:` heading per file, six section headings present, no duplicate number).
+Verified: YES — rules 1-4, 10 and 11 have a checker; `VER-01` closed on 2026-11-06 and is in
+`packages/schema/verification.json#/retired`. Two facts this record cannot itself prove stay with the runner: the
+same checks ran there as inline shell on every image since 2026-11-05, and the script that now carries them has
+not yet been executed by a pipeline, because a push to this repository is confirmed each time and none was given.

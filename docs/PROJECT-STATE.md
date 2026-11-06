@@ -197,8 +197,8 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `203` labelled lines over `44` documents partitioned into `78` live rows — the issued range is still
-`VER-01…VER-81`, and `3` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+The queue is `202` labelled lines over `44` documents partitioned into `77` live rows — the issued range is still
+`VER-01…VER-81`, and `4` of those ids now sit in `verification.json#/retired` — `26` vocabulary
 sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
 sites over `14` documents partitioned into `40` entries `ODEC-01…ODEC-40`, each naming who can answer it
 (`product` 14, `contract` 16, `adr` 6, `measurement` 2, `upstream` 2), three options — thirty-seven of the forty,
@@ -436,6 +436,17 @@ file the corpus addresses by section, and the ledger is a JSON pointer. What the
 the harness still runs exactly 1220 checks, so the dense-range assertion left and the issued-once assertion arrived in
 the same edit, and no label in the corpus now names a check that stopped existing — the guard that reads that claim
 aloud is the one §4.21 added.
+§4.26 moves the set a twenty-third time, and the minus sign is in the first figure again — **2311 / 537 / 1491**, 68
+labels, measured after this paragraph was written, so the paragraph reports the set the tool prints rather than the set
+its own sentences produced. Per file against a clean `git archive` of the commit before: this file `-1 / +2 / +8` — the
+two names this paragraph adds are inside that `+8` — `docs/adr/0001-adr-practice.md`
+`0 / +1 / 0` for the ledger pointer its new `Verified: YES` carries, and doc 39 `0 / 0 / +5`, four of them the new script
+cited by name. The single subtraction is the line number §6 #7 used to carry into that ADR — the file is rewritten in
+place, the citation rule says cite it by section, and this slice is the one that finally took its own advice. What the
+`+13` names measure is the shape of a closure by tool rather than by run: a row that closes because a file now exists is
+a slice whose evidence is the names of files, not addresses inside them, and the one address it does add is a JSON
+pointer into the ledger. The fourth figure did not move, and the reason is the arithmetic §4.25 gives for the same
+silence — the harness gained no check and lost none, it re-listed four distributions.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -1905,7 +1916,7 @@ what the scan proves on every run.
 
 **The collision, and what it cost to resolve honestly.** §9 rule 2 of doc 39 says a row closes by deletion, because this
 queue has no state meaning closed. It did not say what happens to the id. The harness had an assertion that the range is
-dense — `VER-01`…`VER-NN`, no hole, no duplicate — and three honest deletions leave two holes and a length that no
+dense — `VER-01`…`VER-NN`, no hole, no duplicate — and three honest deletions leave three holes and a length that no
 longer reaches its own highest number. The alternative was to renumber: shift `VER-07`…`VER-81` down and keep the
 arithmetic pretty. That was rejected on measurement rather than on taste. These ids appear in the step titles of
 `.github/workflows/verify.yml`, which GitHub has already printed in the logs of ten runs, and the baseline report quotes
@@ -1931,6 +1942,62 @@ every citation resolved and no label cited that the harness no longer makes. `no
 **478 files**, no file added: `.gitattributes` grew eleven lines and no bytes of any other kind.
 `go -C connector test -count=1 ./...`, `gofmt -l connector` and `go -C connector vet ./...` → the eleven `ok` lines,
 the empty list and the silence §4.24 reported, because this slice is corpus, not Go.
+
+---
+
+### 4.26 The first row closed by a script rather than by a run — `VER-01`, and `tools/check-adr-shape.mjs` (2026-11-06)
+
+**What the row claimed, measured against the tree before anything was written.** `VER-01` said no script checks the ADR
+index, the one-heading-per-file rule, the six section headings or the 60-140 line bound. Three of those four were already
+checked — by two inline shell steps of `.github/workflows/verify.yml`, green on all three runner images since 2026-11-05,
+which §6's own record of task #7 says in the same breath as it says the ADR still calls them planned. What did not exist
+was the artefact the row names as its closer, a script under `tools/`; the 60-140 bound, which nothing read; the index's
+`Status` and `Date` cells, which the shell compared by filename only; and any way to check any of it without a runner.
+So this row was not waiting for a pipeline. It was waiting for a file — which is why doc 39 §8's first step could be
+worked through in this order at all.
+
+**What landed.** `tools/check-adr-shape.mjs`, 316 lines, over ADR-0001 rules 1, 2, 3, 4, 10 and 11: the filename grammar
+and a numbering that must be exactly `0001`…`00NN` with no hole and no repeat; one `# ` heading per record and that
+heading carrying its own file's number; the six `## ` sections in the one legal order, extras refused as firmly as
+omissions; `Status:` and `Date:` above the first section, inside rule 4's vocabulary, with a `Superseded by ADR-NNNN`
+that has to land on a record that exists; every record between 60 and 140 lines; and the index in `docs/adr/README.md`
+naming exactly the records on disk, with `Status` and `Date` agreeing with the files themselves. It ends with a
+`--selftest`: 10 record cases and 5 index cases, each a clean synthetic record with one defect injected, so the gate
+proves it bites before it is trusted to be quiet — the standard `tools/check-no-secrets.mjs` sets and
+`tools/check-legacy-backup.mjs` follows. Both halves run in CI and both are green here on the 20 records on disk, the
+shortest 102 lines and the longest 140, exactly at the bound rule 11 states.
+
+**The shell went rather than stayed beside the script.** 64 lines of workflow became 11, one rule now stated once, in
+one language, in a file that can be run before a commit rather than only after a push. Keeping both would have given the
+same obligation two owners and one of them a copy nobody edits, which is the failure mode ADR-0001 §Context lists as its
+third reason for existing. The step that replaced them is named for the row it closes — `VER-01 -- the ADR set has the
+shape ADR-0001 defines (rules 1-3, 10, 11)` — because §9 rule 8 of doc 39 says an issued id is an address, and the
+address now points at the script instead of at the two lines that used to be its only executor.
+
+**What closed, and what this closure does not claim.** `marker.counted` moves 203 → 202 for the one labelled sentence
+`docs/adr/0001-adr-practice.md` ## Verification lost — it reads `Verified: YES` now, and its "(504 checks)" figure, last
+true in Phase 1, reads 1 220; that record grew 100 → 105 lines, inside the bound the new script enforces on it for the
+first time. The queue is 77 rows, `no-check` 10 → 9, the `tools` owner 6 → 5, the `tool` mechanism 6 → 5, and doc 39 §4,
+§5, §6, §8, §10, §11 and §13 moved with them, `#/retired` gaining its fourth tombstone and its Retired table its fourth
+row. What is *not* claimed anywhere in this paragraph is a runner execution of the script: the checks have run on
+GitHub, as shell, and the next run of the workflow is the first that executes the file. That distinction is in the
+tombstone, in doc 39 §8 and §13, and in this sentence, because a closure whose evidence is a local green run has to say
+so or it is the thing §9 rule 5 was written against.
+
+**The number a bullet miscounts.** doc 39 §13's first open item listed the rows closable without product code as
+"those nine" while naming eleven of them — three contract assertions, two fixtures, six tool guards, one of which is now
+closed, leaving ten and a sentence that reads correctly for the first time as "those ten". Registered rather than
+silently fixed, because the corpus's own rule is that an arithmetic claim states what it counts: the list was ten, the
+bullet said nine, and neither number moved when the row did.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1220 checks**, four of them distributions this slice
+moved. `node tools/check-adr-shape.mjs --selftest` and `node tools/check-adr-shape.mjs` → both green, described above.
+`node tools/check-doc-evidence.mjs` → green; the workflow's `:31-33` citation still lands on the concurrency block the
+53-line shrink of that file sits below, which is the reason the header comment was re-flowed to eight lines rather than
+rewritten freely. `node tools/check-no-secrets.mjs` → **479 files**, one more than §4.25 reported: the new script is the
+only content added to the tree and it is source, not bytes. `go -C connector test -count=1 ./...`, `gofmt -l connector`
+and `go -C connector vet ./...` → the eleven `ok` lines, the empty list and the silence, unchanged: this slice touches no
+Go file.
 
 ---
 
@@ -2016,7 +2083,7 @@ the empty list and the silence §4.24 reported, because this slice is corpus, no
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2312 `path:line`, 534 pointers, 1478 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 537 pointers, 1491 doc-and-script
   names, 68 harness assertion labels — the fourth figure is new with §4.22 and no GitHub runner has printed it yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
@@ -2028,6 +2095,12 @@ the empty list and the silence §4.24 reported, because this slice is corpus, no
   `node tools/check-legacy-backup.mjs` → **green** (`--selftest` 4/4).
   `node tools/verify-vendor.mjs` runs against the
   working tree.
+- `node tools/check-adr-shape.mjs --selftest` and `node tools/check-adr-shape.mjs` → **green here**: 15 injected
+  defects refused (10 record cases, 5 index cases) and 20 records plus one index passing, the shortest record 102 lines
+  and the longest exactly at rule 11's 140. No runner has printed these two lines yet — the file arrived on 2026-11-06
+  and the push that would show it asks for its confirmation each time — while the checks themselves have run there since
+  2026-11-05 as the two shell steps §4.26 replaces. It is the `VER-01` step of the workflow bullet below, and `VER-01` is
+  in `verification.json#/retired`.
 - `.github/workflows/verify.yml` → **written, step-verified here, and run on GitHub runners since 2026-11-05 —
   §12 tabulates ten of those runs: three red, six times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). What the green runs answered is the question
   §4.5 and `docs/audit/02-toolchain-decay-and-risk.md` §7.3 used to leave open — a clean image can install and build
@@ -2043,6 +2116,9 @@ the empty list and the silence §4.24 reported, because this slice is corpus, no
   a status edit in this file. §4.25 is that commit, and the three rows whose condition these runs met are gone from the
   queue — `VER-06`, `VER-08` and `VER-10`, retired in `packages/schema/verification.json#/retired` rather than
   renumbered, because a `VER-NN` is an address the corpus, the CI step names and the runner logs have already used.
+  §4.26 is the second such commit and the first whose closer is a file rather than a run: `VER-01` is the fourth id in
+  that ledger, retired on the day `tools/check-adr-shape.mjs` arrived, with the runner half of its evidence still owed
+  to the next execution of this workflow and said so in the tombstone.
 
 ---
 
@@ -2070,12 +2146,13 @@ and the SEC-1 code fix).
 **#7 `docs/adr/0001-0020` — done.** Format fixed by 0001 (`Status/Date/Context/Decision/Consequences/Alternatives
 considered/Evidence/Verification`); numbering append-only; supersession only via a new ADR, never by editing.
 Titles are in plan §3. `docs/adr/README.md` index matches the files, and the machine checks of that match plus of the
-record shape ADR-0001 rules 1-3 require are two steps of `.github/workflows/verify.yml` —
-"The ADR index lists exactly the ADR files on disk" and "Each ADR has the shape ADR-0001 defines" — which print
-`OK: the index matches 20 ADR files, exactly.` and `OK: 20 ADR records each carry their number, …` when run here, and
-printed the same two lines on each of the three runner images on 2026-11-05
-(`docs/audit/99-baseline-report.md` §12). `docs/adr/0001-adr-practice.md:99` still calls them planned; that line is now
-`docs/architecture/39-verification-matrix.md` §13's item 6, not a gap.
+record shape ADR-0001 rules 1-3 require live in one script, `tools/check-adr-shape.mjs`, which the `VER-01` step of
+`.github/workflows/verify.yml` runs after its own `--selftest`; they lived in that workflow as two inline shell steps —
+"The ADR index lists exactly the ADR files on disk" and "Each ADR has the shape ADR-0001 defines" — which printed
+`OK: the index matches 20 ADR files, exactly.` and `OK: 20 ADR records each carry their number, …` on each of the three
+runner images on 2026-11-05 (`docs/audit/99-baseline-report.md` §12) and are the reason §4.26 could close the row on
+checks that had already run rather than on a check that had only just been written. The ADR's own `## Verification`
+section no longer calls them planned: it names the script, and `VER-01` is in `packages/schema/verification.json#/retired`.
 
 **#8 `docs/architecture/20-40` — done: 20 to 40 are on disk.** `26-command-surface.md` names **exactly** the
 19 allowlist methods and the cross-check is a live assertion, not the `DEFERRED:` note the earlier draft
@@ -2084,8 +2161,9 @@ SHOULD/MAY`, `Status:` header, `Trace: ADR-…; Contract: packages/schema/…` f
 document asserts behaviour nothing checks — otherwise it gets a `39-verification-matrix.md` row with
 `Verified: NO — deferred to Phase 2`.
 
-`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `204`
-deferral labels over `44` documents are partitioned, on every run, into `77` rows, `26` sentences that define the
+`39-verification-matrix.md` + `packages/schema/verification.json` are that rule's endgame: the corpus's `202`
+deferral labels over `44` documents are partitioned, on every run, into the `152` lines `77` rows own, `26` sentences
+that define the
 label and `24` live rows the matrix owns — so a new deferral with no row, a row whose anchor moved, a row re-labelled
 instead of closed, or a document reading a distribution the data does not have, all fail the build. Writing it also
 caught seven citations that pointed at a live row which does not test the claim: `LIVE-08`→`LIVE-13` for the
@@ -2265,6 +2343,10 @@ place, and neither is a status edit:
    because the half its subject still owes is a lockfile and `package-lock.json` is untracked by design (§9.2).
    `VER-02`/`03` stay (they scanned roots that hold no code yet), and `VER-04`/`05` stay queued against a
    `check-layout-guards` tool that has not been written.
+   The same bookkeeping ran a second time the next sitting, one row at a time and with a different kind of evidence:
+   **§4.26 closes `VER-01`**, whose closer was a file rather than a run — `tools/check-adr-shape.mjs`, the artefact the
+   row's own `closesBy` names. The ledger has four ids, the queue is 77 rows, `marker.counted` moved 203 → 202, and doc
+   39 §8's first step is nine rows wide instead of the ten it listed while `VER-01` was one of them.
 2. **The browser half.** `LIVE-01…24`, unchanged and `SKIPPED`, need a person with a real Chrome, and `LIVE-14`
    needs the export that would replace the fixtures' exporter-shaped values.
 
@@ -2333,13 +2415,14 @@ written before any behaviour existed. What each next milestone has to make true:
 
 ## 7. Git rules of this session (do not improvise)
 
-- Branch: **`nexora/architecture`** at `6d222ae`. The remote is not where this bullet last left it: `git ls-remote nexora
-  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 8 — the config.apply surface
+- Branch: **`nexora/architecture`** at `4250893`. The remote is not where this bullet last left it: `git ls-remote nexora
+  master` prints `7544baa`, and `git rev-list --count nexora/master..HEAD` prints 9 — the config.apply surface
   (`293cb73`), M2's cheap tail (`d1d22bb`), the citation conversion (`31008a5`), the ledger line that recorded those
-  three (`18f1e1b`), `VER-81`'s registration (`f4cac24`) and the three ledger lines after it (`e1020b5`, `8730c7a`,
-  `6d222ae`) are committed here and unpushed, because the rule further
-  down this list asks for its own confirmation each time and none was given for these eight. A bullet written by the slice
-  it describes cannot name the sha it lands under, so the number beside it is the count at `6d222ae` rather than the
+  three (`18f1e1b`), `VER-81`'s registration (`f4cac24`), the three ledger lines after it (`e1020b5`, `8730c7a`,
+  `6d222ae`) and the commit that deleted `VER-06`, `VER-08` and `VER-10` (`4250893`) are committed here and unpushed,
+  because the rule further
+  down this list asks for its own confirmation each time and none was given for these nine. A bullet written by the slice
+  it describes cannot name the sha it lands under, so the number beside it is the count at `4250893` rather than the
   count at the commit carrying the sentence, and it widens by one with every commit after — which is why the query, and
   not the number, is the fact this bullet keeps. When this bullet was written
   the remote was at `cf7e56d`, and the push after it carried `3b7ffb2` and `7544baa` themselves; the remote's own answer,
