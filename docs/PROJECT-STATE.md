@@ -197,13 +197,14 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `196` labelled lines over `43` documents partitioned into `74` live rows — the issued range is still
-`VER-01…VER-82`, and `8` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
-sites over `15` documents partitioned into `40` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`
-now sits in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
+The queue is `195` labelled lines over `43` documents partitioned into `73` live rows — the issued range is still
+`VER-01…VER-82`, and `9` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
+sites over `15` documents partitioned into `39` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`
+and `ODEC-40`
+now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 16, `adr` 6, `measurement` 2, `upstream` 2), three options — 37 of the 40,
+(`product` 14, `contract` 15, `adr` 6, `measurement` 2, `upstream` 2), three options — 36 of the 39,
 since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
 unwritten, `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
 records as absent on this host, and `ODEC-39` carries a fourth that answers only the second half of its own question —
@@ -494,6 +495,18 @@ removed when nothing in `connector/**` or `packages/**` is edited, and a re-read
 fourth figure stayed at 68 because this slice added one assertion label to doc 40's §9 table in backticks — the form
 `tools/check-doc-evidence.mjs` cannot see, which is the exact blind spot §4.28's new §9 assertion exists to close — so the
 census is blind to a label this corpus just grew, and the harness, not the guard, is what proves it real.
+§4.30 moves the set a twenty-seventh time — **2311 / 566 / 1536**, 68 labels — measured after this paragraph was
+written, so the paragraph reports the set the tool prints rather than the set its own sentences produced. Per file
+against a clean `git archive` of the commit before, read with the guard's own three patterns: doc 29 `0 / +1 / 0`
+— the one pointer being the `refreshed[].format` property the closure added, the first address this queue has ever
+gained inside a command document's result — doc 40 `0 / 0 / -1`, the name its retired entry's argument no
+longer cites, and this file `0 / +3 / 0`, two of them the two `#/retired` ledgers the record names and one the
+property itself, because a slice whose record is its own artefact measures itself too. Two citations were re-numbered and moved nothing, which is §4.11's lesson holding: doc 35's cite into
+doc 29 §13 landed blank after the item it sat beside left and was re-read onto the row that now carries the claim,
+and doc 32's `:278` was found pointing at the wrong row of §7's table entirely — green for as long as it was
+non-blank, which is §4.15's class, the one a resolution guard cannot see — and both repairs change no figure. The
+fourth figure stayed at 68 because the slice adds no assertion: a closure by decision moves data and prose, and the
+harness's distributions moved as amended constants rather than as new checks.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -2279,6 +2292,51 @@ the empty list and the silence; this slice touches no Go file.
 
 ---
 
+### 4.30 The queue's first closure by decision — `VER-81` and `ODEC-40`, answered by the field the question asked for (2026-11-07)
+
+**What closed, and by which option.** §4.23 registered the gap and §4.29's reading left it standing: doc 29 §5
+promised that `auto` never survives into a stored source because the parser records which detector won, and no
+artefact kept the verdict. The register's own first option is now the contract:
+`packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format`
+is a required property of every refreshed item, with an enum that is the source schema's minus `auto` — a resolved
+format is by definition not the declaration that deferred the choice — and two detectors claiming one body is not a
+value here but a failed entry, `SchemaMismatch` naming both. The `#/args` description that said the Connector
+"writes none of them back — the result is not a mutated source" now states the one exception in its own words, and
+`packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row says who holds the pen: the Connector
+only reports the verdict, the extension writes it into the source it owns, so the command surface's ownership rule
+survives in every field but the one that exists to be written back.
+
+**The corpus around the field.** Doc 29 §5's storage claim is a fact now instead of a labelled promise — the
+labelled sentence is gone, which is what `marker.counted` 196 → 195 counts — and §7's durable-status table gained
+the `format` row it writes from. Doc 29 §13 lost its seventh item, the deferral site `ODEC-40` was born from, which
+is `citation.counted` 61 → 60. Doc 40's entry became a retirement paragraph in the shape `ODEC-02`'s left behind,
+its §3 kind table reads `contract` 15 against a register of 39, and §8's third step holds five rows where it held
+six. Doc 39's index lost the `VER-81` row, its `no-code` column 56 → 55, its `contracts` owner count 7 → 6, its
+`decision` mechanism 6 → 5, and §8's fourth item now says what the narrative always implied: `VER-81` was the
+first row of the queue to close by a decision and not by the Connector's work. Both ids retired with tombstones —
+`verification.json#/retired` holds nine, `open-decisions.json#/retired` two — and the fixture frame
+`po-req-0005` in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` carries the field, so the recorded corpus
+exercises the answer it made possible.
+
+**What this slice does not claim.** No parser exists: the field describes what a Phase-2 Connector must put there,
+and the row it closes was `no-code` for exactly that reason — the contract now has somewhere to put the verdict,
+which is what `ODEC-40` asked. The subscriptions component's remaining gap is §13 item 6 (`ODEC-33`, whether the
+Connector owns subscriptions end to end), which is `adr` and waits on a person. And the closure is the register's
+cheapest made real: one property, its bound, its exception sentence, and the documents that read it — measured, not
+asserted, by the gates below.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks**, unchanged — a closure by decision
+moves data and prose and adds no assertion; the harness's three distribution constants were amended in the same
+commit the data moved, and doc 39's own read-aloud check verified the document against the data rather than the
+other way round. `node tools/check-doc-evidence.mjs` → green; §4.4's final ledger paragraph has the set and the
+per-file deltas. `node tools/check-no-secrets.mjs` → **480 files**, unchanged — the guard walks `git ls-files`,
+and this slice adds no file. `node tools/check-adr-shape.mjs` (and `--selftest`), `node tools/check-layout-guards.mjs`
+(and `--selftest`) and `node tools/check-legacy-backup.mjs` → green, untouched. `go -C connector test -count=1
+./...`, `gofmt -l connector` and `go -C connector vet ./...` → the same eleven `ok` lines, the empty list and the
+silence; this slice touches no Go file.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -2362,7 +2420,7 @@ the empty list and the silence; this slice touches no Go file.
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 562 pointers, 1537 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 566 pointers, 1536 doc-and-script
   names, 68 harness assertion labels — the fourth figure is new with §4.22 and no GitHub runner has printed it yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
@@ -2719,9 +2777,10 @@ written before any behaviour existed. What each next milestone has to make true:
    and the hash — and stopped there, because stages 1 to 4 are what decide what the serializer would be claiming to have
    compiled; §4.16 wrote those stages, §4.17 the keystore and §4.19 the supervisor, so three of the five are packages on
    disk, the compiler is begun, and what is left is the prober — whose last stage needs the Core binary §4.13 records as
-   absent — and subscriptions, which no command surface has reached yet and whose one registered gap is now `ODEC-40`:
-   where the format an `auto` parse resolved to is recorded. §4.23 is that change, so the fifth component is stopped by a
-   decision rather than by a document nobody had read. The order the rest builds in is §10's closing
+   absent — and subscriptions, which no command surface has reached yet and whose one registered gap was `ODEC-40`:
+   where the format an `auto` parse resolved to is recorded. §4.23 was that registration, and §4.30 closed it — the
+   fifth component is no longer stopped by a decision, but by its own turn in the build order and by §13 item 6's
+   `adr` question, which waits on a person. The order the rest builds in is §10's closing
    note.
 
 ---
@@ -3035,9 +3094,11 @@ while its question stays open. So that sentence about strings and checks needs i
 stopped by a decision, by a binary this host does not have, by a browser, or by a gate that only an answer opens. A
 sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped contract against itself: §4.29 registers
 `ODEC-41`, the pipe half of the negotiation `ODEC-02` wrote floors for but nobody wrote a field, and with it `VER-82` —
-so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. The
-corpus is 196 labelled lines over 43 documents, the queue is 74 rows with eight tombstones, and the register is 40
-questions over 61 sites with one retirement — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
+made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
+with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
+corpus is 195 labelled lines over 43 documents, the queue is 73 rows with nine tombstones, and the register is 39
+questions over 60 sites with two retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file.

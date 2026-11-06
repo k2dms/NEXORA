@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 196
+    "counted": 195
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -154,6 +154,12 @@
         "closed": "2026-11-06",
         "was": "two version floors the design said were independent and one number that said so",
         "artefact": "packages/schema/protocol/framing.json#/minPipeVersion, declared beside #/versionFloors as the second of two floors -- `protocol` over protocolVersion and minCompatibleProtocolVersion, negotiated in connector.hello, and `pipe` over frameFormatVersion and minPipeVersion, carried by the `v` field every frame already bears -- refused by the one code `VersionMismatch`, because a second code is breaking for a client that switches exhaustively (docs/architecture/25-native-messaging-protocol.md §7) and which floor failed is a message, not a name. The new harness assertion reads the shape rather than the values: four distinct numbers, each floor at or below the version it floors, the refusal code in the taxonomy. The question it answers is `ODEC-02`, decided by the contract addition its own first option named; the sentence that anchored it became a `Verified: YES` in docs/architecture/21-system-context.md §12. Declarative on purpose: `connector/internal/contract` now projects MinPipeVersion and its test refuses a floor above the version it floors, but nothing compares a frame's `v` to it yet, and docs/architecture/25-native-messaging-protocol.md §1 says that instead of leaving the number queued"
+      },
+      {
+        "id": "VER-81",
+        "closed": "2026-11-07",
+        "was": "the format an `auto` parse resolves to has nowhere to be recorded: doc 29 §5 promised `auto` never survives into a stored source, and no artefact in the contract carried the detector that won",
+        "artefact": "ODEC-40 answered by its own first option, in the commit that retired both: `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format` -- required on every refreshed item, enum the source schema's minus `auto` -- plus the exception its `#/args` description now states, the format amendment in `packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row, the resolved-format sentence in `docs/architecture/29-subscriptions-and-servers.md` §5 that the labelled line became, the `format` row of that document §7's status table, and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` that carries the field"
       }
     ]
   },
@@ -951,17 +957,6 @@
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reachable from one command frame" }
       ],
       "why": "`connector/cmd/nexora-connector/config_apply.go` is the whole of doc 27 §2 and §8 in one `Handle`: compare-and-swap against the applied-state record, read the intent, compile, write atomically, reserve the ports, stop and start Core -- and `config_apply_test.go` refuses each of those steps in turn to show nothing after it moved. The half that does not exist is who calls it. `connector/cmd/nexora-connector/main.go` registers `connector.hello` and `connector.version` and nothing else, so a real frame for this method answers `UnknownMethod` at the dispatch door; and the surface's one input seam -- an intent source that turns `profileIds` into the profiles, servers, routing, settings and failure policy stage 1 resolves -- is satisfied only by a test double that returns what the test put in it. That is not a missing file the design could fill in: `packages/schema/protocol/commands/config.apply.json#/args` is `additionalProperties: false` over ids, while the `intent-down` entry of `packages/schema/protocol/data-ownership.json#/movements` says the payload of this very command is 'intent documents: profiles, servers, routing, settings -- references, never values' from the browser plane, where every one of those stores lives (`docs/architecture/34-data-split.md` §6). Whichever way the documents arrive, the same row then needs the two directories the surface is constructed with -- no contract names the state directory or the compiled-config directory, and `compiled-config.location` ('name derived from the config hash') disagrees with `connector/internal/apply`'s one stable file name, which is the shape doc 27 §8's rename depends on. The test seam chose all three; `ODEC-39` is the register saying which choices are the contract's."
-    },
-    {
-      "id": "VER-81",
-      "subject": "the format an `auto` parse resolves to has nowhere to be recorded: doc 29 §5 promises `auto` never survives into a stored source, and no artefact in the contract carries the detector that won",
-      "state": "no-code",
-      "owner": "contracts",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-40`" },
-      "at": [
-        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "records which detector won" }
-      ],
-      "why": "`docs/architecture/29-subscriptions-and-servers.md` §5 makes two claims about one enum value: `auto` is legal only while exactly one parser's detector answers true, and it is 'meant never to survive into a stored source' because the parser records which one won. The second claim has no home anywhere in the corpus. `packages/schema/protocol/commands/subscription.refresh.json#/result` bounds a `refreshed[]` item with `additionalProperties: false` over eight properties -- `subscriptionId`, `sha256`, `serverCount`, `added`, `removed`, `duplicates`, `lossyFields`, `servers` -- none of them a format, and the same file's `#/args` states the opposite duty in its own words: the Connector 'writes none of them back -- the result is not a mutated source'. Detection belongs to the Connector (doc 29 §2), the source document belongs to the extension (`docs/architecture/34-data-split.md` §6), and the one channel between those planes is the eight fields above. So either the result gains a field and the extension persists what the parser chose, or §5's sentence is wrong about the storage and `auto` does survive, in which case an ambiguous body fails once per refresh rather than once per source and the document should say that instead. Both readings are a field and a sentence in `packages/schema`, which is why this is `contract` and why the row waits on `ODEC-40` rather than on a parser."
     },
     {
       "id": "VER-82",

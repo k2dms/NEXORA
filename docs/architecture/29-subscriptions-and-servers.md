@@ -103,11 +103,12 @@ than a silent gap: the UI must name the missing reference rather than report a n
 `auto` is allowed only when **exactly one** parser's detector answers true. The legacy loader loops every format
 and keeps the last detector that did not say `false` (`omega-pac/src/profiles.coffee:504-511`) — a guess, in code
 that writes to the network. NEXORA's rule: two detectors true ⇒ `SchemaMismatch` naming both, and the UI asks the
-user to declare the format. The fifth enum value, `auto`, is meant never to survive into a stored source, because the
-parser records which detector won — `Verified: NO — Phase 2`, because nothing in the contract can record it:
-`subscription.refresh`'s result has no format field among the eight properties of a `refreshed[]` item, and its args
-say in their own description that the Connector writes none of the source back. The question of which artefact should
-carry the answer is §13 item 7.
+user to declare the format. The fifth enum value, `auto`, never survives into a stored source, because the parser's
+verdict has a home: every `refreshed[]` item carries `format`, the value the detector resolved
+(`packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format`,
+whose enum is the source schema's minus `auto`), and the extension persists it into the source it owns
+(`docs/architecture/34-data-split.md` §6) — the one field the result carries back, which its args' "not a mutated
+source" description states as the exception it is.
 
 Every table below uses the same four statuses.
 
@@ -276,6 +277,7 @@ envelope, written from the command result:
 | `lastSuccessAt` | `refreshed[]` only | "updated 3 days ago" |
 | `lastSha256` | `refreshed[].sha256` | the next call's `unchanged` verdict (§2 of the result contract) |
 | `serverCount` | `refreshed[].serverCount` | the list row |
+| `format` | `refreshed[].format` — the resolved value, which replaces the source's `auto` declaration (§5) | the stored source, and the list row's "parsed as vless-uri-list" |
 | `consecutiveFailures` | `failed[].consecutiveFailures` — the Connector counts, the extension stores | the backoff below, and the UI badge |
 | `nextAttemptAt` | computed: `interval × min(multiplier^(failures-1), ·)` capped at `maxIntervalSeconds`, then ± `jitterPercent` | the alarm reschedule and `force` |
 | `lastError.code` | `failed[].code`, drawn from a closed enum | the message; `detail` is masked like any other text (`docs/architecture/32-secrets-keystore-masking.md`) |
@@ -387,4 +389,3 @@ Each was found by reading one artefact against another, not by running anything.
 | 4 | `KeystoreUnavailable` on a second machine for `urlRef`/`headersRef` sources: which UI state names it | `docs/architecture/37-ui-architecture.md` §4 |
 | 5 | Whether a subscription may ever be created by the Connector (import of a legacy profile with `sourceUrl`) or only by the user | `docs/architecture/35-schema-versioning-migration.md` §6 |
 | 6 | Whether the Connector owns subscriptions end to end, or the extension may receive feed-derived Servers through chunked events -- §2's single-frame answer holds only while that is true; `Verified: NO — Phase 2` until someone answers | `docs/architecture/40-open-decisions.md`; the human half is `docs/PROJECT-STATE.md` §9's fourth decision |
-| 7 | Which artefact records the format an `auto` parse resolved to: §5 promises that `auto` never survives into a stored source because the parser names the detector that won, but `subscription.refresh`'s result carries no format among its properties and its args are never written back, so the verdict has nothing to be stored in | `docs/architecture/40-open-decisions.md` |

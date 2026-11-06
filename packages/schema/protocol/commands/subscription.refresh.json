@@ -24,7 +24,7 @@
         "items": {
           "$ref": "https://schema.nexora.local/subscription-source.schema.json"
         },
-        "description": "The SubscriptionSource documents exactly as the extension owns them, passed whole rather than by identifier: the Connector keeps no copy of user intent (ADR-0010, docs/architecture/34) and therefore cannot look a source up. It reads `url` or the address behind `urlRef`, `headersRef`, `format`, `limits` and the backoff in `status`; it writes none of them back -- the result is not a mutated source. Two entries with the same `id` in one call is a `BadRequest`: two fetches for one source would race its keystore entries and its hash."
+        "description": "The SubscriptionSource documents exactly as the extension owns them, passed whole rather than by identifier: the Connector keeps no copy of user intent (ADR-0010, docs/architecture/34) and therefore cannot look a source up. It reads `url` or the address behind `urlRef`, `headersRef`, `format`, `limits` and the backoff in `status`; it writes none of them back -- the result is not a mutated source, with exactly one exception: `refreshed[].format` is the value an `auto` declaration resolved to, and the extension persists it into the source it owns (`docs/architecture/34-data-split.md` §6), so `auto` never survives into a stored source. No other source field is ever written back. Two entries with the same `id` in one call is a `BadRequest`: two fetches for one source would race its keystore entries and its hash."
       },
       "force": {
         "type": "boolean",
@@ -51,6 +51,7 @@
           "required": [
             "subscriptionId",
             "sha256",
+            "format",
             "serverCount",
             "servers"
           ],
@@ -62,6 +63,16 @@
               "type": "string",
               "pattern": "^[0-9a-f]{64}$",
               "description": "Hash of the raw body as received, before parsing. The extension stores it as `status.lastSha256`, which is what makes the next call's `unchanged` verdict reproducible without the Connector remembering anything."
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "vless-base64",
+                "vless-uri-list",
+                "v2ray-json",
+                "clash-yaml"
+              ],
+              "description": "The format the parser's detector resolved the body to -- the answer an `auto` declaration hid, and the one source field the result carries back: the extension writes it into the source it owns (`docs/architecture/34-data-split.md` §6), so `auto` never survives into a stored source (`docs/architecture/29-subscriptions-and-servers.md` §5). The enum is the source schema's minus `auto`: a resolved format is by definition not the declaration that deferred the choice. A body two detectors claim is not a value here but a failed entry: `SchemaMismatch` naming both."
             },
             "serverCount": {
               "type": "integer",

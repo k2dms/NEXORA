@@ -63,7 +63,7 @@ most of them.
 | `docs/architecture/22-component-contracts.md:26` | MigrationRunner's specification file | §5, §6, §8 |
 | `docs/architecture/22-component-contracts.md:338` | "the keystore must not be reachable from that path … (`35` §forbidden)" | §14 |
 | `docs/architecture/24-options-envelope-compat.md:162` | "Migration itself is `35`" — the two-keys decision | §4 |
-| `docs/architecture/29-subscriptions-and-servers.md:385` | "whether a subscription may ever be created by the Connector … or only by the user" | §6, step `subscription-sources` |
+| `docs/architecture/29-subscriptions-and-servers.md:390` | "whether a subscription may ever be created by the Connector … or only by the user" | §6, step `subscription-sources` |
 | `docs/architecture/30-failure-policy.md:286` | the fail-open confirmation is stripped by migration and import | §13 |
 | `docs/architecture/32-secrets-keystore-masking.md:39`, `:446` | "the ordering owned by `35`" for extracting a credential | §11, and §6's `secret-census` |
 | `docs/architecture/34-data-split.md:44` | "the ordering of any change to the envelope's shape, and the wipe trap" | §3, §5 |

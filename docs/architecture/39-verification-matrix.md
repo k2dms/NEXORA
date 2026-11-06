@@ -1,6 +1,6 @@
 # 39 — The queue: every claim this repository makes that nothing checks, and the artefact that closes it
 
-> Purpose: 196 lines across 43 documents say `Verified: NO — deferred to Phase 2`. `docs/adr/0001-adr-practice.md`
+> Purpose: 195 lines across 43 documents say `Verified: NO — deferred to Phase 2`. `docs/adr/0001-adr-practice.md`
 > rule 9 put the label there; `docs/adr/README.md` step 4 makes it the only honest alternative to naming a check;
 > `docs/audit/00-scope-and-method.md` requires it of every `UNVERIFIED` finding it hands forward;
 > `docs/architecture/20-target-repository-layout.md` §13 makes this document the owner of every one of them and
@@ -43,7 +43,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
   result.
 - **Copying the live matrix.** Its 24 rows are inherited by id (§7). A second copy of 24 rows is a second thing
   that can be wrong, and it would be wrong in the direction that matters: a stale status column reads as progress.
-- **Designing anything.** A row is not a feature request and not an approval. 56 rows say the component does not
+- **Designing anything.** A row is not a feature request and not an approval. 55 rows say the component does not
   exist; that is the queue reporting the phase boundary, not endorsing what comes after it.
 - **Repeating the argument.** Why a claim is made lives in the document that carries the label. This document
   quotes the line and points at it; it does not re-litigate it.
@@ -55,7 +55,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
 
 | # | Question a document could not answer itself | Answered by |
 |---|---|---|
-| 1 | Who owns the 196 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
+| 1 | Who owns the 195 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
 | 2 | Is a deferral the same thing as unfinished work? | No: §4 splits it five ways; the split *is* the useful content |
 | 3 | Can a document claim a check exists when it does not? | §6 — anchors resolve or the run fails |
 | 4 | Can one obligation be counted twice, so the queue looks shorter than it is? | §6 — the same partition check refuses it |
@@ -94,13 +94,13 @@ would have to be re-derived from the design, which is how a verification matrix 
 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
-| `no-code` | 56 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
+| `no-code` | 55 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
 | `no-check` | 5 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
 | `no-run` | 6 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 2 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 5 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **56 of 74 rows are `no-code`**: this iteration's claims are overwhelmingly
+The distribution is the finding. **55 of 73 rows are `no-code`**: this iteration's claims are overwhelmingly
 blocked on the Connector, the compiler and the UI existing, not on tests being clever. 5 `no-check` rows read as
 the part closable before Phase 2 writes a line of product code, and four of the five — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
@@ -118,15 +118,15 @@ That ordering is not advice; it is what the states say.
 
 ## 5. Nine owners, eight closing mechanisms
 
-`owners` — who can close the row: `connector` 39, `extension` 11, `contracts` 7, `ci` 4, `packages` 3,
+`owners` — who can close the row: `connector` 39, `extension` 11, `contracts` 6, `ci` 4, `packages` 3,
 `ui` 3, `external` 3, `tools` 2, `human` 2.
 
-`closingKinds` — with what: `live-row` 39, `assertion` 17, `decision` 6, `gate` 3, `ci-step` 3,
+`closingKinds` — with what: `live-row` 39, `assertion` 17, `decision` 5, `gate` 3, `ci-step` 3,
 `external-measurement` 3, `tool` 2, `new-live-row` 1.
 
 Three consequences worth stating out loud:
 
-- **39 of 74 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **39 of 73 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -164,9 +164,9 @@ The harness then refuses three failures no prose review can see:
 | one line claimed by two rows | both rows read correctly, and the queue is a lie about its length | `no deferred claim is counted as owned by two rows, or by a row and the vocabulary` |
 | a row deleted so its obligation disappears with it | the queue gets shorter and nobody can say which claim it lost | `every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it` |
 
-Plus the exact-partition assertion: rows (146) + vocabulary (26) + inherited live rows (24) = 196 = the number the
+Plus the exact-partition assertion: rows (145) + vocabulary (26) + inherited live rows (24) = 195 = the number the
 corpus is re-read to, which `marker.counted` declares and the run compares. An unowned line is unowned work. A
-stale anchor is finished work nobody deleted. A double claim is the queue lying about its own size — and 146 of
+stale anchor is finished work nobody deleted. A double claim is the queue lying about its own size — and 145 of
 these claims come from 36 documents, 18 of which carry more than one, so the arithmetic cannot be done
 by eye.
 
@@ -212,7 +212,8 @@ Not a schedule — a dependency graph the states impose:
    row unclosable while the question that owns it stays open, because deleting it either leaves that question
    blocking nothing, which doc 40's own assertions forbid, or leaves it naming a row no longer in the matrix, which
    is a phantom. What is actually left in this step is three rows, and each is smaller than it reads: `VER-66` needs
-   a body detector the entity schemas have no field for (the question `ODEC-40` asks, wearing another hat), `VER-19`
+   a body detector the entity schemas have no field for — the register question closest to it in shape, `ODEC-40`,
+   was answered on 2026-11-07 and left, while this one is still open — `VER-19`
    needs a `dedupeWindow` field no contract carries and a live run to bound it, and `VER-58`'s injection half is a
    scan over a `nexora/**` that is empty — the emptiness §8 refuses to count as evidence for `VER-02` and `VER-03`.
    `VER-18` closed on 2026-11-06, the first row this step deleted, and it closed by answering the decision that
@@ -228,17 +229,18 @@ Not a schedule — a dependency graph the states impose:
    `LIVE-05…LIVE-09`. `VER-27`, `VER-32` and `VER-68` close by executing `LIVE-04` itself, and `VER-50` hangs on
    `LIVE-05` — behind the gate twice. Until an egress IP equals the VPS IP, no transport row may be reported,
    because a TCP connect returning green while traffic leaks is ADR-0020's named worse-than-nothing test.
-3. **Six decisions gate six rows.** `VER-54` waits on `ODEC-10` (does any external API surface survive),
+3. **Five decisions gate five rows.** `VER-54` waits on `ODEC-10` (does any external API surface survive),
    `VER-61` on `ODEC-33` (whether the Connector owns subscriptions end to end), `VER-79` on `ODEC-38` (over what
    span the ladder's attempts are spent), `VER-80` on `ODEC-39` (where a real `config.apply` reads its intent, which
    directories it is handed and what the compiled config is called), `VER-81` on `ODEC-40` (which artefact records
-   the format an `auto` parse resolved to) and `VER-82` on `ODEC-41` (which artefact carries the pipe half of the
-   version negotiation) — all six in doc 40's register, and the run refuses a row that closes by a decision no entry
+   the pipe half of the
+   version negotiation) — all five in doc 40's register; the sixth, `VER-81` on `ODEC-40`, closed on 2026-11-07 by the
+   field its question asked for, and the run refuses a row that closes by a decision no entry
    gates. Four `no-check` rows — `VER-20`, `VER-56`, `VER-65`, `VER-71` — are named in a `blocks` as well, which is
    why §4 says they cannot be deleted around their gate. Behind them the inbound-per-tag question
    (`ODEC-06`) changes what `VER-30` even asserts. `VER-09`, `VER-37`, `VER-74` wait on browsers and stores, which is
    why they are `needs-human` and not quietly estimated.
-4. **Everything else is `no-code` and waits on the Connector.** 35 of the 56 are owned by it. Four connector rows have
+4. **Everything else is `no-code` and waits on the Connector.** 35 of the 55 are owned by it. Four connector rows have
    left the column since the queue was written — `VER-23`, whose keystore is now code with a green test over the real
    `crypt32` call, `VER-29`, whose writer and rollback are now Go tests over a temp directory
    (`connector/internal/apply`), `VER-14`, whose containment scope is now assigned, reported and proven against a
@@ -250,13 +252,14 @@ Not a schedule — a dependency graph the states impose:
    saying what it reads is a component that does not exist, which is what this state means. `VER-81` entered it in the
    next slice, and was the column's first row owned by `contracts` — the five contract-owned rows before it are
    `no-check` or `no-fixture`, which is the queue's own way of saying a contract obligation usually means a checker
-   rather than a component — and the first row that closes by a decision and is not the Connector's: `VER-79` and
-   `VER-80` are connector rows, `VER-54` and `VER-61` are `needs-human`. `VER-82` entered it in the slice after that,
-   the seventh `contracts` row and the second `no-code` one, and the second decision row the Connector does not own.
+   rather than a component — and the first row of the queue to close by a decision and not by the Connector's work:
+   on 2026-11-07 its register question `ODEC-40` was answered by the field it asked for, and the row left with it.
+   `VER-82` entered it in the slice after that, the sixth `contracts` row and the column's only `no-code` one now, and
+   the only decision row the Connector does not own.
    What does not exist here is a place to put the answer, not the code that would compute it.
 
-The queue does not pretend this is fast. It is the reason the queue exists: 74 named obligations with 39 of them
-pointing at one executable matrix is a plan; the same 74 as 196 scattered phrases is a mood.
+The queue does not pretend this is fast. It is the reason the queue exists: 73 named obligations with 39 of them
+pointing at one executable matrix is a plan; the same 73 as 195 scattered phrases is a mood.
 
 ---
 
@@ -281,7 +284,7 @@ pointing at one executable matrix is a plan; the same 74 as 196 scattered phrase
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
-### `no-code` — 56
+### `no-code` — 55
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
@@ -339,7 +342,6 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-78 | the compiled bytes are byte-deterministic and `configHash` covers the byte string `ODEC-36` names — no compiler, so neither stability nor the hash's subject is proven | `connector` · assertion | 1 · 1 |
 | VER-79 | the ladder spends its attempts per death, so a crash-looping Core is handed a fresh budget forever; no field bounds the deaths and none states a stability window | `connector` · decision (`ODEC-38`) | 1 · 1 |
 | VER-80 | the `config.apply` path from a frame to a replaced config and a restarted Core has no production caller: the method is not registered, and nothing supplies the intent an ids-only call cannot carry | `connector` · decision (`ODEC-39`) | 1 · 1 |
-| VER-81 | the format an `auto` parse resolves to has nowhere to be recorded: doc 29 §5 promises `auto` never survives into a stored source, and no contract field carries the detector that won | `contracts` · decision (`ODEC-40`) | 1 · 1 |
 | VER-82 | the pipe half of the version negotiation has nowhere to be written down: doc 21 §6 promises the negotiation result reaches the connector log and `diagnostics.get`, and every field that could carry it names only `protocolVersion` | `contracts` · decision (`ODEC-41`) | 1 · 1 |
 
 ### `no-check` — 5
@@ -451,7 +453,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 2. A row is closed by its artefact, and closing deletes the row in the same commit.
 3. Nothing in this document or its data asserts that a check ran. `no-run` is a state, not a result.
 4. The live matrix owns the live rows; this document owns what the rest of the corpus owes them.
-5. The count `196` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
+5. The count `195` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
    when a row is honestly closed. Nothing outside `packages/schema/verification.json#/marker/counted` may depend on it.
 6. This document's §11 table is checked by an assertion whose label is `"every mechanism doc 39 names is a check
    this run actually makes"` — it lives outside the table so it cannot certify itself.
@@ -544,7 +546,7 @@ compares to the version it floors, and nothing yet refuses a frame whose `v` is 
    §7's dense-id assertion must be amended in the same commit, deliberately, rather than allowed to drift.
 3. `VER-09` and `VER-74` cannot be closed in-repo at all; they are the two places where this queue's answer is
    "someone must open a browser".
-4. The 56 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
+4. The 55 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
    because it is much harder to state afterwards.
 5. `docs/adr/0020-test-strategy.md:86` calls this document "not yet written". ADR-0001 rule 5 forbids correcting
    history in place, and the same aside sits unsuperseded in `docs/adr/0016-svelte-5-vite-typescript.md:46`, so it
