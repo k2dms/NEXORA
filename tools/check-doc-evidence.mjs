@@ -41,13 +41,14 @@ const CITATION_RE = /`([^`\s]+?):(\d+)(?:-(\d+))?`/g;
 // Files that are rewritten in place, by hand, every session. A line number into one of
 // them is correct only until the next paragraph is inserted above it, which is how eight
 // citations into the state document came to point at the wrong decisions in one sitting.
-// Cite these by section (`docs/PROJECT-STATE.md` §6), never by line. `packages/schema/
-// scripts/verify.mjs` belongs here too and joins when its 44 remaining line cites are
-// converted to assertion labels, in the one commit PROJECT-STATE §6 #8 already promises.
+// Cite these by section (`docs/PROJECT-STATE.md` §6) or by named assertion, never by line.
+// `packages/schema/scripts/verify.mjs` joined on 2026-11-06, when the last of the 52 line cites it carried
+// were converted to the assertion labels PROJECT-STATE §6 #8(b) prescribed; the label half of the rule is
+// checked below by STALE LABEL, which reads the harness and refuses a citation that names no check.
 // `docs/audit/99-baseline-report.md` joins on 2026-11-05 evidence: it is the file every
 // probe round appends to, and a row added to its §2 table moved three citations in
 // `docs/architecture/20-target-repository-layout.md` that addressed §6 by line number.
-const MUTABLE_CITATION_TARGETS = ['docs/PROJECT-STATE.md', 'docs/audit/99-baseline-report.md'];
+const MUTABLE_CITATION_TARGETS = ['docs/PROJECT-STATE.md', 'docs/audit/99-baseline-report.md', 'packages/schema/scripts/verify.mjs'];
 
 // A JSON Pointer citation is the stable half of the contract layer: `x.schema.json#/a/b`
 // survives every edit that would silently invalidate `x.schema.json:14`. It is therefore
@@ -114,6 +115,22 @@ let pointerChecked = 0;
 const missingDocs = [];
 const plannedSeen = new Set();
 let docNameChecked = 0;
+
+// The other half of the harness rule. A citation into `packages/schema/scripts/verify.mjs` names the assertion it
+// depends on -- the file token, then one or more double-quoted labels exactly as the harness carries them, template
+// placeholders included. Line numbers move when a rule is added; a label moves when the *claim* changes, which is the
+// only case where the sentence around it is supposed to change too. So every quoted label that follows the token has
+// to still be in the file, or the sentence is describing a check that no run makes.
+const HARNESS = join(REPO, 'packages', 'schema', 'scripts', 'verify.mjs');
+const harnessText = await readFile(HARNESS, 'utf8');
+const HARNESS_TOKEN_RE = /`packages\/schema\/scripts\/verify\.mjs`(?:'s)?/g;
+// A label is the quoted text that follows the token: whitespace, then a `,`/`and`/`—` between neighbours, and a label
+// never crosses a line or a table cell of its own. The leading whitespace is what keeps a citation whose *sentence*
+// ends at the token -- `... is checked by `packages/schema/scripts/verify.mjs`" | next cell | ...` -- from reading the
+// cell's closing quote as a label.
+const LABEL_RUN_RE = /^(?:[ \t\n]+|,[ \t\n]*|(?:and|—)[ \t\n]+)"([^"\n|]{6,200})"/;
+const staleLabel = [];
+let labelCitesChecked = 0;
 
 for await (const doc of mdFiles(join(REPO, 'docs'))) {
   const text = await readFile(doc, 'utf8');
@@ -213,6 +230,16 @@ for await (const doc of mdFiles(join(REPO, 'docs'))) {
     }
     missingDocs.push([label, raw]);
   }
+  for (const match of text.matchAll(HARNESS_TOKEN_RE)) {
+    let rest = text.slice(match.index + match[0].length);
+    for (;;) {
+      const step = LABEL_RUN_RE.exec(rest);
+      if (!step || /\n[ \t]*\n/.test(step[0])) break;
+      labelCitesChecked++;
+      if (!harnessText.includes(step[1])) staleLabel.push([label, step[1]]);
+      rest = rest.slice(step.index + step[0].length);
+    }
+  }
 }
 
 const pointerProblems = pointerUnresolved.length;
@@ -223,17 +250,25 @@ const problems =
   pointerProblems +
   missingDocs.length +
   selfCite.length +
-  mutableCite.length;
+  mutableCite.length +
+  staleLabel.length;
 console.log(
-  `checked ${checked} path:line citations, ${pointerChecked} path#pointer citations and ${docNameChecked} doc-name references in docs/`,
+  `checked ${checked} path:line citations, ${pointerChecked} path#pointer citations, ${docNameChecked} doc-name references and ${labelCitesChecked} harness assertion labels in docs/`,
 );
 if (plannedSeen.size) {
   console.log(`planned, not yet written (${plannedSeen.size}): ${[...plannedSeen].sort().join(', ')}`);
 }
 
 if (problems === 0) {
-  console.log('OK: every citation resolves to a real, non-blank line and every pointer resolves.');
+  console.log('OK: every citation resolves to a real, non-blank line, every pointer resolves, and every harness label cited is a check the harness has.');
   process.exit(0);
+}
+
+if (staleLabel.length) {
+  console.error(`\nSTALE LABEL (${staleLabel.length}) -- a citation names a harness check that is not in the file:`);
+  for (const [doc, quote] of staleLabel) {
+    console.error(`  ${doc}  cites "${quote}"  (no such string in packages/schema/scripts/verify.mjs)`);
+  }
 }
 
 if (missingDocs.length) {
@@ -253,7 +288,7 @@ if (selfCite.length) {
 if (mutableCite.length) {
   console.error(`\nMUTABLE TARGET (${mutableCite.length}) -- a line cite into a file rewritten in place every session:`);
   for (const [doc, cite] of mutableCite) {
-    console.error(`  ${doc}  cites \`${cite}\`  (say \`docs/PROJECT-STATE.md\` §n instead)`);
+    console.error(`  ${doc}  cites \`${cite}\`  (say \`docs/PROJECT-STATE.md\` §n for the state document and the baseline report; for the harness say \`packages/schema/scripts/verify.mjs\` "the assertion label" instead)`);
   }
 }
 

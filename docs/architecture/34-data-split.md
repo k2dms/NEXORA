@@ -53,8 +53,8 @@ Each of these was a forward reference in another document. Each now has a sectio
 
 | Cited by | The question | Answered in |
 |---|---|---|
-| `docs/adr/0010-data-split-extension-intent-connector-truth.md:111` | "the durable specification is `34-data-split.md`" — the connector side has never run, so where is it written down? | §7, and the catalogue rows carry it |
-| `docs/adr/0010-data-split-extension-intent-connector-truth.md:122` | "`34-data-split.md` will name the owner of each check" | §14 |
+| `docs/adr/0010-data-split-extension-intent-connector-truth.md:112` | "the durable specification is `34-data-split.md`" — the connector side has never run, so where is it written down? | §7, and the catalogue rows carry it |
+| `docs/adr/0010-data-split-extension-intent-connector-truth.md:123` | "`34-data-split.md` will name the owner of each check" | §14 |
 | `docs/architecture/21-system-context.md:134` | "the ownership table is `34-data-split.md`" — §8 of that document is deliberately compressed | §6, §7 |
 | `docs/architecture/22-component-contracts.md:340` | "removing the Connector leaves the profiles intact and degrades to NEXORA Lite" | §11 |
 | `docs/architecture/26-command-surface.md:221` | "the Connector never learns which tab is active" — where is the browser-plane data kept out of reach? | §10 |
@@ -424,7 +424,7 @@ The mechanics, in this document's terms:
 
 ## 14. Who owns each check
 
-`docs/adr/0010-data-split-extension-intent-connector-truth.md:120-123` defers three runtime invariants to this
+`docs/adr/0010-data-split-extension-intent-connector-truth.md:121-124` defers three runtime invariants to this
 document and asks it to name an owner for each. Naming them, plus the ones §5–§13 introduced:
 
 | Invariant | Check that owns it | Owner | Status |

@@ -239,7 +239,7 @@ Three write-path defects are load-bearing for NEXORA and are recorded here (not 
 
 * **Stay out of `+`.** `packages/schema/envelope-keys.schema.json:20-26` reserves `+` for OmegaPac profiles and
   puts every NEXORA entity under `-`, one scalar key per entity;
-  `packages/schema/scripts/verify.mjs:359-364` rejects any namespace whose `keyPattern` starts with `+`, citing
+  `packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}" rejects any namespace whose `keyPattern` starts with `+`, citing
   `omega-pac/src/profiles.coffee:111-118` as the reason. A `+`-keyed NEXORA entity would appear in
   `availableProfiles`, quick-switch pickers, `validResultProfilesFor` and the generated PAC. ADR-0012. **VERIFIED**
 * **Two version stamps will coexist.** NEXORA's `-nexora.schemaVersion`
@@ -257,7 +257,7 @@ Three write-path defects are load-bearing for NEXORA and are recorded here (not 
   (`omega-target/src/options.coffee:792-797`) that the sync strip-list omits
   (`omega-target/src/options.coffee:27`); the new contract closes it at the data layer
   (`packages/schema/envelope-keys.schema.json:105-116`, asserted by
-  `packages/schema/scripts/verify.mjs:374`). Severity and exploit path are owned by `docs/audit/11`. **VERIFIED**
+  `packages/schema/scripts/verify.mjs` "syncExcludedValueKeys strips headers"). Severity and exploit path are owned by `docs/audit/11`. **VERIFIED**
 * **Secrets have two resting places today**, and only one of them is the envelope: the gist/WebDAV token is a
   *state* key (`omega-target/src/options.coffee:1183-1188`), replicated into `chrome.storage.sync` by the
   built-in-sync blob (`omega-target/src/options_sync.coffee:236-243` with

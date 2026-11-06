@@ -44,7 +44,7 @@ declared properties of every command.
 5. A client that receives a replayed answer to a non-replayable command MUST present it as stale, never as a
    fresh measurement (`packages/schema/protocol/commands/server.test.json:83`).
 6. A non-idempotent command MUST carry a `nonIdempotencyRationale`
-   (`packages/schema/protocol/commands.schema.json:114`), checked by `packages/schema/scripts/verify.mjs:148-152`.
+   (`packages/schema/protocol/commands.schema.json:114`), checked by `packages/schema/scripts/verify.mjs` "non-idempotent command carries a rationale: ${doc.name}".
    All nineteen current commands are idempotent, so this rule is a guard on the future surface rather than a
    description of it.
 7. Callers MUST supply a fresh key for a genuinely new intent: two deliberate `server.test` presses are two
@@ -89,10 +89,10 @@ that lets a late answer be discarded rather than applied.
   `allOf` that binds probe to non-replayable.
 - `packages/schema/protocol/commands/server.test.json:6` and `:7` — VERIFIED — `idempotent: true` together
   with `replayable: false`, which is the whole distinction in two lines.
-- `packages/schema/scripts/verify.mjs:484-488` — VERIFIED — replays must return byte-identical results after
-  stripping fields ending `At`, `Ms`, `Seconds`, `seq`; `:437` — VERIFIED — a probe must be answered exactly
-  once; `:452` — VERIFIED — at least four replay pairs must exist in the fixtures (the green run of this
-iteration reports five).
+- `packages/schema/scripts/verify.mjs` "idempotent replay returns the same result: ${file}#${req.id}" — VERIFIED — replays must return byte-identical results after stripping
+  fields ending `At`, `Ms`, `Seconds`, `seq`; `packages/schema/scripts/verify.mjs` "probe is answered exactly once: ${file}#${req.id}" — VERIFIED — a probe must be answered
+  exactly once; `packages/schema/scripts/verify.mjs` "idempotent replay is exercised" — VERIFIED — at least four replay pairs must exist in the fixtures
+  (the green run of this iteration reports five).
 - `packages/schema/fixtures/protocol/core-lifecycle.jsonl:1` — VERIFIED — the `cl-req-0001` `core.start`
   request whose id is answered more than once, i.e. a replay recorded as data.
 - Class distribution of the 19 methods (8 read, 3 converge, 2 replace, 5 mutate, 1 probe) — VERIFIED against
@@ -102,7 +102,7 @@ iteration reports five).
 
 ## Verification
 
-Today: `npm --prefix packages/schema run verify` asserts the probe rule (`packages/schema/scripts/verify.mjs:155`),
+Today: `npm --prefix packages/schema run verify` asserts the probe rule (`packages/schema/scripts/verify.mjs` "probe is non-replayable: ${doc.name}"),
 the rationale rule, the replay-identity rule and the single-answer rule across
 `packages/schema/fixtures/protocol/` — 109 frames, 5 idempotent replay pairs, all green.
 

@@ -132,7 +132,7 @@ pre-3.5.2 profile set or a migrated one. That is a schema-version event.
 
 - Existing check: `npm --prefix packages/schema run verify` compiles `envelope-backup.schema.json` and
   validates the pre-migration instance as one of its 19 valid examples, and the namespace loop
-  (`packages/schema/scripts/verify.mjs:359-372`) keeps the backup and version keys declared, non-`+`, and
+  (`packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}" and "secret-bearing namespace is not sync-eligible: ${ns.entity}") keeps the backup and version keys declared, non-`+`, and
   non-sync-eligible while secret-bearing.
 - Verified: NO -- deferred to Phase 2: the runner itself (ordering, idempotency, resume, `dryRun`, per-step
   `verify`), the blocking backup/restore precondition, the abort-on-zero-`keyCount` rule, and the negative

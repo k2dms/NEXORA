@@ -307,7 +307,7 @@ and no bidirectional streaming RPC semantics.
 
 | Invariant | Enforcing check today | State |
 |---|---|---|
-| Frame limits are the documented ones and ordered | framing sanity block, `packages/schema/scripts/verify.mjs:242-263` | **GREEN** |
+| Frame limits are the documented ones and ordered | framing sanity block, `packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 1 MB", "the effective cross-browser limit is not larger than the smallest documented cap" and "host-to-extension cap is at least the reverse direction" | **GREEN** |
 | Envelope `required` is exactly `v,id,type,sentAt` | `#/required` + ajv compile of every fixture frame | **GREEN** |
 | `request`/`response`/`event` field discipline | `#/allOf` + the two must-reject envelope examples | **GREEN** |
 | The sender identity crosses hop 2 by a named mechanism, and hop 2 has a contract of its own | nothing | Verified: NO — deferred to Phase 2 (the envelope is closed at fourteen fields and none of them is a sender, and no file in `packages/schema/` states the local pipe's message schema or its version field — see §2's last three paragraphs; naming that contract is the assertion this row promises) |

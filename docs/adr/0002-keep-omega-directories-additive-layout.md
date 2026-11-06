@@ -66,7 +66,7 @@ scripts and is a product-behaviour change disguised as tidiness.
   `omega_pac.min.js` produced exit code 0 and a blank options page, not a build error.
 - **Move the connector to its own repository.** Rejected: the command allowlist, the envelope and the framing
   limits are one contract shared by both sides; splitting them means a version-skew class of bug that the
-  in-tree cross-check in `packages/schema/scripts/verify.mjs:160-172` exists to prevent.
+  in-tree cross-check in `packages/schema/scripts/verify.mjs` "hello gating agrees between allowlist and command doc" and "command class agrees between allowlist and command doc" exists to prevent.
 - **npm workspaces replacing `file:` deps and `npm link`.** Rejected for this iteration only, not on design
   grounds: it changes the install chain that is the sole reason the baseline is green, and no NEXORA feature
   depends on it. Recorded here so it is not mistaken for an oversight.

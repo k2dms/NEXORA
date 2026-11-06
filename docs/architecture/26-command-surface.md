@@ -6,7 +6,7 @@ Depends on: ADR-0004, ADR-0005, ADR-0007, ADR-0008, ADR-0009, ADR-0013, ADR-0019
 > This document is the human-readable half of a contract whose machine-readable half is
 > `packages/schema/protocol/command-allowlist.json` plus the nineteen files in
 > `packages/schema/protocol/commands/`. It MUST name exactly those nineteen and nothing else as dispatchable.
-> That equality is not editorial: `packages/schema/scripts/verify.mjs:196-210` parses this file for backticked
+> That equality is not editorial: `packages/schema/scripts/verify.mjs` "docs/architecture/26-command-surface.md names the same set" parses this file for backticked
 > dotted names, intersects them with the allowlist, and fails the build unless the two sets are identical.
 
 ## 0. Rules that govern every method
@@ -14,8 +14,8 @@ Depends on: ADR-0004, ADR-0005, ADR-0007, ADR-0008, ADR-0009, ADR-0013, ADR-0019
 1. The set is **closed**. `deniedByDefault: true` and `unknownMethodBehavior: "UnknownMethod"`
    (`packages/schema/protocol/command-allowlist.json:7-8`). An unknown method MUST be rejected before any state
    is touched, with no fallthrough, no default handler, and no "closest match"
-   (`packages/schema/protocol/command-allowlist.json:9`). **Verified**: `packages/schema/scripts/verify.mjs:167-171` asserts each command
-   doc's `class` equals the allowlist `class`, and `packages/schema/scripts/verify.mjs:160-166` asserts its hello gating is the exact
+   (`packages/schema/protocol/command-allowlist.json:9`). **Verified**: `packages/schema/scripts/verify.mjs` "command class agrees between allowlist and command doc" asserts each command
+   doc's `class` equals the allowlist `class`, and `packages/schema/scripts/verify.mjs` "hello gating agrees between allowlist and command doc" asserts its hello gating is the exact
    complement of `availableBeforeHello`.
 2. The caller MUST NOT be able to name a path, a URL, a shell token or a binary. Arguments are entity
    identifiers (`^srv-[0-9a-f]{8}$` tags, profile ids, subscription ids) and enumerated policies. This is the
@@ -32,11 +32,11 @@ Depends on: ADR-0004, ADR-0005, ADR-0007, ADR-0008, ADR-0009, ADR-0013, ADR-0019
    (`packages/schema/protocol/commands/schema` — `timeoutMs` is "Owned by the caller. A hung host must never
    hang the service worker"). The Connector MAY finish later and report; the extension MUST NOT assume a
    response means a completed effect after the deadline.
-6. Only `server.test` is non-replayable. Everything else declares `replayable: true`, and `packages/schema/scripts/verify.mjs:154-156`
+6. Only `server.test` is non-replayable. Everything else declares `replayable: true`, and `packages/schema/scripts/verify.mjs` "probe is non-replayable: ${doc.name}"
    enforces that a `probe` is exactly the opposite, because a cached timing is a lie about the network
    (ADR-0008).
 7. Errors come from one closed taxonomy (`packages/schema/protocol/error-taxonomy.json`, 23 codes, each with
-   `retryable`); `packages/schema/scripts/verify.mjs:122-128` rejects a command doc that cites a code the taxonomy does not define.
+   `retryable`); `packages/schema/scripts/verify.mjs` "command ${doc.name} cites only taxonomy codes" rejects a command doc that cites a code the taxonomy does not define.
 
 ## 1. Surface at a glance
 
@@ -76,7 +76,7 @@ Counts and both class/priv columns are read from `packages/schema/protocol/comma
 | `converge` | `core.start`, `core.stop`, `core.restart`: the caller states the desired state; the Connector makes it true or reports why it cannot. `core.start` on an already-running Core with the same config hash is a **successful no-op returning the same PID** (`packages/schema/protocol/commands/core.start.json:4`). | A caller that treats converge as imperative will double-spawn Core or interpret a no-op as failure. |
 | `replace` | `config.apply`, `profile.import`: declarative replace-and-reconcile of a whole set, validated before anything is written, with a compare-and-swap field. | A partial write on failure — forbidden by the invariants below. |
 | `mutate` | `core.select`, `profile.remove`, `subscription.refresh`, `keystore.purge`, `connector.events.subscribe`: one directed change, idempotent by client `id` (ADR-0008), with a declared durable effect. | Replayed after a crash: safe only because the client `id` is the idempotency key. |
-| `probe` | `server.test`: measures the network now. `replayable: false` is enforced (`packages/schema/scripts/verify.mjs:154-156`). | A cached probe result is a false statement about connectivity; the client MUST treat a replay as stale. |
+| `probe` | `server.test`: measures the network now. `replayable: false` is enforced (`packages/schema/scripts/verify.mjs` "probe is non-replayable: ${doc.name}"). | A cached probe result is a false statement about connectivity; the client MUST treat a replay as stale. |
 
 ### 2.1 `config.apply` is not `core.select`
 
@@ -104,12 +104,12 @@ field that pins it:
 
 `profile.import` (60 000 ms) is the only method that can arrive split across frames. The slice shape is a
 nested `args.chunk` object — `{contentHash, chunkSeq, chunkCount, encoding}` — and it MUST be structurally
-identical to `protocol/envelope.schema.json#/properties/chunk`; `packages/schema/scripts/verify.mjs:500-531` compares the two field by
+identical to `protocol/envelope.schema.json#/properties/chunk`; `packages/schema/scripts/verify.mjs` "the envelope chunk shape and profile.import args.chunk are one shape" compares the two field by
 field so the mirror cannot drift. `args.profiles` is `minItems: 0` precisely so a slice frame can carry no
 profiles (`packages/schema/protocol/commands/profile.import.json:17-21`), `contentHash` is mandatory whenever
 `chunk` is present, and the group rules — same `chunkCount` across a group, `chunkSeq` covering
 `0..chunkCount-1` exactly once, one hash per group — are asserted over
-`packages/schema/fixtures/protocol/*.jsonl` by `packages/schema/scripts/verify.mjs:572-652`, which fails if a chunked group is absent
+`packages/schema/fixtures/protocol/*.jsonl` by `packages/schema/scripts/verify.mjs` "a chunked profile.import slice exists in the fixtures", "a complete chunked import reassembles in the fixtures" and "the chunked IntegrityMismatch path is exercised by a real group", which fails if a chunked group is absent
 from the fixtures rather than passing vacuously.
 
 ## 3. Per-method notes a reader cannot get from the schema
@@ -121,7 +121,7 @@ from the fixtures rather than passing vacuously.
 that only make sense in the two-process model of ADR-0005. An extension whose `minCompatibleProtocolVersion`
 the Connector cannot satisfy MUST refuse to proceed; the compatibility table is
 `packages/schema/protocol/compatibility-rules.json`, whose capability names are asserted in both directions
-against `connector.hello` (`packages/schema/scripts/verify.mjs:130-138`).
+against `connector.hello` (`packages/schema/scripts/verify.mjs` "command ${doc.name} cites only declared capabilities").
 
 **`connector.version`** — subsumed by `connector.hello` for negotiation, kept because an already-negotiated
 client needs a cheap re-read after a connector restart without re-declaring capabilities.
@@ -233,13 +233,13 @@ accidental "delete all credentials" is structurally impossible from a UI bug.
 
 | Claim in this file | Checked by | Status |
 |---|---|---|
-| The document names exactly the allowlist's nineteen methods | `packages/schema/scripts/verify.mjs:196-210` (parses this file) | **Verified** — the DEFERRED note became an assertion when this file landed |
-| Method class / hello-gating agree between allowlist and command doc | `packages/schema/scripts/verify.mjs:160-166`, `packages/schema/scripts/verify.mjs:167-171` | **Verified** |
-| Every cited error code exists in the taxonomy | `packages/schema/scripts/verify.mjs:122-128` | **Verified** |
-| Every cited capability exists in the compatibility rules | `packages/schema/scripts/verify.mjs:130-138` | **Verified** |
-| `probe` is non-replayable | `packages/schema/scripts/verify.mjs:154-156` | **Verified** |
-| Chunk mirror equals envelope chunk shape | `packages/schema/scripts/verify.mjs:500-531` | **Verified** |
-| Chunk groups in the fixtures are complete | `packages/schema/scripts/verify.mjs:572-652` | **Verified** |
+| The document names exactly the allowlist's nineteen methods | `packages/schema/scripts/verify.mjs` "docs/architecture/26-command-surface.md names the same set" (parses this file) | **Verified** — the DEFERRED note became an assertion when this file landed |
+| Method class / hello-gating agree between allowlist and command doc | `packages/schema/scripts/verify.mjs` "hello gating agrees between allowlist and command doc", `packages/schema/scripts/verify.mjs` "command class agrees between allowlist and command doc" | **Verified** |
+| Every cited error code exists in the taxonomy | `packages/schema/scripts/verify.mjs` "command ${doc.name} cites only taxonomy codes" | **Verified** |
+| Every cited capability exists in the compatibility rules | `packages/schema/scripts/verify.mjs` "command ${doc.name} cites only declared capabilities" | **Verified** |
+| `probe` is non-replayable | `packages/schema/scripts/verify.mjs` "probe is non-replayable: ${doc.name}" | **Verified** |
+| Chunk mirror equals envelope chunk shape | `packages/schema/scripts/verify.mjs` "the envelope chunk shape and profile.import args.chunk are one shape" | **Verified** |
+| Chunk groups in the fixtures are complete | `packages/schema/scripts/verify.mjs` "a complete chunked import reassembles in the fixtures" | **Verified** |
 | `config.apply` restarts only on hash change | no code exists to run | **Verified: NO — deferred to Phase 2** (golden config test, `docs/architecture/27-config-compilation-pipeline.md`) |
 | `core.select` performs no config write | no code exists to run | **Verified: NO — deferred to Phase 2** (`core.select` leaves the applied-config hash unchanged, asserted once the handler exists) |
 | `profile.import` rejects a dangling `serverId` | not expressible in the schema | **Verified: NO — deferred to Phase 2** (ProfileRegistry invariant) |

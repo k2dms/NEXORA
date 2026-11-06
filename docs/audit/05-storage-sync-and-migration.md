@@ -246,7 +246,7 @@ Two wording defects in the existing contract, recorded for its owner (not edited
 travel through `chrome.storage.sync` in this fork; and `legacyOwned`
 (`packages/schema/envelope-keys.schema.json:78-81`) names keys the engine does not use (`docs/audit/04` §8). The
 verifier checks namespace prefixes and the `secretBearing`/`syncEligible` cross-rule
-(`packages/schema/scripts/verify.mjs:359-369`) but does not check `legacyOwned` against source at all. **VERIFIED**
+(`packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}" and "secret-bearing namespace is not sync-eligible: ${ns.entity}") but does not check `legacyOwned` against source at all. **VERIFIED**
 
 ---
 

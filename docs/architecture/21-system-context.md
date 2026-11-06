@@ -201,8 +201,8 @@ recorded in `docs/architecture/40-open-decisions.md`).
 | No protocol code in `nexora/**` | the `VER-03` step of `.github/workflows/verify.yml` — the grep for transport protocol literals in executable JS, green on three runner images on 2026-11-05 (`docs/audit/99-baseline-report.md` §12) over roots that hold no code yet | Verified: NO — deferred to Phase 2 |
 | The pipe version and the browser protocol version are independent numbers | `packages/schema/protocol/framing.json#/protocolVersion` exists; `minPipeVersion` does not yet | Verified: NO — recorded as a Phase-2 contract addition, `docs/architecture/40-open-decisions.md` |
 | The command set the worker may send is the allowlist | `packages/schema/protocol/command-allowlist.json` vs `packages/schema/protocol/commands/` — the "command-allowlist.json and protocol/commands/*.json name the same set" assertion in `packages/schema/scripts/verify.mjs` | **GREEN** (run `npm --prefix packages/schema run verify`) |
-| Nothing is dispatchable before negotiation | the "nothing is dispatchable before negotiation except connector.hello" assertion in the same file | **GREEN** |
-| Frame limits are the documented ones | the framing sanity block in `packages/schema/scripts/verify.mjs` (`:242-263`) | **GREEN** |
+| Nothing is dispatchable before negotiation | `packages/schema/scripts/verify.mjs` "nothing is dispatchable before negotiation except connector.hello" | **GREEN** |
+| Frame limits are the documented ones | the framing sanity block in `packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 1 MB", "the effective cross-browser limit is not larger than the smallest documented cap" and "host-to-extension cap is at least the reverse direction" | **GREEN** |
 
 Trace: ADR-0003, ADR-0004, ADR-0005, ADR-0006, ADR-0007, ADR-0009, ADR-0011, ADR-0013, ADR-0019 · Contract:
 `packages/schema/protocol/framing.json`, `packages/schema/protocol/command-allowlist.json`,

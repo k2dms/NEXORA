@@ -44,7 +44,7 @@ in generated PAC — the mechanism that decides what the extension may store at 
    `maskedConfig` for any pinned secret value finds nothing
    (`packages/schema/protocol/commands/config.snapshot.json:51`), and the namespace rule
    `secretBearing ⇒ ¬syncEligible` is asserted over the registered keys
-   (`packages/schema/scripts/verify.mjs:365-368`).
+   (`packages/schema/scripts/verify.mjs` "secret-bearing namespace is not sync-eligible: ${ns.entity}").
 5. Cleanup is split the same way: `keystore.purge` deletes secrets by scope — including `orphaned` — without
    deleting intent, and refuses to strand an applied config
    (`packages/schema/protocol/commands/keystore.purge.json:17` and its `still-referenced` invariant at
@@ -102,8 +102,9 @@ or reorder user profiles on its own authority; and letting the extension write a
 - `packages/schema/protocol/commands/config.snapshot.json:37` — VERIFIED — `maskedConfig`;
   `packages/schema/protocol/commands/diagnostics.get.json:4` — VERIFIED — "everything it returns is masked at
   the sink, size-bounded and ring-buffered".
-- `packages/schema/scripts/verify.mjs:373-377` — VERIFIED — the harness asserts `headers` is stripped; `packages/schema/scripts/verify.mjs:365-368` —
-  VERIFIED — the `secretBearing`/`syncEligible` assertion, non-vacuous only for the two namespaces above.
+- `packages/schema/scripts/verify.mjs` "syncExcludedValueKeys strips headers" — VERIFIED — the harness asserts `headers` is stripped;
+  `packages/schema/scripts/verify.mjs` "secret-bearing namespace is not sync-eligible: ${ns.entity}" — VERIFIED — the `secretBearing`/`syncEligible` assertion, non-vacuous only for the two
+  namespaces above.
 - `packages/schema/connector-profile.schema.json:5` — VERIFIED — an intent document that compiles to one
   loopback FixedProfile, which is the boundary in one sentence.
 - The connector side of the split (keystore contents, compiled config, health history) — UNVERIFIED at

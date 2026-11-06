@@ -25,7 +25,7 @@ Executable artefacts, outside this directory:
 | `packages/schema/` | The contracts as data — JSON Schema for entities, the Native Messaging envelope, the closed command allowlist with one document per command, error taxonomy, fixtures of recorded protocol frames. `npm --prefix packages/schema run verify` is the green test of this iteration |
 | `tools/verify-vendor.mjs` | Fails if a `lib/…` reference in the legacy UI sources has no file under `omega-web/lib/` |
 | `tools/check-no-secrets.mjs` | Scans the tree for secret-shaped strings; `--selftest` proves the scanner itself works |
-| `tools/check-doc-evidence.mjs` | Fails if any `path:line` citation in `docs/` no longer points at a real, non-blank line |
+| `tools/check-doc-evidence.mjs` | Fails if a citation in `docs/` no longer means what it says: a `path:line` that is out of range or lands on a blank line, a `path#/pointer` that does not resolve, a named document that does not exist, a line cite into a file that is rewritten in place, or a quoted harness label that is not a check the harness has |
 
 ## Conventions these documents follow
 
@@ -33,15 +33,19 @@ Executable artefacts, outside this directory:
 - **Every factual claim about the legacy code cites `path:line`.** `node tools/check-doc-evidence.mjs`
   enforces that the citation still resolves; a stale citation is treated as a defect, not as trivia.
 - **The cite kind follows the mutability of the target.** Frozen legacy code takes `path:line`; contract
-  data takes `path#/json/pointer`, because a pointer survives every edit; a tool that is edited as the
-  docs grow (`tools/check-doc-evidence.mjs`, `packages/schema/scripts/verify.mjs`) is cited by a *named*
-  constant or assertion label, never by a line number — its line numbers move whenever a rule is added,
-  and the checker rejects self-cites for exactly that reason. New sections in the verifier go above its
-  report block, never between two existing sections: a mid-file insertion shifts every `verify.mjs:` cite
-  below it, and two had already drifted that way before this rule was written. The same rule now covers
-  `docs/PROJECT-STATE.md`, which is rewritten in place as the handoff log, and `docs/audit/99-baseline-report.md`,
-  which every probe round appends to: cite them as `docs/PROJECT-STATE.md` §n and
-  `docs/audit/99-baseline-report.md` §n, and the checker rejects a line cite into any of them.
+  data takes `path#/json/pointer`, because a pointer survives every edit; a file that is rewritten as the
+  docs grow takes neither. `tools/check-doc-evidence.mjs` is cited by a *named constant* (`CITATION_RE`,
+  `FUTURE_PREFIX`, `PLANNED_DOCS`, `blankTarget`), `docs/PROJECT-STATE.md` and
+  `docs/audit/99-baseline-report.md` by *section* (`docs/PROJECT-STATE.md` §n), and
+  `packages/schema/scripts/verify.mjs` by *assertion label*. A harness citation is the file token and then
+  one or more double-quoted labels exactly as the harness carries them — template placeholders included,
+  `packages/schema/scripts/verify.mjs` "the command surface is exactly nineteen methods",
+  "secret-bearing namespace is not sync-eligible: ${ns.entity}" — one label per line, never split across a
+  line break or a table cell. `STALE LABEL` in the checker reads the harness and refuses a citation that
+  names no check, which is why a rule added in the middle of the verifier can no longer break the docs that
+  depend on it: 52 such citations across 14 documents were converted this way on 2026-11-06, and the file
+  joined `MUTABLE_CITATION_TARGETS` in the same commit so a new line cite into it is a red run rather than
+  a recommendation.
 - **Every design claim names its check.** If nothing checks it, it is recorded in
   `architecture/39-verification-matrix.md` with `Verified: NO — deferred to Phase 2` rather than asserted.
 - **A question a check cannot close is a decision, not a deferral.** If the missing artefact is an answer a human

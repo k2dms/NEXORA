@@ -53,7 +53,7 @@ The contract:
    why each exists), while missing the two fields that actually carry a clock in the engine being replaced:
    `revision`, a timestamp in hex (`omega-pac/src/utils.coffee:4`, stamped by `updateRevision` at
    `omega-pac/src/profiles.coffee:153`), and `lastUpdate`, an ISO string (`omega-target/src/options.coffee:805`).
-   The suffix list is kept where it is honest — `packages/schema/scripts/verify.mjs:483` uses it to compare two
+   The suffix list is kept where it is honest — `packages/schema/scripts/verify.mjs` "idempotent replay returns the same result: ${file}#${req.id}" uses it to compare two
    replayed protocol *results*, which is a fixture device, not a compile rule.
 3. **`installRoot` is not inlined** into the config (`packages/schema/connector-settings.schema.json#/properties/core/properties/installRoot`):
    an absolute path would make the hash machine-specific, so a relocated Core changes no hash.
@@ -184,9 +184,9 @@ is an apply that failed while a real Core was loading the previous config).
 |---|---|---|
 | `ports.host` is a `const`, not an enum with two values | `#/properties/ports/properties/host` | **GREEN** |
 | Port range is bounded and sane | `connector-settings.schema.json#/allOf` | **GREEN** |
-| `domainStrategy` accepts only Xray's three values | "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" in `packages/schema/scripts/verify.mjs:847-890` | **GREEN** |
+| `domainStrategy` accepts only Xray's three values | `packages/schema/scripts/verify.mjs` "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" | **GREEN** |
 | `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256`; `connector/internal/compile/split.go` fills it and its bounds are tested, and `connector/cmd/nexora-connector/config_apply.go` carries what it fills into the command answer | **GREEN** for the shape; the *reporting behaviour* is Verified: NO — no session shows a browser reporting rather than dropping it |
-| Every `*Hash` field is one canonical lowercase sha256 pattern | the "`<field>` uses the canonical sha256 pattern" coverage check at `packages/schema/scripts/verify.mjs:750` | **GREEN** |
+| Every `*Hash` field is one canonical lowercase sha256 pattern | the coverage check in `packages/schema/scripts/verify.mjs` "${name}.${part}.${field} uses the canonical sha256 pattern" | **GREEN** |
 | Compilation is byte-deterministic | the serializer and three goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
 | Non-loopback bind is impossible to emit | `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before stage 7 returns, and `compile_test.go` shows an `0.0.0.0` inbound cannot survive it | Verified: NO — deferred to Phase 2 |
 | Block port range and allocation range are disjoint | `connector/internal/compile/ports.go` refuses a range that overlaps the block range rather than drawing around it, and `model_test.go` checks the two shipped documents | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |

@@ -37,14 +37,14 @@ first and implemented second, and it is the artifact both implementations bind t
    its args, result, errors, timeouts, class, idempotency and side effects. A method without a document is a
    build failure, not a TODO.
 4. The three names — the allowlist, the command documents and `docs/architecture/26-command-surface.md` —
-   MUST denote the same set. The parity assertion at `packages/schema/scripts/verify.mjs:160-172` and the count
-   assertion at `packages/schema/scripts/verify.mjs:186` enforce the first two today; the document cross-check
-   degrades to a visible `DEFERRED` note at `packages/schema/scripts/verify.mjs:208-210` and becomes a real
+   MUST denote the same set. The parity assertion in `packages/schema/scripts/verify.mjs` "hello gating agrees between allowlist and command doc" and "command class agrees between allowlist and command doc" and the count
+   assertion in `packages/schema/scripts/verify.mjs` "the command surface is exactly nineteen methods" enforce the first two today; the document cross-check
+   degrades to a visible `DEFERRED` note (`packages/schema/scripts/verify.mjs` "DEFERRED: 26-command-surface.md cross-check (file not present yet)") and becomes a real
    assertion the moment the file exists.
 5. Commands MUST be versioned with the protocol: the frame carries `v`, `connector.hello` negotiates
    `protocolVersion`, and a command whose `capabilities[]` is non-empty MUST NOT be sent before `hello`
    reports them (`packages/schema/protocol/compatibility-rules.json:16`). Nothing is dispatchable before
-   negotiation except `connector.hello` (`packages/schema/scripts/verify.mjs:187-192`).
+   negotiation except `connector.hello` (`packages/schema/scripts/verify.mjs` "nothing is dispatchable before negotiation except connector.hello").
 6. Error reporting MUST use the closed taxonomy — 23 codes, each declaring `retryable` — and a code outside
    it MUST be treated as a protocol violation, because a client cannot decide to retry an error it has never
    seen (`packages/schema/protocol/error-taxonomy.json:5`).
@@ -93,9 +93,8 @@ documenting a command surface that names a method the allowlist does not contain
   `diagnostics`.
 - `packages/schema/protocol/commands.schema.json:7` — VERIFIED — the eleven required fields; `:35` —
   VERIFIED — the closed `class` enum `read | converge | replace | mutate | probe`.
-- `packages/schema/scripts/verify.mjs:186` — VERIFIED — the literal assertion that the surface is nineteen
-  methods; `packages/schema/scripts/verify.mjs:222-234` — VERIFIED — the taxonomy coverage assertion (which counts
-  23 today).
+- `packages/schema/scripts/verify.mjs` "the command surface is exactly nineteen methods" — VERIFIED — the literal assertion that the surface is nineteen methods;
+  `packages/schema/scripts/verify.mjs` "every taxonomy entry is a code/layer/meaning object" — VERIFIED — the taxonomy shape assertion (which counts 23 today).
 - `packages/schema/protocol/commands/connector.hello.json:5` — VERIFIED — `class: read` for the pre-hello
   negotiation call, whose `requiresHello` field is itself pinned by
   `packages/schema/protocol/commands.schema.json:60`, so "available before hello" is data, not a special case.
@@ -107,7 +106,7 @@ documenting a command surface that names a method the allowlist does not contain
 Today: `npm --prefix packages/schema run verify` runs the parity check (rule 3 and 4), the count check (rule
 1), the pre-hello check (rule 5), the taxonomy checks (rules 2 and 6) and the non-replayable-probe rule, and
 replays `packages/schema/fixtures/protocol/*.jsonl` — 109 frames — where an out-of-allowlist method may only
-ever produce `UnknownMethod` (`packages/schema/scripts/verify.mjs:462`).
+ever produce `UnknownMethod` (`packages/schema/scripts/verify.mjs` "fixture error code is declared by ${method}: ${file}#${frame.id}").
 
 Deferred to Phase 2: the Go switch and the TypeScript client being generated from or tested against these
 documents, so that "unknown method" is verified against a live binary rather than a fixture. Specified in

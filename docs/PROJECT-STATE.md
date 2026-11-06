@@ -154,9 +154,11 @@ Rule: nothing under `nexora/**` may import from `omega-*`, except types derived 
 - `tools/verify-vendor.mjs` — collects every `lib/...` reference from `omega-web/src/**/*.jade`, `src/popup/**/*.html`, `src/coffee/*.coffee` and `omega-target-chromium-extension/overlay/*.js`, resolves each against `lib/` **or** `build/lib/`, exits non-zero on a miss.
 - `tools/check-no-secrets.mjs` — secret scanner with vendored-path skip, identifier-vs-literal discrimination and a `credentialShaped()` entropy gate; `--selftest` runs 13 cases and is green.
 - `tools/check-doc-evidence.mjs` — asserts every citation in `docs/**` resolves: a `path:line` lands on a non-blank line
-  of a file in the tree, a `path#/json/pointer` lands inside a JSON document that parses, and a document or gate-script
-  name that a document tells the reader to run or read exists (or is in `PLANNED_DOCS`, which is empty). A line cite
-  into a file rewritten in place — `MUTABLE_CITATION_TARGETS`, today `docs/PROJECT-STATE.md` — is rejected.
+  of a file in the tree, a `path#/json/pointer` lands inside a JSON document that parses, a document or gate-script
+  name that a document tells the reader to run or read exists (or is in `PLANNED_DOCS`, which is empty), and a quoted
+  harness label is a check `packages/schema/scripts/verify.mjs` actually has. A line cite into a file rewritten in
+  place — `MUTABLE_CITATION_TARGETS`, today `docs/PROJECT-STATE.md`, `docs/audit/99-baseline-report.md` and the
+  harness itself — is rejected.
 - `tools/check-legacy-backup.mjs` — hands the two shipped 3.5.2 envelopes to the real browserified `omega-pac` engine,
   compiles every profile the engine yields and evaluates each against sample requests; fails on a dangling profile
   reference, a key the `+`-prefix rule hides, an unknown profile type or a missing `schemaVersion`. `--selftest`
@@ -358,6 +360,26 @@ failure mode arrived on schedule one file over: this slice grew `packages/schema
 them above the §4.18 address into its anchor rule, and that address moved by exactly the 22 that preceded it — silently
 and correctly, because a citation that lands on a different assertion than the one it names is caught only when it
 lands on a blank line.
+§4.22 moves the set an eighteenth time — **2312 / 524 / 1463** — and it is the first entry in this series whose first
+number *falls*: −52 `path:line`, +53 document names, the pointer count untouched by a slice that touched nothing but
+addresses. All 52 were line numbers into the one file four earlier paragraphs of this ledger explain cannot be addressed
+by line number, and §6 #8(b) had deferred them as a job to do "in one commit, not in passing" so that the file could
+join `MUTABLE_CITATION_TARGETS` in the same breath. Per file against a clean worktree at the commit before: doc 26
+`−17 / +17`, doc 20 `−6 / +5`, ADR-0007 `−7 / +4`, ADR-0008, ADR-0010 and ADR-0012 `−3` each (`+4 / +3 / +3` names),
+ADR-0004 `−2 / +2`, `docs/audit/04` `−2 / +1`, this file `−2 / +8`, and ADR-0002, ADR-0014, doc 25, doc 27 and
+`docs/audit/05` `−1 / +1` each — plus doc 21 at `−0 / +1`, the odd one, because its frame-limits cell carried a bare
+range that had never been a citation the guard could see. The two counts do not move one for one, for two reasons the ledger should own
+separately. `DOCNAME_RE`'s optional suffix is `[:#]?\d*`, so a *range* address — file, colon, number, dash, number —
+was never a name the census could see, and 41 of the 52 were ranges; the converted form registers the file every time it
+registers a check. The other nine are this bookkeeping: writing down the conversion names the harness eight times in
+this file and once more in doc 21, so the act of recording the move is one of the things that moves the figures it
+records. The guard now prints a fourth number beside the three, **68 harness assertion labels**, and that is what the
+names resolve to.
+The failure mode §4.20 named as the third one recurred *inside* the slice that removes its cause: ADR-0010 grew a line
+while its own cites were being converted, two addresses in doc 34 moved onto the neighbouring real lines, and the guard
+saw only the third — the one that landed blank. The other two exist only because someone diffed every cite's target
+between HEAD and the worktree, which no citation checker can do: `:111` and `:112` are both legitimate lines, and only
+the sentence knows which one it means. That is the argument for −52 rather than for tidiness.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
@@ -981,7 +1003,7 @@ ends in those suffixes: `revision`, a timestamp rendered in hex (`omega-pac/src/
 `updateRevision` at `omega-pac/src/profiles.coffee:153`), and `lastUpdate`, an ISO string
 (`omega-target/src/options.coffee:805`). §3.2 now states the exclusion structurally — the compiler emits only keys it
 built from the model, and a golden file is what checks it — and names where the suffix list does belong:
-`packages/schema/scripts/verify.mjs:483`, which compares two replayed protocol *results*, a fixture device and not a
+`packages/schema/scripts/verify.mjs` "idempotent replay returns the same result: ${file}#${req.id}", which compares two replayed protocol *results*, a fixture device and not a
 compile rule. Doc 27 §3.1 gained the other half of the same reading: the legacy engine never sorted anything either, it
 iterates its profile table (`omega-pac/src/pac_generator.coffee:32`), so byte-determinism is an obligation NEXORA takes
 on rather than inherits — which is why the NO on that row is honest today and not a slip.
@@ -1279,7 +1301,7 @@ wires `config.apply`.
 **The prose this slice had to correct, and the anchor that made it move together.** doc 27 §8's closing parenthetical
 read "(no writer exists)" and was `VER-29`'s `at[]` anchor, so the sentence and the row could not be edited apart: the
 harness requires an anchor to land on exactly one line and that line to still carry a label
-(`packages/schema/scripts/verify.mjs:3540`). Rewriting one without the other is a red run, which is the cheapest form
+(`packages/schema/scripts/verify.mjs` "every anchor in the queue lands on one line of one document, and that line still carries the label"). Rewriting one without the other is a red run, which is the cheapest form
 of the law "a claim and its check are one change". doc 32 §1's reading rule and §13's closing paragraph, doc 34's
 row that `VER-23` cites, `VER-23`'s own subject — which had named "the config writer" as unwritten one slice after
 §4.17 — and doc 39's distribution all moved with it.
@@ -1654,6 +1676,64 @@ is `connector/cmd/nexora-host`, which `ODEC-35` stops — not a cheap item, and 
 
 ---
 
+### 4.22 The 52 line numbers into the harness, replaced by the assertions they were naming (2026-11-06)
+
+**What landed.** §6 #8(b) has carried this job since the convention it repairs was written, and it asked for the work in
+one commit rather than in passing so that `packages/schema/scripts/verify.mjs` could join
+`MUTABLE_CITATION_TARGETS` in the same breath. The item said `49`; measured against a clean worktree at the commit
+before, the corpus carried **52** visible `path:line` addresses into that file across **14 documents**, and three more in
+a shape the checker is blind to — the bare `` `:437` `` and `` `:452` `` in
+`docs/adr/0008-idempotency-and-replay.md`, which are not `path:line` spans because they name no path, and the
+parenthetical `` (`:242-263`) `` in doc 21's frame-limits row, which sits outside the file token it refers to. All 55
+are now citations of the assertion: the file token, then one or more double-quoted labels exactly as the harness carries
+them, template placeholders included. No `VER` or `ODEC` row moves, for the reason §4.21 gives for its three: this is a
+claim about how the corpus points, not about the system, and the register's own rule calls a row for either of the other
+two kinds.
+
+**Converted by meaning, not by number.** The rule for each of the 55 was to read the sentence, find the block of the
+harness it describes, and quote the label that block asserts — never to follow the address, which is the quantity in
+question. That choice is what found the two that had already rotted: ADR-0008's `:437` lands on the line that works out
+whether any answer in a replay group succeeded, and `:452` on the closing brace of the fixture-event-name check, while
+the probe-answered-once check sits forty-one lines below the first and the replay-pairs check forty-one below the
+second. Both sentences were accurate; both numbers were not; and because the spans were bare, a green run had been
+agreeing with them for months. Had the conversion been mechanical, the corpus would have kept two citations that resolve
+and mean nothing — which is the whole defect class, in the two places it had already happened.
+
+**The half of the rule that had no checker.** A label citation is stronger than a line number only if something reads
+it, so `tools/check-doc-evidence.mjs` gained a fourth pass: `HARNESS_TOKEN_RE` finds the token, `LABEL_RUN_RE` walks the
+quoted labels that follow it, and `staleLabel` refuses any quote that is not a substring of the harness. Writing it
+produced two findings of its own. First a false positive: doc 36 §2's questions table has a cell whose sentence ends
+*at* the token, and the first parser read the next cell's opening quote as a label — which is why the separator must be
+real whitespace,
+a comma or `and`/`—`, why a label may not contain `|`, and why the run stops at a blank line. Then the opposite failure,
+the silent one: two of the converted cites wrapped a label across a line break — ADR-0004's four framing rules and doc
+27's `domainStrategy` row, which also lost its table shape — and a parser that refuses newlines inside a label checks
+fewer labels and reports green. A throwaway that re-parses the corpus with a grammar that *allows* the split, and
+compares the two counts, is what proved the set closed: it prints each escaped quote instead of trusting the guard's
+total, and today both counts are 68.
+
+**What the shift cost while the conversion was in progress.** §4.20's third failure mode — the file a number points into
+grew for a reason belonging to the next slice — arrived inside the slice that removes its cause, and in the one place it
+still can: converting ADR-0010's own bullet put three lines where two had been, two addresses in doc 34 into that ADR
+moved onto the neighbouring real lines, and the guard saw only the third of the three, because it landed blank. The
+other two are not catchable by any citation checker, since `:111` and `:112` are both legitimate lines and only the
+sentence knows which it means; they were found by diffing every cited target between HEAD and the worktree, and
+re-pointed by reading. Line cites into a document a slice edits are still this fragile. What this slice buys is that the
+55 into the file that moves *most* are no longer addresses at all.
+
+**Gates.** `node tools/check-doc-evidence.mjs` → green at the three figures §4.4's eighteenth paragraph carries, plus
+**68 harness assertion labels**; the bucket is load-bearing, proven by writing "extension-to-host frame limit is 2 MB"
+into ADR-0004, which fails with `STALE LABEL (1)` naming the file and the quote, and is green again on revert.
+`npm --prefix packages/schema run verify`
+→ the same **1220 checks** as §4.21: this slice changes no contract and no assertion, so the harness that reads doc 39's
+tallies reads the same doc 39. `go -C connector test -count=1 ./...` → the same eleven `ok` lines; `gofmt -l connector`
+prints nothing and `go -C connector vet ./...` is silent. `node tools/check-no-secrets.mjs` → 478 files, unchanged —
+it enumerates `git ls-files` and this slice adds no file. `docs/README.md`'s citation-kind bullet, doc 20's citation row,
+doc 21's dispatch and frame-limits rows and this file's §4.1 inventory line now state the label grammar, so the
+convention and the checker describe one thing.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -1736,8 +1816,9 @@ is `connector/cmd/nexora-host`, which `ODEC-35` stops — not a cheap item, and 
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2364 `path:line`, 524 pointers, 1410 doc-and-script
-  names; `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
+- `node tools/check-doc-evidence.mjs` → **green** (2312 `path:line`, 524 pointers, 1463 doc-and-script
+  names, 68 harness assertion labels — the fourth figure is new with §4.22 and no GitHub runner has printed it yet;
+  `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
   local to this host: `42025558933` and `42027072602` printed exactly `2260 / 487 / 1287`, `42029092102`,
   `42029386377` and `42033189223` printed `2260 / 487 / 1289`, `42035782395` printed `2260 / 487 / 1290`,
   `42046629162` printed `2262 / 487 / 1306`, and the three earliest executions printed `2252 / 487 / 1253` for the corpus
@@ -1837,12 +1918,11 @@ machinery was written, not a second place to read its counts.
 five ADR `## Verification` sections — ADR-0001 rule 5 forbids correcting history in place, and
 `docs/adr/0012-nexora-keys-under-dash-prefix.md:106` shows the intended form ("green at the time of writing");
 `docs/adr/0020-test-strategy.md:86` likewise calls doc 39
-"not yet written", which is recorded as stale-by-design in doc 39 §13. (b) `49` citations across `13` documents still
-point at `packages/schema/scripts/verify.mjs` *line numbers* although the "Conventions these documents follow" list in
-`docs/README.md` says a mutable tool file is cited by its constant or assertion label; they resolve today because every
-new block was appended at the end, and the first block added in the middle will break them — convert them in one commit,
-not in passing, and add the file to `MUTABLE_CITATION_TARGETS` in the same commit so the rule is enforced rather than
-recommended.
+"not yet written", which is recorded as stale-by-design in doc 39 §13. (b) — **done, §4.22.** The item said `49`
+citations across `13` documents; measured against the commit before it was `52` across `14`, plus three more the
+checker could not see at all. All 55 now name the assertion they describe, `packages/schema/scripts/verify.mjs` joined
+`MUTABLE_CITATION_TARGETS`, and the rule the `docs/README.md` convention had been recommending since it was written is
+enforced by `staleLabel` in `tools/check-doc-evidence.mjs`.
 
 (c) The same defect already happened once here, at scale: `21` citations pointed at *this* file by line number, and the
 paragraphs written above them moved eight of them onto the wrong decisions while they still resolved to non-blank
@@ -2309,7 +2389,9 @@ new: `ODEC-39`, where the intent documents an ids-only `config.apply` cannot car
 surface is handed, and what the compiled config file is called — found the same way, by writing a seam that three of the
 register's own rows needed named. The queue's cheap tail is closed: §4.21 writes the three items §6 had queued beside
 M2, so nothing that remains is a string and a check — every surviving item is stopped by a decision above, by the Xray
-binary this host does not have, or by a browser.
+binary this host does not have, or by a browser. §4.22 closes the queue's other tail, the one it had carried since the
+citation convention was written: `docs/` no longer addresses `packages/schema/scripts/verify.mjs` by line number at all,
+so a rule added in the middle of the harness can move a sentence but not a citation.
 Plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish; the note under that table
 says why one ninth stopped being a question and what took its place.
 Everything in §1, §2, §5 was measured, not inferred — re-run the

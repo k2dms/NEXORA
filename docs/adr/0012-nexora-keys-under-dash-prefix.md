@@ -48,7 +48,7 @@ proxy for the user who never touched that key.
 5. Two further prefixes are reserved by the legacy engine and MUST NOT be reused: the attachment convention
    `packages/schema/envelope-keys.schema.json:90` (rule-list bodies) and the `-schemaVersion` legacy scalar.
    NEXORA keeps its own version key so the two migration histories never touch.
-6. Adding a namespace means editing the registry and nothing else; `packages/schema/scripts/verify.mjs:359-372`
+6. Adding a namespace means editing the registry and nothing else; `packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}", "secret-bearing namespace is not sync-eligible: ${ns.entity}" and "namespace value schema exists: ${ns.entity}"
    rejects a pattern that starts with `+`, rejects `secretBearing && syncEligible`, and requires the
    referenced value schema to exist on disk.
 
@@ -93,8 +93,8 @@ proxy for the user who never touched that key.
   keys reach the compiled PAC and the runtime result marker.
 - VERIFIED -- `packages/schema/envelope-keys.schema.json:22` and `packages/schema/envelope-keys.schema.json:24`:
   reserved `+` prefix and the `-` home, in schema text.
-- VERIFIED -- `packages/schema/scripts/verify.mjs:359-372`: the machine check on the key pattern, with the
-  `profiles.coffee` citation carried in its failure message.
+- VERIFIED -- `packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}": the machine check on the key pattern, with the `profiles.coffee`
+  citation carried in its failure message.
 - VERIFIED -- `omega-target/src/default_options.coffee:3`: `-` scalars are the existing convention.
 - INFERRED -- the concrete UI leak (an entity showing in the quick-switch list) follows from the code paths
   above but was not observed in a running browser; no NEXORA key has ever been written.
@@ -102,7 +102,7 @@ proxy for the user who never touched that key.
 ## Verification
 
 - Existing check: `npm --prefix packages/schema run verify` -- the namespace loop
-  (`packages/schema/scripts/verify.mjs:359-372`) fails the build on a `+` pattern, on a secret-bearing
+  (`packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}", "secret-bearing namespace is not sync-eligible: ${ns.entity}" and "namespace value schema exists: ${ns.entity}") fails the build on a `+` pattern, on a secret-bearing
   sync-eligible namespace, and on a missing value schema. Green at the time of writing (707 checks; the harness has grown since).
 - Existing check: `node tools/check-doc-evidence.mjs` resolves every citation in this file.
 - Verified: NO -- deferred to Phase 2: the negative runtime test "a `-nexora.server.<id>` key produces no
