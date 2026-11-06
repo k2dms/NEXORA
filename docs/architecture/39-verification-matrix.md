@@ -1,6 +1,6 @@
 # 39 — The queue: every claim this repository makes that nothing checks, and the artefact that closes it
 
-> Purpose: 208 lines across 44 documents say `Verified: NO — deferred to Phase 2`. `docs/adr/0001-adr-practice.md`
+> Purpose: 203 lines across 44 documents say `Verified: NO — deferred to Phase 2`. `docs/adr/0001-adr-practice.md`
 > rule 9 put the label there; `docs/adr/README.md` step 4 makes it the only honest alternative to naming a check;
 > `docs/audit/00-scope-and-method.md` requires it of every `UNVERIFIED` finding it hands forward;
 > `docs/architecture/20-target-repository-layout.md` §13 makes this document the owner of every one of them and
@@ -55,7 +55,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
 
 | # | Question a document could not answer itself | Answered by |
 |---|---|---|
-| 1 | Who owns the 208 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
+| 1 | Who owns the 203 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
 | 2 | Is a deferral the same thing as unfinished work? | No: §4 splits it five ways; the split *is* the useful content |
 | 3 | Can a document claim a check exists when it does not? | §6 — anchors resolve or the run fails |
 | 4 | Can one obligation be counted twice, so the queue looks shorter than it is? | §6 — the same partition check refuses it |
@@ -95,16 +95,16 @@ would have to be re-derived from the design, which is how a verification matrix 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
 | `no-code` | 55 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
-| `no-check` | 13 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
+| `no-check` | 10 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
 | `no-run` | 6 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 2 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 5 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **55 of 81 rows are `no-code`**: this iteration's claims are overwhelmingly
-blocked on the Connector, the compiler and the UI existing, not on tests being clever. 13 `no-check` rows are the
-part that could be closed *before* Phase 2 writes a line of product code — `VER-01`, `VER-04`, `VER-05`,
-`VER-07`, `VER-08`, `VER-10`, `VER-56` and `VER-58` are all guards over files that already exist. `VER-19` and
-`VER-66` are closeable with one example file each; `VER-18` and `VER-20` with one contract field each.
+The distribution is the finding. **55 of 78 rows are `no-code`**: this iteration's claims are overwhelmingly
+blocked on the Connector, the compiler and the UI existing, not on tests being clever. 10 `no-check` rows are the
+part that could be closed *before* Phase 2 writes a line of product code — `VER-01`, `VER-04`, `VER-05`, `VER-07`,
+`VER-56` and `VER-58` are guards over files already on disk; `VER-19` and `VER-66` need one example file each, and
+`VER-18` and `VER-20` one contract field. Three of this column — `VER-06`, `VER-08`, `VER-10` — closed on 2026-11-06.
 
 That ordering is not advice; it is what the states say.
 
@@ -112,15 +112,15 @@ That ordering is not advice; it is what the states say.
 
 ## 5. Nine owners, eight closing mechanisms
 
-`owners` — who can close the row: `connector` 39, `extension` 11, `ci` 7, `contracts` 7, `tools` 6, `packages` 3,
+`owners` — who can close the row: `connector` 39, `extension` 11, `contracts` 7, `tools` 6, `ci` 4, `packages` 3,
 `ui` 3, `external` 3, `human` 2.
 
-`closingKinds` — with what: `live-row` 39, `assertion` 18, `tool` 6, `ci-step` 6, `gate` 3,
+`closingKinds` — with what: `live-row` 39, `assertion` 18, `tool` 6, `gate` 3, `ci-step` 3,
 `external-measurement` 3, `decision` 5, `new-live-row` 1.
 
 Three consequences worth stating out loud:
 
-- **39 of 81 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **39 of 78 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -156,11 +156,12 @@ The harness then refuses three failures no prose review can see:
 | a labelled line no row answers | the corpus grows by paragraphs; nobody re-counts | `every deferred claim in the corpus is answered by a row, a vocabulary entry, or an inherited live row` |
 | an anchor that no longer lands on a labelled line | the row looks fine; the document it came from was edited | `every anchor in the queue lands on one line of one document, and that line still carries the label` |
 | one line claimed by two rows | both rows read correctly, and the queue is a lie about its length | `no deferred claim is counted as owned by two rows, or by a row and the vocabulary` |
+| a row deleted so its obligation disappears with it | the queue gets shorter and nobody can say which claim it lost | `every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it` |
 
-Plus the exact-partition assertion: rows (158) + vocabulary (26) + inherited live rows (24) = 208 = the number the
+Plus the exact-partition assertion: rows (153) + vocabulary (26) + inherited live rows (24) = 203 = the number the
 corpus is re-read to, which `marker.counted` declares and the run compares. An unowned line is unowned work. A
-stale anchor is finished work nobody deleted. A double claim is the queue lying about its own size — and 158 of
-these claims come from 38 documents, 19 of which carry more than one, so the arithmetic cannot be done
+stale anchor is finished work nobody deleted. A double claim is the queue lying about its own size — and 153 of
+these claims come from 38 documents, 18 of which carry more than one, so the arithmetic cannot be done
 by eye.
 
 The **vocabulary** list is the fourth thing: 26 lines carry the label because they *define* it — the rule in
@@ -199,10 +200,11 @@ The queue adds nothing to the live matrix and takes nothing from it. Environment
 
 Not a schedule — a dependency graph the states impose:
 
-1. **`VER-01`, `VER-04`, `VER-05`, `VER-07`, `VER-08`, `VER-10`, `VER-56`, `VER-58`, `VER-71`, `VER-18`,
-   `VER-66`, `VER-19`** close before any product code exists. They are guards over files already on disk and two
-   contract additions. They are the queue's own integrity, and they are why the rest of this list can be trusted
-   later.
+1. **`VER-01`, `VER-04`, `VER-05`, `VER-07`, `VER-56`, `VER-58`, `VER-71`, `VER-18`, `VER-66`, `VER-19`** close
+   before any product code exists. They are guards over files already on disk and two contract additions. They are
+   the queue's own integrity, and they are why the rest of this list can be trusted later. Three rows of this first
+   step — `VER-06`, `VER-08`, `VER-10` — closed on 2026-11-06, their steps having gone green on the runner; `VER-11`
+   did not, because its own record keeps the half a run cannot give it while no lockfile is tracked.
 2. **`LIVE-04` is the gate.** Promotion rule 2 of the live matrix makes egress proof a precondition of
    `LIVE-05…LIVE-09`. `VER-27`, `VER-32` and `VER-68` close by executing `LIVE-04` itself, and `VER-50` hangs on
    `LIVE-05` — behind the gate twice. Until an egress IP equals the VPS IP, no transport row may be reported,
@@ -230,8 +232,8 @@ Not a schedule — a dependency graph the states impose:
    `VER-80` are connector rows, `VER-54` and `VER-61` are `needs-human`. What does not exist here is a place to put the
    answer, not the code that would compute it.
 
-The queue does not pretend this is fast. It is the reason the queue exists: 81 named obligations with 39 of them
-pointing at one executable matrix is a plan; the same 81 as 208 scattered phrases is a mood.
+The queue does not pretend this is fast. It is the reason the queue exists: 78 named obligations with 39 of them
+pointing at one executable matrix is a plan; the same 78 as 203 scattered phrases is a mood.
 
 ---
 
@@ -240,18 +242,20 @@ pointing at one executable matrix is a plan; the same 81 as 208 scattered phrase
 | # | Rule | Why |
 |---|---|---|
 | 1 | No document may add a `Verified: NO` claim that this queue does not carry | the harness fails on the unowned line; promotion rule 4 as a machine check |
-| 2 | No row may be closed by editing its `state` | closing means the artefact exists and the row is deleted in the same commit |
+| 2 | No row may be closed by editing its `state` | closing means the artefact exists and the row is deleted in the same commit, and its id retires in `#/retired` |
 | 3 | No row may cite a line number | lines move; an anchor that survives a re-flow is the only durable pointer in a living document |
 | 4 | No row may report a live row as executed | §7 — inheritance means the status column is the live matrix's, and only its's |
 | 5 | No row may be satisfied by a `note` in the harness | a `note` is a deferral of a *check*, which is the thing this queue is supposed to eliminate |
 | 6 | No `needs-human` row may be given a number to make it green | `VER-09`, `VER-37`, `VER-74` are worth more unmeasured than invented (constraint 11) |
 | 7 | The vocabulary may not absorb a real claim | a claim demoted to "vocabulary" hides work; each entry is a sentence about the rule, and the partition count would break |
+| 8 | No `VER-NN` may be reissued | ADR-0001 rule 2 forbids it of ADR numbers for the same reason: these ids are cited across the corpus, in the step names of `.github/workflows/verify.yml`, and verbatim in the runner logs `docs/audit/99-baseline-report.md` §12 quotes — renumbering would silently change what every earlier citation means |
 
 ---
 
 ## 10. The queue
 
-81 rows, grouped by state. **Docs · lines** is how many documents carry the claim and how many labelled lines the
+78 rows, grouped by state; the three ids this queue has closed are in `packages/schema/verification.json#/retired`,
+not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
 ### `no-code` — 55
@@ -314,17 +318,14 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-80 | the `config.apply` path from a frame to a replaced config and a restarted Core has no production caller: the method is not registered, and nothing supplies the intent an ids-only call cannot carry | `connector` · decision (`ODEC-39`) | 1 · 1 |
 | VER-81 | the format an `auto` parse resolves to has nowhere to be recorded: doc 29 §5 promises `auto` never survives into a stored source, and no contract field carries the detector that won | `contracts` · decision (`ODEC-40`) | 1 · 1 |
 
-### `no-check` — 13
+### `no-check` — 10
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
 | VER-01 | no script checks the ADR index, one heading per file, the six sections, or the 60-140 line bound | `tools` · tool | 1 · 1 |
 | VER-04 | nothing prevents a root `package.json`, `go.work` or `.npmrc` from appearing | `tools` · tool | 2 · 3 |
 | VER-05 | nothing asserts the eleven coupled legacy files and six legacy directories still sit at their cited paths | `tools` · tool | 1 · 2 |
-| VER-06 | the commit-shape rules are review-only | `ci` · ci-step | 1 · 1 |
 | VER-07 | `grunt watch` scope over the new roots is unguarded | `tools` · tool | 1 · 1 |
-| VER-08 | no assertion inspects the *contents* of `dist/*.zip`; nothing enforces no-binary-in-a-tracked-path | `ci` · ci-step | 2 · 3 |
-| VER-10 | line endings and binary classification are declared in `.gitattributes` and checked by nothing | `ci` · ci-step | 1 · 1 |
 | VER-18 | the pipe floor and the browser protocol floor are declared independent; `minPipeVersion` does not exist | `contracts` · assertion | 1 · 1 |
 | VER-20 | `UnsupportedCombination` is absent from the taxonomy, so a user-supplied port overlap has no right code | `contracts` · assertion | 3 · 4 |
 | VER-56 | no tool reads the shipped manifest: the permission target column is unmeasured | `tools` · tool | 1 · 2 |
@@ -360,6 +361,16 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-61 | whether the Connector owns subscriptions end to end is undecided, so the boundary that follows from the answer cannot be asserted | `human` · decision (`ODEC-33`) | 1 · 1 |
 | VER-74 | `COMP-07`, `COMP-10`, `COMP-14`, `COMP-18` — browser floor, cohort count, envelope sizes, `unlimitedStorage` ceiling | `external` · external-measurement | 3 · 3 |
 
+### Retired — 3
+
+Closed on 2026-11-06, in the first deletion this queue has ever performed. The id stays retired: §9 rule 8.
+
+| Row | What it claimed was unchecked | What closed it |
+|---|---|---|
+| VER-06 | the commit-shape rules were review-only | the `VER-06` step of `.github/workflows/verify.yml` — label, `CUT-OVER:` scope, one cut-over per range — green on the `contracts` cells of every recorded run since `a7627ae` stated the vocabulary that step enforces |
+| VER-08 | no assertion inspected an artifact's contents, and nothing enforced 'no binary in a tracked path' | the magic-byte scan of every tracked file and the `check_zip` of the `legacy-chain` job, green on all three runner images since `ceedabf` — the uncompressed total is a printed NOTE, not a floor — plus the `.gitattributes` executable suffixes ADR-0019 rule 1 asked for |
+| VER-10 | `.gitattributes` declared line endings and binary classes that nothing checked | the `VER-10` step of `.github/workflows/verify.yml` — `git diff --check` over the range, `git ls-files --eol` over the index — green on all three runner images |
+
 ---
 
 ## 11. Who owns each check
@@ -374,7 +385,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 |---|---|---|
 | The corpus is re-read, not remembered | "the queue is derived from the whole documentation corpus, not from a list of files it was written against" | GREEN |
 | The declared count matches the derived one | "the number of deferred claims the queue says the corpus carries is what the corpus carries" | GREEN |
-| Row ids are closed and dense | "the queue is a closed set of rows with no duplicate and no hole in its ids" | GREEN |
+| Row ids are issued once | "every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it" | GREEN |
 | The three vocabularies are closed | "every row names one state, one owner and one closing mechanism, and all three vocabularies are closed" | GREEN |
 | A row is not a placeholder | "every row says what is unverified and why the state is what it is, rather than only that it is owed" | GREEN |
 | Anchors resolve | "every anchor in the queue lands on one line of one document, and that line still carries the label" | GREEN |
@@ -387,7 +398,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-81` beyond the contract layer | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-81` beyond the contract layer — 78 live, 3 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 
@@ -396,7 +407,8 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Threat to the verification itself | Control | Check |
 |---|---|---|
 | A deferral is written and never queued | the label is machine-recognised; membership is derived from the corpus | "every deferred claim in the corpus is answered by a row, a vocabulary entry, or an inherited live row" |
-| The queue is padded so it looks managed | exact partition, dense ids, one owner and one artefact per row | "the queue partitions the corpus exactly: rows, plus the sentences that define the label, plus the inherited live rows" |
+| The queue is padded so it looks managed | exact partition, ids issued once and never reissued, one owner and one artefact per row | "the queue partitions the corpus exactly: rows, plus the sentences that define the label, plus the inherited live rows" |
+| The queue is shortened by deleting a row nobody closed | the retired ledger names every id that left, with what it claimed and what closed it | "every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it" |
 | Work is reported closed because a row was re-worded | a promised assertion must still be absent | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" |
 | The live matrix is read ahead of itself | status read from its owner, on every run | "in this iteration exactly one live row is partially executed and none is executed -- the queue may not read ahead" |
 | The harness quietly shrinks what it scans | a floor on the corpus size and on §11's label count | "the queue is derived from the whole documentation corpus, not from a list of files it was written against" |
@@ -412,10 +424,12 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 2. A row is closed by its artefact, and closing deletes the row in the same commit.
 3. Nothing in this document or its data asserts that a check ran. `no-run` is a state, not a result.
 4. The live matrix owns the live rows; this document owns what the rest of the corpus owes them.
-5. The count `208` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
+5. The count `203` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
    when a row is honestly closed. Nothing outside `packages/schema/verification.json#/marker/counted` may depend on it.
 6. This document's §11 table is checked by an assertion whose label is `"every mechanism doc 39 names is a check
    this run actually makes"` — it lives outside the table so it cannot certify itself.
+7. A `VER-NN` is an address, not a tally: once issued it is never renumbered, reused or recycled, and a closed row
+   leaves the matrix but not the ledger.
 
 **Amendments.** 2026-11-06, with `connector/internal/supervisor`: `VER-14` moves `no-code` → `no-run`, `VER-79` is
 added over the line doc 30 §13 now carries, and `marker.counted` moves 205 → 206 for that one new label. Adding a row
@@ -433,6 +447,19 @@ carries the answer. Its state is `no-code` and its owner is `contracts`: a field
 assertion could mean anything is a component that does not exist, which is what this state has always meant — said here
 for the first time about a row the contract rather than the Connector owns. `ODEC-40` opens with it, so §8's third step
 now names five decisions rather than four.
+A fourth amendment the same day, and the first one that deletes rows rather than adding them: the run recorded in
+`docs/audit/99-baseline-report.md` §12 met the stated condition of `VER-06`, `VER-08` and `VER-10`, so those three rows
+are gone from `matrix`, their labelled sentences are gone from `docs/adr/0019-xray-as-integrity-pinned-downloadable-asset.md`
+and `docs/architecture/20-target-repository-layout.md` §6, §9 and §11, `marker.counted` moves 208 → 203 for the five
+labels those documents lost, and the distribution §4 and §5 read aloud moves with them. Deleting a row is the only
+closure this queue has (§9 rule 2), and it broke invariant 7's other half: the ids `VER-06`, `VER-08`, `VER-10` are
+cited by name in the step titles of `.github/workflows/verify.yml` and in runner logs, so an assertion that demanded
+a dense `VER-01`…`VER-81` range would have had to renumber what those citations already named. The range is therefore
+no longer required to be dense; it is required to be *issued once*, and `verification.json#/retired` now carries one
+tombstone per closed row -- the date, what the row claimed, and the artefact that closed it. The assertion that replaced
+the dense-id check is `"every VER id the queue ever issued is live or retired, no id is recycled, and a retired one
+says what it was and what closed it"`, and it is the reason §9 rule 2 could be obeyed here at all: the row leaves, the
+record stays, and a deletion becomes a named fact.
 
 **Open items.**
 
@@ -457,11 +484,14 @@ now names five decisions rather than four.
    authored and are now the earlier fact. The same day it ran, and `docs/audit/99-baseline-report.md` §12 tabulates
    ten of those runs — three red, six green, one cancelled — quoting each measured line there, and
    `docs/audit/02-toolchain-decay-and-risk.md` §7.3 says which
-   half of each claim the runner measured. Nothing in this queue moved because of it, and that is not timidity —
-   `packages/schema/verification.json` has no state meaning closed, so a row closes by being deleted together with
-   the labelled sentence in the document that anchors it, which changes `marker.counted` and the state distribution
-   §4 reads aloud — both of which `packages/schema/scripts/verify.mjs` holds as hard-coded numbers, on purpose. `VER-06`, `VER-08`, `VER-10` and `VER-11` are the four whose stated condition a green run now
-   meets; `VER-02` and `VER-03` ran over roots that hold no code yet; `VER-04` and `VER-05` are queued against a
+   half of each claim the runner measured. Nothing in this queue moved because of it for four days, and that was not
+   timidity: `packages/schema/verification.json` has no state meaning closed, so a row closes by being deleted together
+   with the labelled sentence in the document that anchors it, which changes `marker.counted` and the state distribution
+   §4 reads aloud — both of which `packages/schema/scripts/verify.mjs` holds as hard-coded numbers, on purpose.
+   `VER-06`, `VER-08` and `VER-10` are the three whose stated condition a green run meets, and the 2026-11-06 commit
+   named in §13 deleted them; `VER-11` is the fourth whose run is green and stays, because its own subject asks for a
+   lockfile that `.gitignore:3` refuses to track, and a run over an absent artefact is not that artefact.
+   `VER-02` and `VER-03` ran over roots that hold no code yet; `VER-04` and `VER-05` are queued against a
    `check-layout-guards` tool that has not been written; `VER-57` names a CSP load test the workflow does not
    contain. The same reading applies to the sentences in `docs/architecture/20-target-repository-layout.md` §7 and §8
    whose deferral explains that no checker or guard exists yet for the import boundary or the bare root: the scan and

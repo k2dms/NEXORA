@@ -39,3 +39,14 @@ go.sum    text eol=lf
 *.xpi     binary
 *.wasm    binary
 *.pdf     binary
+
+# Executable containers, declared for ADR-0019 rule 1 ("no binary in git").
+# The CI half of that rule is the step of .github/workflows/verify.yml that
+# reads the first bytes of every tracked file and fails on a PE, ELF or
+# Mach-O magic number; these lines are the classification that guard reads
+# itself against. They cost nothing today -- no such file is tracked, which
+# is what that step proves on every run.
+*.exe     binary
+*.dll     binary
+*.so      binary
+*.dylib   binary

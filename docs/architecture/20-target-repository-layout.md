@@ -141,8 +141,8 @@ equivalents `omega-target-chromium-extension/overlay/manifest-firefox.json:23` a
 rows it closes in `docs/architecture/38-compatibility-matrix.md`, all green; (4) re-run and re-record the
 artifact-content assertion of §5 — an exit code is never the gate; (5) be preceded by an ADR, because a design
 document MAY describe a cut-over and MUST NOT perform one. Removing legacy source is a later, separate commit
-class (ADR-0016, popup-last). Verified: NO — deferred to Phase 2: nothing checks commit granularity, the label,
-or the ADR-before-flip.
+class (ADR-0016, popup-last). Verified: YES — the `VER-06` step of `.github/workflows/verify.yml` reads every
+subject in the range for its label and scopes a `CUT-OVER:`; granularity and the ADR-before-flip stay review-only.
 
 The label vocabulary the guard accepts is `feat`, `fix`, `docs`, `build`, `test`, `refactor`, `chore`, `perf` and
 `ci` — each optionally scoped, optionally `!`-marked — plus the `CUT-OVER:` prefix above and git's own `Merge `
@@ -211,11 +211,11 @@ the `omega-web` build tree (`:4-6`), the two upstream bundles (`:9-10`), `overla
 the generated one, never the template.
 
 The check that would catch a violation — list the archive, fail on any path outside the known set or on a PE or
-ELF magic byte — **does not exist**. The 353-file and `omega_pac.min.js` figures were obtained by re-measuring
-by hand (`docs/audit/99-baseline-report.md` §6, reproduced by probe-4 in §11), and `.github/workflows/release.yml:31-34` checksums the
-zip it just built without inspecting it. **Verified: NO — deferred to Phase 2**, where it becomes a step of
-`.github/workflows/verify.yml` plus a row of `docs/architecture/39-verification-matrix.md`. `.gitignore:4`
-covers the zip and `tools/check-no-secrets.mjs` covers credentials; neither recognises an executable.
+ELF magic byte — **exists**, and has run green on a runner: the `VER-08` step of
+`.github/workflows/verify.yml` reads the first four bytes of every tracked file, and the `check_zip` of its
+`legacy-chain` job lists each artifact the build just produced before it is uploaded. The 353-file and
+`omega_pac.min.js` figures were measured by hand (`docs/audit/99-baseline-report.md` §6, reproduced by probe-4 in
+§11) and are asserted there now; `.github/workflows/release.yml:31-34` still checksums the zip without inspecting it.
 
 ## 10. Renaming artifacts: specified now, performed at cut-over
 
@@ -275,12 +275,12 @@ non-tagging, leaving `.github/workflows/release.yml` untouched — that one fire
 | The six legacy directories have not moved | nothing | Verified: NO — deferred to Phase 2 |
 | `nexora/**` and `packages/**` import nothing from `omega-*` | the `VER-02` step of `.github/workflows/verify.yml` — import-specifier, side-effect-import and `file:` greps over both roots; green here and on three runner images, but over a `nexora/**` that holds no code yet, which is why the row is not met (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 (§7) |
 | No `package.json` / `go.work` / `.npmrc` at the repository root | the `VER-04` step of `.github/workflows/verify.yml` — five root paths including `package-lock.json` and `go.mod`; green here and on three runner images, while the mechanism this row is queued against, a `check-layout-guards` tool, has not been written (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 (§8) |
-| No connector, host shim, or Xray bytes inside `dist/*.zip` | the `VER-08` step's `check_zip`, which asserts the exact top-level path set, the 353-entry count and the bundle's presence, and ran against the artifacts each of the three runner builds produced, green (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 (§9) |
+| No connector, host shim, or Xray bytes inside `dist/*.zip` | the `VER-08` step's `check_zip`, which asserts the exact top-level path set, the 353-entry count and the bundle's presence, and ran against the artifacts each of the three runner builds produced, green (`docs/audit/99-baseline-report.md` §12) | **GREEN** (§9) |
 | Extension identity and version-line continuity | nothing in-repo; store behaviour is external | Verified: NO — deferred to Phase 2, `docs/verification/live-matrix.md` LIVE-14 |
-| Line endings and binary classification stay as declared | `.gitattributes` itself, plus the `VER-10` step (`git diff --check` over the range and `git ls-files --eol` over the index); `git add --renormalize` is forbidden by the session rules | Verified: NO — deferred to Phase 2 |
+| Line endings and binary classification stay as declared | `.gitattributes` itself, plus the `VER-10` step (`git diff --check` over the range and `git ls-files --eol` over the index); `git add --renormalize` is forbidden by the session rules | **GREEN** |
 
 Every `Verified: NO` row above is owned by `docs/architecture/39-verification-matrix.md`; no assertion here is
-complete until its row there is green.
+complete until its row there is green; a row whose check has gone green is deleted here and there, not re-labelled.
 
 Trace: ADR-0002, ADR-0012, ADR-0015, ADR-0016, ADR-0017, ADR-0018, ADR-0019, ADR-0020 · Contract:
 `packages/schema/protocol/command-allowlist.json`, `packages/schema/examples/envelope-keys.nexora.json`,

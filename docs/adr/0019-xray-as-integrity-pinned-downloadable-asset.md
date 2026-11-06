@@ -127,6 +127,6 @@ as data, not as prose: the brief's constraint 6 says no committed binaries, and
 - Verified: NO -- deferred to Phase 2: download, sha256 and minisign verification, refusal on mismatch,
   per-user install ACL, upgrade-with-rollback, and `manual` channel behaviour. These need the Go module and
   a live host, and are `LIVE` rows (ADR-0020).
-- Verified: NO -- deferred to Phase 2: a repository guard for rule 1. Today nothing enforces "no binary in
-  git"; `.gitignore` and `.gitattributes` MUST gain the connector binary patterns together with the CI
-  check that fails on a committed executable.
+- Verified: YES -- rule 1 has its repository guard. The `VER-08` step of `.github/workflows/verify.yml` reads
+  the first bytes of every tracked file and fails on a PE, ELF or Mach-O magic number, and `.gitattributes`
+  now declares the executable suffixes beside the `connector/bin/` and `dist/` patterns of `.gitignore`.

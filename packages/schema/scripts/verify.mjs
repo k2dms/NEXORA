@@ -3459,12 +3459,23 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   );
 
   const ids = verif.matrix.map((r) => r.id);
+  const retiredIds = verif.retired.rows.map((r) => r.id);
   const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
-  const gapless = ids.every((id, i) => id === `VER-${String(i + 1).padStart(2, '0')}`);
+  const retiredDupes = retiredIds.filter((id, i) => retiredIds.indexOf(id) !== i);
+  const recycled = ids.filter((id) => retiredIds.includes(id));
+  const issued = ids.length + retiredIds.length;
+  const holes = Array.from({ length: issued }, (_, i) => `VER-${String(i + 1).padStart(2, '0')}`)
+    .filter((id) => !ids.includes(id) && !retiredIds.includes(id));
+  const ascending = ids.every((id, i) => i === 0 || Number(id.slice(4)) > Number(ids[i - 1].slice(4)));
+  const thinTomb = verif.retired.rows.filter((r) =>
+    !/^\d{4}-\d{2}-\d{2}$/.test(r.closed ?? '') || (r.was ?? '').length < 40 || (r.artefact ?? '').length < 40).map((r) => r.id);
   check(
-    ids.length >= 60 && dupes.length === 0 && gapless,
-    'the queue is a closed set of rows with no duplicate and no hole in its ids',
-    `${ids.length} rows, duplicates=${dupes.join(',') || 'none'}, gapless=${gapless}`,
+    ids.length >= 60 && dupes.length === 0 && retiredDupes.length === 0 && recycled.length === 0 &&
+      holes.length === 0 && ascending && thinTomb.length === 0,
+    'every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it',
+    `${ids.length} rows, ${retiredIds.length} retired, duplicates=${[...dupes, ...retiredDupes].join(',') || 'none'}, ` +
+      `recycled=${recycled.join(',') || 'none'}, holes=${holes.join(',') || 'none'}, ascending=${ascending}, ` +
+      `thin tombstones=${thinTomb.join(',') || 'none'}`,
   );
   const offVocab = (key, values) => verif.matrix.filter((r) => !values.includes(r[key])).map((r) => r.id);
   const badState = offVocab('state', verif.states.values);
@@ -3622,8 +3633,8 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 55 && count('state', 'no-check') === 13 && count('state', 'no-run') === 6 &&
-      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 81,
+    count('state', 'no-code') === 55 && count('state', 'no-check') === 10 && count('state', 'no-run') === 6 &&
+      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 5 && verif.matrix.length === 78,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
@@ -3631,7 +3642,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   check(
     count('owner', 'connector') === 39 && count('owner', 'extension') === 11 && count('owner', 'packages') === 3 &&
       count('owner', 'ui') === 3 && count('owner', 'contracts') === 7 && count('owner', 'tools') === 6 &&
-      count('owner', 'ci') === 7 && count('owner', 'human') === 2 && count('owner', 'external') === 3,
+      count('owner', 'ci') === 4 && count('owner', 'human') === 2 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
     `connector=${count('owner', 'connector')} extension=${count('owner', 'extension')} ` +
       `packages=${count('owner', 'packages')} ui=${count('owner', 'ui')} contracts=${count('owner', 'contracts')} ` +
@@ -3639,7 +3650,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   );
   check(
     kindCount('live-row') === 39 && kindCount('new-live-row') === 1 && kindCount('assertion') === 18 &&
-      kindCount('gate') === 3 && kindCount('tool') === 6 && kindCount('ci-step') === 6 &&
+      kindCount('gate') === 3 && kindCount('tool') === 6 && kindCount('ci-step') === 3 &&
       kindCount('decision') === 5 && kindCount('external-measurement') === 3,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',
     `live=${kindCount('live-row')} new-live=${kindCount('new-live-row')} assertion=${kindCount('assertion')} ` +

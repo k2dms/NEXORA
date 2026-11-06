@@ -583,20 +583,24 @@ depend on Bower, and a runner with no cache behind it produced the same 252 `lib
 
 ### What the green runs do not do
 
-They do not move a single `VER-*` row. Three reasons, all mechanical:
+They do not move a single `VER-*` row. A run is not a deletion — three reasons, all mechanical:
 
 1. `packages/schema/verification.json` has no state meaning "closed" — `states.values` is `no-code`, `no-check`,
    `no-run`, `no-fixture`, `needs-human` — so closing a row means deleting the row **and** the labelled sentence it
    is anchored to, in `docs/architecture/20-target-repository-layout.md` §13, in docs 21/25/26/27/29, in the ADRs and
-   in `docs/verification/live-matrix.md`, then re-deriving `marker.counted` (202) and re-asserting the state
-   distribution in `packages/schema/scripts/verify.mjs`, which hard-codes 53/13/2/2/5 of 75. That is a commit of its
-   own, with its own measured numbers, not a side effect of a status update.
+   in `docs/verification/live-matrix.md`, then re-deriving `marker.counted` and re-asserting the state
+   distribution in `packages/schema/scripts/verify.mjs`, which holds both as hard-coded numbers. That is a commit of
+   its own, with its own measured numbers, not a side effect of a status update. The rows this file's runs closed the
+   condition of were deleted by exactly such a commit on 2026-11-06; the numbers moved because that commit measured
+   them, not because anything above did.
 2. For six of the rows, the run is evidence but not the named closing mechanism. `VER-04` and `VER-05` are queued
    against a `check-layout-guards` tool that has not been written; `VER-02` and `VER-03` scanned roots that are still
    empty of the code they will hold, so their green is a guard that executed, not a boundary that held under
    pressure; `VER-09` needs a store, and `VER-57` needs a CSP load test the workflow does not contain.
-   `VER-06`, `VER-08`, `VER-10` and `VER-11` are the four whose stated condition — a green run of this file — is now
-   met; `docs/architecture/39-verification-matrix.md` §8 is the order they close in, and closing them is the
+   `VER-06`, `VER-08` and `VER-10` are the three whose stated condition — a green run of this file — is now
+   met, and are the three the commit above deleted; `VER-11` reached the same green and stayed, because the half its
+   own subject still asks for is a lockfile, and `package-lock.json` is untracked by design (docs/PROJECT-STATE.md
+   §9.2). `docs/architecture/39-verification-matrix.md` §8 is the order they close in, and closing them is the
    bookkeeping described in point 1 above.
 3. Nothing in any tabulated run touched the browser. `LIVE-01…24` are still `SKIPPED` and
    `docs/verification/live-matrix.md` is unchanged. And for every execution that preceded the connector job's first
