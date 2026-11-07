@@ -2834,6 +2834,41 @@ ADR shape and layout guards pass. Evidence and secret-scanner selftests pass. Th
 both with and without the binary environment variable, and gofmt reports no changes. No live verification row
 or open-decision count changes. The race detector and Linux runtime were not exercised.
 
+### 4.37 The full compiled path with two VLESS servers, and the selection proven by the source address (2026-11-07)
+
+**What exists now.** `connector/internal/compile/drive_vless_test.go` — one test, three sub-cases, the complete
+stage-5 path with real traffic on loopback. Two local Xray processes act as VLESS *servers*, each with its own
+UUID and its own `sendThrough` source address (`127.0.0.11` / `127.0.0.12`), so every connection a server relays
+carries an address the target can name. The client side is compiled by this package's own functions —
+`buildOutbounds` for the two `srv-` outbounds (the real `outboundDocument` path, `security: none`, credentials as
+the literal UUIDs a test may state), `Split` with both tags passed as the selected set, `inboundDocument`'s SOCKS5
+front door, `Emit` — and run by the pinned Xray 24.11.11. Each request's body proves the destination, and the
+source address the target recorded proves which server carried it: no access-log parsing, no out-of-band state.
+
+**The three cases, and why the third matters.** (1) The IP rules pick their servers: a request for the
+127.0.0.1 target exits from `127.0.0.11`, a request for the 127.0.0.2 target from `127.0.0.12`. (2) Swapping the
+*mapping* — not the order; the same destination names the same tag under either order — swaps the servers, which
+is the control that separates selection by rule from selection by position. (3) A server with no rule is not a
+fallback: with only the A rule and a block catchall, the B request fails at the proxy explicitly (never a timeout)
+and the B target records no arrival. Xray's two silent behaviours §4.36 measured are the reason the guard exists
+in this test too — `drive-default` is a blackhole with its own tag, so an unmatched request cannot disappear into
+the first outbound.
+
+**One correction the first run made to the test itself.** The swapped case originally swapped rule *order* and
+passed its own wrong expectation on the first attempt's design: order changes nothing when rules are
+destination-specific. The committed case swaps the mapping instead, which is the claim worth testing.
+
+**Evidence and limits.** `NEXORA_XRAY_BIN=E:/NEXORA/tmp/xray-extract/xray.exe go -C connector test -count=1
+./internal/compile/ ./internal/apply/` → both packages ok with the binary present (the whole loopback suite,
+§4.36's twenty cases included, plus this test); without the variable the new test skips beside the others.
+`gofmt -l connector` empty, `go -C connector vet ./...` quiet, the other nine `ok` lines unchanged. What this
+proves: the full compiled multi-server VLESS path — SOCKS5 inbound, core-plane IP rules, two VLESS outbounds,
+local VLESS termination, relay to a target — selects servers by rule, exclusively, under real traffic. What it
+does not: a REALITY or TLS handshake against a remote server, browser integration, trusted installation,
+production command wiring, cross-platform behaviour — the same limits §4.36 states, unchanged. No queue row
+moves: the rows that ask about selection (`VER-30`, `VER-67`, `LIVE-05`) ask about a running host and a real
+session, not a loopback proof, and the honest state of the prober's evidence is §4.36's, not more.
+
 ## 5. Verification state to the letter
 
 
@@ -2978,8 +3013,9 @@ or open-decision count changes. The race detector and Linux runtime were not exe
 ## 6. The exact next steps (task #6 → #11)
 
 **Current queue, 2026-11-07 (supersedes historical sequencing below):** §4.36 supplies real Xray config and
-loopback routing probes, so a missing local Core binary is no longer a blocker. Next: exercise the complete
-compiled multi-server VLESS path on loopback, then production intent/path wiring (ODEC-39), hash-subject decision
+loopback routing probes, so a missing local Core binary is no longer a blocker, and §4.37 exercises the complete
+compiled two-server VLESS path on loopback, with server selection proven by the source address the target saw.
+Next: production intent/path wiring (ODEC-39), hash-subject decision
 (ODEC-36) and host transport (ODEC-35). ODEC-37 is narrowed to residual predicate semantics, not missing byte
 spellings. Remote VLESS/REALITY, browser integration, trusted installation and parent-death containment are not
 proved by the loopback tests. The user authorizes continued implementation and publication under §7.
