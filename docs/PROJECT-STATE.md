@@ -535,14 +535,17 @@ sixth time in seven entries, and the reason is the same as §4.31's: a closure b
 pointers and at documents, never at a line of code. What the 68 labels do prove here is the hand-off: doc 29 §13 item 6's
 label left and ADR-0021's `## Verification` arrived, and the guard's fourth figure is the number that says the exchange
 was even rather than the number that says anybody checked.
-§4.33 moves the set a thirtieth time — **2311 / 595 / 1595**, 68 labels — measured after this paragraph and its own
+§4.33 moves the set a thirtieth time — **2311 / 596 / 1596**, 68 labels — measured after this paragraph and its own
 record were written, so it reports the set the tool prints rather than the set its sentences produced. Per file against
-a clean `git archive` of the commit before: this file `0 / 0 / +20` and `docs/README.md` `0 / 0 / +2`, the guard's own
+a clean `git archive` of the commit before: this file `0 / +1 / +21` and `docs/README.md` `0 / 0 / +2`, the guard's own
 name and this file's, which is the second time a citation-convention bullet has had to cite the record of its own
 measurement. The eight re-aimed section cites move **no figure at all**, and that is the finding rather than an
 observation: every one of them replaces a document name plus a section number with a document name plus a section
 number, so the three counters that could have seen the repair count exactly what they counted before, green before and
-green after. The only arithmetic that distinguishes the two states is the one that asks whether the section the number
+green after. Every one of the two figures that did move belongs to the record, not the repair — the pointer is the events list of the
+observability catalogue, read while measuring the method-name class this entry declines
+to register — which is the same asymmetry §4.31 reported: the slices that change what a citation *means* are invisible to
+the counters that count how many there are. The only arithmetic that distinguishes the two states is the one that asks whether the section the number
 names exists — which is `VER-83`, and is not a number yet.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
@@ -2539,8 +2542,10 @@ hypothetical row.
 
 1. `docs/architecture/22-component-contracts.md`:24 — the `HealthProber` row cited
    `docs/architecture/29-subscriptions-and-servers.md` at a section named `health`. Doc 29 has no section by that name
-   at all; the prober's behaviour home is `docs/architecture/26-command-surface.md` §3, the per-method notes that carry
-   `server.probe`'s non-replayability.
+   at all; the prober's behaviour home is `docs/architecture/26-command-surface.md` §3, the per-method note that carries
+   `server.test`'s non-replayability — the shipped probe method, whose name this record got wrong in its first draft
+   (`server.probe` is in no `packages/schema/protocol/command-allowlist.json` line, and a section-existence pass is not
+   a method-existence pass).
 2. `docs/architecture/24-options-envelope-compat.md`:117 — `docs/audit/04-data-model-and-options-envelope.md`
    §dispatcher → §2, whose hook table the sentence is transcribing.
 3. `docs/architecture/27-config-compilation-pipeline.md`:134 — doc 29 §link table → §5's loss table. The heading says
@@ -2587,7 +2592,16 @@ guard and is deliberately not registered: its two resolution rules are this sitt
 resolve against, and putting them in `docs/` as a rule would make an unenforced convention look like a checked one —
 which is the mistake the row exists to prevent. And the 568 count is a count of *matches*, not of anchors: the census
 does not try to tell a cite from a heading that happens to sit after a backticked name, so the number is an upper
-bound on what the pass will read.
+bound on what the pass will read. The neighbour class has one more member, measured and deliberately not registered:
+the same sitting re-read every backticked dotted token in `docs/` against the 19 methods of
+`packages/schema/protocol/command-allowlist.json` and the 14 names of `packages/schema/observability.json#/events`,
+and what survived was 154 tokens, of which exactly one named a method this corpus does not have and did not say so —
+the `server.probe` written into this record's own draft, corrected above. The rest carry their refusal in the sentence
+that uses them: `docs/architecture/22-component-contracts.md`'s "the allowlist has no `keystore.put`", doc 26 §4's
+"No `server.add` / `server.remove` / `profile.save`", and the `core.snooze` a
+`packages/schema/fixtures/protocol/handshake.jsonl` frame asks for precisely in order to be answered
+`UnknownMethod`. A pass over method names would have to read for negation to be honest, which is a different artefact
+from a pass over section anchors, and nobody has asked for it.
 
 **Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks**. `node tools/check-doc-evidence.mjs` →
 green, and §4.4's final ledger paragraph carries the set and the per-file deltas; the citation *set* is what the repair
@@ -2682,7 +2696,7 @@ connector` and `go -C connector vet ./...` → unchanged; this slice touches no 
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 595 pointers, 1595 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 596 pointers, 1596 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
