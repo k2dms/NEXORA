@@ -156,6 +156,12 @@
         "artefact": "packages/schema/protocol/framing.json#/minPipeVersion, declared beside #/versionFloors as the second of two floors -- `protocol` over protocolVersion and minCompatibleProtocolVersion, negotiated in connector.hello, and `pipe` over frameFormatVersion and minPipeVersion, carried by the `v` field every frame already bears -- refused by the one code `VersionMismatch`, because a second code is breaking for a client that switches exhaustively (docs/architecture/25-native-messaging-protocol.md §7) and which floor failed is a message, not a name. The new harness assertion reads the shape rather than the values: four distinct numbers, each floor at or below the version it floors, the refusal code in the taxonomy. The question it answers is `ODEC-02`, decided by the contract addition its own first option named; the sentence that anchored it became a `Verified: YES` in docs/architecture/21-system-context.md §12. Declarative on purpose: `connector/internal/contract` now projects MinPipeVersion and its test refuses a floor above the version it floors, but nothing compares a frame's `v` to it yet, and docs/architecture/25-native-messaging-protocol.md §1 says that instead of leaving the number queued"
       },
       {
+        "id": "VER-80",
+        "closed": "2026-11-07",
+        "was": "the command path from a `config.apply` frame to a replaced config and a restarted Core has no production caller: nothing registered the method, and nothing supplied the intent documents an ids-only call cannot carry",
+        "artefact": "ODEC-39 answered, one clause per option: the intent documents ride the frame (`config.apply.json#/args/properties/intent`, required, the `intent-down` movement made literal; an ids-only call is the BadRequest its description states) and the Go seam that supplied them from a test double is gone; doc 34 §7 spells the per-user layout the surface is constructed with, and the compiled config keeps the stable name doc 27 §8 renames over while the hash-derived wording left `compiled-config.location`. The registration this row also named is not closed by the decision: it waits on the `configHash` span ODEC-36 owns, and the labelled line in doc 27 §9 the row anchored is now `VER-88`'s"
+      },
+      {
         "id": "VER-81",
         "closed": "2026-11-07",
         "was": "the format an `auto` parse resolves to has nowhere to be recorded: doc 29 §5 promised `auto` never survives into a stored source, and no artefact in the contract carried the detector that won",
@@ -939,18 +945,7 @@
       "at": [{ "doc": "docs/architecture/30-failure-policy.md", "anchor": "one death and one fresh budget" }],
       "why": "`connector/internal/supervisor` re-arms the ladder on every observed unexpected exit, because doc 30 §4 counts attempts inside one death and says nothing about the deaths after the recovery. A test would need the rule before it could assert it: with the per-death reading written down, a crash-looping Core restarts every backoff cycle for as long as the Connector lives, the block is lifted and re-imposed each time, and `server.test`'s probes resume between the two. The corpus admits two other readings -- a total budget for the session, and a Core that stayed up for some window before it died starting a new one -- and they cannot be distinguished from `failure-policy.schema.json`, which has one `restartAttempts` integer and no denominator. The component the row is about is that denominator."
     },
-    {
-      "id": "VER-80",
-      "subject": "the command path from a `config.apply` frame to a replaced config and a restarted Core has no production caller: nothing registers the method, and nothing supplies the intent documents an ids-only call cannot carry",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-39`" },
-      "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reachable from one command frame" }
-      ],
-      "why": "`connector/cmd/nexora-connector/config_apply.go` is the whole of doc 27 §2 and §8 in one `Handle`: compare-and-swap against the applied-state record, read the intent, compile, write atomically, reserve the ports, stop and start Core -- and `config_apply_test.go` refuses each of those steps in turn to show nothing after it moved. The half that does not exist is who calls it. `connector/cmd/nexora-connector/main.go` registers `connector.hello` and `connector.version` and nothing else, so a real frame for this method answers `UnknownMethod` at the dispatch door; and the surface's one input seam -- an intent source that turns `profileIds` into the profiles, servers, routing, settings and failure policy stage 1 resolves -- is satisfied only by a test double that returns what the test put in it. That is not a missing file the design could fill in: `packages/schema/protocol/commands/config.apply.json#/args` is `additionalProperties: false` over ids, while the `intent-down` entry of `packages/schema/protocol/data-ownership.json#/movements` says the payload of this very command is 'intent documents: profiles, servers, routing, settings -- references, never values' from the browser plane, where every one of those stores lives (`docs/architecture/34-data-split.md` §6). Whichever way the documents arrive, the same row then needs the two directories the surface is constructed with -- no contract names the state directory or the compiled-config directory, and `compiled-config.location` ('name derived from the config hash') disagrees with `connector/internal/apply`'s one stable file name, which is the shape doc 27 §8's rename depends on. The test seam chose all three; `ODEC-39` is the register saying which choices are the contract's."
-    },
-    {
+{
       "id": "VER-82",
       "subject": "the pipe half of the version negotiation has no artefact to be written down in: `docs/architecture/21-system-context.md` §6 promises the negotiation result reaches the connector log and `diagnostics.get`, and every field that could carry it names only the browser-side number",
       "state": "no-code",
@@ -1027,6 +1022,17 @@
         { "doc": "docs/architecture/34-data-split.md", "anchor": "The binary and its receipts are verified before execution" }
       ],
       "why": "The check is green where it has run: the package's own tests, and a drive over the real release asset that hashes the binary in tens of milliseconds and refuses a one-byte tamper. Where the claim needs it nothing runs: no registered command reaches the spawn path, and the receipt's writer is the installer VER-42 waits for, whose signature half is pinned open twice (ODEC-22, ODEC-25)."
+    },
+    {
+      "id": "VER-88",
+      "subject": "the `config.apply` method is still not registered: `main.go` publishes nothing that needs the `configHash` span, so a real frame from an extension answers `UnknownMethod` at the dispatch door",
+      "state": "no-code",
+      "owner": "connector",
+      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-36`" },
+      "at": [
+        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reachable from one command frame" }
+      ],
+      "why": "The seam `VER-80` named is two questions, and 2026-11-07 answered one of them: the intent documents ride the frame and the two directories are doc 34 §7's per-user layout, so the surface `newConfigApply` builds is fully wired everywhere except the span. The span is `ODEC-36`'s, and the constructor refuses a surface that has not been told — which is why `main.go` still registers `connector.hello` and `connector.version` and nothing else, and why a real `config.apply` frame answers `UnknownMethod`, the code for a name no build publishes, rather than guessing a hash subject. This row is what remains of the claim the doc 27 §9 row has carried since the surface was written: the label on that row is this row's now, and the decision that closes the span closes the registration with it"
     }
   ]
 }

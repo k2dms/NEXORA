@@ -153,41 +153,37 @@ func baseIntent(t *testing.T) Intent {
 	}
 }
 
-// fakeSource is the ODEC-39 seam as a recorder: what it returns is the test's, and what it was asked for is the
-// test's evidence.
-type fakeSource struct {
-	mu        sync.Mutex
-	intent    Intent
-	intentErr error
-	recordErr error
-	asks      [][]string
-	held      []map[string]int
+// fakeRecord is the applied-state record as a recorder: reads pass through to the real file, and every write —
+// with its port table — is kept as the test's evidence.
+type fakeRecord struct {
+	mu       sync.Mutex
+	inner    stateRecord
+	writeErr error
+	writes   []map[string]int
+	reads    int
 }
 
-func (s *fakeSource) Intent(_ context.Context, profileIDs []string, _ string) (Intent, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.asks = append(s.asks, profileIDs)
-	if s.intentErr != nil {
-		return Intent{}, s.intentErr
+func (r *fakeRecord) Read() (supervisor.State, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.reads++
+	return r.inner.Read()
+}
+
+func (r *fakeRecord) Write(st supervisor.State) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.writeErr != nil {
+		return r.writeErr
 	}
-	return s.intent, nil
+	r.writes = append(r.writes, st.Held)
+	return r.inner.Write(st)
 }
 
-func (s *fakeSource) Record(_ context.Context, held map[string]int) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.recordErr != nil {
-		return s.recordErr
-	}
-	s.held = append(s.held, held)
-	return nil
-}
-
-func (s *fakeSource) counts() (asks, records int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return len(s.asks), len(s.held)
+func (r *fakeRecord) counts() (reads, writes int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.reads, len(r.writes)
 }
 
 // fakeCore is internal/supervisor.Supervisor's surface without a process: enough to see whether a call stopped,
@@ -273,7 +269,8 @@ func (r *countingResolver) count() int {
 // harness is one wired surface plus everything a test needs to ask whether it touched the world.
 type harness struct {
 	surface *configApply
-	source  *fakeSource
+	intent  Intent
+	record  *fakeRecord
 	core    *fakeCore
 	dirs    dirs
 	store   *keystore.Store
@@ -299,14 +296,15 @@ func newHarness(t *testing.T, span hashSpan, intent Intent, p keystore.Protector
 		t.Fatalf("storing the credential: %v", err)
 	}
 	h := &harness{
-		source: &fakeSource{intent: intent},
+		intent: intent,
+		record: &fakeRecord{inner: fileStateRecord{dir: d.state}},
 		core:   new(fakeCore),
 		dirs:   d,
 		store:  store,
 	}
 	h.core.stateDir = d.state
 	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: span},
-		h.source, store, h.core)
+		h.record, store, h.core)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
 	}
@@ -314,8 +312,34 @@ func newHarness(t *testing.T, span hashSpan, intent Intent, p keystore.Protector
 }
 
 // ask is the one way these tests reach the surface, and it returns the JSON the wire would carry rather than the Go
-// struct, so a field whose name or presence is wrong is caught here rather than in a struct comparison.
+// struct, so a field whose name or presence is wrong is caught here rather than in a struct comparison. The
+// harness's intent rides every object-shaped call — a frame without it is the ids-only call the contract refuses,
+// and the refusals that test that refusal pass args that are not objects at all.
 func (h *harness) ask(t *testing.T, args string) (applyAnswer, map[string]any, *dispatch.Refusal) {
+	t.Helper()
+	if strings.HasPrefix(strings.TrimSpace(args), "{") {
+		var obj map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(args), &obj); err != nil {
+			t.Fatalf("test args are not an object: %v", args)
+		}
+		if _, ok := obj["intent"]; !ok {
+			carried, err := json.Marshal(h.intent)
+			if err != nil {
+				t.Fatal(err)
+			}
+			obj["intent"] = carried
+			fixed, err := json.Marshal(obj)
+			if err != nil {
+				t.Fatal(err)
+			}
+			args = string(fixed)
+		}
+	}
+	return h.askRaw(t, args)
+}
+
+// askRaw sends the args exactly as given, which is how the ids-only refusal itself is tested.
+func (h *harness) askRaw(t *testing.T, args string) (applyAnswer, map[string]any, *dispatch.Refusal) {
 	t.Helper()
 	f, err := envelope.NewRequest("apply-0001", "config.apply", json.RawMessage(args))
 	if err != nil {
@@ -375,7 +399,7 @@ func TestApplyIsOnePathThroughCompileTheWriterAndTheSupervisor(t *testing.T) {
 	if err := store.Put(userIDRef, []byte(secretValue)); err != nil {
 		t.Fatalf("storing the credential: %v", err)
 	}
-	source := &fakeSource{intent: baseIntent(t)}
+	intent := baseIntent(t)
 	record := filepath.Join(t.TempDir(), "handed")
 	sup, err := supervisor.New(supervisor.Config{
 		Dir:    d.state,
@@ -388,9 +412,9 @@ func TestApplyIsOnePathThroughCompileTheWriterAndTheSupervisor(t *testing.T) {
 	}
 	defer func() { _, _ = sup.Stop(context.Background(), false) }()
 
-	h := &harness{source: source, dirs: d, store: store}
+	h := &harness{intent: intent, record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
 	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
-		source, store, sup)
+		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
 	}
@@ -448,11 +472,14 @@ func TestApplyIsOnePathThroughCompileTheWriterAndTheSupervisor(t *testing.T) {
 		}
 		t.Errorf("the record's pid %d is not the running child's %d; last exit %s, note %q", st.LastStartPID, sup.Status().PID, exit, sup.Status().ContainmentNote)
 	}
-	if asks, records := source.counts(); asks != 1 || records != 1 {
-		t.Errorf("the intent source saw %d reads and %d reservation writes, want 1 and 1", asks, records)
+	if reads, writes := h.record.counts(); reads != 1 || writes != 1 {
+		t.Errorf("the applied-state record saw %d reads and %d reservation writes, want 1 and 1", reads, writes)
 	}
-	if len(source.held) == 1 && source.held[0][firstPortTag] != shapeAPort {
-		t.Errorf("the reservation table the surface handed back is %v", source.held[0])
+	if len(h.record.writes) == 1 && h.record.writes[0][firstPortTag] != shapeAPort {
+		t.Errorf("the reservation table the surface stored is %v", h.record.writes[0])
+	}
+	if st.Held[firstPortTag] != shapeAPort {
+		t.Errorf("the record on disk holds the port table %v, want %s under %s", st.Held, firstPortTag, firstPortTag)
 	}
 
 	// The same frame again. doc 22 §3 invariant 4 says a hash match restarts nothing, and the answer must say so
@@ -484,13 +511,12 @@ func TestAChangedIntentReplacesTheFileAndTheProcess(t *testing.T) {
 		}
 	}
 	intent := baseIntent(t)
-	source := &fakeSource{intent: intent}
 	first := filepath.Join(t.TempDir(), "handed-first")
 	second := filepath.Join(t.TempDir(), "handed-second")
 	var mu sync.Mutex
 	spawns := 0
 	records := []string{first, second}
-	h := &harness{source: source, dirs: d, store: store}
+	h := &harness{intent: intent, record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
 	sup, err := supervisor.New(supervisor.Config{
 		Dir: d.state,
 		Launch: func(configPath string) *exec.Cmd {
@@ -514,7 +540,7 @@ func TestAChangedIntentReplacesTheFileAndTheProcess(t *testing.T) {
 	}
 	defer func() { _, _ = sup.Stop(context.Background(), false) }()
 	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
-		source, store, sup)
+		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
 	}
@@ -536,9 +562,7 @@ func TestAChangedIntentReplacesTheFileAndTheProcess(t *testing.T) {
 	extra := secondServer(t)
 	intent.Servers = append(intent.Servers, extra)
 	intent.Profiles[0].ServerIDs = append(intent.Profiles[0].ServerIDs, extra.ID)
-	source.mu.Lock()
-	source.intent = intent
-	source.mu.Unlock()
+	h.intent = intent
 
 	next, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
 	if ref != nil {
@@ -640,7 +664,7 @@ func TestDryRunTouchesNothing(t *testing.T) {
 	if starts, stops := h.core.calls(); starts != 0 || stops != 0 {
 		t.Errorf("the preview touched Core: %d starts, %d stops", starts, stops)
 	}
-	if _, records := h.source.counts(); records != 0 {
+	if _, writes := h.record.counts(); writes != 0 {
 		t.Error("the preview stored a port table for ports it never took")
 	}
 	if got := h.surface.resolver.(*countingResolver).count(); got != 0 {
@@ -678,8 +702,8 @@ func TestCompareAndSwapMismatchIsBusy(t *testing.T) {
 	if ref == nil || ref.Code != "Busy" {
 		t.Fatalf("a stale apply answered %+v, want Busy", ref)
 	}
-	if asks, records := h.source.counts(); asks != 0 || records != 0 {
-		t.Errorf("the refused apply read intent or wrote state anyway: %d reads, %d writes", asks, records)
+	if reads, writes := h.record.counts(); reads != 1 || writes != 0 {
+		t.Errorf("the refused apply read the record %d times and wrote it %d times, want the one read and no write", reads, writes)
 	}
 	if starts, stops := h.core.calls(); starts != 0 || stops != 0 {
 		t.Errorf("the refused apply touched Core: %d starts, %d stops", starts, stops)
@@ -734,7 +758,10 @@ func TestApplyArgRefusals(t *testing.T) {
 		{"profileIds above the ceiling", `{"profileIds":[` + sixtyFive + `]}`, "between 1 and 64"},
 		{"profileIds not a UUID", `{"profileIds":["Profile-1"]}`, "lowercase UUID"},
 		{"profileIds repeated", `{"profileIds":["` + profileID + `","` + profileID + `"]}`, "same id twice"},
-		{"routingPolicyId not a UUID", `{"profileIds":["` + profileID + `"],"routingPolicyId":"legacy"}`, "routingPolicyId"},
+		{"routingPolicyId does not exist any more", `{"profileIds":["` + profileID + `"],"routingPolicyId":"legacy"}`, "does not declare"},
+		{"intent empty", `{"profileIds":["` + profileID + `"],"intent":null}`, "intent.profiles must hold between 1 and 64"},
+
+		{"a profile id the intent does not carry", `{"profileIds":["11111111-1111-4111-8111-111111111111"]}`, "which the intent documents do not carry"}, // nexora-secret-allow: synthetic foreign id, nothing behind it
 		{"dryRun not a bool", `{"profileIds":["` + profileID + `"],"dryRun":"yes"}`, "dryRun is not a boolean"},
 		{"hash not a digest", `{"profileIds":["` + profileID + `"],"expectedAppliedHash":"deadbeef"}`, "sha256"},
 		{"restartPolicy off the enum", `{"profileIds":["` + profileID + `"],"restartPolicy":"maybe"}`, "auto|never"},
@@ -751,6 +778,12 @@ func TestApplyArgRefusals(t *testing.T) {
 		if !strings.Contains(ref.Message, tc.why) {
 			t.Errorf("%s: message %q does not name the rule %q", tc.name, ref.Message, tc.why)
 		}
+	}
+
+	// The ids-only call, sent exactly as the contract that preceded the intent payload allowed it: the harness's
+	// own injection is what every other case relies on, so this one goes out raw.
+	if _, _, ref := h.askRaw(t, `{"profileIds":["`+profileID+`"]}`); ref == nil || !strings.Contains(ref.Message, "intent is required") {
+		t.Errorf("the ids-only call was answered %+v, want the intent-is-required refusal", ref)
 	}
 
 	// Two shapes the pattern allows and a caller may mean differently: null, and the empty string.
@@ -865,20 +898,10 @@ func TestRefusalCodesDrivesTheRealRefusals(t *testing.T) {
 			name: "the port table refusing to be stored",
 			build: func(t *testing.T) *harness {
 				h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
-				h.source.recordErr = errors.New("the reservation store is full")
+				h.record.writeErr = errors.New("the reservation store is full")
 				return h
 			},
 			want: "ConfigApplyFailed", cause: "reservation store is full",
-		},
-		{
-			// ODEC-39's seam refusing: not a pipeline refusal, so the code is the apply's own.
-			name: "the intent store itself refusing",
-			build: func(t *testing.T) *harness {
-				h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
-				h.source.intentErr = errors.New("no profile is stored under that id")
-				return h
-			},
-			want: "ConfigApplyFailed", cause: "no profile is stored",
 		},
 		{
 			name: "Core refusing to stop",
@@ -930,10 +953,9 @@ func TestThePreExecProofRefusalIsIntegrityMismatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("supervisor.New: %v", err)
 	}
-	source := &fakeSource{intent: baseIntent(t)}
-	h := &harness{source: source, dirs: d, store: store}
+	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
 	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
-		source, store, sup)
+		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
 	}
@@ -978,10 +1000,9 @@ func TestASpawnFailureAfterTheRenameIsReportedAndNotRolledBack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("supervisor.New: %v", err)
 	}
-	source := &fakeSource{intent: baseIntent(t)}
-	h := &harness{source: source, dirs: d, store: store}
+	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
 	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
-		source, store, sup)
+		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
 	}
@@ -1002,25 +1023,25 @@ func TestASpawnFailureAfterTheRenameIsReportedAndNotRolledBack(t *testing.T) {
 
 func TestNewConfigApplyRefusesUndecidedWiring(t *testing.T) {
 	complete := applyConfig{StateDir: "state", ConfigDir: "config", Span: hashHandles}
-	source, resolver, core := &fakeSource{}, apply.Resolver(&countingResolver{}), coreProcess(new(fakeCore))
+	record, resolver, core := stateRecord(fileStateRecord{dir: "state"}), apply.Resolver(&countingResolver{}), coreProcess(new(fakeCore))
 	cases := []struct {
 		name    string
 		cfg     applyConfig
-		source  intentSource
+		record  stateRecord
 		resolve apply.Resolver
 		core    coreProcess
 		want    string
 	}{
-		{"everything present", complete, source, resolver, core, ""},
-		{"the span ODEC-36 owns", applyConfig{StateDir: "state", ConfigDir: "config"}, source, resolver, core, "ODEC-36"},
-		{"no state directory", applyConfig{ConfigDir: "config", Span: hashValues}, source, resolver, core, "state directory"},
-		{"no config directory", applyConfig{StateDir: "state", Span: hashValues}, source, resolver, core, "config directory"},
-		{"no intent source", complete, nil, resolver, core, "no intent source"},
-		{"no keystore resolver", complete, source, nil, core, "no keystore resolver"},
-		{"no Core process owner", complete, source, resolver, nil, "no Core process owner"},
+		{"everything present", complete, record, resolver, core, ""},
+		{"the span ODEC-36 owns", applyConfig{StateDir: "state", ConfigDir: "config"}, record, resolver, core, "ODEC-36"},
+		{"no state directory", applyConfig{ConfigDir: "config", Span: hashValues}, record, resolver, core, "state directory"},
+		{"no config directory", applyConfig{StateDir: "state", Span: hashValues}, record, resolver, core, "config directory"},
+		{"no applied-state record", complete, nil, resolver, core, "no applied-state record"},
+		{"no keystore resolver", complete, record, nil, core, "no keystore resolver"},
+		{"no Core process owner", complete, record, resolver, nil, "no Core process owner"},
 	}
 	for _, tc := range cases {
-		_, err := newConfigApply(tc.cfg, tc.source, tc.resolve, tc.core)
+		_, err := newConfigApply(tc.cfg, tc.record, tc.resolve, tc.core)
 		if tc.want == "" {
 			if err != nil {
 				t.Errorf("%s: the wiring was refused: %v", tc.name, err)
@@ -1128,11 +1149,10 @@ func harnessWithoutSecret(t *testing.T) *harness {
 	if err != nil {
 		t.Fatalf("keystore.New: %v", err)
 	}
-	source := &fakeSource{intent: baseIntent(t)}
-	h := &harness{source: source, dirs: d, store: store, core: new(fakeCore)}
+	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store, core: new(fakeCore)}
 	h.core.stateDir = d.state
 	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
-		source, store, h.core)
+		h.record, store, h.core)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
 	}
@@ -1155,11 +1175,10 @@ func harnessConfigDirIsAFile(t *testing.T) *harness {
 	if err := store.Put(userIDRef, []byte(secretValue)); err != nil {
 		t.Fatalf("storing the credential: %v", err)
 	}
-	source := &fakeSource{intent: baseIntent(t)}
-	h := &harness{source: source, dirs: dirs{state: d.state, config: blocker, keys: d.keys}, store: store, core: new(fakeCore)}
+	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: dirs{state: d.state, config: blocker, keys: d.keys}, store: store, core: new(fakeCore)}
 	h.core.stateDir = d.state
 	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: blocker, Span: hashHandles},
-		source, store, h.core)
+		h.record, store, h.core)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
 	}

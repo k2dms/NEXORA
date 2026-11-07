@@ -364,7 +364,15 @@ func (s *Supervisor) spawnLocked(ctx context.Context, p StartParams, attempt int
 		c.note = "no containment scope could be made before the spawn: " + scopeErr.Error()
 	}
 
-	s.st = State{AppliedHash: p.ConfigHash, SelectedProfile: p.ProfileID, LastStartPID: c.pid, LastExit: s.st.LastExit}
+	// The reservation table is config.apply's to write and this start's to preserve: an apply that just renamed
+	// a config writes the table and then starts Core, so the table is read back from the record rather than
+	// taken from this process's construction-time copy, which the write has already made stale. A restart must
+	// not forget which ports the config it is restarting took.
+	held := s.st.Held
+	if fresh, err := ReadState(s.cfg.Dir); err == nil && fresh.Held != nil {
+		held = fresh.Held
+	}
+	s.st = State{AppliedHash: p.ConfigHash, SelectedProfile: p.ProfileID, LastStartPID: c.pid, LastExit: s.st.LastExit, Held: held}
 	if err := WriteState(s.cfg.Dir, s.st); err != nil {
 		// A Core nobody recorded cannot be reconciled after a Connector restart, and every hash comparison
 		// doc 26 §2.1's compare-and-swap rests on is a comparison against this record. So the start fails and

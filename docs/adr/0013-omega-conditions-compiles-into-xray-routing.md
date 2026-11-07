@@ -42,12 +42,12 @@ weekday semantics, and would silently stop honouring rules users wrote years ago
    registry types.
 4. The compiler MUST NOT silently drop a rule it cannot express. It MUST report it: the `config.apply`
    result carries an `unrepresentable` array of `{source, reason}` entries
-   (`packages/schema/protocol/commands/config.apply.json:68`), and a RoutingPolicy document carries the
+   (`packages/schema/protocol/commands/config.apply.json:81`), and a RoutingPolicy document carries the
    same field (`packages/schema/routing-policy.schema.json:115`) with the rule written into its description
    at `packages/schema/routing-policy.schema.json:138`.
 5. Reporting is not optional at the UI either: an unrepresentable rule MUST be visible where the rule was
    authored, and a policy whose rules are all unrepresentable MUST be surfaced as such rather than applied
-   quietly. `dryRun` (`packages/schema/protocol/commands/config.apply.json:24`) is the sanctioned way to
+   quietly. `dryRun` (`packages/schema/protocol/commands/config.apply.json:37`) is the sanctioned way to
    obtain that report without touching Core.
 6. A rule whose target profile no longer exists MUST be reported the same way, never resolved to a default.
 7. Order is normative: browser plane first, core plane second. A core-plane rule MUST NOT be assumed to be
@@ -91,7 +91,7 @@ weekday semantics, and would silently stop honouring rules users wrote years ago
 - VERIFIED -- `omega-pac/src/pac_generator.coffee:25`: `PacGenerator.script` compiles the profile graph,
   and `omega-pac/src/profiles.coffee:394` is the `SwitchProfile` handler whose rules it compiles.
 - VERIFIED -- `packages/schema/routing-policy.schema.json:115` and
-  `packages/schema/protocol/commands/config.apply.json:68`: the `unrepresentable` report field exists in
+  `packages/schema/protocol/commands/config.apply.json:81`: the `unrepresentable` report field exists in
   both the policy document and the command result, with the "report rather than drop" rule in their
   descriptions.
 - INFERRED -- which of the twelve types map onto Xray `routing` fields: derived from reading both rule

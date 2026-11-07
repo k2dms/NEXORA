@@ -22,6 +22,11 @@ type State struct {
 	SelectedProfile string `json:"selectedProfile,omitempty"`
 	LastStartPID    int    `json:"lastStartPid,omitempty"`
 	LastExit        *Exit  `json:"lastExit,omitempty"`
+	// Held is doc 27 §4's reservation table -- the ports the applied config took -- kept in this record because
+	// the row puts the table in the Connector and this file is the only thing it durably owns. config.apply
+	// writes it after the rename; Start preserves it, because a restart must not forget which ports the config
+	// it restarts took.
+	Held map[string]int `json:"held,omitempty"`
 }
 
 // ReadState loads the record. A directory with no file is not an error and not a corruption: it is the first

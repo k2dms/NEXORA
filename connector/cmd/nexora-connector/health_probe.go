@@ -8,8 +8,9 @@
 // reasons plus one of its own:
 //
 //   - the frame names a server id, and resolving an id is a store read whose path and owner no document decides
-//     (the `intent-down` half of ODEC-39; doc 20 §3 keeps the read in the surface, and this build has no surface
-//     that owns servers);
+//     (doc 20 §3 keeps the read in the surface, and this build has no surface that owns servers; the intent
+//     documents an apply needs ride the frame since 2026-11-07, but a server id a probe resolves is a table
+//     the extension owns and no frame carries);
 //   - the egress probe needs the endpoint and the expected address, and no field of any file under
 //     `packages/schema/` carries either — ODEC-42 is the register entry, and internal/health's constructor refuses
 //     a prober built without them;

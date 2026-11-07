@@ -120,7 +120,7 @@ pinned to it.
   matrix; the measured floor (142/1, 8/5, two projects with zero test files) is recorded in
   `docs/audit/99-baseline-report.md`.
 - INFERRED -- that golden-file byte stability holds across machines and Go map iterations: it is a property
-  of the compiler design (`packages/schema/protocol/commands/config.apply.json:103`), and there is no
+  of the compiler design (`packages/schema/protocol/commands/config.apply.json:116`), and there is no
   compiler yet to test.
 - UNVERIFIED -- every `LIVE` row, and the two "0 test files" projects' behaviour under the new workflow,
   which is not written in this iteration.

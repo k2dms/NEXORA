@@ -11,16 +11,29 @@
   "args": {
     "type": "object",
     "additionalProperties": false,
-    "required": ["profileIds"],
+    "required": ["profileIds", "intent"],
     "properties": {
       "profileIds": {
         "type": "array",
         "minItems": 1,
         "maxItems": 64,
         "uniqueItems": true,
-        "items": { "$ref": "https://schema.nexora.local/connector-profile.schema.json#/properties/id" }
+        "items": { "$ref": "https://schema.nexora.local/connector-profile.schema.json#/properties/id" },
+        "description": "The ordered selection over `intent.profiles`: which of the carried profiles are active, in the order the compiler reserves their inbounds. The documents themselves arrive in `intent` -- an id without a document is a `BadRequest`, not a dangling reference the Connector resolves."
       },
-      "routingPolicyId": { "$ref": "https://schema.nexora.local/routing-policy.schema.json#/properties/id" },
+      "intent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["profiles", "servers", "settings", "failurePolicy"],
+        "properties": {
+          "profiles": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "https://schema.nexora.local/connector-profile.schema.json" } },
+          "servers": { "type": "array", "maxItems": 4096, "items": { "$ref": "https://schema.nexora.local/server.schema.json" } },
+          "routingPolicy": { "$ref": "https://schema.nexora.local/routing-policy.schema.json" },
+          "settings": { "$ref": "https://schema.nexora.local/connector-settings.schema.json" },
+          "failurePolicy": { "$ref": "https://schema.nexora.local/failure-policy.schema.json" }
+        },
+        "description": "The intent documents this apply compiles, carried by the frame: the `intent-down` movement of packages/schema/protocol/data-ownership.json names this very command as their carrier, the browser plane owns every store they rest in, and the Connector keeps no copy of user intent (ADR-0010) -- so the documents ride the call that uses them and `profileIds` selects and orders over `intent.profiles`. A profile id the documents do not carry, or a document whose id no `profileIds` entry names, is a `BadRequest`. Credentials are `keystore://` references, never values. Bounded by the 1 MiB extension-to-host frame cap with the chunked envelope as the overflow (packages/schema/protocol/framing.json#/oversizedPayloads)."
+      },
       "dryRun": {
         "type": "boolean",
         "default": false,

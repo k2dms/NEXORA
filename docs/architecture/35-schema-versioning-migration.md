@@ -68,7 +68,7 @@ most of them.
 | `docs/architecture/32-secrets-keystore-masking.md:39`, `:446` | "the ordering owned by `35`" for extracting a credential | §11, and §6's `secret-census` |
 | `docs/architecture/34-data-split.md:44` | "the ordering of any change to the envelope's shape, and the wipe trap" | §3, §5 |
 | `docs/architecture/34-data-split.md:215` | "who may change either [stamp], in what order, and with what backup" | §4, §7 |
-| `docs/architecture/34-data-split.md:274` | sync reset clearing the remote, "as a migration hazard" | §12 |
+| `docs/architecture/34-data-split.md:276` | sync reset clearing the remote, "as a migration hazard" | §12 |
 | `packages/schema/envelope-backup.schema.json#/description` | "the migration runner MUST write before its first destructive step" | §7 |
 | `packages/schema/failure-policy.schema.json#/properties/version` | a document version "migrated independently of `-nexora.schemaVersion`" | §4 |
 | `packages/schema/protocol/commands/profile.import.json#/args/properties/backupBeforeWrite` | "a destructive import mode must be preceded by a verified snapshot on both sides" | §11 |

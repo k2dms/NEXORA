@@ -85,8 +85,8 @@ field that pins it:
 
 - `config.apply` **replaces the desired profile set**, recompiles, and restarts Core **only if** the compiled
   hash differs — `result.unchangedBecauseHashMatched` and `result.restarted` are separate fields in
-  `packages/schema/protocol/commands/config.apply.json:46-47`, and `expectedAppliedHash`
-  (`packages/schema/protocol/commands/config.apply.json:24-28`) is a compare-and-swap: a mismatch is `Busy`,
+  `packages/schema/protocol/commands/config.apply.json:59-60`, and `expectedAppliedHash`
+  (`packages/schema/protocol/commands/config.apply.json:42-45`) is a compare-and-swap: a mismatch is `Busy`,
   never a silent overwrite, because two options tabs must not race a config. That field's own type is
   `[string, null]` over `^([0-9a-f]{64})?$`
   (`packages/schema/protocol/commands/config.apply.json#/args/properties/expectedAppliedHash`), which is the
@@ -153,9 +153,9 @@ Four errors: the smallest surface that can still report a containment problem.
 `CoreNotRunning`; it MUST NOT be able to introduce a server that `config.apply` did not load.
 
 **`config.apply`** — fourteen errors, the widest surface, because it is where compilation, keystore access,
-disk write and process spawn meet. `dryRun: true` (`packages/schema/protocol/commands/config.apply.json:24-28`)
+disk write and process spawn meet. `dryRun: true` (`packages/schema/protocol/commands/config.apply.json:42-45`)
 is the only safe way for the UI to preview a change or surface unrepresentable rules. The `unrepresentable[]`
-result field (`packages/schema/protocol/commands/config.apply.json:68-81`) is the machine-readable form of
+result field (`packages/schema/protocol/commands/config.apply.json:81-94`) is the machine-readable form of
 ADR-0013's "report instead of drop": a browser-plane rule that Xray routing cannot express is returned as
 `{source, reason}`, never silently discarded. **Verified as data; the behaviour is `Verified: NO — deferred to
 Phase 2`** because nothing has answered a `config.apply` with a report *in a session*: the Compiler fills the field

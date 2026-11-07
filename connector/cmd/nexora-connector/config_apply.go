@@ -3,21 +3,24 @@ package main
 // This file is `config.apply` as one path. docs/architecture/22-component-contracts.md §0 puts the
 // ConnectorService's command surface in this package, and the three things it joins are already tested as
 // neighbours rather than as a route: internal/compile (doc 27 §2's stages 1 to 6), internal/apply (§8's
-// materialize-then-rename) and internal/supervisor (the process that loads the file). A frame arrives naming
-// profile ids; a compiled document, a config file and, if the hash moved, a different Core are what leaves.
+// materialize-then-rename) and internal/supervisor (the process that loads the file). A frame arrives carrying
+// the intent documents and naming the profiles to activate; a compiled document, a config file and, if the hash
+// moved, a different Core are what leaves.
 //
-// Two decisions the corpus has not made stay out of this file rather than being guessed inside it:
+// Two decisions the corpus has settled are stated here rather than re-argued:
 //
-//   - which byte string `configHash` covers is ODEC-36, so the span is a required wiring knob and the newConfigApply
-//     constructor refuses to build a surface that has not been told;
-//   - where the intent documents live is ODEC-39 (data-ownership's `intent-down` movement hands them to
-//     `config.apply` while the command's own args carry identifiers only), so they come in through the
-//     intentSource seam and this file never opens a store of its own.
+//   - the intent documents arrive in the frame (`config.apply.json#/args/properties/intent`, the `intent-down`
+//     movement's own carrier), and this file never opens a store of them: the Connector keeps no copy of user
+//     intent (ADR-0010), so an ids-only call is a `BadRequest` and not a lookup;
+//   - the two directories and the stable file name are doc 34 §7's per-user layout, and the only byte-string
+//     question left is which hash `configHash` reports — ODEC-36, so the span is a required wiring knob and
+//     newConfigApply refuses to build a surface that has not been told.
 //
-// What it does decide, with the evidence next to each row: the order of the checks, the taxonomy code every
+// What it decides itself, with the evidence next to each row: the order of the checks, the taxonomy code every
 // refusal answers with, and the fact that a failure after the rename is reported rather than rolled back.
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -34,31 +37,35 @@ import (
 	"github.com/k2dms/nexora/connector/internal/supervisor"
 )
 
-// Intent is the desired state `config.apply` names by id. The six fields are compile.Input's own, plus Held, which
-// the caller of the compiler carries between runs (doc 27 §4's "Persistence" row puts the reservation table in the
-// Connector, and a pure compiler cannot hold it).
+// Intent is the desired state the frame carries (`config.apply.json#/args/properties/intent`). The five fields
+// are the documents stage 1 resolves, decoded by hand against the closed field lists the schemas declare.
 //
-// No document in this corpus says which file or key these come from — that is ODEC-39 — which is why this is a
-// struct handed over a seam instead of a set of paths this package reads.
+// Held is deliberately absent: doc 27 §4's "Persistence" row puts the reservation table in the Connector, and the
+// Connector's own copy of it is the applied-state record this command reads and rewrites — not a document the
+// caller could carry, and not a store this package opens anywhere else.
 type Intent struct {
-	Profiles []compile.Profile
-	Servers  []compile.Server
-	Routing  *compile.RoutingPolicy
-	Settings compile.Settings
-	Failure  compile.Failure
-	Held     map[string]int
+	Profiles []compile.Profile      `json:"profiles"`
+	Servers  []compile.Server       `json:"servers"`
+	Routing  *compile.RoutingPolicy `json:"routingPolicy,omitempty"`
+	Settings compile.Settings       `json:"settings"`
+	Failure  compile.Failure        `json:"failurePolicy"`
 }
 
-// intentSource is the seam ODEC-39 blocks. Intent is asked for the ids the frame named, so the owner of the store
-// decides what "the profiles this apply covers" means; Record gives the allocated port table back, which is the
-// only write this command makes besides the config file itself.
-//
-// Record is not called on a dryRun, on an arg refusal, or on any compile or write refusal: doc 27 §4's reservation
-// row is about ports a config actually took, and a refused apply has taken nothing.
-type intentSource interface {
-	Intent(ctx context.Context, profileIDs []string, routingPolicyID string) (Intent, error)
-	Record(ctx context.Context, held map[string]int) error
+// stateRecord is the applied-state record as this command needs it: read for the compare-and-swap and the port
+// table the last apply took, written once per apply that took ports. It is a seam because it is file I/O — the
+// same reason coreProcess is one — and its one production implementation is the StateDir of doc 34 §7's layout.
+type stateRecord interface {
+	Read() (supervisor.State, error)
+	Write(supervisor.State) error
 }
+
+// fileStateRecord is that one production implementation: the applied-state file in the state directory, the same
+// temp-and-rename discipline internal/supervisor writes it with.
+type fileStateRecord struct{ dir string }
+
+func (r fileStateRecord) Read() (supervisor.State, error) { return supervisor.ReadState(r.dir) }
+
+func (r fileStateRecord) Write(st supervisor.State) error { return supervisor.WriteState(r.dir, st) }
 
 // coreProcess is internal/supervisor.Supervisor's surface as this command needs it. *supervisor.Supervisor
 // satisfies it; the seam exists so the path can be driven with a process that is not a process, the way the
@@ -97,27 +104,28 @@ func (h hashSpan) String() string {
 	}
 }
 
-// applyConfig is the wiring this process cannot measure for itself: the two directories, and the span ODEC-36 owns.
+// applyConfig is the wiring this process cannot measure for itself: the two directories of doc 34 §7's per-user
+// layout, and the span ODEC-36 owns.
 type applyConfig struct {
 	// StateDir holds the applied-state record internal/supervisor keeps. Its `appliedConfigHash` is the only
 	// answer to "what is applied" that survives in either span, because the file on disk can only ever give a
 	// hash of materialized bytes.
 	StateDir string
-	// ConfigDir holds the compiled config internal/apply writes. No document names either directory, which is
-	// the half of ODEC-39 that is about paths rather than about payloads.
+	// ConfigDir holds the compiled config internal/apply writes: doc 34 §7's per-user config directory, whose
+	// one stable file name is what makes doc 27 §8's replacement a rename and not a create.
 	ConfigDir string
 	Span      hashSpan
 }
 
 // configApply is the handler: the seams, the directories, and the span.
 type configApply struct {
-	source   intentSource
+	record   stateRecord
 	resolver apply.Resolver
 	core     coreProcess
 	cfg      applyConfig
 }
 
-func newConfigApply(cfg applyConfig, source intentSource, resolver apply.Resolver, core coreProcess) (*configApply, error) {
+func newConfigApply(cfg applyConfig, record stateRecord, resolver apply.Resolver, core coreProcess) (*configApply, error) {
 	switch {
 	case cfg.StateDir == "":
 		return nil, errors.New("config.apply: no state directory; the applied hash this command compares against is a record, not a memory")
@@ -125,14 +133,14 @@ func newConfigApply(cfg applyConfig, source intentSource, resolver apply.Resolve
 		return nil, errors.New("config.apply: no config directory; internal/apply refuses to guess where the file Core loads goes")
 	case cfg.Span == hashUnknown:
 		return nil, fmt.Errorf("config.apply: no configHash byte span; ODEC-36 is still open, and a surface that picked one would be picking it in the wrong place — the register is docs/architecture/40-open-decisions.md")
-	case source == nil:
-		return nil, errors.New("config.apply: no intent source; the command names profiles by id and no document in this corpus says whose ids they are (ODEC-39)")
+	case record == nil:
+		return nil, errors.New("config.apply: no applied-state record; the compare-and-swap and the port table have nowhere to rest")
 	case resolver == nil:
 		return nil, errors.New("config.apply: no keystore resolver; a credential position would be written as a handle string")
 	case core == nil:
 		return nil, errors.New("config.apply: no Core process owner; restartPolicy auto has nothing to restart")
 	}
-	return &configApply{source: source, resolver: resolver, core: core, cfg: cfg}, nil
+	return &configApply{record: record, resolver: resolver, core: core, cfg: cfg}, nil
 }
 
 // reApplyID is the UUID floor both referenced schemas state: `connector-profile.schema.json#/properties/id` for
@@ -145,12 +153,13 @@ var reApplyID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[8
 // for that would be inventing a value the pattern rejects.
 var reAppliedHash = regexp.MustCompile(`^([0-9a-f]{64})?$`)
 
-// applyArgs is the decoded form of `packages/schema/protocol/commands/config.apply.json#/args`, whose five fields
-// are the whole of what the caller may ask for. restartPolicy keeps the wire's own spelling because it reaches the
-// answer's `restarted` field and a reader comparing the two should see the same word.
+// applyArgs is the decoded form of `packages/schema/protocol/commands/config.apply.json#/args`, whose fields are
+// the selection (`profileIds`), the documents (`intent`) and the switches. restartPolicy keeps the wire's own
+// spelling because it reaches the answer's `restarted` field and a reader comparing the two should see the same
+// word.
 type applyArgs struct {
 	profileIDs          []string
-	routingPolicyID     string
+	intent              Intent
 	dryRun              bool
 	expectedAppliedHash string
 	restartPolicy       string
@@ -179,7 +188,7 @@ func readApplyArgs(f *envelope.Frame) (applyArgs, *dispatch.Refusal) {
 	}
 	for k := range raw {
 		switch k {
-		case "profileIds", "routingPolicyId", "dryRun", "expectedAppliedHash", "restartPolicy":
+		case "profileIds", "intent", "dryRun", "expectedAppliedHash", "restartPolicy":
 		default:
 			return applyArgs{}, badApplyArgs("args carry a field config.apply does not declare")
 		}
@@ -192,15 +201,14 @@ func readApplyArgs(f *envelope.Frame) (applyArgs, *dispatch.Refusal) {
 	}
 	args.profileIDs = ids
 
-	if r, ok := raw["routingPolicyId"]; ok {
-		var s string
-		if err := json.Unmarshal(r, &s); err != nil {
-			return applyArgs{}, badApplyArgs("routingPolicyId is not a string")
+	if v, ok := raw["intent"]; !ok {
+		return applyArgs{}, badApplyArgs("intent is required: the documents this apply compiles ride the frame, because the Connector keeps no copy of user intent (ADR-0010)")
+	} else {
+		intent, bad := readIntent(v)
+		if bad != nil {
+			return applyArgs{}, bad
 		}
-		if s != "" && !reApplyID.MatchString(s) {
-			return applyArgs{}, badApplyArgs("routingPolicyId does not match the UUID the schema declares")
-		}
-		args.routingPolicyID = s
+		args.intent = *intent
 	}
 	if d, ok := raw["dryRun"]; ok {
 		if err := json.Unmarshal(d, &args.dryRun); err != nil {
@@ -264,6 +272,124 @@ func badApplyArgs(rule string) *dispatch.Refusal {
 	return &dispatch.Refusal{Code: "BadRequest", Message: "config.apply " + rule}
 }
 
+// The bounds `config.apply.json#/args/properties/intent` declares, mirrored as constants because the Connector
+// ships as one binary: 64 profiles is the same ceiling requiredIDs reads, 4096 servers is `maxServers` (doc 29
+// §8's caps table), and both are refusals here that the compiler would otherwise raise as `QuotaExceeded` after
+// building every outbound.
+const (
+	maxIntentProfiles = 64
+	maxIntentServers  = 4096
+)
+
+// readIntent decodes `args.intent` document by document with the same closed-object rule every entity schema
+// states: a payload carrying a name the schema does not declare is a caller that believes it asked for something.
+// The bounds are checked here so a frame that is two documents over the ceiling is refused before the pipeline
+// builds anything.
+func readIntent(raw json.RawMessage) (*Intent, *dispatch.Refusal) {
+	var doc struct {
+		Profiles      []json.RawMessage          `json:"profiles"`
+		Servers       []json.RawMessage          `json:"servers"`
+		RoutingPolicy *json.RawMessage           `json:"routingPolicy"`
+		Settings      *json.RawMessage           `json:"settings"`
+		FailurePolicy *json.RawMessage           `json:"failurePolicy"`
+		Extra         map[string]json.RawMessage `json:"-"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&doc); err != nil {
+		return nil, badApplyArgs("intent is not the object the args schema declares: " + err.Error())
+	}
+	out := &Intent{}
+	if len(doc.Profiles) == 0 || len(doc.Profiles) > maxIntentProfiles {
+		return nil, badApplyArgs(fmt.Sprintf("intent.profiles must hold between 1 and %d documents, and it holds %d", maxIntentProfiles, len(doc.Profiles)))
+	}
+	out.Profiles = make([]compile.Profile, 0, len(doc.Profiles))
+	for i, p := range doc.Profiles {
+		profile, err := compile.Decode[compile.Profile](p)
+		if err != nil {
+			return nil, badApplyArgs(fmt.Sprintf("intent.profiles[%d] is not a profile the schema declares: %v", i, trimCause(err.Error())))
+		}
+		out.Profiles = append(out.Profiles, profile)
+	}
+	if len(doc.Servers) > maxIntentServers {
+		return nil, badApplyArgs(fmt.Sprintf("intent.servers must hold at most %d documents, and it holds %d", maxIntentServers, len(doc.Servers)))
+	}
+	out.Servers = make([]compile.Server, 0, len(doc.Servers))
+	for i, s := range doc.Servers {
+		server, err := compile.Decode[compile.Server](s)
+		if err != nil {
+			return nil, badApplyArgs(fmt.Sprintf("intent.servers[%d] is not a server the schema declares: %v", i, trimCause(err.Error())))
+		}
+		out.Servers = append(out.Servers, server)
+	}
+	if doc.RoutingPolicy != nil {
+		policy, err := compile.Decode[compile.RoutingPolicy](*doc.RoutingPolicy)
+		if err != nil {
+			return nil, badApplyArgs("intent.routingPolicy is not a routing policy the schema declares: " + trimCause(err.Error()))
+		}
+		out.Routing = &policy
+	}
+	if doc.Settings == nil {
+		return nil, badApplyArgs("intent.settings is required: the ports and telemetry the compiler reads are the caller's documents, not this build's defaults")
+	}
+	settings, err := compile.Decode[compile.Settings](*doc.Settings)
+	if err != nil {
+		return nil, badApplyArgs("intent.settings is not a settings document the schema declares: " + trimCause(err.Error()))
+	}
+	out.Settings = settings
+	if doc.FailurePolicy == nil {
+		return nil, badApplyArgs("intent.failurePolicy is required: what happens when Core dies is the caller's document, not this build's default")
+	}
+	failure, err := compile.Decode[compile.Failure](*doc.FailurePolicy)
+	if err != nil {
+		return nil, badApplyArgs("intent.failurePolicy is not a failure policy the schema declares: " + trimCause(err.Error()))
+	}
+	out.Failure = failure
+	return out, nil
+}
+
+// trimCause clips a Decode error to the json package's own last clause, which names the field at fault; the
+// wrapper's boilerplate is the package prefix a refusal message does not need twice.
+func trimCause(s string) string {
+	if i := strings.LastIndex(s, ": "); i >= 0 {
+		return s[i+2:]
+	}
+	return s
+}
+
+// selectProfiles applies the frame's own selection over the documents it carried: the profiles named by
+// `profileIds`, in that order. Both directions of the rule the args description states are refusals here — a
+// named id with no document, and a document no id names — because either one means the frame's selection and the
+// frame's documents disagree about what is being applied.
+func selectProfiles(docs []compile.Profile, ids []string) ([]compile.Profile, *dispatch.Refusal) {
+	byID := make(map[string]compile.Profile, len(docs))
+	for _, p := range docs {
+		if _, dup := byID[p.ID]; dup {
+			return nil, badApplyArgs("intent carries two profile documents under the id " + p.ID)
+		}
+		byID[p.ID] = p
+	}
+	for _, id := range ids {
+		if _, ok := byID[id]; !ok {
+			return nil, badApplyArgs("profileIds names " + id + ", which the intent documents do not carry: an id without a document is not a dangling reference the Connector resolves")
+		}
+	}
+	named := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		named[id] = true
+	}
+	for _, p := range docs {
+		if !named[p.ID] {
+			return nil, badApplyArgs("intent carries the profile document " + p.ID + ", which no profileIds entry names: the selection and the documents must agree about what is applied")
+		}
+	}
+	out := make([]compile.Profile, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, byID[id])
+	}
+	return out, nil
+}
+
 // applyAnswer is `config.apply.json#/result` in Go. The three required fields are always present, and the six
 // optional ones are omitted rather than emitted empty: a dryRun has no restart to report, an apply with nothing
 // recorded has no previous hash, and an empty `unrepresentable` array would say "there were rules we could not
@@ -291,7 +417,7 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 		return nil, bad
 	}
 
-	recorded, err := supervisor.ReadState(a.cfg.StateDir)
+	recorded, err := a.record.Read()
 	if err != nil {
 		return nil, refuseApply(err, "config.apply: the applied-state record could not be read, so the hash this call would compare and report is unknown")
 	}
@@ -306,17 +432,17 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 		}
 	}
 
-	intent, err := a.source.Intent(ctx, args.profileIDs, args.routingPolicyID)
-	if err != nil {
-		return nil, refuseApply(err, "config.apply: the intent documents behind those profile ids could not be read")
+	selected, bad := selectProfiles(args.intent.Profiles, args.profileIDs)
+	if bad != nil {
+		return nil, bad
 	}
 	res, err := compile.Compile(compile.Input{
-		Profiles: intent.Profiles,
-		Servers:  intent.Servers,
-		Routing:  intent.Routing,
-		Settings: intent.Settings,
-		Failure:  intent.Failure,
-		Held:     intent.Held,
+		Profiles: selected,
+		Servers:  args.intent.Servers,
+		Routing:  args.intent.Routing,
+		Settings: args.intent.Settings,
+		Failure:  args.intent.Failure,
+		Held:     recorded.Held,
 	})
 	if err != nil {
 		return nil, refuseApply(err, "config.apply: the pipeline refused the compiled config")
@@ -336,7 +462,13 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 		// command states, and it is why a write refusal carries no rollback.
 		return nil, refuseApply(err, "config.apply: the compiled config was not written, so the previous one is still applied")
 	}
-	if err := a.source.Record(ctx, res.Assigned); err != nil {
+	if err := a.record.Write(supervisor.State{
+		AppliedHash:     recorded.AppliedHash,
+		SelectedProfile: recorded.SelectedProfile,
+		LastStartPID:    recorded.LastStartPID,
+		LastExit:        recorded.LastExit,
+		Held:            res.Assigned,
+	}); err != nil {
 		// The file is in place and the port table is not. The next compile without this table can re-allocate a
 		// tag's port from scratch, which is a churn question rather than a safety one, so the apply reports the
 		// failure it actually has rather than pretending the rename did not happen.

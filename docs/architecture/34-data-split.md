@@ -221,7 +221,7 @@ Four rules over that table, all of them asserted:
 | Store | Class | Value present? | Bound | How it dies | Why it is here and not in §6 |
 |---|---|---|---|---|---|
 | keystore (`%LOCALAPPDATA%\NEXORA\keystore`, one blob per secret) | `secret` | yes — the only one by class | one blob per entity field | `keystore.purge` by scope, `profile.remove`'s side effect | ADR-0011 rule 1; the plane is the only place a value exists at rest |
-| compiled config | `derived` | **yes, declared** | one file per applied hash | `core.stop`, shutdown, GC | Xray cannot be handed references; see the exception below |
+| compiled config (`%LOCALAPPDATA%NEXORAconfigconfig.json`) | `derived` | **yes, declared** | one file, renamed over in place | `core.stop`, shutdown | Xray cannot be handed references; see the exception below. A hash-derived name would need the GC `ODEC-26` owns; the stable name is what makes doc 27 §8's replacement a rename and not a create |
 | applied state (hash, selection, PID, `lastExit`) | `observation` | no | a handful of fields | rewritten on every apply | it *is* the truth about now, and it must survive a browser restart (LIVE-13) |
 | health history ring, per server id | `observation` | no | ring-buffered | eviction; ids are reused across refreshes | it grows with traffic, not with the user's vocabulary |
 | feed cache, per subscription, keyed by content hash | `observation` | yes — user UUIDs and often a token-bearing URL | `maxBytes`, default 2 MiB | next successful refresh; source delete | the body never enters a browser process (`docs/architecture/29-subscriptions-and-servers.md` §2) |
@@ -240,6 +240,8 @@ rename that installs it and ends at `core.stop`, never in an export, never in a 
 re-derivable — which is what makes it a cache and not a secret store. The cleanup half after an unclean kill is
 shared with `docs/architecture/32-secrets-keystore-masking.md` §13 and `docs/architecture/33-binary-integrity.md`
 §17 and is listed as open in §17 below.
+
+The per-user layout of those rows is one directory tree: `%LOCALAPPDATA%NEXORA` on Windows, with `keystore` for the blobs above (ADR-0011), `config` holding the one compiled `config.json` the rename discipline replaces, and `state` holding the applied-state record (`state.json`: applied hash, selection, last PID, last exit, and doc 27 §4's port-reservation table `config.apply` writes after each rename). `packages/schema/protocol/data-ownership.json`'s `compiled-config` row states the same path and the same stable name as data, and `connector/internal/apply`'s `FileName` and `connector/internal/supervisor`'s `StateFileName` are the two constants the code keeps to it. No document in `packages/schema` derives these paths at run time: the layout is this section's, and the two directories `config.apply`'s surface is constructed with are its `state` and `config` entries.
 
 Nothing in this plane syncs. There is no NEXORA cloud, no account, no server component
 (`docs/architecture/21-system-context.md` §9), so `syncEligible: false` on every connector row is not a policy

@@ -38,7 +38,7 @@ pre-3.5.2 profile set or a migrated one. That is a schema-version event.
    - **resumable** -- after a crash or an MV3 worker teardown, the run continues from the last verified
      step, never from the beginning and never past a step it did not verify;
    - **`dryRun`** -- the plan and the per-key diffs are reported without touching storage, the same idea the
-     command surface already exposes for config (`packages/schema/protocol/commands/config.apply.json:24`);
+     command surface already exposes for config (`packages/schema/protocol/commands/config.apply.json:37`);
    - **per-step `up` and `verify`** -- every step ships a verifier that re-reads storage and asserts the
      post-condition; a step whose `verify` fails is a failed run.
 3. **Backup is blocking.** Before the first destructive step -- anything that removes, renames or

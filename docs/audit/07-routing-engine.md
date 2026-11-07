@@ -385,15 +385,18 @@ argument: Xray has no calendar predicate, and the Core sees at most a sniffed HT
 
 ### 7.2 `packages/schema/protocol/commands/config.apply.json`
 
-It covers **zero** conditions directly and delegates by reference: `args` are `profileIds` plus an optional
-`routingPolicyId` `packages/schema/protocol/commands/config.apply.json:11-23`, `additionalProperties:
+It covers **zero** conditions directly and delegates by reference: `args` are `profileIds` plus the `intent`
+documents the frame carries (`packages/schema/protocol/commands/config.apply.json:16-36` -- the `intent-down` movement's own carrier, and the
+command's answer to its register question), `additionalProperties:
 false` `packages/schema/protocol/commands/config.apply.json:13`. Consequences: no browser-plane rule, no
-PAC text and no URL ever crosses the wire (which is *right* for the two-plane invariant, §6); the compiler
-runs in the Connector, since the arguments do not carry a compiled config; the report channel is
-`result.unrepresentable` `packages/schema/protocol/commands/config.apply.json:68-80` with `dryRun`
-`packages/schema/protocol/commands/config.apply.json:24-27` as the only pre-flight
+PAC text and no URL ever crosses the wire as *routing input* (which is *right* for the two-plane invariant, §6) --
+the intent documents carry `keystore://` references, never values, and the routing the compiler reads is the
+two-plane policy document the frame states; the compiler
+runs in the Connector, and the arguments still do not carry a compiled config; the report channel is
+`result.unrepresentable` `packages/schema/protocol/commands/config.apply.json:81-94` with `dryRun`
+`packages/schema/protocol/commands/config.apply.json:37-41` as the only pre-flight
 `packages/schema/protocol/commands/config.apply.json:5-8`, and the byte-stability invariant
-`packages/schema/protocol/commands/config.apply.json:102-104` is what makes §4's approximations testable.
+`packages/schema/protocol/commands/config.apply.json:116` is what makes §4's approximations testable.
 The same free-text `{source, reason}` shape repeats here, so the "which conditionType was dropped" gap is
 protocol-wide, not schema-local.
 

@@ -81,7 +81,7 @@ func TestMissingStateIsTheFirstApply(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a directory with no record is not an error: %v", err)
 	}
-	if got != (State{}) {
+	if got.AppliedHash != "" || got.SelectedProfile != "" || got.LastStartPID != 0 || got.LastExit != nil || len(got.Held) != 0 {
 		t.Errorf("the empty record came back as %+v", got)
 	}
 	if _, err := ReadState(""); err == nil || !strings.Contains(err.Error(), "no state directory") {

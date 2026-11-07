@@ -28,14 +28,14 @@ import (
 func TestDriveTwoVLESSServersSelectByRule(t *testing.T) {
 	bin := driveXrayBinary(t)
 
-	const uuidA = "6b1f6a1e-1111-4c2a-9d3e-0a0b0c0d0001"
-	const uuidB = "6b1f6a1e-2222-4c2a-9d3e-0a0b0c0d0002"
+	const uuidA = "6b1f6a1e-1111-4c2a-9d3e-0a0b0c0d0001" // nexora-secret-allow: synthetic VLESS user id, nothing behind it
+	const uuidB = "6b1f6a1e-2222-4c2a-9d3e-0a0b0c0d0002" // nexora-secret-allow: synthetic VLESS user id, nothing behind it
 	// Two VLESS servers, each identifiable at the target by the source address its `sendThrough` binds.
 	srvA := driveStartVLESSServer(t, bin, uuidA, "127.0.0.11")
 	srvB := driveStartVLESSServer(t, bin, uuidB, "127.0.0.12")
 
-	idA := "0a0a0a0a-0000-4000-8000-00000000000a"
-	idB := "0b0b0b0b-0000-4000-8000-00000000000b"
+	idA := "0a0a0a0a-0000-4000-8000-00000000000a" // nexora-secret-allow: synthetic server id, nothing behind it
+	idB := "0b0b0b0b-0000-4000-8000-00000000000b" // nexora-secret-allow: synthetic server id, nothing behind it
 	tagA, tagB := ServerTag(idA), ServerTag(idB)
 	if tagA == tagB {
 		t.Fatal("the two server ids must mint distinct tags")

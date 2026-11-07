@@ -427,11 +427,11 @@
       "secretBearing": true,
       "syncEligible": false,
       "medium": "disk",
-      "location": "the Connector's per-user directory, owner-only ACL, name derived from the config hash",
+      "location": "the Connector's per-user config directory (docs/architecture/34-data-split.md section 7's layout: %LOCALAPPDATA%\\NEXORA\\config on Windows), owner-only ACL, one stable file name -- the same name every apply renames over",
       "holds": "plaintext credentials -- the declared exception (packages/schema/envelope-keys.schema.json at secretReferences.atRest) because Xray cannot be handed references",
       "writer": "ConfigCompiler, then a rename into place",
       "purge": "core.stop and Connector shutdown; it is re-derivable from intent plus keystore, so it is never backed up and never exported",
-      "bound": "one file per applied config, plus the previous version until it is garbage-collected",
+      "bound": "one file. Replacing a config is a rename over the same name (doc 27 section 8), so the previous bytes are gone with the rename and no collector exists -- a hash-derived name would have needed the GC that ODEC-26 owns and would have handed Core a new path every apply",
       "survivesConnectorRemoval": false,
       "survivesExtensionReinstall": true,
       "secretValueKeys": [

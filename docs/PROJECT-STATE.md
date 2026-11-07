@@ -198,19 +198,16 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `196` labelled lines over `44` documents partitioned into `73` live rows — the issued range is
-`VER-01…VER-83`, and `10` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
-sites over `16` documents partitioned into `38` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
-`ODEC-40` and `ODEC-33`
+The queue is `199` labelled lines over `44` documents partitioned into `77` live rows — the issued range is
+`VER-01…VER-88`, and `11` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `62` deferral
+sites over `16` documents partitioned into `39` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
+`ODEC-40`, `ODEC-33` and `ODEC-39`
 now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 15, `adr` 5, `measurement` 2, `upstream` 2), three options — 35 of the 38,
-since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
-unwritten, `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
-records as absent on this host, and `ODEC-39` carries a fourth that answers only the second half of its own question —
-which two directories and which file name — because the seam that carries an intent and the layout that holds it have
-different owners — and the `VER`/`COMP` rows it
+(`product` 14, `contract` 16, `adr` 5, `measurement` 2, `upstream` 2), three options — 37 of the 39,
+with `ODEC-35` the one entry that carries a fourth, recording the reading ADR-0004 rule 3 already excludes rather than
+leaving it unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
@@ -574,6 +571,20 @@ cannot see, `VER-87`'s state column is there to say.
 §4.36 measures **2311 / 596 / 1596**, 68 labels and 52 `Cited by` rows. Against a clean archive of c17da8c,
 only doc 27 and doc 40 change the citation counts: each loses one doc-name reference. The 45 repaired line
 citations preserve their evidence targets without changing the count. All other per-file counts are unchanged.
+§4.37 moves the set not at all — **2311 / 596 / 1596**, 68 labels, 52 rows — the first closure-by-evidence slice
+whose own record is the only thing it added to `docs/`, and the census confirms the shape: this file alone, and
+even it only by the prose that names no counted address.
+§4.38 moves the set a thirty-third time — **2310 / 597 / 1593**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of a8bd1fe, read with the guard's own three
+patterns: doc 27 `0 / 0 / -1`, the name its invariant row no longer cites now that the row stops deferring, and
+doc 40 `0 / +1 / -1`, the pointer into the args' intent property arriving as the full path the guard can walk and
+the name its retired entry's argument no longer cites. Ten line citations into doc 34 and `config.apply.json`
+were re-anchored with their claims re-read — the command doc grew sixteen lines where the intent block landed —
+and doc 35's cite into doc 34 §12 was found shifted by the layout paragraph and re-aimed by the guard's own
+wants-the-claim check, which is the fifth pass earning its keep in the same sitting it arrived. `PROJECT-STATE.md`
+moves `-1 / 0 / -1`, and both subtractions are the same edit: the queue paragraph above caught up with the data,
+the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
+citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -1597,8 +1608,8 @@ closing by that decision), anchored on the row doc 30 §13 now carries; the exha
 because it makes the *attempts themselves* fail through the `Verify` seam rather than relying on a death-after-recovery.
 
 **The record, and the field that had to stop being two.** `data-ownership.json`'s `applied-state` row names four
-properties and doc 34 §7 repeats them, so `State` has exactly those four and no fifth — including no containment answer,
-which is a fact about a process that is gone by the time the file is read. One bug was hiding there: `Status.LastExit`
+properties and doc 34 §7 repeats them, so `State` had exactly those four and no fifth — including no containment answer —
+which is a fact about a process that is gone by the time the file is read. It has a fifth field now — `held`, doc 27 §4's reservation table, which `config.apply` writes after each rename and `Start` reads back from the record rather than from a construction-time copy — and the sentence that said "no fifth" was the record of what was true when it was written. One bug was hiding there: `Status.LastExit`
 was served from a supervisor field that `WriteState` never populated, so a reloaded record could not answer the question
 LIVE-13's restart half asks. `statusLocked` now reads `s.st.LastExit` (`connector/internal/supervisor/supervisor.go:263`)
 and `spawnLocked` carries it forward (`:360`), which is what makes `TestAppliedStateOutlivesTheSupervisorThatWroteIt` a
@@ -1606,7 +1617,7 @@ demonstration of the row rather than of a process's memory. `WriteState` reuses 
 close, `Chmod 0600`, rename, cleanup on failure — so this module has one atomic-replacement discipline to audit, and the
 mode is owner-only for a different reason than the config's: the row's own `holdsValue` answer is "no", so what 0600
 protects here is a server list and a pid. A directory with no record is the first apply and not an error
-(`connector/internal/supervisor/state.go:31`), which is why `previousConfigHash` stays an empty string rather than a
+(`connector/internal/supervisor/state.go:36`), which is why `previousConfigHash` stays an empty string rather than a
 sentinel; a record that will not parse is an error to `ReadState` and a fresh start to `New`, and `TestCorruptStateIsReadAsFreshByNew`
 keeps those two readings from being confused by a later caller.
 
@@ -2712,8 +2723,8 @@ reports — the four line-cites into doc 22 that the two paragraphs this slice p
 own edit after §4.29's; §4.4's final ledger paragraph carries the set and the per-file deltas. `node
 tools/check-adr-shape.mjs` (and `--selftest`), `node tools/check-layout-guards.mjs` (and `--selftest`), `node
 tools/check-legacy-backup.mjs` (and `--selftest`) → green. `node tools/check-no-secrets.mjs` → **481 files**: the
-guard walks the index, so the slice's eight Go files join the count at commit time, and the one-file step from §4.29's
-480 is ADR-0021's, not this slice's. `gofmt -l connector` → empty; `go -C connector vet ./...` → silent; `go -C
+guard walks the index: §4.33-§4.37's fifteen Go files and §4.38's intent-carrying fixtures bring the count to 496,
+and the five synthetic UUID literals of the new tests carry `nexora-secret-allow` annotations like every test constant before them. `gofmt -l connector` → empty; `go -C connector vet ./...` → silent; `go -C
 connector test -count=1 ./...` → **twelve `ok` lines**, the twelfth package being `internal/health`, with the same two
 `no test files` notes as before.
 
@@ -2869,6 +2880,54 @@ production command wiring, cross-platform behaviour — the same limits §4.36 s
 moves: the rows that ask about selection (`VER-30`, `VER-67`, `LIVE-05`) ask about a running host and a real
 session, not a loopback proof, and the honest state of the prober's evidence is §4.36's, not more.
 
+---
+
+### 4.38 The intent rides the frame — `ODEC-39` answered clause by clause, `VER-80` retired, and the registration left to the span (2026-11-07)
+
+**What the decision is.** The register's `intent-down` movement had named `config.apply` the carrier of intent
+documents since before the question existed, so the answer is the reading the data already took: `config.apply`'s
+args gain a required `intent` object — profiles, servers, an optional routing policy, settings, failure policy,
+each a document against its own closed schema — and `profileIds` stays as the ordered selection over
+`intent.profiles`, with both directions of the disagreement a `BadRequest`: an id without a document, and a document no
+id names. The `routingPolicyId` argument left with the seam it named, because an id whose document rides the same
+frame is a second name for one thing. The directories are doc 34 §7's per-user layout — `%LOCALAPPDATA%\NEXORA\` with
+`config\` and `state\` beside the keystore, restated as data in the `compiled-config` row of
+`packages/schema/protocol/data-ownership.json` — and the name is the stable `config.json` doc 27 §8 renames over,
+the hash-derived wording retired beside the question that made it: a hash-derived name would have needed the
+collector `ODEC-26` owns and would have handed Core a new path every apply.
+
+**What landed in the Go half.** The `intentSource` seam is gone: `readApplyArgs` decodes the intent document
+by document with the same closed-object rule every entity schema states, `selectProfiles` applies the frame's own
+selection, and `Handle` compiles from what the caller sent. The port-reservation table moved to where the corpus
+always said it lived — `supervisor.State` gained `held`, the applied-state record is what `config.apply` writes it
+into after the rename, and `Start` reads it back from the record rather than from a construction-time copy, because
+an apply that just renamed a config makes the supervisor's memory stale. The one seam that remains is honest I/O: a
+two-method `stateRecord` over the state directory, so the record-write refusal stays testable the way it has been
+since §4.20. `config.apply` is still not registered — the constructor refuses a surface without the
+`configHash` span, and that is `ODEC-36` — so the claim the doc 27 §9 row carries now belongs to `VER-88`, the
+registration row `ODEC-36` gates; the labelled line is the same line, re-owned rather than acquired.
+
+**The corpus around the answer.** The fixture frames in `packages/schema/fixtures/protocol/config-apply.jsonl` and
+`failure-block.jsonl` carry the intent payload, compiled from the shipped examples; two of them store the
+`<local>` bypass pattern pre-escaped, because the envelope round-trip test compares Go's own marshalled bytes and
+the codec escapes HTML. Ten line citations into doc 34 and the command document were re-anchored with their claims
+re-read, and one of them — doc 35's cite into doc 34 §12 — was shifted by this slice's own layout paragraph and
+caught by the guard's wants-the-claim pass, which is §4.33's fifth pass refusing the neighbour error the same
+sitting it arrived. `ODEC-39` and `VER-80` retired with tombstones; the register is 39 entries over 62 sites, the
+queue is 77 rows with eleven tombstones, and `ODEC-36` now gates `VER-88` beside `VER-78` — 22 entries gate exactly
+2 where 21 did.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1230 checks** — the contract gained a property and lost
+an argument, and the fixture-args assertions caught the change in the same run that proves it. `node tools/check-doc-evidence.mjs`
+→ green; §4.4's final ledger paragraph has the set and the per-file deltas. `node tools/check-no-secrets.mjs` →
+**496 files**, the slice's fixtures and test constants joining the index with their annotations. ADR shape, layout
+guards and the legacy backup check → green. `go -C connector test -count=1 ./...` → **thirteen `ok` lines** without
+the binary, and the compile and apply packages ok again under `NEXORA_XRAY_BIN`; `gofmt -l connector` empty,
+`go -C connector vet ./...` silent. What this slice does not claim: a production caller (that is `VER-88` and
+`ODEC-36`), a browser, a REALITY handshake, or any row moved that asks about a running host.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -2953,7 +3012,7 @@ session, not a loopback proof, and the honest state of the prober's evidence is 
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 596 pointers, 1598 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 597 pointers, 1594 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
@@ -3013,12 +3072,14 @@ session, not a loopback proof, and the honest state of the prober's evidence is 
 ## 6. The exact next steps (task #6 → #11)
 
 **Current queue, 2026-11-07 (supersedes historical sequencing below):** §4.36 supplies real Xray config and
-loopback routing probes, so a missing local Core binary is no longer a blocker, and §4.37 exercises the complete
-compiled two-server VLESS path on loopback, with server selection proven by the source address the target saw.
-Next: production intent/path wiring (ODEC-39), hash-subject decision
-(ODEC-36) and host transport (ODEC-35). ODEC-37 is narrowed to residual predicate semantics, not missing byte
-spellings. Remote VLESS/REALITY, browser integration, trusted installation and parent-death containment are not
-proved by the loopback tests. The user authorizes continued implementation and publication under §7.
+loopback routing probes, so a missing local Core binary is no longer a blocker; §4.37 exercises the complete
+compiled two-server VLESS path on loopback, with server selection proven by the source address the target saw; and
+§4.38 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
+compiled config keeps the stable name doc 27 §8 renames over. Next: the hash-subject decision (ODEC-36, which also
+opens the `config.apply` registration its `VER-88` gates), then host transport (ODEC-35). ODEC-37 is narrowed to
+residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
+installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
+implementation and publication under §7.
 
 **#5 `packages/schema` — done.** It is now the green, re-runnable test of this iteration:
 `npm --prefix packages/schema run verify` → `OK: 13 schemas compile, 19 command docs conform, 20 examples
@@ -3699,8 +3760,8 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 196 labelled lines over 44 documents, the queue is 73 rows with ten tombstones, and the register is 38
-questions over 61 sites with three retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 199 labelled lines over 44 documents, the queue is 77 rows with eleven tombstones, and the register is 39
+questions over 62 sites with four retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a

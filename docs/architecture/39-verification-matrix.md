@@ -236,12 +236,12 @@ Not a schedule — a dependency graph the states impose:
    `LIVE-05…LIVE-09`. `VER-27`, `VER-32` and `VER-68` close by executing `LIVE-04` itself, and `VER-50` hangs on
    `LIVE-05` — behind the gate twice. Until an egress IP equals the VPS IP, no transport row may be reported,
    because a TCP connect returning green while traffic leaks is ADR-0020's named worse-than-nothing test.
-3. **Four decisions gate four rows.** `VER-54` waits on `ODEC-10` (does any external API surface survive),
+3. **Three decisions gate three rows.** `VER-54` waits on `ODEC-10` (does any external API surface survive),
    `VER-79` on `ODEC-38` (over what
-   span the ladder's attempts are spent), `VER-80` on `ODEC-39` (where a real `config.apply` reads its intent, which
-   directories it is handed and what the compiled config is called), `VER-82` on `ODEC-41` (which artefact records
+   span the ladder's attempts are spent), `VER-82` on `ODEC-41` (which artefact records
    the pipe half of the
-   version negotiation) — all four in doc 40's register. The fifth, `VER-61` on `ODEC-33`, closed on 2026-11-07 by
+   version negotiation) — all three in doc 40's register, and `VER-88` on `ODEC-36` beside them, the registration
+   half of the seam `VER-80` carried. The fourth, `VER-61` on `ODEC-33`, closed on 2026-11-07 by
    the answer its question asked for: an `adr`-kind entry, so the answer is `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`
    and the row left with the question it gated — the first closure by elimination, since the data already refused two
    of that entry's three options — and the run refuses a row that closes by a decision no entry
@@ -258,7 +258,9 @@ Not a schedule — a dependency graph the states impose:
    `connector/cmd/nexora-connector/config_apply_test.go` — and all four are in `no-run` rather
    than closed, because the live row each owes is a session, not a syscall, a rename or a `CloseHandle`. The column is
    back to 54 in the same slice because `VER-80` entered it: a command path with no production caller and no contract
-   saying what it reads is a component that does not exist, which is what this state means. `VER-81` entered it in the
+   saying what it reads is a component that does not exist, which is what this state means. It left again on
+   2026-11-07, by the decision `ODEC-39` was for — and the row's residual is `VER-88`, the registration, still in
+   this column and still a component that does not exist. `VER-81` entered it in the
    next slice, and was the column's first row owned by `contracts` — the five contract-owned rows before it are
    `no-check` or `no-fixture`, which is the queue's own way of saying a contract obligation usually means a checker
    rather than a component — and the first row of the queue to close by a decision and not by the Connector's work:
@@ -292,7 +294,7 @@ pointing at one executable matrix is a plan; the same 77 as 199 scattered phrase
 
 ## 10. The queue
 
-77 rows, grouped by state; the 10 ids this queue has closed are in `packages/schema/verification.json#/retired`,
+77 rows, grouped by state; the 11 ids this queue has closed are in `packages/schema/verification.json#/retired`,
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
@@ -353,7 +355,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-77 | hop 2 has no transport contract: the local pipe's message schema is undefined, and nothing says how the sender identity crosses it | `connector` · assertion | 1 · 1 |
 | VER-78 | four goldens have a compiler producer and byte-stability checks; which byte string `configHash` covers is still gated by `ODEC-36` | `connector` · assertion | 1 · 1 |
 | VER-79 | the ladder spends its attempts per death, so a crash-looping Core is handed a fresh budget forever; no field bounds the deaths and none states a stability window | `connector` · decision (`ODEC-38`) | 1 · 1 |
-| VER-80 | the `config.apply` path from a frame to a replaced config and a restarted Core has no production caller: the method is not registered, and nothing supplies the intent an ids-only call cannot carry | `connector` · decision (`ODEC-39`) | 1 · 1 |
+| VER-88 | the `config.apply` method is still not registered: `main.go` publishes nothing that needs the `configHash` span, so a real frame answers `UnknownMethod` at the dispatch door | `connector` · decision (`ODEC-36`) | 1 · 1 |
 | VER-82 | the pipe half of the version negotiation has nowhere to be written down: doc 21 §6 promises the negotiation result reaches the connector log and `diagnostics.get`, and every field that could carry it names only `protocolVersion` | `contracts` · decision (`ODEC-41`) | 1 · 1 |
 | VER-84 | the HealthProber and its `server.test` surface are built and tested, and unregistered: the prober refuses to build without the egress endpoint and expected address no schema field carries, and the surface reads a server store no document has placed | `connector` · decision (`ODEC-42`) | 1 · 1 |
 | VER-86 | the `health-history` store row's `medium` of `disk` is kept nowhere: the built ring dies with the process and nothing writes it to a path | `connector` · assertion | 1 · 1 |
@@ -447,7 +449,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-87` beyond the contract layer — 77 live, 10 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-88` beyond the contract layer — 77 live, 11 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 
