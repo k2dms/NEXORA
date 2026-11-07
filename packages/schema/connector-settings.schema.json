@@ -46,6 +46,21 @@
           "maxLength": 200,
           "default": null,
           "description": "Override of the pin's installRoot. Null means use the pin, whose own installRoot is the per-user core directory of doc 34 §7's layout -- %LOCALAPPDATA% (the per-user core directory of doc 34 section 7's layout) in the shipped example -- and the active binary inside it is resolved from the install receipt, never from a directory listing (docs/architecture/33 §7). The supervisor's Launch resolves this path per spawn and the pre-exec proof re-hashes the file it names; a receipt that does not exist is Core not being installed yet, and the answer is a refusal, never a download on the apply path. Paths are not secrets but are not logged either (docs/architecture/32)."
+        },
+        "egressProbe": {
+          "type": "object",
+          "additionalProperties": false,
+          "default": null,
+          "properties": {
+            "endpoint": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https?://",
+              "maxLength": 255,
+              "description": "The checkip URL the egress probe fetches through the proxy — a service that echoes the caller's public IP back. One endpoint per machine: the probe proves that traffic through any server exits from that server's address, and the checkip service is a property of the network environment, not of the VPS (ODEC-42)."
+            }
+          },
+          "description": "The egress probe's configuration. The expected address is not here: it is the server's own `address` field (`server.schema.json#/properties/address`), resolved at probe time from the server being tested — the probe proves that traffic through a server exits from that server's IP, not from a pre-declared one."
         }
       },
       "description": "Which Core binary may run and how it gets started. Preferences only; observed state comes from connector.status."

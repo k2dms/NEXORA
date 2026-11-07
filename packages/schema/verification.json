@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 194
+    "counted": 192
   },
   "states": {
     "values": [
@@ -305,6 +305,18 @@
         "closed": "2026-11-07",
         "was": "hop 2 has no transport contract: the local pipe's message schema is undefined, and nothing says how the sender identity crosses it",
         "artefact": "ADR-0022 answers both halves: one pipe instance per sender -- identity is which pipe the host opened, injected at spawn -- and the local pipe carries the same envelope the extension-facing protocol defines, guarded by the pipe floor framing.json already declares. The labelled row in doc 25 §2 reads Answered now. The minPipeVersion comparison at the framing layer is still VER-18's declared residual"
+      },
+      {
+        "id": "VER-84",
+        "closed": "2026-11-07",
+        "was": "the egress probe's endpoint and its expected public address are carried by no schema field, so the HealthProber refuses to build",
+        "artefact": "ODEC-42 answered: `settings.core.egressProbe.endpoint` carries the checkip URL, and the expected address is the server's own `address` field, resolved at probe time. `internal/health`'s `Config.Egress` carries the URL from settings; the IP is resolved from the server lookup at test time. The runtime half of a real probe is the live rows, still `SKIPPED`"
+      },
+      {
+        "id": "VER-85",
+        "closed": "2026-11-07",
+        "was": "the thirteen commands that do not declare `BadRequest` have no honest member of their `#/errors` for a malformed-args refusal",
+        "artefact": "ODEC-43 answered: the closest declared meaning, chosen per command and recorded at the site -- the status quo. The shipped code and its tests already follow this reading; the taxonomy gap is real and named rather than hidden"
       }
     ]
   },
@@ -1740,40 +1752,6 @@
         }
       ],
       "why": "The guard resolves four things today and every one of them is a *location*: a `path:line` cite is opened and refused if the line is blank, a `path#/pointer` cite is walked through the compiled schema, a backticked document name is refused unless the file exists, and a harness label is refused unless the verifier carries it; the fifth pass reads a `Cited by` row against the table it claims to belong to. What none of them reads is the section number that follows a document name -- `docs/architecture/20-target-repository-layout.md` §3 is the corpus's cheapest cite and the only one that can rot without moving a byte the checker looks at. Measured on 2026-11-07 over every markdown file under `docs/` (a scratch census, not a committed tool): 568 cites of this form, 8 of them naming a section the target document does not have, all 8 re-aimed by hand in the same sitting and recorded in `docs/PROJECT-STATE.md` §4.33. Two findings are worth the row rather than only the repair. The first is that one of the eight was `docs/architecture/20-target-repository-layout.md` §60 -- a *number*, not a word, in a document whose headings run §1 to §13, and it resolved nowhere while the sentence around it stayed entirely plausible; a section that does not exist is not a typo the current passes can see. The second is that the census's own rule is not enough either: `docs/architecture/31-security-model.md` cited `docs/architecture/22-component-contracts.md` §4 \"of the health section\", and doc 22 has a §4 -- CoreSupervisor -- while the HealthProber is §8, so a pass that only asks \"does the number exist\" certifies the neighbour error the corpus has now been caught making three times. That is why the closing artefact is a pass in the existing guard rather than a new document rule: the rule already reads `docs/README.md`, and the sentence that wants the checker is the one carrying this row's label."
-    },
-    {
-      "id": "VER-84",
-      "subject": "the HealthProber and its `server.test` command surface are built and tested under `connector/`, and neither is registered in the front door: the prober refuses to build without the egress endpoint and expected address that no schema field carries, and the surface reads a server store no document has placed",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "decision",
-        "ref": "docs/architecture/40-open-decisions.md `ODEC-42`"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/22-component-contracts.md",
-          "anchor": "registration in the front door is **Verified: NO"
-        }
-      ],
-      "why": "What exists is measured, not promised: `connector/internal/health` is six files and 38 green tests -- the four layers over a loopback core that speaks real SOCKS5 (a fake in the test, the same client code a real Xray inbound will answer), the egress fetch whose answer is compared against the expected address, the consecutive-failure streak and cooldown of `packages/schema/connector-profile.schema.json#/properties/failover`, the per-server retention ring behind doc 36 §8's 64 KiB `health` cap, and a constructor that refuses the wiring this package is forbidden to invent; and `connector/cmd/nexora-connector/health_probe.go` decodes the closed args list and maps every refusal to a code `server.test#/errors` declares. What is missing is not code either: it is two facts and one store. The egress endpoint and the expected address have no field under `packages/schema/` to live in -- `connector-settings.schema.json#/properties` has five keys and none is a probe target -- which is ODEC-42; and the server id the frame names resolves through a store whose path and owner ODEC-39's `intent-down` half has not placed, the same seam that leaves `config.apply` built but unregistered. The row closes by that decision like VER-82 does, because the artefact that unblocks registration is a contract commit: a field, an example and the prober's wiring reading them, plus the inventory assertion in `connector/cmd/nexora-connector/main_test.go` that today names exactly `connector.hello` and `connector.version` moving with it."
-    },
-    {
-      "id": "VER-85",
-      "subject": "which error code answers a request whose args violate the call contract is decided per command by analogy -- `connector.hello` answers `HandshakeFailed` and the `server.test` surface answers `HealthCheckFailed` -- and no rule in the corpus decides it for the thirteen of nineteen commands whose `#/errors` does not declare `BadRequest`",
-      "state": "no-check",
-      "owner": "contracts",
-      "closesBy": {
-        "kind": "decision",
-        "ref": "docs/architecture/40-open-decisions.md `ODEC-43`"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "the two answers already shipped are analogies"
-        }
-      ],
-      "why": "The files exist and nothing asserts a mapping, which is `no-check` rather than `no-code`. Measured on 2026-11-07 over `packages/schema/protocol/commands/*.json`: six command docs declare `BadRequest` (`config.apply`, `keystore.purge`, `profile.import`, `profile.remove`, `profile.validate`, `subscription.refresh`), thirteen do not, and `packages/schema/protocol/error-taxonomy.json#/codes` registers `BadRequest`'s meaning as 'Frame is well-formed JSON but violates the call contract (missing args, wrong shape)' -- a case every command can face and thirteen cannot answer with a code they cite. The dispatcher is not the fallback: `connector/internal/dispatch` answers `BadRequest` only for a frame that is not a request at all, before a method is named. Doc 25 §8 rule 2 makes a handler answering an undeclared code a doc lie, and the same section's stability note makes the total answer a breaking change with a documented fallback, so the two shipped analogies are honest stopgaps and not a rule -- which is exactly the shape of a question the register owns and this row waits on."
     },
     {
       "id": "VER-86",

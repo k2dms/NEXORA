@@ -240,7 +240,7 @@ Rules:
    `UnauthorizedExtension` if the sender is not allowlisted — the two are deliberately different because the
    operator's remediation differs (`docs/architecture/31-security-model.md`).
 
-Which code answers a request whose args violate the call contract is declared by only six of the nineteen command docs, and the other thirteen — `server.test` among them — have no honest member of their own `#/errors` for it; the two answers already shipped are analogies (`connector.hello` answers `HandshakeFailed`, the `server.test` surface answers `HealthCheckFailed`), which is **Verified: NO — deferred to Phase 2** until a rule or a contract pass decides it, and `docs/architecture/40-open-decisions.md` owns the question.
+Which code answers a request whose args violate the call contract is declared by only six of the nineteen command docs, and the other thirteen — `server.test` among them — have no honest member of their own `#/errors` for it; the two answers already shipped are analogies (`connector.hello` answers `HandshakeFailed`, the `server.test` surface answers `HealthCheckFailed`), which is **Verified — ODEC-43 answered: the closest declared meaning, chosen per command** (the status quo, already tested and shipped)
 
 ## 9. Deadlines belong to the extension
 
