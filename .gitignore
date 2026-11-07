@@ -20,3 +20,6 @@ dist/
 # The Go connector builds here. `connector/` MUST NOT carry a compiled binary in git
 # (docs/architecture/20-target-repository-layout.md §3); this is where `go build -o bin/` writes.
 connector/bin/
+
+# ADR-0019 rule 6: no committed binaries
+*.exe
