@@ -535,9 +535,9 @@ sixth time in seven entries, and the reason is the same as §4.31's: a closure b
 pointers and at documents, never at a line of code. What the 68 labels do prove here is the hand-off: doc 29 §13 item 6's
 label left and ADR-0021's `## Verification` arrived, and the guard's fourth figure is the number that says the exchange
 was even rather than the number that says anybody checked.
-§4.33 moves the set a thirtieth time — **2311 / 595 / 1594**, 68 labels — measured after this paragraph and its own
+§4.33 moves the set a thirtieth time — **2311 / 595 / 1595**, 68 labels — measured after this paragraph and its own
 record were written, so it reports the set the tool prints rather than the set its sentences produced. Per file against
-a clean `git archive` of the commit before: this file `0 / 0 / +19` and `docs/README.md` `0 / 0 / +2`, the guard's own
+a clean `git archive` of the commit before: this file `0 / 0 / +20` and `docs/README.md` `0 / 0 / +2`, the guard's own
 name and this file's, which is the second time a citation-convention bullet has had to cite the record of its own
 measurement. The eight re-aimed section cites move **no figure at all**, and that is the finding rather than an
 observation: every one of them replaces a document name plus a section number with a document name plus a section
@@ -2682,7 +2682,7 @@ connector` and `go -C connector vet ./...` → unchanged; this slice touches no 
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 595 pointers, 1594 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 595 pointers, 1595 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
@@ -3093,6 +3093,15 @@ written before any behaviour existed. What each next milestone has to make true:
   still points at `f38f27b`; every push since has been a fast-forward of `nexora/architecture` onto `nexora/master`,
   so the local branch pointer was never moved.
   Main branch for PRs upstream: `master`.
+- **A push is recorded after the commits it carries, in the next state commit** — that is why this section names the
+  range rather than its own sha. The push the user asked for on 2026-11-07 ran as
+  `git push nexora nexora/architecture:master` and fast-forwarded `refs/heads/master` from `06c2507` to `c02401f` —
+  three commits: §4.31's fifth guard pass and the 21 re-aimed index rows (`16cb2e0`), §4.32's `ODEC-33` and `VER-61`
+  closure with `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` (`ccc2cad`), and §4.33's eight
+  re-aimed section anchors with `VER-83` (`c02401f`). `git ls-remote --heads nexora` printed one ref before it and one
+  ref after: the local working name never became a remote branch, and the refspec law two bullets above is what keeps
+  it that way. This paragraph is the one unpushed fact it records — `git rev-list --count nexora/master..HEAD` reads
+  `1` while you are reading it, and the next push carries the sentence that says so.
 - Remotes: `origin` = upstream ZeroOmega (**never push**), `nexora` = `git@github.com:k2dms/NEXORA.git`.
 - **Committed and pushed** (2026-11-05: `c367db2..431ea0a`, a clean fast-forward to `nexora/master`, no MR needed),
   in the planned groups — (a) infrastructure: `.gitattributes`, `.env.example`, `.gitignore`, `.npmrc`×5, `tools/*`;
