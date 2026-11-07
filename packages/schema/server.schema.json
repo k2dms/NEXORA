@@ -233,6 +233,9 @@
         },
         "headersRef": {
           "$ref": "#/$defs/headersRef"
+        },
+        "headersKeys": {
+          "$ref": "#/$defs/headersKeys"
         }
       }
     },
@@ -258,6 +261,9 @@
         },
         "headersRef": {
           "$ref": "#/$defs/headersRef"
+        },
+        "headersKeys": {
+          "$ref": "#/$defs/headersKeys"
         }
       }
     },
@@ -302,6 +308,18 @@
           "$ref": "#/$defs/host"
         }
       }
+    },
+    "headersKeys": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "description": "The header names the stored object behind headersRef holds. The materializer resolves headersRef to the stored map and fills exactly these keys; the masking layer enumerates them from the model rather than from the store, because a key list the store cannot know in advance is a masking rule it cannot enforce (ODEC-45)."
     }
   },
   "allOf": [

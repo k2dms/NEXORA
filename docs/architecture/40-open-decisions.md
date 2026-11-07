@@ -1,6 +1,6 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 59 deferral sites in 15 documents point here as the place an answer lives, and six more lines name it only to
+> Purpose: 58 deferral sites in 15 documents point here as the place an answer lives, and six more lines name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
@@ -24,8 +24,8 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§9 names the assertio
 
 - The argument for each question: why it is genuinely open rather than merely unfinished, and what a reader would be
   lied to about if Phase 1 had invented an answer.
-- The grouping of the 36 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
-  pile, and so the 14 `contract` questions do not look as expensive as the 6 `adr` ones.
+- The grouping of the 35 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
+  pile, and so the 13 `contract` questions do not look as expensive as the 6 `adr` ones.
 - The tie backwards: which `VER-NN` rows and which `COMP-NN` rows stop moving until an entry here is answered.
 
 **Refuses.**
@@ -72,7 +72,7 @@ is worth stating precisely.
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 59 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 58 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -97,19 +97,19 @@ costs to answer:
 | Value | Count | What closing it looks like | Why it is not interchangeable with the others |
 |---|---|---|---|
 | `product` | 14 | a screen, a sentence, or a refusal the user sees — written into `docs/architecture/37-ui-architecture.md` and the command docs | no measurement can decide what the user should be told; a schema field cannot make the choice less arbitrary |
-| `contract` | 14 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
+| `contract` | 13 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
 | `adr` | 4 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
 | `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 2 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-14 of the 36 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+14 of the 35 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
-14 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
+13 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without waiting on a
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
-`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 20 entries gate exactly 2 and 13 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
+`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 20 entries gate exactly 2 and 12 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 Two questions are cited by four or more sites each — `ODEC-15` (the built-in sync secret, five) and `ODEC-01`
@@ -391,7 +391,7 @@ ignored, and an unknown outbound falls back to the default. The compiler reports
 never emits unknown tags. The question is narrowed, not retired: remaining protocol predicates need their own
 matching/nonmatching evidence, and inversion has no proven equivalent lowering. Its sites remain
 `docs/architecture/23-unified-server-model.md` §9 and `docs/architecture/27-config-compilation-pipeline.md` §9.
-Shape C still needs a decision (`ODEC-45`); fail-closed still belongs in `chrome.proxy`, not a separate Core golden.
+Shape C is materialized via the key list (ODEC-45's answer); fail-closed belongs in `chrome.proxy`, not a separate Core golden.
 
 `ODEC-36` (which byte string `configHash` names) is answered, and it was the register's longest argument: three
 byte-string candidates, a disclosure question and a machine-specificity rule all pulling at one field. It left this
@@ -405,8 +405,8 @@ that kept the spans apart died with it. The cost its option named is stated besi
 an unchanged reference does not move this hash, and picking a rotation up is `core.restart`'s, the user's action.
 The log-destination half the entry had picked up along the way settled itself the same way: under the handles
 answer, the emitted document carries no path at all and the state directory stays runtime wiring. The headersRef
-half did not settle — how a `keystore://` handle for an *object* reaches the compiled config is now `ODEC-45`,
-the newest entry, still `contract`. The id is retired in `packages/schema/open-decisions.json#/retired`; it closes
+half did not settle — how a `keystore://` handle for an *object* reaches the compiled config is decided (ODEC-45):
+answered by its own second option. The id is retired in `packages/schema/open-decisions.json#/retired`; it closes
 `VER-78`, and `VER-88`, the registration the entry had gated beside it, re-gates on `ODEC-44`.
 
 
@@ -471,7 +471,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 36 questions, 59 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 35 questions, 58 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it -- and
    since this document's §3 table read `contract` 16 against a data of 15 for one commit, the run now reads the
    document's own sentences too, the way doc 39 §11 has done since it caught three stale distributions there.

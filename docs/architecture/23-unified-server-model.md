@@ -163,7 +163,7 @@ transit.
 Two of the three are pinned by a golden file today — `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`
 and `shape-b-reality-xhttp.golden.json` hold the emitted bytes, compared byte-for-byte by
 `connector/internal/compile/golden_test.go` — and shape C is refused rather than pinned, because its `headersRef` is
-a handle for an *object* and no decision says how one is materialized (`ODEC-45`). Four byte mappings are now
+a handle for an *object* materialized by the key list in `headersKeys` (`ODEC-45`'s answer). Four byte mappings are now
 implemented: every per-server inbound is SOCKS5; `direct` and `block` declare `freedom` and `blackhole` outbounds;
 `sniffing` is an inbound sibling with `protocols` renamed to `destOverride`; routing `network` and `protocol`
 remain arrays. The materialized goldens pass Xray 24.11.11's config test, not a remote-server handshake.

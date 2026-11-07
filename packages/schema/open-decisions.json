@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 59
+    "counted": 58
   },
   "notADeferral": [
     {
@@ -998,29 +998,6 @@
           "anchor": "have no honest member of their own `#/errors` for it"
         }
       ]
-    },
-    {
-      "id": "ODEC-45",
-      "question": "How does a `keystore://` handle for an *object* reach the compiled config -- the materializer resolving the handle into the key-value map the stored value holds, the compiler refusing object handles until a schema field names the map, or shape C losing headers entirely?",
-      "decidedBy": "contract",
-      "blocks": {
-        "verification": [
-          "VER-28"
-        ],
-        "compatibility": []
-      },
-      "why": "The half of the old `ODEC-36` that its hash-subject answer did not settle. Shape C of doc 23 §9 prints a headers object whose keys come from the stored map (a colon-prefixed key name mapping to the secret value) -- one string in the model standing where the config needs an object, so the key names live in the document and the values in the store. `unsupportedHeaders` in `connector/internal/compile/outbound.go` refuses a server carrying one, which is why shape C has no golden and why VER-28 pins four fixtures rather than six. No decision says whether the materializer expands the handle from the stored map, whether a schema field must name the map first, or whether headers are dropped. It is `contract` because the answer is a field and a refusal rule in `packages/schema` -- not a person, a browser or a binary.",
-      "options": [
-        "the materializer expands the handle: a `keystore://` handle whose stored value is a JSON object is materialized key by key into the config position, at the cost of a value-shape rule in the keystore and a masking rule per key name the store cannot know in advance",
-        "a schema field names the map: the server document gains an explicit -shaped declaration of the keys the stored object holds, and the materializer only fills values -- at the cost of a new field on the server model and a sync story for the key list",
-        "shape C loses headers: the model drops the field, authenticated feeds that need headers are refused like any other unsupported shape, and the corpus says so -- no new field anywhere, at the cost of the shape C users the loss table in doc 29 §5 would have to name"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "reaches the compiled config is its own question"
-        }
-      ]
     }
   ],
   "retired": {
@@ -1130,6 +1107,18 @@
         "freed": {
           "verification": [
             "VER-77"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-45",
+        "decided": "2026-11-07",
+        "was": "how a keystore:// handle for an *object* reaches the compiled config -- the materializer resolving the handle into the key-value map the stored value holds, the compiler refusing object handles until a schema field names the map, or shape C losing headers entirely",
+        "artefact": "the second option its own entry listed: the server document gains  (server.schema.json#//headersKeys), the key list the stored object behind  holds, and the materializer fills their values from the store. The compiler now emits headers when both  and  are present, and refuses either without the other -- the masking layer enumerates from the model, not from the store. It frees 's shape-C half",
+        "freed": {
+          "verification": [
+            "VER-28"
           ],
           "compatibility": []
         }

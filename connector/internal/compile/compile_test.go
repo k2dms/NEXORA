@@ -130,7 +130,7 @@ func TestShapeBCompilesAndKeepsTheEmptyFlow(t *testing.T) {
 
 // doc 23 §9's shape C shows `"headers": {":authorization": "⟨secret: headersRef⟩"}` — an object at a position where
 // the model holds one `keystore://` string, whose key names the schema never lists. Refusing is the honest answer
-// until ODEC-36 says how an object handle is substituted.
+// until ODEC-45 says how an object handle is substituted.
 func TestShapeCIsRefusedAtTheHeadersRef(t *testing.T) {
 	server := example[Server](t, "server.grpc-tls.json")
 	profile := profileWith(t, "profile.ordered.json", server.ID)
@@ -138,7 +138,7 @@ func TestShapeCIsRefusedAtTheHeadersRef(t *testing.T) {
 	if err == nil {
 		t.Fatal("shape C compiled; the header map behind headersRef has no emitted form yet")
 	}
-	for _, want := range []string{"headersRef", "ODEC-36"} {
+	for _, want := range []string{"headersRef", "ODEC-45"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not name %q: %v", want, err)
 		}

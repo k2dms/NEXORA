@@ -73,7 +73,7 @@ pinned: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `multi-server-ordered
 `connector/internal/compile/golden_test.go` compiles the contract examples and compares all four byte-for-byte;
 it writes snapshots only with `-golden.update`. The remaining two cases have different reasons: shape C stops at
 its `headersRef`, whose object materialization is still undecided -- how a `keystore://` handle for an *object*
-reaches the compiled config is its own question, and it belongs to `docs/architecture/40-open-decisions.md`; the
+reaches the compiled config is decided (ODEC-45): the server document gains `headersKeys`, the key list the stored object holds, and the materializer fills their values from the store; the
 fail-closed variant has no bytes of
 its own because `docs/architecture/30-failure-policy.md` §7 puts the block in `chrome.proxy`, not in Xray.
 `Verified: NO — deferred to Phase 2` (two of the six, for two reasons).

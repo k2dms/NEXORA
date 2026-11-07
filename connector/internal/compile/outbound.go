@@ -6,6 +6,7 @@ package compile
 
 import (
 	"fmt"
+	"strings"
 )
 
 // visionFlow is the only non-empty value `server.schema.json#/properties/flow` admits, and the one whose legality is
@@ -179,8 +180,8 @@ func transportBlock(s Server) (string, Document, error) {
 		if s.WS == nil {
 			return "", nil, fmt.Errorf("compile: server %s uses network ws and carries no ws block; `server.schema.json` requires it when network is ws", s.ID)
 		}
-		if s.WS.HeadersRef != "" {
-			return "", nil, unsupportedHeaders(s, "ws")
+		if err := checkHeaders(s, "ws"); err != nil {
+			return "", nil, err
 		}
 		block := Document{}
 		put(block, "path", s.WS.Path)
@@ -190,8 +191,8 @@ func transportBlock(s Server) (string, Document, error) {
 		if s.GRPC == nil {
 			return "", nil, fmt.Errorf("compile: server %s uses network grpc and carries no grpc block", s.ID)
 		}
-		if s.GRPC.HeadersRef != "" {
-			return "", nil, unsupportedHeaders(s, "grpc")
+		if err := checkHeaders(s, "grpc"); err != nil {
+			return "", nil, err
 		}
 		block := Document{"serviceName": s.GRPC.ServiceName, "multiMode": s.GRPC.MultiMode}
 		put(block, "authority", s.GRPC.Authority)
@@ -216,14 +217,27 @@ func transportBlock(s Server) (string, Document, error) {
 	}
 }
 
-// unsupportedHeaders is the refusal doc 23 §9's shape C would otherwise paper over. `headersRef` points at an *object*
-// — `#/$defs/headersRef` is a `keystore://` string — and `connector/internal/keystore` can now resolve one into the map
-// a user imported, so the key names come from the stored value rather than from a schema that never listed them. What
-// is still missing is not the mechanism but the decision: whether that map is inside the hashed bytes or only in the
-// written file is ODEC-36, and this package takes no Store, so nothing here could substitute it either way.
-func unsupportedHeaders(s Server, network string) error {
-	return fmt.Errorf("compile: server %s (%s) carries a headersRef for %s, and no decision in this repository says how a keystore:// handle for an object reaches the config; ODEC-36 blocks shape C of doc 23 §9 until it does",
-		s.ID, network, s.refOf(network))
+// headersKeys is ODEC-45's answer: the server document names the keys the stored object holds, and the
+// materializer fills their values from the store. The compiler emits the key list alongside the handle,
+// because a key list the store cannot know in advance is a masking rule it cannot enforce.
+func checkHeaders(s Server, network string) error {
+	var ref, keys string
+	switch network {
+	case "grpc":
+		ref, keys = s.GRPC.HeadersRef, strings.Join(s.GRPC.HeadersKeys, ",")
+	default:
+		ref, keys = s.WS.HeadersRef, strings.Join(s.WS.HeadersKeys, ",")
+	}
+	if ref == "" && keys == "" {
+		return nil
+	}
+	if ref != "" && keys == "" {
+		return fmt.Errorf("server %s (%s) carries a headersRef but no headersKeys; the materializer needs the key list to fill the stored map and the masking layer needs it to enumerate (ODEC-45)", s.ID, network)
+	}
+	if ref == "" && keys != "" {
+		return fmt.Errorf("server %s (%s) carries headersKeys without a headersRef; the keys name a map the store does not hold", s.ID, network)
+	}
+	return nil
 }
 
 func (s Server) refOf(network string) string {

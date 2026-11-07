@@ -83,16 +83,18 @@ type Reality struct {
 }
 
 type WSBlock struct {
-	Path       string `json:"path"`
-	Host       string `json:"host"`
-	HeadersRef string `json:"headersRef"`
+	Path        string   `json:"path"`
+	Host        string   `json:"host"`
+	HeadersRef  string   `json:"headersRef"`
+	HeadersKeys []string `json:"headersKeys,omitempty"`
 }
 
 type GRPCBlock struct {
-	ServiceName string `json:"serviceName"`
-	MultiMode   bool   `json:"multiMode"`
-	Authority   string `json:"authority"`
-	HeadersRef  string `json:"headersRef"`
+	ServiceName string   `json:"serviceName"`
+	MultiMode   bool     `json:"multiMode"`
+	Authority   string   `json:"authority"`
+	HeadersRef  string   `json:"headersRef"`
+	HeadersKeys []string `json:"headersKeys,omitempty"`
 }
 
 type XHTTPBlock struct {
