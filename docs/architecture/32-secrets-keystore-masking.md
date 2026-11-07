@@ -59,7 +59,7 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
 | `docs/architecture/25-native-messaging-protocol.md:238` | `SecretRedacted` vs a corrupt document | §11 |
 | `docs/architecture/26-command-surface.md:171` | `maskedConfig` must contain no keystore value | §13 |
-| `docs/architecture/27-config-compilation-pipeline.md:134` | mask and label rules for unrepresentable fields | §9, §10 |
+| `docs/architecture/27-config-compilation-pipeline.md:136` | mask and label rules for unrepresentable fields | §9, §10 |
 | `docs/architecture/29-subscriptions-and-servers.md:283` | `detail` masked like any other text | §8 |
 | `docs/architecture/29-subscriptions-and-servers.md:324` | M3–M5: credentials inside a subscription | §6, §14 |
 | `docs/architecture/29-subscriptions-and-servers.md:380` | the write primitive "that does not exist yet" | §6 — it exists now |

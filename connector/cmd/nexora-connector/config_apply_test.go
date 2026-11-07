@@ -285,7 +285,7 @@ func newDirs(t *testing.T) dirs {
 
 // newHarness builds the whole wiring with the seams: the real compiler, writer and keystore, a process that is not
 // a process. Tests that need the real supervisor build their own wiring (see TestApplyIsOnePath…).
-func newHarness(t *testing.T, span hashSpan, intent Intent, p keystore.Protector) *harness {
+func newHarness(t *testing.T, intent Intent, p keystore.Protector) *harness {
 	t.Helper()
 	d := newDirs(t)
 	store, err := keystore.New(d.keys, p)
@@ -303,7 +303,7 @@ func newHarness(t *testing.T, span hashSpan, intent Intent, p keystore.Protector
 		store:  store,
 	}
 	h.core.stateDir = d.state
-	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: span},
+	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config},
 		h.record, store, h.core)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
@@ -413,7 +413,7 @@ func TestApplyIsOnePathThroughCompileTheWriterAndTheSupervisor(t *testing.T) {
 	defer func() { _, _ = sup.Stop(context.Background(), false) }()
 
 	h := &harness{intent: intent, record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
-	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
+	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config},
 		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
@@ -539,7 +539,7 @@ func TestAChangedIntentReplacesTheFileAndTheProcess(t *testing.T) {
 		t.Fatalf("supervisor.New: %v", err)
 	}
 	defer func() { _, _ = sup.Stop(context.Background(), false) }()
-	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
+	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config},
 		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
@@ -596,57 +596,36 @@ func secondServer(t *testing.T) compile.Server {
 	return s
 }
 
-// TestSameFrameTwiceUnderTheValuesSpanIsStillANoOp pins that the no-op test compares the span's own string, and
-// that under hashValues that string is the hash of the bytes on disk.
-func TestSameFrameTwiceUnderTheValuesSpanIsStillANoOp(t *testing.T) {
-	h := newHarness(t, hashValues, baseIntent(t), testProtector{})
-	_, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
+// TestSameFrameTwiceIsStillANoOp pins the no-op on the answer ODEC-36 made the only one: the second call's
+// `configHash` is the first call's own string — the handle-bearing document's digest, which is deliberately not
+// the hash of the bytes on disk, because the file Core loads holds the credential the intent only references.
+func TestSameFrameTwiceIsStillANoOp(t *testing.T) {
+	h := newHarness(t, baseIntent(t), testProtector{})
+	first, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
 	if ref != nil {
 		t.Fatalf("the first apply refused: %s — %s", ref.Code, ref.Message)
 	}
-	want := compile.Hash(h.appliedConfig(t))
 
 	answer, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
 	if ref != nil {
 		t.Fatalf("the second apply refused: %s — %s", ref.Code, ref.Message)
 	}
-	if !answer.UnchangedBecauseHashMatched || answer.Restarted {
-		t.Errorf("the second apply answered %+v, want a hash-only no-op", answer)
+	if !answer.UnchangedBecauseHashMatched || answer.Restarted || answer.ConfigHash != first.ConfigHash {
+		t.Errorf("the second apply answered %+v, want a hash-only no-op under the first call's hash", answer)
 	}
-	if answer.ConfigHash != want {
-		t.Errorf("the values span reported %q, want the hash of the written bytes %q", answer.ConfigHash, want)
+	if answer.ConfigHash == compile.Hash(h.appliedConfig(t)) {
+		t.Error("configHash equals the digest of the materialized file; the written bytes are not the subject ODEC-36 named")
 	}
 	if starts, stops := h.core.calls(); starts != 1 || stops != 0 {
 		t.Errorf("the process seam saw %d starts and %d stops, want the second call to change nothing", starts, stops)
 	}
 }
 
-// TestHashesDifferBetweenTheTwoSpans is ODEC-36 made observable from Go: the same intent gives two different
-// configHash values depending on which byte string the wiring names, so a build that chose silently would be
-// reporting a hash a peer cannot compare with another build's.
-func TestHashesDifferBetweenTheTwoSpans(t *testing.T) {
-	intent := baseIntent(t)
-	handles := newHarness(t, hashHandles, intent, testProtector{})
-	values := newHarness(t, hashValues, intent, testProtector{})
-
-	a, _, ref := handles.ask(t, `{"profileIds":["`+profileID+`"]}`)
-	if ref != nil {
-		t.Fatalf("the handles apply refused: %s", ref.Code)
-	}
-	b, _, ref := values.ask(t, `{"profileIds":["`+profileID+`"]}`)
-	if ref != nil {
-		t.Fatalf("the values apply refused: %s", ref.Code)
-	}
-	if a.ConfigHash == b.ConfigHash {
-		t.Fatal("both spans reported the same hash, so one of them is not the string it claims")
-	}
-	if want := compile.Hash(handles.appliedConfig(t)); want != b.ConfigHash {
-		t.Errorf("the handles span reported %q while the file Core loads hashes to %q", a.ConfigHash, want)
-	}
-}
+// TestHashesDifferBetweenTheTwoSpans died with the span: ODEC-36's answer is one byte string, and the test that
+// existed to keep the two apart would now only assert that a decision has one value.
 
 func TestDryRunTouchesNothing(t *testing.T) {
-	h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
+	h := newHarness(t, baseIntent(t), testProtector{})
 	h.surface.resolver = &countingResolver{inner: h.store}
 
 	answer, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"],"dryRun":true}`)
@@ -668,32 +647,15 @@ func TestDryRunTouchesNothing(t *testing.T) {
 		t.Error("the preview stored a port table for ports it never took")
 	}
 	if got := h.surface.resolver.(*countingResolver).count(); got != 0 {
-		t.Errorf("the handles-span preview read the keystore %d times; the handle-bearing hash needs no secret", got)
+		t.Errorf("the preview read the keystore %d times; the handle-bearing hash needs no secret", got)
 	}
 }
 
-// TestValuesSpanPreviewReadsTheStore is the other half of ODEC-36's disclosure argument, written as an observable:
-// choose the written-bytes span and even a preview can refuse for keystore reasons.
-func TestValuesSpanPreviewReadsTheStore(t *testing.T) {
-	h := newHarness(t, hashValues, baseIntent(t), testProtector{})
-	reads := &countingResolver{inner: h.store}
-	h.surface.resolver = reads
-
-	_, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"],"dryRun":true}`)
-	if ref != nil {
-		t.Fatalf("the values-span preview refused: %s — %s", ref.Code, ref.Message)
-	}
-	if reads.count() == 0 {
-		t.Error("the values-span preview reported a hash of bytes it never materialized")
-	}
-	h.noConfigFile(t)
-	if starts, _ := h.core.calls(); starts != 0 {
-		t.Error("the preview started Core")
-	}
-}
+// The values span's preview-is-a-keystore-refusal test died with it: under the handles answer a preview hashes
+// references and the store is never read, which TestDryRunTouchesNothing now asserts as the only behaviour.
 
 func TestCompareAndSwapMismatchIsBusy(t *testing.T) {
-	h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
+	h := newHarness(t, baseIntent(t), testProtector{})
 	if err := supervisor.WriteState(h.dirs.state, supervisor.State{AppliedHash: strings.Repeat("a", 64)}); err != nil {
 		t.Fatal(err)
 	}
@@ -717,7 +679,7 @@ func TestCompareAndSwapMismatchIsBusy(t *testing.T) {
 }
 
 func TestRestartPolicyNeverLeavesTheProcessAlone(t *testing.T) {
-	h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
+	h := newHarness(t, baseIntent(t), testProtector{})
 	answer, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"],"restartPolicy":"never"}`)
 	if ref != nil {
 		t.Fatalf("apply refused: %s — %s", ref.Code, ref.Message)
@@ -742,7 +704,7 @@ func TestRestartPolicyNeverLeavesTheProcessAlone(t *testing.T) {
 }
 
 func TestApplyArgRefusals(t *testing.T) {
-	h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
+	h := newHarness(t, baseIntent(t), testProtector{})
 	sixtyFive := strings.TrimSuffix(strings.Repeat(`"`+profileID+`",`, 65), ",")
 	cases := []struct {
 		name string
@@ -897,7 +859,7 @@ func TestRefusalCodesDrivesTheRealRefusals(t *testing.T) {
 		{
 			name: "the port table refusing to be stored",
 			build: func(t *testing.T) *harness {
-				h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
+				h := newHarness(t, baseIntent(t), testProtector{})
 				h.record.writeErr = errors.New("the reservation store is full")
 				return h
 			},
@@ -906,7 +868,7 @@ func TestRefusalCodesDrivesTheRealRefusals(t *testing.T) {
 		{
 			name: "Core refusing to stop",
 			build: func(t *testing.T) *harness {
-				h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
+				h := newHarness(t, baseIntent(t), testProtector{})
 				h.core.status.Running = true
 				h.core.status.Hash = strings.Repeat("1", 64)
 				h.core.stopErr = errors.New("the graceful window closed and the hard cap passed")
@@ -954,7 +916,7 @@ func TestThePreExecProofRefusalIsIntegrityMismatch(t *testing.T) {
 		t.Fatalf("supervisor.New: %v", err)
 	}
 	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
-	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
+	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config},
 		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
@@ -1001,7 +963,7 @@ func TestASpawnFailureAfterTheRenameIsReportedAndNotRolledBack(t *testing.T) {
 		t.Fatalf("supervisor.New: %v", err)
 	}
 	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
-	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
+	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config},
 		h.record, store, sup)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
@@ -1022,7 +984,7 @@ func TestASpawnFailureAfterTheRenameIsReportedAndNotRolledBack(t *testing.T) {
 }
 
 func TestNewConfigApplyRefusesUndecidedWiring(t *testing.T) {
-	complete := applyConfig{StateDir: "state", ConfigDir: "config", Span: hashHandles}
+	complete := applyConfig{StateDir: "state", ConfigDir: "config"}
 	record, resolver, core := stateRecord(fileStateRecord{dir: "state"}), apply.Resolver(&countingResolver{}), coreProcess(new(fakeCore))
 	cases := []struct {
 		name    string
@@ -1033,9 +995,8 @@ func TestNewConfigApplyRefusesUndecidedWiring(t *testing.T) {
 		want    string
 	}{
 		{"everything present", complete, record, resolver, core, ""},
-		{"the span ODEC-36 owns", applyConfig{StateDir: "state", ConfigDir: "config"}, record, resolver, core, "ODEC-36"},
-		{"no state directory", applyConfig{ConfigDir: "config", Span: hashValues}, record, resolver, core, "state directory"},
-		{"no config directory", applyConfig{StateDir: "state", Span: hashValues}, record, resolver, core, "config directory"},
+		{"no state directory", applyConfig{ConfigDir: "config"}, record, resolver, core, "state directory"},
+		{"no config directory", applyConfig{StateDir: "state"}, record, resolver, core, "config directory"},
 		{"no applied-state record", complete, nil, resolver, core, "no applied-state record"},
 		{"no keystore resolver", complete, record, nil, core, "no keystore resolver"},
 		{"no Core process owner", complete, record, resolver, nil, "no Core process owner"},
@@ -1055,7 +1016,7 @@ func TestNewConfigApplyRefusesUndecidedWiring(t *testing.T) {
 }
 
 func TestTheAnswerCarriesOnlyFieldsTheResultSchemaDeclares(t *testing.T) {
-	h := newHarness(t, hashHandles, baseIntent(t), testProtector{})
+	h := newHarness(t, baseIntent(t), testProtector{})
 	_, raw, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
 	if ref != nil {
 		t.Fatalf("apply refused: %s — %s", ref.Code, ref.Message)
@@ -1132,12 +1093,12 @@ func harnessWith(t *testing.T, mutate func(*testing.T, *Intent)) *harness {
 	t.Helper()
 	intent := baseIntent(t)
 	mutate(t, &intent)
-	return newHarness(t, hashHandles, intent, testProtector{})
+	return newHarness(t, intent, testProtector{})
 }
 
 func harnessWithProtector(t *testing.T, p keystore.Protector) *harness {
 	t.Helper()
-	return newHarness(t, hashHandles, baseIntent(t), p)
+	return newHarness(t, baseIntent(t), p)
 }
 
 // harnessWithoutSecret is the same wiring with the store empty: the reference is legal, the value behind it is not
@@ -1151,7 +1112,7 @@ func harnessWithoutSecret(t *testing.T) *harness {
 	}
 	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store, core: new(fakeCore)}
 	h.core.stateDir = d.state
-	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config, Span: hashHandles},
+	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: d.config},
 		h.record, store, h.core)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)
@@ -1177,7 +1138,7 @@ func harnessConfigDirIsAFile(t *testing.T) *harness {
 	}
 	h := &harness{intent: baseIntent(t), record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: dirs{state: d.state, config: blocker, keys: d.keys}, store: store, core: new(fakeCore)}
 	h.core.stateDir = d.state
-	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: blocker, Span: hashHandles},
+	h.surface, err = newConfigApply(applyConfig{StateDir: d.state, ConfigDir: blocker},
 		h.record, store, h.core)
 	if err != nil {
 		t.Fatalf("newConfigApply: %v", err)

@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 197
+    "counted": 196
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -184,6 +184,12 @@
         "closed": "2026-11-07",
         "was": "the subscription delivery boundary: nobody had decided whether the Connector keeps subscriptions whole or the extension receives feed-derived Servers in chunks, so the boundary that follows from the answer had nothing to assert against",
         "artefact": "ODEC-33 answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, and answered by elimination rather than by preference: the chunked hand-off is excluded by `packages/schema/observability.json#/events/7/payload`, closed at four count fields, and by `packages/schema/protocol/envelope.schema.json#/properties/chunk`, which names `profile.import` as its only sender; the raw-body read is excluded by `docs/architecture/29-subscriptions-and-servers.md` §11's invariant; and what survives is what `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already demands -- `servers` in the result of the command the extension calls. The labelled line this row owned, doc 29 §13 item 6, leaves the corpus with it, and the deferral is handed to `VER-64` on the ADR's own `## Verification` line, so the counted total of deferred claims is unchanged"
+      },
+      {
+        "id": "VER-78",
+        "closed": "2026-11-07",
+        "was": "the compiled bytes are byte-deterministic over four goldens; which byte string `configHash` covers remains gated by `ODEC-36` -- the stability has a producer, the hash subject still has no decision",
+        "artefact": "ODEC-36 answered by its own first option: `configHash` is the handle-bearing document's digest, and the decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material, the written bytes deliberately not the subject. The stability half the row already had: `emit_test.go` pins shape A's hash of the handle-bearing document and four goldens compile byte-for-byte, accepted by the pinned Xray. The labelled row in doc 27 §9 reads Verified as data; the cost its option carried -- a rotation behind an unchanged reference does not move this hash -- is stated beside the decision and owned by `core.restart`"
       }
     ]
   },
@@ -940,15 +946,6 @@
       "why": "ADR-0005 rule 2 promises a pipe schema versioned separately, carrying its own version field, refusing a mismatch rather than guessing, and no file in `packages/schema` defines it: `framing.json` describes itself as the contract for the extension-to-host pipe, and the one part of it that reaches this process -- `senderPolicy`, whose budgets `docs/architecture/31-security-model.md` §8 counts in the Connector -- resolves the sender from an OS event on the other hop. Doc 25 §2 then says the same closed fourteen-field envelope crosses hop 2 verbatim, and none of its properties is a sender, so the `Identity` value `connector/internal/dispatch` demands on every call -- whose own comment says none of it comes from the payload -- has no producer. Three transport shapes survive and they disagree about where identity lives, which is a boundary (`ODEC-35`), not a field."
     },
     {
-      "id": "VER-78",
-      "subject": "the compiled bytes are byte-deterministic over four goldens; which byte string `configHash` covers remains gated by `ODEC-36` — the stability has a producer, the hash subject still has no decision",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "golden configs compile byte-for-byte and configHash is the sha256 of the bytes the register names" },
-      "at": [{ "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Which byte string `configHash` covers" }],
-      "why": "This row answers the §9 invariant 'Which byte string `configHash` covers — the handle-bearing document or the materialized bytes', split on purpose from `VER-28`: `VER-28` owns the labelled golden-fixtures line that carries the byte-determinism claim, and this row owns the pipeline's own closing statement that the hash is over 'the exact bytes written' while two byte strings exist by the time a config is on disk (`docs/architecture/27-config-compilation-pipeline.md` §3 item 6, `docs/architecture/22-component-contracts.md` §9, `docs/architecture/23-unified-server-model.md` §9). It has two halves a golden config alone cannot settle. The determinism half has a producer: stages 1 to 6 of `docs/architecture/27-config-compilation-pipeline.md` §2 exist in `connector/internal/compile`, `golden_test.go` compares four compiled configs byte-for-byte against `connector/testdata/config/`, and `emit_test.go` shows the order comes from sorting rather than from ranging a map. `VER-28` retains two cases: shape C's unresolved `headersRef` and fail-closed, whose block belongs in `chrome.proxy` rather than distinct Xray bytes. The four materialized configs were also accepted by Xray 24.11.11 through `connector/internal/apply/drive_test.go`, with an invalid-port negative control rejected; that acceptance establishes neither runtime routing outcomes nor closure of `ODEC-37`. The subject half is not a code problem at all: `config.apply` returns one `^[0-9a-f]{64}$` value with no description (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`), and nothing says whether it hashes the handle-bearing document or the materialized bytes, so a golden file can be byte-stable and still hash the wrong string. Which bytes the hash covers is `ODEC-36`, and `ODEC-36` gates this row: no assertion can name the byte string until the register says which one it is."
-    },
-    {
       "id": "VER-83",
       "subject": "the section half of a document citation -- a backticked path under `docs/` followed by `§N` -- is the one citation form in the corpus that no pass of `tools/check-doc-evidence.mjs` resolves, so an anchor can name a section its document never had and the run stays green",
       "state": "no-check",
@@ -1017,14 +1014,14 @@
     },
     {
       "id": "VER-88",
-      "subject": "the `config.apply` method is still not registered: `main.go` publishes nothing that needs the `configHash` span, so a real frame from an extension answers `UnknownMethod` at the dispatch door",
+      "subject": "the `config.apply` method is still not registered: the surface is wired end to end except the supervisor's `Launch`, and no document says where a production build gets the Core binary path from",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-36`" },
+      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-42`" },
       "at": [
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reachable from one command frame" }
       ],
-      "why": "The seam `VER-80` named is two questions, and 2026-11-07 answered one of them: the intent documents ride the frame and the two directories are doc 34 §7's per-user layout, so the surface `newConfigApply` builds is fully wired everywhere except the span. The span is `ODEC-36`'s, and the constructor refuses a surface that has not been told — which is why `main.go` still registers `connector.hello` and `connector.version` and nothing else, and why a real `config.apply` frame answers `UnknownMethod`, the code for a name no build publishes, rather than guessing a hash subject. This row is what remains of the claim the doc 27 §9 row has carried since the surface was written: the label on that row is this row's now, and the decision that closes the span closes the registration with it"
+      "why": "The seam `VER-80` named had two halves and 2026-11-07 answered both of the first kind: the intent rides the frame and the two directories are doc 34 §7's layout, and the span the constructor demanded is ODEC-36's answer now -- the constructor no longer refuses and the span switch is gone. What remains is the one producer the surface cannot build without: `coreProcess`, whose production implementation is the supervisor, whose `New` demands a `Launch` -- a function from config path to the command that runs Core. No document says where that path comes from: `settings.core.installRoot` defaults to null, the install channel is `pinned`, and `connector/internal/receipt` verifies a binary it was handed rather than one it found -- which is `ODEC-42`'s question and this row's gate. The labelled row in doc 27 §9 is this row's, as it has been since `VER-80` left"
     }
   ]
 }

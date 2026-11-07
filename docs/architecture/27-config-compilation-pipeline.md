@@ -72,7 +72,9 @@ owns the rule that a change to a golden file requires a named reason in the same
 pinned: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `multi-server-ordered` and `two-plane-core-rules`.
 `connector/internal/compile/golden_test.go` compiles the contract examples and compares all four byte-for-byte;
 it writes snapshots only with `-golden.update`. The remaining two cases have different reasons: shape C stops at
-its `headersRef`, whose object materialization is unresolved (`ODEC-36`); the fail-closed variant has no bytes of
+its `headersRef`, whose object materialization is still undecided -- how a `keystore://` handle for an *object*
+reaches the compiled config is its own question, and it belongs to `docs/architecture/40-open-decisions.md`; the
+fail-closed variant has no bytes of
 its own because `docs/architecture/30-failure-policy.md` §7 puts the block in `chrome.proxy`, not in Xray.
 `Verified: NO — deferred to Phase 2` (two of the six, for two reasons).
 
@@ -173,7 +175,10 @@ failed refresh keeps the last good version" — is `docs/architecture/29-subscri
 are the same principle at two layers, which is why neither is allowed to be "best effort".
 The fsync above is the file's: a directory-level flush has no Windows equivalent, so a power loss between the rename
 and the metadata flush can lose the rename — and the config is re-derivable from intent plus keystore, so the answer
-is a re-apply, not a recovery.
+is a re-apply, not a recovery. What this section does not say is who hands the supervisor its `Launch` in production:
+a Core binary source — the pinned install root under doc 34 §7's layout, resolved from settings and the install
+receipt — is a decision the corpus has not taken, and it is the one thing between the wired surface and a method an
+extension can call, so it belongs to `docs/architecture/40-open-decisions.md`.
 `Verified: NO — deferred to Phase 2` (the writer and its rollback are Go tests in `connector/internal/apply`, and
 `connector/cmd/nexora-connector/config_apply.go` now calls them from inside one command frame; what no test can show
 is an apply that failed while a real Core was loading the previous config).
@@ -195,7 +200,7 @@ is an apply that failed while a real Core was loading the previous config).
 | A failed apply leaves the previous config applied | `connector/internal/apply/write_test.go` writes a document whose secret is missing over a good config and re-reads the file, byte-for-byte, plus the hash the contract would report | Verified: NO — deferred to Phase 2 |
 | §2's seven stages and §8's write are reachable from one command frame | `connector/cmd/nexora-connector/config_apply.go` — compare-and-swap against the applied-state record, the intent documents the frame itself carries, compile, atomic write, port reservation into the applied-state record, stop-then-start — with `config_apply_test.go` showing a compiled file on disk, a child handed that path, and each refusal leaving everything after it untouched | Verified: NO — deferred to Phase 2: the intent documents ride the frame and the two directories are doc 34 §7's per-user layout, but the method is still not registered — `main.go` publishes nothing that needs the `configHash` span, and `ODEC-36` is the decision that registration waits on |
 | `localDNS` semantics decided before Phase 2 ships | — | open decision, `docs/architecture/40-open-decisions.md` |
-| Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `compile.go` hashes exactly what `Emit` returned, and `emit_test.go` pins that hash for shape A; the row's own question is which of the two byte strings the field is supposed to mean | Verified: NO — deferred to Phase 2 (`docs/architecture/40-open-decisions.md`) |
+| Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | answered 2026-11-07 by ODEC-36's first option: the handle-bearing document, whose digest `emit_test.go` pins for shape A — machine-independent, and a digest whose input holds no secret material, which is why the written bytes are not the subject (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`'s description states the rotation cost beside it) | Verified as data |
 
 Trace: ADR-0002, ADR-0003, ADR-0006, ADR-0008, ADR-0010, ADR-0012, ADR-0013, ADR-0019, ADR-0020 · Contract:
 `packages/schema/connector-settings.schema.json`, `packages/schema/routing-policy.schema.json`,

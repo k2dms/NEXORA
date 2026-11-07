@@ -198,14 +198,14 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `197` labelled lines over `44` documents partitioned into `75` live rows — the issued range is
-`VER-01…VER-88`, and `13` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
-sites over `15` documents partitioned into `37` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
-`ODEC-40`, `ODEC-33`, `ODEC-39`, `ODEC-38` and `ODEC-41`
+The queue is `196` labelled lines over `44` documents partitioned into `74` live rows — the issued range is
+`VER-01…VER-88`, and `14` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
+sites over `15` documents partitioned into `38` entries — its issued range is `ODEC-01…ODEC-45`, and `ODEC-02`,
+`ODEC-40`, `ODEC-33`, `ODEC-39`, `ODEC-38`, `ODEC-41` and `ODEC-36`
 now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 14, `adr` 5, `measurement` 2, `upstream` 2), three options — 36 of the 37,
+(`product` 14, `contract` 15, `adr` 5, `measurement` 2, `upstream` 2), three options — 37 of the 38,
 with `ODEC-35` the one entry that carries a fourth, recording the reading ADR-0004 rule 3 already excludes rather than
 leaving it unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
@@ -600,6 +600,12 @@ the deleted open item had been carrying into the framing floors, the taxonomy an
 two names its answer no longer cites, and doc 40 `0 / -1 / 0`, the pointer its retired entry's argument lost when
 the question became an answer, and this file `0 / +1 / 0`, the pointer into the framing floors its own record names. The path:line figure does not move for the sixth closure running: nothing under `connector/**` or `packages/**`
 was edited, and a closure by decision cites data, not lines.
+§4.41 moves the set a thirty-sixth time — **2309 / 599 / 1588**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of a61fdd7: doc 27 `0 / +1 / +1`, the §8
+deferral sentence the new entry was born from naming the register and the configHash pointer beside it, and doc 40
+`-1 / +2 / -2`, the path:line cite into doc 27 §3 the retired argument had been carrying, the two pointers the
+retirement gained by stating the full path of the field it decided, and the two names its argument no longer cites.
+Five line citations and one pointer cite were re-anchored with their claims re-read as the files around them grew, and this file `0 / +1 / 0`, the pointer into the configHash description its own record names.
 the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
 citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
 
@@ -1553,7 +1559,7 @@ and one `scope` type is answered by three files, one per platform family. doc 22
 (`connector/internal/supervisor/**`) before it existed, which is the only reason the row's four invariants read as a
 specification this slice had to satisfy rather than a description it wrote afterwards.
 
-**One of the nineteen tests is not a test.** `TestFakeCore` (`connector/internal/supervisor/supervisor_test.go:34`)
+**One of the nineteen tests is not a test.** `TestFakeCore` (`connector/internal/supervisor/supervisor_test.go:38`)
 is the Core: every supervisor test re-executes the test binary with a mode in its environment, because `docs/adr/0019`
 keeps a real Xray out of this repository and ADR-0011 keeps this host from being the judge of what a real one does. The
 fake's whole behaviour is four lines of `select {}` or an `os.Exit`, and what it proves is the part that needs no binary:
@@ -1695,7 +1701,7 @@ binary this host still does not have.
 ### 4.20 M3's sixth slice: the command surface that joins compile, apply and supervisor (`connector/cmd/nexora-connector/`, 2026-11-06)
 
 **What landed.** Two files, 1 761 lines, sixteen test functions, and no fourth package. `config_apply.go` (523 lines) is
-`Handle` (`connector/cmd/nexora-connector/config_apply.go:288`) over the three things §4.15 to §4.19 built: the seams
+`Handle` (`connector/cmd/nexora-connector/config_apply.go:389`) over the three things §4.15 to §4.19 built: the seams
 `intentSource` (`:58`) and `coreProcess` (`:66`), the wiring `applyConfig` (`:101`), the hand-decoded args
 (`readApplyArgs`:172), the answer struct (`applyAnswer`:271), the reconciliation (`reconcile`:360) and the classification
 table (`codeMarkers`:478, `codeForApply`:499). `config_apply_test.go` (1 238 lines) is the slice's claim. `go test
@@ -1727,7 +1733,7 @@ reader would "fix" the `!= ""` guard into a bug.
 
 **ODEC-36 is a knob, and the knob is required.** `hashSpan` (`:74`) has two live values and a zero value that
 `newConfigApply` refuses (`:126`), so a build that has not read the register cannot answer `config.apply` at all —
-`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:1003`) walks all seven
+`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:986`) walks all seven
 wiring cases including the four nil seams, and each refusal's message names the decision or the directory it is missing.
 The two spans are then measured against each other rather than argued: the same intent gives two different
 lowercase-sha256 strings (`TestHashesDifferBetweenTheTwoSpans`:600), because `internal/apply` reports both digests
@@ -1776,7 +1782,7 @@ against the *committed* tree, in a clean worktree at `7544baa`: that tree's own 
 mode child exits 2 and prints nothing else, and a 4-second-budget probe of both bodies gives `select {}` → exit 2 with
 the fatal error and `for { time.Sleep(time.Hour) }` → still alive at four seconds. The fix belongs to both files
 (`connector/cmd/nexora-connector/config_apply_test.go:75`, and `stayUp` in
-`connector/internal/supervisor/supervisor_test.go:75`) — but the finding is the other half: `go test
+`connector/internal/supervisor/supervisor_test.go:73`) — but the finding is the other half: `go test
 ./connector/internal/supervisor` was green, and stays green, with the dying child, because nothing in that package
 waited for a child to *stay* alive. `Stop`'s `WasRunning` reads the supervisor's own bookkeeping, and
 `TestParentDeathEndsTheContainedChild`'s ten-second poll was waiting for a death the child had already caused itself. A
@@ -1813,7 +1819,7 @@ stale addresses were not in a document citing a document, they were in the recor
 
 **Queue arithmetic, stated so the next slice can check it.** 79 rows → 80: `VER-32` moves `no-code` → `no-run` (the
 envelope→Xray compiler now has an answer for ADR-0013's promise — `Unrepresentable`
-(`connector/cmd/nexora-connector/config_apply.go:421`) carries the compile's report into the result, proven at
+(`connector/cmd/nexora-connector/config_apply.go:381`) carries the compile's report into the result, proven at
 `connector/cmd/nexora-connector/config_apply_test.go:1079` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
 and `connector.version` only, `connector/cmd/nexora-connector/main.go:79-80`, and `intentSource` has no production
@@ -3020,6 +3026,45 @@ queue is one entry shorter on both sides.
 
 ---
 
+---
+
+### 4.41 The hash has a subject — `ODEC-36` answered by its first option, the span switch is gone, and the registration waits on a binary source (2026-11-07)
+
+**What the decision is.** The register's first option: `configHash` is the handle-bearing document's digest — the
+sha256 of the compiled document with every credential position still a `keystore://` reference. The decision is
+stated in `packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`'s description, and the entry's own disclosure argument
+turned out to be its answer: the written bytes hold plaintext credentials and the digest is logged by
+`config.applied`, so a values span would put a fingerprint of a credential-bearing file into every log and export —
+the one thing doc 32 §9's masking rules exist to prevent. Machine-independence is the second pull: doc 27 §3.3
+refuses absolute paths in the hashed bytes, and the materialized file is exactly where a path would have to live
+for the error log. The cost the option named is stated beside the decision rather than hidden: a keystore value that
+changes behind an unchanged reference does not move this hash, and picking a rotation up is `core.restart`'s — the
+user's action — not this command's hash comparison.
+
+**What landed in the Go half.** The `hashSpan` switch is gone: `newConfigApply` no longer refuses an unset span,
+`previewHash` returns the compiler's own hash (a dryRun can never refuse for keystore reasons, because the bytes it
+hashes hold references), and `Handle` reports `applied.HandleHash` directly. The two tests that existed to keep the
+spans apart died with the switch, and the no-op test now pins the opposite claim: the second apply's `configHash` is
+the first call's own string, and is deliberately not the digest of the materialized file.
+
+**The two halves that did not settle with the hash.** The old entry had picked up two sub-questions wearing its
+clothes. The log-destination half settled itself: under the handles answer the emitted document carries no path at
+all, and the state directory stays runtime wiring. The headersRef half did not — how a `keystore://` handle for an
+*object* reaches the compiled config is now `ODEC-45`, the newest entry, still `contract`, gating `VER-28` and
+keeping shape C goldenless. And the registration the entry had gated beside `VER-78` — `VER-88` — re-gates on
+`ODEC-44`, the other new entry: where a production supervisor's `Launch` gets the Core binary path from. Both ids
+retired with tombstones — `ODEC-36` and `VER-78` — and the register is 38 entries over 61 sites, the queue 74 rows
+with fourteen tombstones, `contract` at fifteen.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1230 checks**. `node tools/check-doc-evidence.mjs` →
+green; §4.4's final ledger paragraph has the set and the per-file deltas. `node tools/check-no-secrets.mjs` →
+**496 files**, unchanged. ADR shape, layout guards and the legacy backup check → green. `go -C connector test -count=1 ./...`
+→ thirteen `ok` lines, `gofmt -l connector` empty, `go -C connector vet ./...` silent. What this slice does not
+claim: a registered `config.apply` (that is `VER-88` and `ODEC-44` now), a rotation watcher (the residual names
+`core.restart` honestly), or any row moved that asks about a running host.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -3104,7 +3149,7 @@ queue is one entry shorter on both sides.
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2310 `path:line`, 595 pointers, 1589 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2309 `path:line`, 598 pointers, 1588 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
@@ -3169,7 +3214,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor. Next: the
-hash-subject decision (ODEC-36, which also opens the `config.apply` registration its `VER-88` gates), then host
+`config.apply` registration's last blocker (ODEC-44, the Core binary source its `VER-88` gates), then host
 transport (ODEC-35). ODEC-37 is narrowed to
 residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
@@ -3854,8 +3899,8 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 197 labelled lines over 44 documents, the queue is 75 rows with thirteen tombstones, and the register is 37
-questions over 60 sites with six retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 196 labelled lines over 44 documents, the queue is 74 rows with fourteen tombstones, and the register is 38
+questions over 61 sites with seven retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a

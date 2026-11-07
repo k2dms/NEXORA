@@ -396,7 +396,7 @@ runs in the Connector, and the arguments still do not carry a compiled config; t
 `result.unrepresentable` `packages/schema/protocol/commands/config.apply.json:81-94` with `dryRun`
 `packages/schema/protocol/commands/config.apply.json:37-41` as the only pre-flight
 `packages/schema/protocol/commands/config.apply.json:5-8`, and the byte-stability invariant
-`packages/schema/protocol/commands/config.apply.json:116` is what makes §4's approximations testable.
+`packages/schema/protocol/commands/config.apply.json:120` is what makes §4's approximations testable.
 The same free-text `{source, reason}` shape repeats here, so the "which conditionType was dropped" gap is
 protocol-wide, not schema-local.
 

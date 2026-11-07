@@ -163,7 +163,7 @@ transit.
 Two of the three are pinned by a golden file today — `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`
 and `shape-b-reality-xhttp.golden.json` hold the emitted bytes, compared byte-for-byte by
 `connector/internal/compile/golden_test.go` — and shape C is refused rather than pinned, because its `headersRef` is
-a handle for an *object* and no decision says how one is materialized (`ODEC-36`). Four byte mappings are now
+a handle for an *object* and no decision says how one is materialized (`ODEC-45`). Four byte mappings are now
 implemented: every per-server inbound is SOCKS5; `direct` and `block` declare `freedom` and `blackhole` outbounds;
 `sniffing` is an inbound sibling with `protocols` renamed to `destOverride`; routing `network` and `protocol`
 remain arrays. The materialized goldens pass Xray 24.11.11's config test, not a remote-server handshake.
@@ -269,7 +269,7 @@ one inbound with internal routing — is considered and rejected there, not here
 | Every field has a description | the undocumented-field coverage check in `packages/schema/scripts/verify.mjs` | **GREEN** |
 | `h2` implies `tls` | `allOf` clause 8 + `packages/schema/examples/invalid/server.h2-without-tls.json` | **GREEN** |
 | A subscription server names its subscription | `allOf` clause 9 | **GREEN** |
-| The three canonical configs compile byte-for-byte as shown | two of three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json` and `shape-b-reality-xhttp.golden.json`, compared by `connector/internal/compile/golden_test.go`; shape C is refused at its `headersRef` (`ODEC-36`) and `ODEC-37` tracks the remaining predicate semantics beyond the measured core-plane fixture | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
+| The three canonical configs compile byte-for-byte as shown | two of three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json` and `shape-b-reality-xhttp.golden.json`, compared by `connector/internal/compile/golden_test.go`; shape C is refused at its `headersRef` (`ODEC-45`) and `ODEC-37` tracks the remaining predicate semantics beyond the measured core-plane fixture | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
 | Tag collision across the server set is a compile error | `connector/internal/compile/resolve.go` refuses a second server whose derived tag is taken, naming both ids — `TestATagCollisionNamesBothServers` | Verified: NO — deferred to Phase 2 |
 | The generated config file is owner-only on disk | nothing | Verified: NO — LIVE-18 |
 | A non-VLESS server in a legacy subscription is reported, not dropped | nothing (parser does not exist) | Verified: NO — `LIVE-14` carries the import; `docs/architecture/39-verification-matrix.md` will own the row |

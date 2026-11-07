@@ -76,45 +76,22 @@ type coreProcess interface {
 	Status() supervisor.Status
 }
 
-// hashSpan is ODEC-36 held as a switch instead of being settled by a default. The zero value is refused by
-// newConfigApply, so a build that has not read the register cannot answer `config.apply` at all.
-type hashSpan int
-
-const (
-	hashUnknown hashSpan = iota
-
-	// hashHandles reports the compiler's own output — the document with `keystore://…` in every credential
-	// position, the identity the drift check and `unchangedBecauseHashMatched` want, and a hash of bytes that
-	// never reach disk.
-	hashHandles
-
-	// hashValues reports the materialized file Core loads, so a credential rotation moves the hash and the
-	// preview of a change has to read the keystore to say what the hash would be.
-	hashValues
-)
-
-func (h hashSpan) String() string {
-	switch h {
-	case hashHandles:
-		return "handles"
-	case hashValues:
-		return "values"
-	default:
-		return "unset"
-	}
-}
+// hashSpan is gone: ODEC-36 was answered on 2026-11-07 by its own first option, and the switch it held is now
+// the one answer this file reports — the handle-bearing document's digest. The written bytes were the other
+// candidate and they are deliberately not the subject: the file Core loads holds plaintext credentials and this
+// digest is logged by config.applied, so a values span would put a fingerprint of a credential-bearing file into
+// every log; and a rotation behind an unchanged reference is core.restart's to pick up, not a hash move.
 
 // applyConfig is the wiring this process cannot measure for itself: the two directories of doc 34 §7's per-user
-// layout, and the span ODEC-36 owns.
+// layout.
 type applyConfig struct {
 	// StateDir holds the applied-state record internal/supervisor keeps. Its `appliedConfigHash` is the only
-	// answer to "what is applied" that survives in either span, because the file on disk can only ever give a
-	// hash of materialized bytes.
+	// answer to "what is applied" that survives, because the file on disk can only ever give a hash of
+	// materialized bytes.
 	StateDir string
 	// ConfigDir holds the compiled config internal/apply writes: doc 34 §7's per-user config directory, whose
 	// one stable file name is what makes doc 27 §8's replacement a rename and not a create.
 	ConfigDir string
-	Span      hashSpan
 }
 
 // configApply is the handler: the seams, the directories, and the span.
@@ -131,8 +108,6 @@ func newConfigApply(cfg applyConfig, record stateRecord, resolver apply.Resolver
 		return nil, errors.New("config.apply: no state directory; the applied hash this command compares against is a record, not a memory")
 	case cfg.ConfigDir == "":
 		return nil, errors.New("config.apply: no config directory; internal/apply refuses to guess where the file Core loads goes")
-	case cfg.Span == hashUnknown:
-		return nil, fmt.Errorf("config.apply: no configHash byte span; ODEC-36 is still open, and a surface that picked one would be picking it in the wrong place — the register is docs/architecture/40-open-decisions.md")
 	case record == nil:
 		return nil, errors.New("config.apply: no applied-state record; the compare-and-swap and the port table have nowhere to rest")
 	case resolver == nil:
@@ -475,7 +450,7 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 		return nil, refuseApply(err, "config.apply: the config was written but the port reservation table was not stored")
 	}
 
-	hash := a.span(applied.HandleHash, applied.ValueHash)
+	hash := applied.HandleHash
 	restarted, refusal := a.reconcile(ctx, args, applied.Path, hash, res, recorded.AppliedHash)
 	if refusal != nil {
 		return nil, refusal
@@ -513,31 +488,11 @@ func (a *configApply) reconcile(ctx context.Context, args applyArgs, path, hash 
 	return st.Running && st.Hash == hash, nil
 }
 
-// previewHash is a dryRun's `configHash`. Under hashHandles the compiler's own hash is the answer and the store is
-// never read; under hashValues the preview has to materialize to know what the file would hash to, which is the
-// consequence of that option ODEC-36 should be argued with: a preview can then refuse for keystore reasons.
+// previewHash is a dryRun's `configHash`: the compiler's own hash of the handle-bearing document, which the store
+// is never read for. That is the decision ODEC-36 made observable — a preview of a change cannot refuse for
+// keystore reasons, because the bytes it hashes hold references and not values.
 func (a *configApply) previewHash(res *compile.Result) (string, *dispatch.Refusal) {
-	if a.cfg.Span == hashHandles {
-		return res.Hash, nil
-	}
-	valueDoc, err := apply.Materialize(res.Document, a.resolver)
-	if err != nil {
-		return "", refuseApply(err, "config.apply: the dry run could not materialize the credential positions the compiled config carries")
-	}
-	data, err := compile.Emit(valueDoc)
-	if err != nil {
-		return "", refuseApply(err, "config.apply: the dry run could not emit the document it materialized")
-	}
-	return compile.Hash(data), nil
-}
-
-// span picks which of the two hashes internal/apply reported is the command's `configHash`. The other one is
-// dropped here and nowhere else, which is exactly what ODEC-36 says is undecided.
-func (a *configApply) span(handleHash, valueHash string) string {
-	if a.cfg.Span == hashHandles {
-		return handleHash
-	}
-	return valueHash
+	return res.Hash, nil
 }
 
 func (a *configApply) answer(res *compile.Result, hash, previous string, dryRun, restarted, unchanged bool) *applyAnswer {

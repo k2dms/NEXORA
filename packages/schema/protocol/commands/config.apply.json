@@ -54,7 +54,11 @@
     "properties": {
       "applied": { "type": "boolean" },
       "dryRun": { "type": "boolean" },
-      "configHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "configHash": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$",
+        "description": "The sha256 of the compiled document with every credential position still a `keystore://` reference -- the identity of the intent, machine-independent, and a digest whose input holds no secret material. The written bytes are deliberately not the subject: the file Core loads holds plaintext credentials (docs/architecture/34-data-split.md section 7's declared exception) and this digest is logged by the config.applied event, so hashing them would put a fingerprint of a credential-bearing file into every log and export (docs/architecture/32-secrets-keystore-masking.md section 9). The honest cost, stated rather than hidden: a keystore value that changes behind an unchanged reference changes the file Core loads and does not move this hash -- the restart that would pick a rotation up is core.restart, the user's action, not this command's hash comparison."
+      },
       "previousConfigHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
       "restarted": { "type": "boolean" },
       "unchangedBecauseHashMatched": { "type": "boolean" },

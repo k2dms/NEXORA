@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 60
+    "counted": 61
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -522,23 +522,10 @@
       "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "This defers to `docs/architecture/40-open-decisions.md`; its entry names the four" }]
     },
     {
-      "id": "ODEC-36",
-      "question": "Which byte string does `configHash` cover — the compiler's handle-bearing document with `keystore://<ref>` in every credential position, or the materialized bytes the Connector writes to disk?",
-      "decidedBy": "contract",
-      "blocks": { "verification": ["VER-78", "VER-88"], "compatibility": [] },
-      "why": "Stage 6 of `docs/architecture/27-config-compilation-pipeline.md` §2 hashes 'the emitted bytes' and its §3 item 6 (`docs/architecture/27-config-compilation-pipeline.md:65`) makes it 'the exact bytes written, lowercase hex sha256' — but two different byte strings exist by the time a config is on disk. The document the compiler builds carries `keystore://<ref>` in every credential position: `docs/architecture/22-component-contracts.md` §9 keeps those handles in every layer above the keystore and lets only the CoreSupervisor and the ConfigCompiler read the store, 'at the moment of use' (`docs/architecture/22-component-contracts.md:325`), and `docs/architecture/23-unified-server-model.md` §9 marks the positions `⟨secret⟩`, 'materialized by the Connector from the keystore at write time' so that they 'appear in no extension transit'. The bytes actually written contain the secret. `packages/schema/protocol/commands/config.apply.json#/result/properties/configHash` is `^[0-9a-f]{64}$` with no description, so the data picks neither side. The pulls oppose: a hash of the handle-bearing document is a stable, machine-independent identity of intent — what the reconnect drift check (`docs/architecture/25-native-messaging-protocol.md` §11) and `unchangedBecauseHashMatched` want — while a hash of the written bytes is a statement about what Core actually loaded. Disclosure is in play but not settled by the corpus: `docs/architecture/32-secrets-keystore-masking.md` §9 rule 4 bars *an unkeyed digest of one secret value* from shared diagnostics, and a digest of a whole document is not that thing, so the rule neither forbids nor licenses hashing bytes that hold a credential — while `docs/architecture/36-observability.md:78` records that `config.apply` results are logged, which is the fact that makes the question a disclosure question at all. And `docs/architecture/23-unified-server-model.md:146` calls a field 'not part of intent hash' while 'intent hash' is defined nowhere — either a fifth mechanism that waits on this answer or a leftover from a dropped contract, and this register must not repair it by guessing. Two more positions in the emitted document turned up while `connector/internal/compile` was written, and both are this entry wearing the field's clothes rather than new questions. `$defs/headersRef` is one string standing where the config needs an object: shape C of `docs/architecture/23-unified-server-model.md` §9 prints `\"headers\": { \":authorization\": \"⟨secret: headersRef⟩\" }`, so the key names live in the document and the values in the store, and no file says which keys a materializer writes -- the compiler therefore refuses a server carrying one, which is why shape C has no golden. And `docs/architecture/36-observability.md` §9 makes the Compiler write Xray's `log` into every config it emits and lists five fields, one of which is `error`, whose path 'points inside the Connector's state directory' -- while `docs/architecture/27-config-compilation-pipeline.md` §3.3 keeps `installRoot` out of the bytes because 'an absolute path would make the hash machine-specific'. The emitted `log` therefore holds the three fields the shapes show and no destination for the error log, and that omission is this entry's too: if the hash covers the written bytes, a path belongs in the hashed document, and if it covers the handle-bearing document, the state directory is somebody else's field. Three byte-strings survive as candidates and they are not interchangeable. `connector/cmd/nexora-connector/config_apply.go` cannot answer at all without picking one -- its compare-and-swap, its `unchangedBecauseHashMatched` and its restart decision all read the single field -- so it refuses to be constructed until the span is handed to it, and the two answers then differ somewhere the corpus has not looked: a `dryRun` under the values span has to materialize in order to say what the file would hash to, so *previewing a change* can refuse for keystore reasons, while the same preview under the handles span never reads the store -- which makes `packages/schema/protocol/commands/config.apply.json#/args/properties/dryRun/description`'s 'the only safe way for the UI to preview a change' mean two different things depending on an undecided byte string (`config_apply_test.go` pins both halves).",
-      "options": [
-        "handle-bearing document: `configHash` is the sha256 of the compiler's output with `keystore://<ref>` in every credential position (`docs/architecture/22-component-contracts.md` §9, `docs/architecture/23-unified-server-model.md` §9) — machine-independent, the identity `unchangedBecauseHashMatched` and the reconnect drift check want, but it hashes bytes that never reach disk, so it certifies intent rather than what Core loaded, and a keystore rotation that keeps the same reference is invisible to it",
-        "written bytes: `configHash` is the sha256 of the materialized file the Connector renames into place (`docs/architecture/27-config-compilation-pipeline.md` §8) — the hash is then exactly what Core loaded, and a credential rotation surfaces in the drift check, but a document holding a credential now has a digest that is logged (`docs/architecture/36-observability.md` §6's `config.applied` carries `appliedConfigHash`), which `docs/architecture/32-secrets-keystore-masking.md` §9 rule 4 neither forbids nor licenses because its subject is an unkeyed digest of one secret value rather than of a whole config, and the hash stays stable only while the secret bytes themselves are stable",
-        "two hashes: an intent hash over the handle-bearing document and a materialized hash over the written bytes — the reading `docs/architecture/23-unified-server-model.md:146`'s undefined 'intent hash' already assumes, and the one that makes that sentence mean something — at the cost of a second field on `packages/schema/protocol/commands/config.apply.json` and a rule for which hash `unchangedBecauseHashMatched`, `config.snapshot` and `config.applied` each carry"
-      ],
-      "at": [{ "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Which byte string `configHash` covers" }]
-    },
-    {
       "id": "ODEC-37",
       "question": "Which remaining core-routing predicates can Xray 24.11.11 actually honor, especially invert and protocol values beyond the loopback-tested HTTP match, after the inbound, built-in, sniffing and array spellings have been measured?",
       "decidedBy": "upstream",
-      "blocks": { "verification": ["VER-28", "VER-78"], "compatibility": [] },
+      "blocks": { "verification": ["VER-28"], "compatibility": [] },
       "why": "The original four byte positions are implemented and measured: SOCKS5 per tag, declared freedom/direct and blackhole/block, inbound-level sniffing with destOverride, and array-valued network/protocol. connector/internal/apply/drive_test.go checks four materialized goldens with Xray 24.11.11; connector/internal/compile/drive_test.go checks real loopback HTTP and SOCKS5 UDP, including paired controls. The runtime checks found that an undeclared outbound falls back to the default and invert:true is silently ignored. The compiler therefore declares every referenced builtin, pairs every inbound with its server after policy rules, and reports an inverted rule whole rather than emitting a changed match. This entry remains open for the residual predicate semantics: a config-test acceptance cannot prove that every protocol enum value is detected or that an inverted predicate has an equivalent lowering. The four goldens do not certify those untested combinations.",
       "options": [
         "keep invert:true explicitly unrepresentable and establish each remaining protocol predicate with paired runtime fixtures before expanding the supported set",
@@ -578,7 +565,38 @@
       "at": [
         { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "have no honest member of their own `#/errors` for it" }
       ]
+    },
+    {
+      "id": "ODEC-44",
+      "question": "Where does a production supervisor's `Launch` get the Core binary path from -- the pinned install root under doc 34 §7's layout resolved from settings and the install receipt, the host handing the path across the pipe, or a first-run download this repository performs itself?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-88"], "compatibility": [] },
+      "why": "`config.apply`'s surface is wired end to end except one constructor argument: `coreProcess`, whose production implementation is the supervisor, whose `New` demands a `Launch` -- a function from config path to the command that runs Core. Doc 27 §8's new deferral names the gap and doc 34 §7's layout names the directory tree, but no document says which file in it is the binary or who resolved it there: `settings.core.installRoot` defaults to null, `installChannel` is `pinned`, and `connector/internal/receipt` verifies a binary it was handed rather than one it found. ADR-0019 decides that the binary is an integrity-pinned downloadable asset and forbids committing it; it does not decide who runs the download, who writes the pin, or whether the path crosses the pipe. It is `contract` because the answer is a field and a rule in `packages/schema` -- an `installRoot` resolution rule and a receipt row -- not a person or a browser.",
+      "options": [
+        "the Connector resolves the pinned install root itself: `installRoot` null means the per-user default under doc 34 §7's layout, the receipt at that root identifies the binary, and a first-run download -- the `pinned` channel's own step -- is the Connector's, at the cost of the network-egress and pin-write responsibilities moving into this process, where ADR-0019's verification already lives",
+        "the host owns the install and hands the path across the pipe: the first-run download, the pin write and the receipts are the shim's or the installer's, and the Connector receives the resolved binary path the way it receives the sender id -- at the cost of a second decided transport fact (`ODEC-35`'s pipe carries another injected fact) and a trust boundary the config.apply surface cannot see",
+        "the pin document ships the absolute path: `pins.json` names the install root it was written against, and the Connector reads the binary only from there -- at the cost of a machine-specific path inside a document this corpus keeps machine-independent, which doc 27 §3.3's own rule refuses for the hashed config and would refuse here too"
+      ],
+      "at": [
+        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "extension can call, so it belongs to" }
+      ]
+    },
+    {
+      "id": "ODEC-45",
+      "question": "How does a `keystore://` handle for an *object* reach the compiled config -- the materializer resolving the handle into the key-value map the stored value holds, the compiler refusing object handles until a schema field names the map, or shape C losing headers entirely?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-28"], "compatibility": [] },
+      "why": "The half of the old `ODEC-36` that its hash-subject answer did not settle. Shape C of doc 23 §9 prints a headers object whose keys come from the stored map (a colon-prefixed key name mapping to the secret value) -- one string in the model standing where the config needs an object, so the key names live in the document and the values in the store. `unsupportedHeaders` in `connector/internal/compile/outbound.go` refuses a server carrying one, which is why shape C has no golden and why VER-28 pins four fixtures rather than six. No decision says whether the materializer expands the handle from the stored map, whether a schema field must name the map first, or whether headers are dropped. It is `contract` because the answer is a field and a refusal rule in `packages/schema` -- not a person, a browser or a binary.",
+      "options": [
+        "the materializer expands the handle: a `keystore://` handle whose stored value is a JSON object is materialized key by key into the config position, at the cost of a value-shape rule in the keystore and a masking rule per key name the store cannot know in advance",
+        "a schema field names the map: the server document gains an explicit -shaped declaration of the keys the stored object holds, and the materializer only fills values -- at the cost of a new field on the server model and a sync story for the key list",
+        "shape C loses headers: the model drops the field, authenticated feeds that need headers are refused like any other unsupported shape, and the corpus says so -- no new field anywhere, at the cost of the shape C users the loss table in doc 29 §5 would have to name"
+      ],
+      "at": [
+        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reaches the compiled config is its own question" }
+      ]
     }
+
   ],
   "retired": {
     "rule": "An entry leaves this file when it is answered -- the description's own rule, and the same one doc 39 §9 rule 2 imposes on a queue row -- and the id it held retires here rather than being reused. Ids are issued once: doc 39 §9 rule 8 adopted ADR-0001 rule 2 for `VER-NN` because those ids are cited across the corpus, and an `ODEC-NN` is cited the same way, in `verification.json` rows whose `closesBy.ref` names the question it waits on, in the tables of docs/architecture/39 and 40, and in docs/PROJECT-STATE.md's ledger. A gapless, re-derived numbering would therefore make answering a question silently rewrite every answer that cited a later one, which is why this list exists and why the register's ids are no longer required to be dense.",
@@ -624,6 +642,13 @@
         "was": "which artefact carries the pipe half of the version negotiation -- a field on the event that already writes the browser half down, a declared shape for the diagnostics section, or nothing",
         "artefact": "the first option its own entry listed: `connector.connected`'s payload gained the required `pipeVersion` beside `protocolVersion`, the `versions` section's `contains` and the export footer name it, and the recorded handshake fixture carries the field -- the one answer that keeps doc 21 §6's promise one sentence, at the cost its option text named honestly: a new field on a wire-visible closed payload. It closes `VER-82`, the only row this entry gated, in the same commit",
         "freed": { "verification": ["VER-82"], "compatibility": [] }
+      },
+      {
+        "id": "ODEC-36",
+        "decided": "2026-11-07",
+        "was": "which byte string `configHash` covers -- the compiler's handle-bearing document with `keystore://<ref>` in every credential position, or the materialized bytes the Connector writes to disk",
+        "artefact": "the first option its own entry listed: the handle-bearing document. The decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material -- and the disclosure argument the entry carried is its own answer: the written bytes hold plaintext credentials and the digest is logged by `config.applied`, so a values span would put a fingerprint of a credential-bearing file into every log. The switch it held in `connector/cmd/nexora-connector/config_apply.go` is gone, the two tests that kept the spans apart died with it, and the cost its option named -- a rotation behind an unchanged reference does not move this hash -- is `core.restart`'s, stated beside the decision. It closes `VER-78` in the same commit",
+        "freed": { "verification": ["VER-78"], "compatibility": [] }
       }
     ]
   }
