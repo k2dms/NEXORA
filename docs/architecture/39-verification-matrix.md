@@ -47,7 +47,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
   exist; that is the queue reporting the phase boundary, not endorsing what comes after it.
 - **Repeating the argument.** Why a claim is made lives in the document that carries the label. This document
   quotes the line and points at it; it does not re-litigate it.
-- **Rounding a number into existence.** 5 rows are `needs-human`. Their value is that they stay unnumbered.
+- **Rounding a number into existence.** 4 rows are `needs-human`. Their value is that they stay unnumbered.
 
 ---
 
@@ -98,9 +98,9 @@ would have to be re-derived from the design, which is how a verification matrix 
 | `no-check` | 5 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
 | `no-run` | 6 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 2 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
-| `needs-human` | 5 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
+| `needs-human` | 4 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **55 of 73 rows are `no-code`**: this iteration's claims are overwhelmingly
+The distribution is the finding. **55 of 72 rows are `no-code`**: this iteration's claims are overwhelmingly
 blocked on the Connector, the compiler and the UI existing, not on tests being clever. 5 `no-check` rows read as
 the part closable before Phase 2 writes a line of product code, and four of the five — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
@@ -119,14 +119,14 @@ That ordering is not advice; it is what the states say.
 ## 5. Nine owners, eight closing mechanisms
 
 `owners` — who can close the row: `connector` 39, `extension` 11, `contracts` 6, `ci` 4, `packages` 3,
-`ui` 3, `external` 3, `tools` 2, `human` 2.
+`ui` 3, `external` 3, `tools` 2, `human` 1.
 
-`closingKinds` — with what: `live-row` 39, `assertion` 17, `decision` 5, `gate` 3, `ci-step` 3,
+`closingKinds` — with what: `live-row` 39, `assertion` 17, `decision` 4, `gate` 3, `ci-step` 3,
 `external-measurement` 3, `tool` 2, `new-live-row` 1.
 
 Three consequences worth stating out loud:
 
-- **39 of 73 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **39 of 72 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -229,13 +229,15 @@ Not a schedule — a dependency graph the states impose:
    `LIVE-05…LIVE-09`. `VER-27`, `VER-32` and `VER-68` close by executing `LIVE-04` itself, and `VER-50` hangs on
    `LIVE-05` — behind the gate twice. Until an egress IP equals the VPS IP, no transport row may be reported,
    because a TCP connect returning green while traffic leaks is ADR-0020's named worse-than-nothing test.
-3. **Five decisions gate five rows.** `VER-54` waits on `ODEC-10` (does any external API surface survive),
-   `VER-61` on `ODEC-33` (whether the Connector owns subscriptions end to end), `VER-79` on `ODEC-38` (over what
+3. **Four decisions gate four rows.** `VER-54` waits on `ODEC-10` (does any external API surface survive),
+   `VER-79` on `ODEC-38` (over what
    span the ladder's attempts are spent), `VER-80` on `ODEC-39` (where a real `config.apply` reads its intent, which
-   directories it is handed and what the compiled config is called), `VER-81` on `ODEC-40` (which artefact records
+   directories it is handed and what the compiled config is called), `VER-82` on `ODEC-41` (which artefact records
    the pipe half of the
-   version negotiation) — all five in doc 40's register; the sixth, `VER-81` on `ODEC-40`, closed on 2026-11-07 by the
-   field its question asked for, and the run refuses a row that closes by a decision no entry
+   version negotiation) — all four in doc 40's register. The fifth, `VER-61` on `ODEC-33`, closed on 2026-11-07 by
+   the answer its question asked for: an `adr`-kind entry, so the answer is `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`
+   and the row left with the question it gated — the first closure by elimination, since the data already refused two
+   of that entry's three options — and the run refuses a row that closes by a decision no entry
    gates. Four `no-check` rows — `VER-20`, `VER-56`, `VER-65`, `VER-71` — are named in a `blocks` as well, which is
    why §4 says they cannot be deleted around their gate. Behind them the inbound-per-tag question
    (`ODEC-06`) changes what `VER-30` even asserts. `VER-09`, `VER-37`, `VER-74` wait on browsers and stores, which is
@@ -258,8 +260,8 @@ Not a schedule — a dependency graph the states impose:
    the only decision row the Connector does not own.
    What does not exist here is a place to put the answer, not the code that would compute it.
 
-The queue does not pretend this is fast. It is the reason the queue exists: 73 named obligations with 39 of them
-pointing at one executable matrix is a plan; the same 73 as 195 scattered phrases is a mood.
+The queue does not pretend this is fast. It is the reason the queue exists: 72 named obligations with 39 of them
+pointing at one executable matrix is a plan; the same 72 as 195 scattered phrases is a mood.
 
 ---
 
@@ -280,7 +282,7 @@ pointing at one executable matrix is a plan; the same 73 as 195 scattered phrase
 
 ## 10. The queue
 
-73 rows, grouped by state; the 9 ids this queue has closed are in `packages/schema/verification.json#/retired`,
+72 rows, grouped by state; the 10 ids this queue has closed are in `packages/schema/verification.json#/retired`,
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
@@ -372,22 +374,23 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-19 | `dedupeWindow` bounds are neither data nor tested (ADR-0008 rule 2) | `contracts` · assertion | 2 · 2 |
 | VER-66 | `format: auto` never resolving ambiguously — no fixture where both detectors fire | `contracts` · assertion | 1 · 1 |
 
-### `needs-human` — 5
+### `needs-human` — 4
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
 | VER-09 | extension identity and version-line continuity: the wipe trap is store behaviour, not repo behaviour | `external` · external-measurement | 2 · 3 |
 | VER-37 | the UI budgets table is targets with no measurement behind any number | `external` · external-measurement | 1 · 1 |
 | VER-54 | the inherited external surface still lets another extension read the whole options object | `human` · decision (`ODEC-10`) | 1 · 2 |
-| VER-61 | whether the Connector owns subscriptions end to end is undecided, so the boundary that follows from the answer cannot be asserted | `human` · decision (`ODEC-33`) | 1 · 1 |
 | VER-74 | `COMP-07`, `COMP-10`, `COMP-14`, `COMP-18` — browser floor, cohort count, envelope sizes, `unlimitedStorage` ceiling | `external` · external-measurement | 3 · 3 |
 
-### Retired — 8
+### Retired — 10
 
-Closed on 2026-11-06, in the only three deletions this queue has ever performed: four rows in the first, three in
-the second — `VER-04`, `VER-05`, `VER-07`, the last rows of the queue's own integrity that needed no product code —
+Closed in the five deletions this queue has performed. Four rows on 2026-11-06 in the first, three in the second —
+`VER-04`, `VER-05`, `VER-07`, the last rows of the queue's own integrity that needed no product code —
 and one in the third, `VER-18`, the first row closed by answering an open decision instead of waiting on one. The
-id stays retired: §9 rule 8.
+fourth deleted `VER-81`, and the fifth deleted `VER-61` — the first `adr`-kind entry in the register, and the first
+row this queue closed by elimination: two of the question's three options were already refused by data on disk, so
+the answer was the reading that was left. The id stays retired: §9 rule 8.
 
 | Row | What it claimed was unchecked | What closed it |
 |---|---|---|
@@ -399,6 +402,8 @@ id stays retired: §9 rule 8.
 | VER-08 | no assertion inspected an artifact's contents, and nothing enforced 'no binary in a tracked path' | the magic-byte scan of every tracked file and the `check_zip` of the `legacy-chain` job, green on all three runner images since `ceedabf` — the uncompressed total is a printed NOTE, not a floor — plus the `.gitattributes` executable suffixes ADR-0019 rule 1 asked for |
 | VER-10 | `.gitattributes` declared line endings and binary classes that nothing checked | the `VER-10` step of `.github/workflows/verify.yml` — `git diff --check` over the range, `git ls-files --eol` over the index — green on all three runner images |
 | VER-18 | the design said the pipe and the browser protocol were versioned independently and one number said so | `packages/schema/protocol/framing.json#/minPipeVersion` and `#/versionFloors`: two windows, four numbers, one `tooOld` code (`VersionMismatch`) because adding a code is breaking for a client that switches exhaustively — the answer `ODEC-02` listed first, so the gate retired in the same commit, and the harness now reads both windows out of the file. Nothing compares a frame's `v` to the pipe floor yet, which doc 25 §1 states rather than queues |
+| VER-81 | the format an `auto` parse resolves to had nowhere to be recorded, while §5 promised `auto` never survives into a stored source | `ODEC-40` answered by its own first option: a `format` field on each `refreshed` item of `packages/schema/protocol/commands/subscription.refresh.json#/result`, required and enumerated minus `auto`, with the §5 sentence it satisfies, the §7 status row, the `data-ownership.json` amendment and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` |
+| VER-61 | whether the Connector owns subscriptions end to end, so the delivery boundary that follows from the answer had nothing to assert against | `ODEC-33` answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` — the chunked hand-off excluded by `packages/schema/observability.json#/events/7/payload` and `packages/schema/protocol/envelope.schema.json#/properties/chunk`, the raw-body read excluded by doc 29 §11's invariant, and what survives written in `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required`; doc 29 §13 item 6's labelled line left with it and the deferral moved to `VER-64` on the ADR's own `## Verification` |
 
 ---
 
@@ -427,7 +432,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-82` beyond the contract layer — 73 live, 9 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-82` beyond the contract layer — 72 live, 10 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 

@@ -55,7 +55,7 @@ transfer instead of scheduling it.
 chunking is not a subscription concern: `protocol/envelope.schema.json#/properties/chunk` serves `profile.import`,
 whose args do exceed 1 MiB. The reverse direction is capped at 1 GiB
 (`packages/schema/protocol/framing.json#/limits/hostToExtensionBytes`), and 4 096 Servers are far below it, so
-`subscription.refresh` results are single-frame.
+`subscription.refresh` results are single-frame. Until `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` this was the premise the paragraph drew its conclusion from; now it is a clause of that record, and so is the direction the Servers travel in: the parsed list reaches the extension in this result frame and in no event, because `packages/schema/observability.json#/events/7/payload` is closed at four count fields.
 
 ## 3. The guards, and where each one runs
 
@@ -391,4 +391,3 @@ Each was found by reading one artefact against another, not by running anything.
 | 3 | Should the 64-inbound ceiling rise, or should profiles compile a subset? | `docs/architecture/27-config-compilation-pipeline.md` §5 owns the topology; the number belongs to `docs/architecture/40-open-decisions.md` |
 | 4 | `KeystoreUnavailable` on a second machine for `urlRef`/`headersRef` sources: which UI state names it | `docs/architecture/37-ui-architecture.md` §4 |
 | 5 | Whether a subscription may ever be created by the Connector (import of a legacy profile with `sourceUrl`) or only by the user | `docs/architecture/35-schema-versioning-migration.md` §6 |
-| 6 | Whether the Connector owns subscriptions end to end, or the extension may receive feed-derived Servers through chunked events -- §2's single-frame answer holds only while that is true; `Verified: NO — Phase 2` until someone answers | `docs/architecture/40-open-decisions.md`; the human half is `docs/PROJECT-STATE.md` §9's fourth decision |

@@ -12,8 +12,10 @@ names its own check or is recorded as `Verified: NO -- deferred to Phase 2`.
 **Numbering is append-only.** A number is never reused, re-ordered or renamed to fit a new topic. If a
 decision changes, a new ADR is written that supersedes the old one and the old file is marked
 `Superseded by ADR-NNNN` in its `Status:` line -- supersession happens only through a new ADR, never by
-rewriting history in place. All twenty records below were authored in the same Phase 1 iteration, so they
-share one date; that is not a claim that they were taken blindly.
+rewriting history in place. All twenty records numbered up to `0020` were authored in the same Phase 1
+iteration, so they share one date; that is not a claim that they were taken blindly. `0021` is the first record
+written after that iteration, and its date is the sitting that found the answer in data the earlier records had
+already committed.
 
 ## Index
 
@@ -39,6 +41,7 @@ share one date; that is not a claim that they were taken blindly.
 | 0018 | [Workspace roots, no root `package.json`](0018-workspace-roots-and-no-root-package-json.md) | Accepted | 2026-11-04 | Per-root installs so no tool can accidentally drive the legacy grunt graph |
 | 0019 | [Xray is a pinned downloadable asset](0019-xray-as-integrity-pinned-downloadable-asset.md) | Accepted | 2026-11-04 | Exact tag, sha256 and signature verified, never in git, never in the zip, no self-update |
 | 0020 | [Test strategy](0020-test-strategy.md) | Accepted | 2026-11-04 | Schema validity, golden configs, env-gated live matrix -- and egress must be proven |
+| 0021 | [Subscription Servers travel in the refresh result](0021-subscription-servers-travel-in-the-refresh-result.md) | Accepted | 2026-11-07 | The feed body never crosses the pipe; parsed Servers arrive in one result frame; an event carries counts |
 
 ## How the set fits together
 
@@ -47,7 +50,7 @@ share one date; that is not a claim that they were taken blindly.
 | Practice and layout | 0001, 0002, 0018 |
 | Connector and Core boundary | 0003, 0004, 0005, 0006, 0019 |
 | Protocol semantics | 0007, 0008 |
-| Failure and data ownership | 0009, 0010, 0011 |
+| Failure and data ownership | 0009, 0010, 0011, 0021 |
 | Legacy compatibility | 0012, 0013, 0014, 0015, 0017 |
 | UI | 0016 |
 | Assurance | 0001, 0020 |

@@ -23,14 +23,15 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 60
+    "counted": 61
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
     { "doc": "docs/PROJECT-STATE.md", "anchor": "`docs/architecture/40-open-decisions.md`, `packages/schema/verification.json` and" },
     { "doc": "docs/README.md", "anchor": "and the row in 39 names the register entry that gates it." },
     { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "`docs/architecture/39-verification-matrix.md`, `docs/architecture/40-open-decisions.md`" },
-    { "doc": "docs/architecture/39-verification-matrix.md", "anchor": "`docs/architecture/40-open-decisions.md`, `docs/audit/00-scope-and-method.md`" }
+    { "doc": "docs/architecture/39-verification-matrix.md", "anchor": "`docs/architecture/40-open-decisions.md`, `docs/audit/00-scope-and-method.md`" },
+    { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "recorded the premise as" }
   ],
   "decidedBy": {
     "values": ["product", "contract", "adr", "measurement", "upstream"],
@@ -121,7 +122,8 @@
       ],
       "at": [
         { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "(`docs/architecture/40-open-decisions.md`)." },
-        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "| 3 | Should the 64-inbound ceiling rise" }
+        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "| 3 | Should the 64-inbound ceiling rise" },
+        { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "`ODEC-06`) ever raises" }
       ]
     },
     {
@@ -490,19 +492,6 @@
       "at": [{ "doc": "docs/architecture/35-schema-versioning-migration.md", "anchor": "`packages/schema/migrations.json#/openDecisions`, to be decided in" }]
     },
     {
-      "id": "ODEC-33",
-      "question": "Does the Connector own subscriptions end to end, or may the extension receive feed-derived Servers through chunked events?",
-      "decidedBy": "adr",
-      "blocks": { "verification": ["VER-61"], "compatibility": [] },
-      "why": "doc 29 §2 derives its frame contract from an unstated premise: the feed body never crosses the pipe toward the extension, so chunking serves only `profile.import` and `subscription.refresh` results are single-frame. That is true while the Connector keeps subscriptions whole -- and `docs/PROJECT-STATE.md` §9's fourth decision asks exactly that. The answer moves a domain across the boundary, so it is an ADR, not a field; and because the question had no labelled line of its own, `VER-61` was pointed at two other documents' deferrals, which is why doc 29 §13 now carries one.",
-      "options": [
-        "Connector-owned, as doc 29 assumes: the extension sees parsed `Server` documents only, and a feed larger than one result frame is refused at the Connector",
-        "chunked hand-off of parsed servers: `subscription.updated` carries `Server` documents in chunks, so a 4 096-server feed survives, and the extension holds a partial subscription between chunks",
-        "raw-body read: the extension may request the feed body through a bounded command, which contradicts doc 29 §11's invariant that no feed body enters the browser process and would need that invariant withdrawn"
-      ],
-      "at": [{ "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "the extension may receive feed-derived Servers through chunked events" }]
-    },
-    {
       "id": "ODEC-34",
       "question": "In a chunked `profile.import`, what are the bytes of a slice, and which byte string does `chunk.contentHash` hash?",
       "decidedBy": "contract",
@@ -513,7 +502,10 @@
         "fragment model: a new `args.payload` string of base64 per slice, `contentHash` over the concatenation of the decoded bytes -- what doc 25 §5's rules 2, 5 and 6 already assume, and the only reading that actually bounds a frame",
         "subset model: each slice carries a valid subset of `profiles` and `servers`, `contentHash` over the canonical serialization of the union -- keeps every frame individually schema-valid, but makes `encoding: \"base64\"` meaningless on a frame of JSON objects, leaves the enum's other member (`json`) as the natural fit, and requires a canonical byte form this repository has never defined"
       ],
-      "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "cannot be written from this document without guessing" }]
+      "at": [
+        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "cannot be written from this document without guessing" },
+        { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "`ODEC-34` still holds is a `profile.import`" }
+      ]
     },
     {
       "id": "ODEC-35",
@@ -622,6 +614,13 @@
         "was": "where the format an `auto` parse resolved to is recorded -- a field in the refresh result, a value stored from something else, or nowhere",
         "artefact": "the first option its own entry listed, as a contract addition: `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format` -- required, enum the source schema's minus `auto` -- the exception its `#/args` description now states, the format amendment in `packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row, the resolved-format sentence that replaced the labelled line in `docs/architecture/29-subscriptions-and-servers.md` §5, the `format` row of that document §7's status table, and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` that carries the field; it closes `VER-81`, the only row this entry gated, in the same commit",
         "freed": { "verification": ["VER-81"], "compatibility": [] }
+      },
+      {
+        "id": "ODEC-33",
+        "decided": "2026-11-07",
+        "was": "whether the Connector owns subscriptions end to end, or the extension may receive feed-derived Servers through chunked events",
+        "artefact": "`docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` -- the third `adr` question and the first answered by elimination rather than by choice, because two of its three options were already excluded by data this repository carries and checks: `packages/schema/observability.json#/events/7/payload` is closed at four count fields so an event cannot hold a Server, `packages/schema/protocol/envelope.schema.json#/properties/chunk` names `profile.import` as its only sender, and `docs/architecture/29-subscriptions-and-servers.md` §11's invariant makes the raw-body reading cost a security rule rather than a line of code. The surviving option is the one the data already requires: `servers` is in `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required`. It closes `VER-61`, the only row this entry gated, in the same commit, moves that row's labelled line out of `docs/architecture/29-subscriptions-and-servers.md` §13 item 6, and hands its deferral claim to `VER-64`: the ADR's own `## Verification` states the build-graph half as deferred, so the count of deferred claims in the corpus is unchanged and the guard a decision depends on is now named by the decision that needs it",
+        "freed": { "verification": ["VER-61"], "compatibility": [] }
       }
     ]
   }

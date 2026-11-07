@@ -125,7 +125,7 @@ subtle one — downstream projects read **prebuilt bundles at the root of the up
 Additive overlay, no root `package.json` (ADR-0018) so the legacy grunt graph cannot be hit by accident:
 
 ```
-docs/README.md  docs/audit/00-12 + 99 + raw/  docs/architecture/20-40  docs/adr/0001-0020  docs/verification/
+docs/README.md  docs/audit/00-12 + 99 + raw/  docs/architecture/20-40  docs/adr/0001-0021  docs/verification/
 packages/{schema,protocol,state,i18n,ui}/     connector/                nexora/extension/
 tools/{verify-vendor.mjs,check-no-secrets.mjs,check-doc-evidence.mjs}
 .github/workflows/verify.yml   .gitattributes   .env.example   *.npmrc
@@ -522,6 +522,19 @@ reading, and `--selftest` is what keeps it a pass instead of a description.
 `node tools/check-legacy-backup.mjs` → **green**: both shipped 3.5.2 envelopes load and compile in the real
 legacy engine (`11` profiles, `9` PAC bodies, `45` request evaluations), and `--selftest` rejects `4` deliberately
 broken envelopes so that the green run cannot be a check that stopped checking.
+§4.32 moves the set a twenty-ninth time — **2311 / 595 / 1573**, 68 labels — measured after this paragraph was written,
+so it reports the set the tool prints rather than the set its own sentences produced. Per file against a clean
+`git archive` of the commit before: the new ADR `0 / +10 / +16`, which is the whole reason the second figure moved, and
+the shape of a record whose Context cites four contracts, whose Decision cites three more and whose Consequences cite
+the documents it changed; this file `0 / +9 / +11`; doc 40 `0 / +5 / +4`, its §2 inventory sentence and its §5 argument
+both reaching for the artefact that ended the question; doc 39 `0 / +4 / +2` for the two tombstone rows and the §8 step
+that now names four gates; `docs/architecture/29-subscriptions-and-servers.md` `0 / +1 / −1`, the only minus sign in the
+set — one name leaving with §13 item 6 and the ADR's arriving in §2; and `docs/audit/09-subscriptions-import-export-sync.md`
+`0 / 0 / +2`, the Phase-0 audit citing the decision that closed its own open row. The first figure did not move for the
+sixth time in seven entries, and the reason is the same as §4.31's: a closure by decision re-points prose at JSON
+pointers and at documents, never at a line of code. What the 68 labels do prove here is the hand-off: doc 29 §13 item 6's
+label left and ADR-0021's `## Verification` arrived, and the guard's fourth figure is the number that says the exchange
+was even rather than the number that says anybody checked.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -2429,6 +2442,71 @@ file, and the only contract artefact it touches is one `meaning` sentence in the
 
 ---
 
+### 4.32 The register's first closure by elimination — `ODEC-33`, `VER-61`, and `docs/adr/0021-…` (2026-11-07)
+
+**Why this slice exists.** Two scouts and §10's closing note agree that nothing in the connector column is writable
+today: `LIVE-04`'s egress gate needs a VPS, `VER-64`'s build-graph needs an extension, and the compiler, apply and
+supervisor paths are on disk waiting for a session. So the queue moves by decision or not at all, and `ODEC-33` was the
+only `adr`-kind question with a live row still behind it — `VER-61`, the queue's last `needs-human` subscription row,
+the one §4.30's own text still described as waiting on a person.
+
+**What the data had already decided.** The entry offered three shapes for subscription delivery. The chunked hand-off
+is refused by two shipped contracts: `packages/schema/observability.json#/events/7/payload` is `additionalProperties:
+false` over `sourceId`, `added`, `removed` and `serverIdsReused` — four counts, no Server — and
+`packages/schema/protocol/envelope.schema.json#/properties/chunk` names `profile.import` as the only sender, whose
+description says so in as many words. The raw-body read is refused by
+`docs/architecture/29-subscriptions-and-servers.md` §11's invariant that no feed body enters the browser process, which
+the same document states as behaviour rather than as a wish. What survives is what
+`packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already
+demands: `servers` rides in the result of the command the extension itself calls, capped at the 4 096 the source schema
+bounds and carried by a 1 GiB frame limit that 4 096 documents cannot approach. Nobody chose; the remainder chose.
+
+**The artefact.** `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, 126 lines, the six sections of
+ADR-0001 in order, `Status: Accepted`, and the first record in `docs/adr/` written after the Phase-1 iteration — which
+is why the index's headline paragraph now separates the twenty records that share that iteration's date from the one
+that does not. Its Decision carries four clauses — the Connector owns
+fetch, guards, detection, parse and keystore, and no feed body crosses the pipe in either direction; parsed Servers
+arrive in the refresh result and in no event; results stay single-frame and a second `chunk` sender MUST NOT be
+introduced, so raising the ceiling would supersede this record rather than amend it; the extension holds the pen and
+the one Connector-corrected field is `refreshed[].format`. Its `## Verification` carries exactly one deferred-claim
+label, naming `VER-64`.
+
+**The bookkeeping, and the arithmetic it had to keep.** `VER-61` left `#/matrix` for `#/retired` — the queue's tenth
+tombstone, 72 live rows, `needs-human` 5 → 4, owner `human` 2 → 1, mechanism `decision` 5 → 4 — and `ODEC-33` left the
+register for its own `#/retired`, the third retirement: 38 questions, `adr` 6 → 5. The label question was the sharp one,
+because doc 29 §13 item 6 *was* a deferred-claim label: retiring the row without moving the claim would have dropped
+`marker.counted` from 195 to 194 and made a decision look like a deletion of evidence. So the line left doc 29 and its
+successor was written into the ADR under `VER-64`, which gained the ADR as a third anchor — the total is unchanged at
+195, over 44 documents rather than 43. Register sites moved the other way, honestly: the new ADR names two live
+questions in its own text, so `ODEC-06` gained a site at 2 and `ODEC-34` at 2, its Context's mention of the retired
+`ODEC-33` went into `#/notADeferral` — a citation of an answer, not unregistered work — and `citation.counted` is 61 in
+16 documents. doc 39 §8 step 3 reads four gated rows instead of five, doc 40 §3's `adr` row and its §10 ledger read five
+and four, and `docs/audit/09-subscriptions-import-export-sync.md` §9's ninth row, which had been pointing at
+"open decision, PROJECT-STATE §9.4", now points at the ADR.
+
+**What this slice does not claim.** The decision is load-bearing and the guard is not: `VER-64` still says nothing in
+this repository proves that the engine never fetches or that no feed body reaches the browser process, and ADR-0021's
+own `## Verification` says so. Nothing was written in Go, so `connector/internal/chunk` is still unwritable and
+`ODEC-34`'s slice body is still the register's cheapest open field. And the two decision rows that remain gated were
+read, not assumed: `ODEC-38` is genuinely open — the per-death reading is what `connector/internal/supervisor`
+implements and what `packages/schema/failure-policy.schema.json` expresses, but both *permit* a stability window and a
+session budget rather than exclude them, so nothing derives an answer, and the second half of its question is a number
+no artefact holds. `ODEC-39` is half decided by the same elimination that closed `ODEC-33` —
+`verify.mjs`'s "intent never rests in the Connector plane" assertion over
+`packages/schema/protocol/data-ownership.json#/stores` refuses two of its options outright — but its directory and
+file-name clauses name nothing on disk, so `VER-79` and `VER-80` stay exactly where §4.30 left them.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks**, unchanged: a closure by decision moves
+data and prose and adds no assertion, and the harness's three distribution constants were amended in the commit that
+moved the data, so the read-aloud check verified the documents against the data rather than the other way round.
+`node tools/check-doc-evidence.mjs` → green, and §4.4's final ledger paragraph carries the set and the per-file deltas.
+`node tools/check-adr-shape.mjs` (and `--selftest`) → **21 ADRs**, no hole, indexed exactly. `node
+tools/check-no-secrets.mjs`, `node tools/check-layout-guards.mjs` (and `--selftest`) and `node
+tools/check-legacy-backup.mjs` (and `--selftest`) → green. `go -C connector test -count=1 ./...`, `gofmt -l connector`
+and `go -C connector vet ./...` → unchanged; this slice touches no Go file.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -2873,10 +2951,13 @@ written before any behaviour existed. What each next milestone has to make true:
    and the hash — and stopped there, because stages 1 to 4 are what decide what the serializer would be claiming to have
    compiled; §4.16 wrote those stages, §4.17 the keystore and §4.19 the supervisor, so three of the five are packages on
    disk, the compiler is begun, and what is left is the prober — whose last stage needs the Core binary §4.13 records as
-   absent — and subscriptions, which no command surface has reached yet and whose one registered gap was `ODEC-40`:
-   where the format an `auto` parse resolved to is recorded. §4.23 was that registration, and §4.30 closed it — the
-   fifth component is no longer stopped by a decision, but by its own turn in the build order and by §13 item 6's
-   `adr` question, which waits on a person. The order the rest builds in is §10's closing
+   absent — and subscriptions, which no command surface has reached yet and whose two registered gaps are both answered
+   now: `ODEC-40`, where the format an `auto` parse resolved to is recorded, and `ODEC-33`, whether the Connector owns
+   subscriptions end to end. §4.23 was the first registration, §4.30 closed it by a contract field, and §4.32 closed
+   the second by an ADR — `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, the register's first
+   closure by elimination. The fifth component is no longer stopped by a decision at all: the `adr` question that gated
+   its last `needs-human` row is retired, the deferral line that asked it left doc 29 §13 with the row, and what remains
+   is its own turn in the build order plus the guard ADR-0021 made load-bearing, which is `VER-64`. The order the rest builds in is §10's closing
    note.
 
 ---
@@ -3108,6 +3189,20 @@ written before any behaviour existed. What each next milestone has to make true:
     prints. What it does not reach is stated rather than assumed — a row whose claim cell has drifted from a line that
     still names the host, and every citation outside the six indexes, including the three this slice repaired in one
     document's own prose. Decision 19's re-read is still the method there.
+23. **A question can be closed by elimination, and a cited number outlives the thing it numbered** (§4.32). `ODEC-33`
+    was not chosen by anybody. Two of its three options are refused by contracts already shipped —
+    `packages/schema/observability.json#/events/7/payload` is closed at four count fields, so a `subscription.updated`
+    event cannot carry a Server, and
+    `packages/schema/protocol/envelope.schema.json#/properties/chunk` names `profile.import` as its only sender — and
+    the third contradicts an invariant `docs/architecture/29-subscriptions-and-servers.md` §11 states as fact, so what
+    survived was what
+    `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already
+    demands. The answer is therefore an ADR that records the exclusions beside its clauses, and `VER-61` retired in the
+    same commit as the question that gated it. The second half of this decision is where the answer left its marks:
+    doc 29 §13 item 6's deferral went with it, its deferred-claim label moved onto the ADR's own `## Verification`
+    under `VER-64`, and `§9.4` kept its number while losing its question, because the ordinals behind it are cited by
+    ten lines in seven files outside this ledger and thirteen inside it. Renumbering a list people cite by position is
+    decision 21's forbidden mistake, one row up.
 
 ---
 
@@ -3118,7 +3213,7 @@ written before any behaviour existed. What each next milestone has to make true:
 | 1 | Fix SEC-1 (`transformValueKeys` + `headers`) immediately after baseline, or hold it as a documented Phase-2 requirement until a test exists? | Phase 2 first PR |
 | 2 | Lockfile policy: keep `package-lock.json` ignored or add `!packages/**/package-lock.json`? What the 2026-11-05 runs changed is the framing: a lockfile-free install now *measurably* builds, on three clean images, and what stays unverified is that it resolves the same set somewhere else (`docs/audit/99-baseline-report.md` §12) | CI as a trust anchor |
 | 3 | `.circleci/config.yml`: delete in a separate commit or keep and mark dead? | cosmetic, but CI-red |
-| 4 | Chunking vs out-of-band for >1 MB is decided (chunking) — but does `subscription.refresh` deliver servers to the extension through chunked events, or does the Connector own subscriptions entirely? | `25-…`, `29-…`, data split |
+| 4 | **Answered on 2026-11-07, and the number stays.** The question was whether `subscription.refresh` delivers servers to the extension through chunked events or the Connector owns subscriptions entirely (`ODEC-33`, and the chunking-vs-out-of-band half above it was decided earlier: chunking). It is answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`: the Connector owns them, no feed body crosses the pipe in either direction, the parsed Servers arrive in one result frame, and an event carries counts. The id is retired in `packages/schema/open-decisions.json#/retired` and the row it gated in `packages/schema/verification.json#/retired`. The slot keeps its number, because §9's ordinals are cited by documents, by queue rows and by this ledger — decision 21's reason for retiring `ODEC-NN` instead of renumbering it, applied to the row that carries it. | nothing: the row that needed it, `VER-61`, is retired beside it |
 | 5 | inbound-per-tag vs single-inbound-with-routing (one Xray inbound per profile vs one with `routing` and `core.select`) | `27-…`, `core.select` semantics |
 | 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
 | 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
@@ -3136,9 +3231,20 @@ entry carries the position. The ninth row that replaced it came from the opposit
 contract, found an answer that was *not* in it, and refused to supply one. It is a `contract` question — the two
 survivors cost a field and its examples, not a person — and it is in this list because the next agent to touch
 `connector/internal/chunk` would otherwise meet a green chunk block and an unwritable package, and the cheapest answer
-available to them would be a guess in a commit message. What remains is nine questions, and two of them have Go waiting:
+available to them would be a guess in a commit message. What remains is eight questions in nine slots, and two of them
+have Go waiting:
 the eighth, `VER-49`'s heartbeat clause, which §4.7 declined to fake, and the ninth, which stopped §4.11 before a line
-of §6's queue was written.
+of §6's queue was written. The vacant slot is the fourth, and it is vacant in a new way: this list has deleted a row
+only when that row was the last one, so the ordinals after it never moved, and §9.4 is the first answered question with
+rows behind it. Keeping its number was not a style choice. The ordinals after it are cited by name — `§9.5` by the
+`core.select` row in `docs/architecture/39-verification-matrix.md` and by `packages/schema/verification.json`, `§9.6`
+by that queue's ADR-0017 locales row, `§9.7` by `docs/adr/0003-xray-implements-all-transport-protocols.md`, the eighth
+and ninth by the heartbeat row and by `docs/README.md`'s chunk entry — ten citations in seven files outside this ledger
+and thirteen inside it, and a renumbering would have pointed every one at a neighbour, silently, with no guard able to
+see it: a shifted row still resolves to a non-blank line, and these are ordinals in prose, not paths a citation pass
+reads. The corpus already settled this argument for question ids — decision 21: retire the id, never renumber it,
+because a citation remembers the number longer than the change does. The row keeps its number and says what answered
+it.
 
 ---
 
@@ -3204,12 +3310,12 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 195 labelled lines over 43 documents, the queue is 73 rows with nine tombstones, and the register is 39
-questions over 60 sites with two retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 195 labelled lines over 44 documents, the queue is 72 rows with ten tombstones, and the register is 38
+questions over 61 sites with three retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file.
-Plus the decisions in §7 and the nine questions in §9, which are not work an agent may finish; the note under that table
-says why one ninth stopped being a question and what took its place.
+Plus the decisions in §7 and the eight questions standing in §9's nine slots, which are not work an agent may finish;
+the note under that table says why the fourth stopped being a question, and why its number stayed.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

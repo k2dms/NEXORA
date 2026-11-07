@@ -65,7 +65,7 @@ Executable artefacts, outside this directory:
 | Infrastructure (`.gitattributes`, `.env.example`, `tools/*`, `.npmrc` ×5) | done |
 | `packages/schema` contracts + verifier | done, green |
 | `docs/audit/00-12 + 99` | done (99-baseline-report written after the Step-0 probe) |
-| `docs/adr/0001-0020` | done |
+| `docs/adr/0001-0021` | done |
 | `docs/architecture/20-40` | done — 39 is the queue of every claim nothing checks, 40 is the register of the questions 39 cannot close |
 | `docs/verification/*` | done — live matrix, env contract, both 3.5.2 backups, and the README that indexes what runs |
 | `verify.yml` + baseline fixes | done — written and executed step-by-step on this host, **and run on GitHub runners since 2026-11-05; the ten runs §12 tabulates are three red, six times green, once cancelled** (`docs/audit/99-baseline-report.md` §12). The `VER-*` rows it names keep the states the queue gives them; a green run is evidence, and closing a row is a separate mechanical commit, for the reason §12 states |

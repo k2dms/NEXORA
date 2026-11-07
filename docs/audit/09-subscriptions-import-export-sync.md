@@ -251,4 +251,4 @@ Still open after these contracts, stated plainly:
 | 6 | Real-world existence of `Authorization`-bearing subscription feeds among users | plausible by construction, unmeasured |
 | 7 | Behaviour of `Options.reset` + `upgrade` against a genuine 3.5.2 `.bak` file | `docs/verification/backup-from-3.5.2.json` exists but is exporter-shaped with example values — no browser ran in this iteration — so the genuine-`.bak` case is still open; `LIVE-14` closes it, and `tools/check-legacy-backup.mjs` already runs the compile half against the real engine |
 | 8 | Whether an unhandled rejection results from a failed push (`omega-target/src/options_sync.coffee:171-172`) | no worker console was observed |
-| 9 | `status`/`serverIds` ownership split between extension and Connector | open decision, PROJECT-STATE §9.4 |
+| 9 | `status`/`serverIds` ownership split between extension and Connector | decided on 2026-11-07 by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`: the Connector parses and answers with the Servers, the extension persists them, and `docs/PROJECT-STATE.md` §9.4 now records that answer |

@@ -160,6 +160,12 @@
         "closed": "2026-11-07",
         "was": "the format an `auto` parse resolves to has nowhere to be recorded: doc 29 §5 promised `auto` never survives into a stored source, and no artefact in the contract carried the detector that won",
         "artefact": "ODEC-40 answered by its own first option, in the commit that retired both: `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format` -- required on every refreshed item, enum the source schema's minus `auto` -- plus the exception its `#/args` description now states, the format amendment in `packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row, the resolved-format sentence in `docs/architecture/29-subscriptions-and-servers.md` §5 that the labelled line became, the `format` row of that document §7's status table, and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` that carries the field"
+      },
+      {
+        "id": "VER-61",
+        "closed": "2026-11-07",
+        "was": "the subscription delivery boundary: nobody had decided whether the Connector keeps subscriptions whole or the extension receives feed-derived Servers in chunks, so the boundary that follows from the answer had nothing to assert against",
+        "artefact": "ODEC-33 answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, and answered by elimination rather than by preference: the chunked hand-off is excluded by `packages/schema/observability.json#/events/7/payload`, closed at four count fields, and by `packages/schema/protocol/envelope.schema.json#/properties/chunk`, which names `profile.import` as its only sender; the raw-body read is excluded by `docs/architecture/29-subscriptions-and-servers.md` §11's invariant; and what survives is what `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already demands -- `servers` in the result of the command the extension calls. The labelled line this row owned, doc 29 §13 item 6, leaves the corpus with it, and the deferral is handed to `VER-64` on the ADR's own `## Verification` line, so the counted total of deferred claims is unchanged"
       }
     ]
   },
@@ -762,17 +768,6 @@
       "why": "The coverage rule is checkable at the contract layer for the *naming*, which is green; producing the error is a host behaviour."
     },
     {
-      "id": "VER-61",
-      "subject": "whether the Connector owns subscriptions end to end, or the extension may receive feed-derived Servers through chunked events, is unanswered -- so the boundary that follows from the answer has nothing to assert against",
-      "state": "needs-human",
-      "owner": "human",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-33`, read with docs/PROJECT-STATE.md §9 item 4 (subscription delivery)" },
-      "at": [
-        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "the extension may receive feed-derived Servers through chunked events" }
-      ],
-      "why": "Doc 29 §2 answers the frame shape -- the feed body never crosses the pipe toward the extension, so `subscription.refresh` results are single-frame -- but it answers it *given* that the Connector keeps subscriptions. The question behind that given is PROJECT-STATE §9's fourth human decision, and it is `ODEC-33`. Two citations were wrong here and are removed: doc 27 §5's `Verified: NO` line is the 64-inbound ceiling, now owned by `VER-73`, and doc 33 §11's is the compiler's door-back prohibition, now owned by `VER-27`; neither is this delivery decision."
-    },
-    {
       "id": "VER-62",
       "subject": "the doc-33 detection controls (sender identity, loopback-only, typed commands, `protocolVersion`/`pinsVersion` refusal) are not code, so even detection is unproven",
       "state": "no-code",
@@ -798,9 +793,10 @@
       "closesBy": { "kind": "gate", "ref": "build-graph assertion: no fetch/XMLHttpRequest under nexora/extension/src/subscriptions/**" },
       "at": [
         { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "The engine never fetches, and no feed body enters the browser process" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "The feed body never enters the browser process" }
+        { "doc": "docs/architecture/34-data-split.md", "anchor": "The feed body never enters the browser process" },
+        { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "for the guard this decision makes load-bearing" }
       ],
-      "why": "Testable as a build-graph assertion today; it is the row that keeps the Connector's fetch responsibility from drifting back into the browser by 'temporary' convenience."
+      "why": "Testable as a build-graph assertion today; it is the row that keeps the Connector's fetch responsibility from drifting back into the browser by 'temporary' convenience. ADR-0021 made it load-bearing rather than tidy: that decision forbids a feed body on the pipe, and this is the only row that could catch the breach."
     },
     {
       "id": "VER-65",

@@ -1,13 +1,13 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 60 deferral sites in 15 documents point here as the place an answer lives, and five more lines name it only to
+> Purpose: 61 deferral sites in 16 documents point here as the place an answer lives, and six more lines name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
 > be closed here, what the choices actually cost, and which kind of artefact would end it. `docs/adr/0001-adr-practice.md`
 > makes an ADR the only place a decision is recorded; `packages/schema/verification.json` queues what nothing checks;
 > this file queues what nobody has chosen. The two are different obligations and one does not substitute for the
-> other: a row that closes by a decision (`VER-54`, `VER-61`) is waiting on an entry here, and an entry here that
+> other: a row that closes by a decision (`VER-54`, `VER-82`) is waiting on an entry here, and an entry here that
 > gates no row is a question nobody is blocked by.
 
 Status: Accepted. Normative data: `packages/schema/open-decisions.json`,
@@ -62,14 +62,17 @@ is worth stating precisely.
 3. **A bullet may wrap.** A continuation line counts as part of its bullet's site, which is why the scan reads whole
    documents rather than grepping single lines: `docs/architecture/23-unified-server-model.md` §7 puts the filename
    alone on its own line at the end of a paragraph, and that line — not the paragraph's first — is the site.
-4. **An inventory line is not a deferral.** Five lines name this file only to list it among documents or to say where
-   an answer belongs: the two status lines in `docs/PROJECT-STATE.md` §4.4 and §4.5, the routing bullet in
-   `docs/README.md`'s conventions list, `docs/architecture/20-target-repository-layout.md` §13's planned-files row, and
-   the document list in `docs/architecture/39-verification-matrix.md` §13. They are declared in
+4. **An inventory line is not a deferral.** Six lines name this file only to list it among documents, to say where
+   an answer belongs, or to record that an entry that is no longer here once lived in it: the two status lines in
+   `docs/PROJECT-STATE.md` §4.4 and §4.5, the routing bullet in
+   `docs/README.md`'s conventions list, `docs/architecture/20-target-repository-layout.md` §13's planned-files row,
+   the document list in `docs/architecture/39-verification-matrix.md` §13, and the sentence in
+   `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`'s Context that says this register is where the
+   premise it retires was recorded. They are declared in
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 60 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 61 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -79,8 +82,10 @@ carry its claim — `docs/architecture/27-config-compilation-pipeline.md` §5's 
 `docs/architecture/33-binary-integrity.md` §11's door-back prohibition belongs to `VER-27` — because the delivery
 question had **no line of its own anywhere**. It existed only as `docs/PROJECT-STATE.md` §9's fourth decision, which
 is a note to a person rather than a claim in the architecture. `docs/architecture/29-subscriptions-and-servers.md`
-§13 now carries it, and the corpus count went up by one. A question that cannot be cited is a question that will be
-answered by accident.
+§13 item 6 gained it on 2026-11-06, and §13 lost it on 2026-11-07 when the answer retired the question and the site
+with it, and the count came back down by one. Read the two halves in order and they are the same sentence: a question
+that cannot be cited is a question that will be answered by accident — and this one was almost answered by accident
+twice, once by a document that assumed the answer and once by a note addressed to nobody.
 
 ---
 
@@ -93,23 +98,23 @@ costs to answer:
 |---|---|---|---|
 | `product` | 14 | a screen, a sentence, or a refusal the user sees — written into `docs/architecture/37-ui-architecture.md` and the command docs | no measurement can decide what the user should be told; a schema field cannot make the choice less arbitrary |
 | `contract` | 15 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
-| `adr` | 6 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
+| `adr` | 5 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
 | `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 2 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-14 of the 39 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+14 of the 38 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
 15 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without waiting on a
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
-`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 21 entries gate exactly 2 and 15 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
+`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 21 entries gate exactly 2 and 14 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 Two questions are cited by four or more sites each — `ODEC-15` (the built-in sync secret, five) and `ODEC-01`
-(Connector ownership across two browser profiles, four) — and four sit at three (`ODEC-05`, `ODEC-09`, `ODEC-14`,
-`ODEC-26`). Repetition is not agreement, and the register counting it is the point: five sites about a gist token in
+(Connector ownership across two browser profiles, four) — and five sit at three (`ODEC-05`, `ODEC-06`, `ODEC-09`,
+`ODEC-14`, `ODEC-26`). Repetition is not agreement, and the register counting it is the point: five sites about a gist token in
 `chrome.storage.sync` is one question nobody has answered five times.
 
 ---
@@ -129,10 +134,13 @@ incompetence. Every entry here resisted that, and the reasons are of six kinds.
    a finished feature" — tells us what we may not say, not what to say. Picking one silently would make the screen
    the architecture's opinion rather than the product's.
 3. **The answer crosses a boundary, so it is not a field edit.** `ODEC-08` (a Shadowsocks-heavy feed), `ODEC-17`
-   (encrypting the pre-migration snapshot), `ODEC-27` (Linux and macOS provenance), `ODEC-33` (who owns
-   subscriptions), `ODEC-35` (what actually crosses the second pipe) and `ODEC-15` each change what a component is
+   (encrypting the pre-migration snapshot), `ODEC-27` (Linux and macOS provenance), `ODEC-35` (what actually crosses
+   the second pipe) and `ODEC-15` each change what a component is
    *for*. `docs/adr/0001-adr-practice.md` makes that an
-   ADR, and an ADR needs the argument that a Phase-1 document cannot supply on the strength of a schema.
+   ADR, and an ADR needs the argument that a Phase-1 document cannot supply on the strength of a schema. A sixth that
+   reads like this one — `ODEC-33`, who owns subscriptions — left the register on 2026-11-07 for exactly this reason:
+   the answer was a boundary, so it became `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`
+   rather than a field, and it became that by elimination rather than by preference.
 4. **The answer depends on an artefact that does not exist yet.** `ODEC-03` (which error code means "cannot be
    compiled") has its call sites now — `connector/internal/compile/validate.go` refuses a bind, and
    `connector/cmd/nexora-connector/config_apply.go` classifies every pipeline refusal before it answers — and the
@@ -208,10 +216,16 @@ documented. That is why it is `adr` and not a field.
 
 **`ODEC-33` — who owns subscriptions.** `docs/architecture/29-subscriptions-and-servers.md` §2 concludes that
 `subscription.refresh` results are single-frame because a feed body never crosses the pipe toward the extension. The
-conclusion is sound and its premise is the open question: if the extension is ever to hold a subscription — chunked
+conclusion was sound and its premise was the open question: if the extension is ever to hold a subscription — chunked
 or otherwise — then the frame contract, the §11 invariant that no feed body enters the browser, and the data split in
 `docs/architecture/34-data-split.md` all move together. It was answered by accident for a whole phase because nobody
-wrote the question down.
+wrote the question down. It is written down now, in `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`,
+and the interesting part is how: nothing chose between its three options. Two were refused by data already shipped —
+`packages/schema/observability.json#/events/7/payload` is closed at four count fields, so `subscription.updated` cannot
+carry a Server, and `packages/schema/protocol/envelope.schema.json#/properties/chunk` names `profile.import` as its only
+sender — and the third contradicted an invariant the corpus states as fact. What survived was what
+`packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already
+demands. The register's first closure by elimination, and the pattern `ODEC-34` was written to describe.
 
 **`ODEC-35` — what crosses the second hop.** ADR-0005 rule 2 (`docs/adr/0005-two-process-connector.md:30-32`) promises
 a local pipe between the two processes whose message schema is versioned separately and carries its own version field,
@@ -270,7 +284,6 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-30` | whether the unbounded `log-store` and state blob get a compaction policy | `product` | `VER-48` |
 | `ODEC-31` | the real envelope sizes without `unlimitedStorage` | `measurement` | `VER-74`, `COMP-14` |
 | `ODEC-32` | whether mirrored legacy profile keys are name-derived or minted | `contract` | `VER-33` |
-| `ODEC-33` | whether the Connector owns subscriptions end to end, or the extension may receive Servers in chunks | `adr` | `VER-61` |
 | `ODEC-34` | where a chunk slice carries its bytes, and which byte string its `contentHash` names | `contract` | `VER-76` |
 | `ODEC-35` | how the sender identity crosses hop 2, and what the local pipe's message schema is | `adr` | `VER-77` |
 | `ODEC-36` | which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `contract` | `VER-78` |
@@ -280,7 +293,7 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-41` | which artefact carries the pipe half of the version negotiation — a field on the event that writes the browser half down, a declared shape for the diagnostics section, or nothing | `contract` | `VER-82` |
 
 Each entry in the data also carries the options (§4's argument in three lines each), the reason it is open, and the
-sites that deferred to it; the 39 rows above are the same 39 objects, not a summary of them.
+sites that deferred to it; the 38 rows above are the same 38 objects, not a summary of them.
 
 One entry is not above, and never will be again. `ODEC-02` — what the two version floors are, and what each refuses
 to speak — was answered on 2026-11-06 by its own first option, a field in `packages/schema/protocol/framing.json`,
@@ -322,6 +335,19 @@ now states the one exception in its own words, while `packages/schema/protocol/d
 `docs/architecture/29-subscriptions-and-servers.md` §5's storage claim is now a fact the contract keeps instead of a
 promise nothing kept. The id is retired in `packages/schema/open-decisions.json#/retired`; what leaves the register is
 the question, and what stays in the corpus is the answer.
+
+`ODEC-33` (who owns subscriptions) is the third answered id, and the only one whose answer is an ADR rather than a
+field: `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, on the same day as `ODEC-40`. Its shape is
+what separates it from the other two. `ODEC-02` and `ODEC-40` closed because someone picked the first option and wrote
+the field it named; this one closed because the corpus had already refused two of its three options — the chunked
+hand-off by two shipped contracts, the raw-body read by an invariant doc 29 §11 states as fact — so the third was not a
+choice but a remainder, and the ADR records the exclusions as well as the clause, which is why `ODEC-34`'s own option
+list has an "excluded by the data, recorded so the exclusion is not re-litigated" line. Its site left with it: doc 29
+§13's deferral row is gone, the deferred-claim label it carried moved onto that ADR's `## Verification` under
+`VER-64`, and the counted total of deferred claims is unchanged at 195. The id is retired in
+`packages/schema/open-decisions.json#/retired`; the gate it held, `VER-61`, is retired in
+`packages/schema/verification.json#/retired` in the same commit, because §9 rule 6 forbids the row outliving the
+question that gated it.
 
 `ODEC-39` (what a real `config.apply` reads and where it puts what it writes) is the one before that, and it is the first
 this repository raised by *finishing* a path rather than designing one.
@@ -421,15 +447,16 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 39 questions, 60 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 38 questions, 61 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it -- and
    since this document's §3 table read `contract` 16 against a data of 15 for one commit, the run now reads the
    document's own sentences too, the way doc 39 §11 has done since it caught three stale distributions there.
 2. Every question gates at least one row. An entry that blocks nothing is a question the architecture does not need
    answered yet, and belongs in a note rather than the register.
-3. Five rows close by a decision — `VER-54`, `VER-61`, `VER-79`, `VER-80` and `VER-82` — and each is named
-   here (`ODEC-10`, `ODEC-33`, `ODEC-38`, `ODEC-39`, `ODEC-41`); a sixth, `VER-81` on `ODEC-40`, closed the same way
-   on 2026-11-07 and left both lists.
+3. Four rows close by a decision — `VER-54`, `VER-79`, `VER-80` and `VER-82` — and each is named
+   here (`ODEC-10`, `ODEC-38`, `ODEC-39`, `ODEC-41`); two more closed the same way on 2026-11-07 and left both
+   lists — `VER-81` on `ODEC-40`, answered by the field its first option asked for, and `VER-61` on `ODEC-33`,
+   answered by the ADR its remaining option required and by nothing else in the corpus having survived.
 4. Nothing here asserts that a decision is coming, or that a phase ends with them answered. `docs/adr/0001-adr-practice.md`
    allows an ADR to be superseded and this register to be emptied; it does not allow either to be quietly redefined.
 5. A `measurement` or `upstream` question cannot be closed by this repository alone. `packages/schema/compatibility.json`
