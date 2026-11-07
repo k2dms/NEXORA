@@ -547,6 +547,17 @@ observability catalogue, read while measuring the method-name class this entry d
 to register — which is the same asymmetry §4.31 reported: the slices that change what a citation *means* are invisible to
 the counters that count how many there are. The only arithmetic that distinguishes the two states is the one that asks whether the section the number
 names exists — which is `VER-83`, and is not a number yet.
+§4.34 moves the set a thirty-first time — **2311 / 596 / 1598**, 68 labels — measured after this paragraph, its own
+record and its gates paragraph were written, so it reports the set the tool prints rather than the set its sentences
+produced. Per file against a clean `git archive` of the commit before: doc 22 `0 / 0 / +1` and doc 25 `0 / 0 / +1` —
+the two deferral sentences the slice's registration created, each a site precisely because it names the register — and
+this file `0 / 0 / 0` across everything §4.34 added to it, which is not an accident but the convention working: the
+record names documents by section (`doc 22 §8`) rather than by backticked path, exactly as this file's citation
+bullets prescribe for this file, so the only figures that moved are the two names the sites carry. The first two
+figures did not move at all, and the shape is §4.31's inverted: a slice that registers rows points the queue's rows at
+JSON and the JSON's anchors at documents, and the guard counts the citations that live in `docs/`, not the ones that
+arrive there — the corpus grew three labelled sentences, two sites and one row, and the citation set saw exactly the
+two names the sites carry.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -2278,11 +2289,12 @@ therefore the anchor `ODEC-41` points at. `packages/schema/verification.json` ga
 `contracts`, `closesBy.kind` `decision`), and `packages/schema/open-decisions.json` gained `ODEC-41` (`decidedBy`
 `contract`, blocking that one row) with three answers: a field on `connector.connected` plus the two `contains` and
 footer sentences that must follow it; a declared per-section shape for `diagnostics.get`'s `payload`; or nothing, with
-doc 21 §6's promise narrowed honestly to the protocol window. The register now has 40 entries and 61 sites in 15
-documents; the queue has 74 rows, of which 56 are `no-code` and 7 owned by `contracts`. Both stale tallies are now true,
-and doc 40's §3 prose was converted from words to digits — `14 of the 40 are 'product'`, `21 entries gate exactly 2 and
-16 gate 1` — because a number a check reads must be a number a check can parse, and house style already does this in
-doc 39. The one word tally no regex was written for, "the fifteen `contract` questions" in §1's bullet, is now `16`.
+doc 21 §6's promise narrowed honestly to the protocol window. The register closed this slice at 40 entries and 61
+sites in 15 documents; the queue at 74 rows, of which 56 were `no-code` and 7 owned by `contracts`. Both stale tallies
+were true again at that close, and doc 40's §3 prose was converted from words to digits — `14 of the 40 are
+'product'`, `21 entries gate exactly 2 and 16 gate 1` — because a number a check reads must be a number a check can
+parse, and house style already does this in doc 39. The one word tally no regex was written for, "the fifteen
+`contract` questions" in §1's bullet, was `16` when the slice closed.
 
 **The harness grew one check, and it is the one that would have caught this slice's two defects.** `npm --prefix
 packages/schema run verify` reads doc 40 §3's kind table against `decidedBy` counts, and six sentences of doc 40's own
@@ -2613,6 +2625,84 @@ connector` and `go -C connector vet ./...` → unchanged; this slice touches no 
 
 ---
 
+### 4.34 The prober that refuses to be wired by guesses — `internal/health`, the `server.test` surface, and what the build could not decide (2026-11-07)
+
+Doc 22 §8's fifth and last component is the one whose answer is allowed to mean what it says: LIVE-04's rule is that a
+TCP connect to the VPS succeeds whether or not the tunnel works, so nothing short of a request that left this machine
+through a Core inbound and returned the expected public address may be shown to a user as proof. The slice builds that
+component and its command surface, and registers the three things the build could not decide. `connector/internal/health`
+is six files, 2442 lines and 38 tests over a loopback core that speaks real SOCKS5 — the same client code a real Xray
+inbound will answer — carrying the four requestable layers and the fifth that exists only as an answer, the
+short-circuit order the command's args description dictates, the consecutive-failure streak and cooldown the failover
+profile states, and the per-server retention ring under doc 36 §8's 64 KiB `health` cap. The surface beside
+`config.apply` is two files, 369 lines and 6 tests: it decodes the closed args list the command declares, refuses
+`egress-ip` as a request because it is an answer, clamps `repeat` to the schema's bounds at the surface rather than the
+prober, and maps every refusal to a code the command cites.
+
+The prober's constructor refuses three wirings and defaults none of them: no server lookup (the frame names an id, and
+§8 gives the prober no store to resolve it from), no inbound table (doc 30 §4's first rule — a probe against a port the
+dead Core left behind would report success against a stale inbound), and no egress pair, because an endpoint and the
+expected address are the two facts no schema field carries, and a prober built without them could never answer "and did
+it actually leave?". The refusal table is checked at init against the projected contract: every sentinel's code must
+resolve in the taxonomy and must be one of the ten codes the command declares. Two details the tests pin that the
+corpus does not state: `clip` counts code points and cuts on a rune boundary, because the command's detail bound counts
+characters and a byte-slice could split a multi-byte rune into a frame the codec refuses; and no refusal message quotes
+the value it refuses — the message names the rule, never the arg, the same rule the sender policy's refusals follow. A
+fourth sentinel exists for the direct Go caller and the future poller: a request that violates the args schema is a
+fixable mistake, and the rule that forbids reading `Internal` as the default for anything the caller could handle
+applies to this package's own callers too.
+
+Reading the surface surfaced the finding the corpus had no row for: only six of the nineteen command docs declare
+`BadRequest` — `config.apply`, `keystore.purge`, `profile.import`, `profile.remove`, `profile.validate`,
+`subscription.refresh` — and `server.test` is not one of the six, so an args payload that violates the call contract
+has no honest member of its own error list to be answered with. The two answers this repository ships are analogies,
+and both say so at their sites: `connector.hello` answers `HandshakeFailed` for unreadable args because that is
+literally what happened, and the `server.test` surface answers `HealthCheckFailed`, the command's own umbrella for a
+probe that did not complete. The rule that would make the answers unnecessary does not exist; that is ODEC-43, and
+VER-85 is the row that waits on it. Its sibling ODEC-42 owns the egress pair, and VER-84 is the row that says the
+prober and the surface are built, measured, and unregistered — the front door's inventory still names exactly
+`connector.hello` and `connector.version`, which is the honest answer of a process holding no server table and no
+egress wiring.
+
+One more gap the build itself found: the store row calls the retained status `health-history`, gives it `medium` `disk`
+and bounds it with the sentence about a user who cannot fill a disk by probing more — while the ring this build keeps
+is a map behind the prober's mutex that dies with the process. The corpus has already decided the medium and the shape
+("a ring per server id"); what is missing is code, not an answer, so the gap is the queue's seventy-sixth live row,
+VER-86, closed by the restart test that re-reads the ring from disk rather than by a decision — and it is this slice's
+evidence for the claim §4.33's neighbour class made: found by writing code, not by reading the contract.
+
+**What this slice does not claim.** Nothing closed; three rows registered, two decisions opened. `server.test` is not
+reachable from the front door, for the same two reasons as `config.apply` plus the inventory assertion above.
+`AuthFailed` is declared by the command and deliberately unused: Xray's SOCKS reply distinguishes "no route" from "the
+peer rejected the credential" no further than a reply code, and guessing which of the two a 0x01 was would be a claim
+about the user's UUID that nothing observed. The cooldown is dated from the probe that closed the streak, not from the
+first failure, which is the profile's own reading of `cooldownSeconds`. And five seconds per layer attempt is the
+prober's own knob: the command's 30000 ms deadline belongs to the caller, and the worst case the args allow — four
+layers at repeat 10 — deliberately exceeds it, because the deadline's owner is the one who set it and `Timeout`'s
+registered meaning is exactly that.
+
+**Bookkeeping.** The queue moves 73 → 76 live rows (`no-code` 55 → 57, `no-check` 6 → 7; owners `connector` 39 → 41
+and `contracts` 6 → 7; closing kinds `decision` 4 → 6 and `assertion` 17 → 18; ten retired unchanged). The register
+moves 38 → 40 entries, `contract` 15 → 17, and its deferral sites 61 → 63 across 16 documents — the two new sites are
+this slice's own deferral sentences in doc 22 §8 and doc 25 §8, both documents already carrying sites. `marker.counted`
+moves 196 → 199 for the three sentences the three rows own: two in doc 22 §8, one in doc 25 §8.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks** — the same count as §4.33's run, because
+the three rows and two decisions move the data the checks read, not the number of checks; the marker and citation
+counts above are checked against the corpus rather than stored, and both moved with it. `node
+tools/check-doc-evidence.mjs` → green, but not at first refusal: the claims pass answered the corpus with three drift
+reports — the four line-cites into doc 22 that the two paragraphs this slice put into §8 had moved, in docs 32, 34 and
+35 — and the repair was re-numbering them to the lines that carry the claims, the guard's second catch of a slice's
+own edit after §4.29's; §4.4's final ledger paragraph carries the set and the per-file deltas. `node
+tools/check-adr-shape.mjs` (and `--selftest`), `node tools/check-layout-guards.mjs` (and `--selftest`), `node
+tools/check-legacy-backup.mjs` (and `--selftest`) → green. `node tools/check-no-secrets.mjs` → **481 files**: the
+guard walks the index, so the slice's eight Go files join the count at commit time, and the one-file step from §4.29's
+480 is ADR-0021's, not this slice's. `gofmt -l connector` → empty; `go -C connector vet ./...` → silent; `go -C
+connector test -count=1 ./...` → **twelve `ok` lines**, the twelfth package being `internal/health`, with the same two
+`no test files` notes as before.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -2672,7 +2762,8 @@ connector` and `go -C connector vet ./...` → unchanged; this slice touches no 
   `github.com/k2dms/nexora/connector/internal/compile` and §4.17 nine with
   `github.com/k2dms/nexora/connector/internal/keystore`; §4.18 ten with
   `github.com/k2dms/nexora/connector/internal/apply` and §4.19 eleven with
-  `github.com/k2dms/nexora/connector/internal/supervisor`; `gofmt -l connector` still
+  `github.com/k2dms/nexora/connector/internal/supervisor`, and §4.34 twelve with
+  `github.com/k2dms/nexora/connector/internal/health`; `gofmt -l connector` still
   prints nothing. No `VER-NN` row moves on any of the increments up to §4.16: §4.6's "Not yet"
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
@@ -2696,7 +2787,7 @@ connector` and `go -C connector vet ./...` → unchanged; this slice touches no 
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 596 pointers, 1596 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 596 pointers, 1598 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not

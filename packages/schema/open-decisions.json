@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 61
+    "counted": 63
   },
   "notADeferral": [
     { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
@@ -595,6 +595,36 @@
       ],
       "at": [
         { "doc": "docs/architecture/36-observability.md", "anchor": "to say, and not a sentence this document may settle" }
+      ]
+    },
+    {
+      "id": "ODEC-42",
+      "question": "Which artefact carries the egress probe's endpoint and the expected public address it must answer -- a field in `connector-settings.schema.json`, a field on each server document, or a probe document of its own?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-84"], "compatibility": [] },
+      "why": "`packages/schema/protocol/commands/server.test.json#/args/properties/egressProbe` tells the prober to 'fetch the configured egress endpoint through the Core and return the observed public IP', and `#/result/properties/matchesExpectedEgress` is the comparison that makes `not-proxied` reachable -- the verdict that says traffic leaked rather than merely failed, which `#/result/properties/overall`'s own description separates from `partial` as 'two different user-visible facts'. Measured on 2026-11-07, no field under `packages/schema/` names either fact: `connector-settings.schema.json#/properties` declares five keys (`schemaVersion`, `core`, `ports`, `telemetry`, `proxy`) and none is a probe target; `server.schema.json`'s properties name identity and transport facts about the VPS, not what the machine running the probe should fetch; `packages/schema/observability.json#/events/6` carries a server id and nothing else; and `docs/verification/live-matrix.md` LIVE-04 licenses only a `server.test` answer whose egress layer compared against the expected address, so the fact the live row needs is the fact the schema has nowhere to put. The gap bites in the prober's constructor: `connector/internal/health` refuses to build without both facts -- the same refusal shape `internal/supervisor` applies to a build without a pinned binary -- so the component is written, tested and unregistrable until the contract says where they live. It is `contract` for the reason `ODEC-34`, `ODEC-36`, `ODEC-38`, `ODEC-39`, `ODEC-40` and `ODEC-41` are: the artefact that would close `VER-84` is a property, a bound and the examples that carry them, which costs a commit and a verifier run rather than a person, a browser or a binary.",
+      "options": [
+        "a field in `packages/schema/connector-settings.schema.json` -- one endpoint and one expected address for every server, the reading that treats the fetch as a property of the machine running the probe rather than of the VPS; costs one settings field, its example row and the prober's wiring reading it, and makes a per-server checkip endpoint impossible to express",
+        "a field on each server document in `packages/schema/server.schema.json` -- the reading that treats a checkip URL the VPS itself serves as a per-server fact like its port; costs a field on the entity every store and fixture already carries, and double-states the common case where every server uses the same endpoint",
+        "a probe document of the prober's own (a sixth entry beside `packages/schema/protocol/data-ownership.json`'s stores, or a section of `connector-settings.schema.json`) -- the reading that keeps both facts out of the settings the apply pipeline compiles and the servers the ingest door validates; costs a new artefact, its owner row and its citation, and is the only option that survives a mixed fleet where different servers publish different check endpoints"
+      ],
+      "at": [
+        { "doc": "docs/architecture/22-component-contracts.md", "anchor": "the prober refuses to build without the egress endpoint and expected address that no schema field carries" }
+      ]
+    },
+    {
+      "id": "ODEC-43",
+      "question": "Which code answers a request whose args violate the call contract, for the thirteen of nineteen commands whose `#/errors` does not declare `BadRequest` -- the closest declared meaning chosen per command, `BadRequest` added to every command doc, or the dispatcher answering it for all methods before dispatch?",
+      "decidedBy": "contract",
+      "blocks": { "verification": ["VER-85"], "compatibility": [] },
+      "why": "`packages/schema/protocol/error-taxonomy.json#/codes` registers `BadRequest` as 'Frame is well-formed JSON but violates the call contract (missing args, wrong shape)', and every command can receive one -- but measured on 2026-11-07 only six of the nineteen command docs declare it (`config.apply`, `keystore.purge`, `profile.import`, `profile.remove`, `profile.validate`, `subscription.refresh`); the other thirteen, `server.test` among them, have ten or fewer codes between them and none means that. The dispatcher is not the answer either: `connector/internal/dispatch` answers `BadRequest` only for a frame that is not a request at all, before any method is named, which is transport-layer and outside the per-command arrays. `docs/architecture/25-native-messaging-protocol.md` §8 rule 2 -- 'Every command doc cites only codes it can actually return' -- makes a handler answering a code its command does not declare a doc lie, and the same section's stability note makes adding the code to a command doc a breaking change that 'arrives only with a documented fallback'. Two analogies have already shipped rather than a rule: `connector/internal/hello` answers `HandshakeFailed` for unreadable hello args, recorded at the site as 'which is also literally what happened', and the `server.test` surface answers `HealthCheckFailed`, the command's own umbrella for 'the probe did not complete'. Both sentences are honest and neither is a rule the taxonomy or a test enforces, which is what this entry asks for. It is `contract` because every surviving answer is a line in `packages/schema` -- a code added to thirteen arrays, or a rule sentence with its verifier assertion -- and none of them needs a browser, a store or a person.",
+      "options": [
+        "the closest declared meaning, chosen per command and recorded at the site -- the reading both shipped answers follow; costs no contract change and no client update, and costs every future command surface a private analogy the taxonomy never states, so two handlers can answer the same malformed payload differently and both be right",
+        "`BadRequest` added to the thirteen command docs' `#/errors` in one contract pass -- the reading that makes the declared set total; costs a breaking change under §8's stability note (it must arrive with a documented client fallback), the fixtures that replay the new code, and a verify assertion that the arrays and the surfaces agree",
+        "the dispatcher answers `BadRequest` for every method before dispatch -- the reading that moves the case out of the per-command arrays entirely; costs an amendment to §8 rule 2, because a code the command doc does not cite becomes answerable, and a fixture proving the dispatcher refuses a shape the handler would also have refused"
+      ],
+      "at": [
+        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "have no honest member of their own `#/errors` for it" }
       ]
     }
   ],

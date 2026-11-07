@@ -321,6 +321,9 @@ as `NetworkUnreachable` with the target named, not as "server is dead". **Owner*
 **Dependencies**: CoreSupervisor (for the port to hit), DiagnosticsCollector.
 **Non-goals**: does not decide selection order for the user; does not persist history beyond the retention ring;
 does not run in the browser.
+**Status (2026-11-07)** — the prober and its command surface are built and tested (`connector/internal/health`, 38 tests over a loopback SOCKS5 core; the `server.test` surface beside `config.apply` in `connector/cmd/nexora-connector`), and registration in the front door is **Verified: NO — deferred to Phase 2**: the prober refuses to build without the egress endpoint and expected address that no schema field carries, and the surface reads a server store no document has placed — `docs/architecture/40-open-decisions.md` owns both questions.
+
+One more gap sits beside registration: the store row names the retained status `health-history` and gives it `medium` `disk` — its bound is the sentence about a user who cannot fill a disk by probing more — while the ring this build keeps lives behind the prober's mutex and dies with the process. **Verified: NO — deferred to Phase 2**, queued as `VER-86` and closed by the restart test that re-reads the ring from whatever path the placement decisions land on.
 
 ## 9. Keystore
 

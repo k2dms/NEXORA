@@ -1,6 +1,6 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 61 deferral sites in 16 documents point here as the place an answer lives, and six more lines name it only to
+> Purpose: 63 deferral sites in 16 documents point here as the place an answer lives, and six more lines name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
@@ -72,7 +72,7 @@ is worth stating precisely.
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 61 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 63 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -97,19 +97,19 @@ costs to answer:
 | Value | Count | What closing it looks like | Why it is not interchangeable with the others |
 |---|---|---|---|
 | `product` | 14 | a screen, a sentence, or a refusal the user sees — written into `docs/architecture/37-ui-architecture.md` and the command docs | no measurement can decide what the user should be told; a schema field cannot make the choice less arbitrary |
-| `contract` | 15 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
+| `contract` | 17 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
 | `adr` | 5 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
 | `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 2 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-14 of the 38 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+14 of the 40 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
-15 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
+17 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without waiting on a
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
-`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 21 entries gate exactly 2 and 14 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
+`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 21 entries gate exactly 2 and 16 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 Two questions are cited by four or more sites each — `ODEC-15` (the built-in sync secret, five) and `ODEC-01`
@@ -291,9 +291,11 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-38` | over what span the ladder's restart attempts are spent, and how long a restarted Core must stay up to earn a fresh budget | `contract` | `VER-79` |
 | `ODEC-39` | where `config.apply` gets the intent its ids cannot carry, which two directories it is handed, and what the compiled config is called | `contract` | `VER-80` |
 | `ODEC-41` | which artefact carries the pipe half of the version negotiation — a field on the event that writes the browser half down, a declared shape for the diagnostics section, or nothing | `contract` | `VER-82` |
+| `ODEC-42` | which artefact carries the egress probe's endpoint and the expected public address it must answer — a settings field, a per-server field, or a probe document of its own | `contract` | `VER-84` |
+| `ODEC-43` | which code answers a request whose args violate the call contract, for the thirteen of nineteen commands that declare no `BadRequest` | `contract` | `VER-85` |
 
 Each entry in the data also carries the options (§4's argument in three lines each), the reason it is open, and the
-sites that deferred to it; the 38 rows above are the same 38 objects, not a summary of them.
+sites that deferred to it; the 40 rows above are the same 40 objects, not a summary of them.
 
 One entry is not above, and never will be again. `ODEC-02` — what the two version floors are, and what each refuses
 to speak — was answered on 2026-11-06 by its own first option, a field in `packages/schema/protocol/framing.json`,
@@ -307,7 +309,7 @@ deferring: `docs/architecture/21-system-context.md` §6 and §12 now state the t
 them, which is why `citation.counted` moved 61 → 60 in the same commit rather than leaving a site that points at an
 entry that is no longer here.
 
-`ODEC-41` (which artefact carries the pipe half of the version negotiation) is the newest, and it is `ODEC-02`'s
+`ODEC-41` (which artefact carries the pipe half of the version negotiation) is `ODEC-02`'s
 unfinished half: that question was answered by writing two floors into
 `packages/schema/protocol/framing.json#/versionFloors`, and this one is what the corpus forgot to do afterwards. Doc 21
 §6 justifies the two-process split with a risk — the extension is replaced on the browser's schedule and the connector
@@ -324,6 +326,19 @@ and all three answers are again a field and two sentences — which is why it is
 with owner `contracts` rather than a connector row. What this entry deliberately does not ask is whether any record gets
 written at all, because nothing in `connector/**` imports a logging package and doc 36 §16's fifth open item already
 says so; a decision here cannot make that true.
+
+`ODEC-42` (where the egress probe's endpoint and its expected answer live) and `ODEC-43` (which code answers a
+malformed request to a command that declares no `BadRequest`) are the two newest, and both were found by writing
+code rather than by reading the contract — the shape §1 calls the register working. `ODEC-42` is the gap the
+HealthProber's constructor is where it bites: `server.test`'s `egressProbe` fetches "the configured egress endpoint"
+and `matchesExpectedEgress` compares against an expected address, and no field under `packages/schema/` names
+either, so `connector/internal/health` refuses to build without both and the component is tested and unregistrable
+until the contract says where they live. `ODEC-43` is the gap every command surface eventually meets: only six of
+nineteen command docs declare `BadRequest`, so the thirteen others answer a malformed payload with an analogy —
+`connector.hello` answers `HandshakeFailed`, `server.test` answers `HealthCheckFailed` — and both analogies are
+recorded at their sites while the rule that would justify either is still this entry's to write. Both are
+`contract`: each surviving answer is a field, an array or a rule sentence in `packages/schema`, and neither needs a
+browser, a store or a person.
 
 `ODEC-40` (which artefact records the format an `auto` parse resolved to) is answered, and it was the first question
 this repository raised by reading its own shipped contract — no code was written, and no code failed. It left this file
@@ -447,7 +462,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 38 questions, 61 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 40 questions, 63 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it -- and
    since this document's §3 table read `contract` 16 against a data of 15 for one commit, the run now reads the
    document's own sentences too, the way doc 39 §11 has done since it caught three stale distributions there.

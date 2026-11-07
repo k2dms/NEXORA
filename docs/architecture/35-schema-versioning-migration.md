@@ -61,7 +61,7 @@ most of them.
 | Cited by | The question | Answered in |
 |---|---|---|
 | `docs/architecture/22-component-contracts.md:26` | MigrationRunner's specification file | §5, §6, §8 |
-| `docs/architecture/22-component-contracts.md:344` | "the keystore must not be reachable from that path … (`35` §forbidden)" | §14 |
+| `docs/architecture/22-component-contracts.md:346` | "the keystore must not be reachable from that path … (`35` §forbidden)" | §14 |
 | `docs/architecture/24-options-envelope-compat.md:162` | "Migration itself is `35`" — the two-keys decision | §4 |
 | `docs/architecture/29-subscriptions-and-servers.md:393` | "whether a subscription may ever be created by the Connector … or only by the user" | §6, step `subscription-sources` |
 | `docs/architecture/30-failure-policy.md:293` | the fail-open confirmation is stripped by migration and import | §13 |
