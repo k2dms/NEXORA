@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 60
+    "counted": 59
   },
   "notADeferral": [
     {
@@ -928,30 +928,6 @@
       ]
     },
     {
-      "id": "ODEC-35",
-      "question": "How does the sender identity cross hop 2 -- the `nexora-host` to `nexora-connector` local pipe -- and what is that pipe's message schema?",
-      "decidedBy": "adr",
-      "blocks": {
-        "verification": [
-          "VER-77"
-        ],
-        "compatibility": []
-      },
-      "why": "The corpus states a requirement and no field to read an answer out of: ADR-0005 rule 2 (`docs/adr/0005-two-process-connector.md:30-32`) makes the pipe's schema a contract 'versioned separately' that 'MUST carry its own version field', and the only transport contract in `packages/schema` -- `protocol/framing.json` -- describes itself as the one for 'the extension-to-host pipe', and the half of it that reaches this process is written from the other side: `senderPolicy`'s identity facts resolve from an OS event on hop 1, while its budgets are counted in the Connector (`docs/architecture/31-security-model.md` §8), so the process that spends a sender's budget cannot see which sender it is. doc 25 §2 then closes the last escape: the same envelope crosses both hops untranslated, `protocol/envelope.schema.json#/additionalProperties` is `false` over fourteen properties none of which is a sender, and ADR-0004 rule 3 forbids a payload field from becoming identity even if the object were opened -- the same ADR rejects a self-framed pipe because there 'the sender identity becomes whoever can open the pipe' (`docs/adr/0004-native-messaging-only-no-loopback-http-control.md:74-76`). So the survivors disagree about where identity lives, and choosing between them moves ADR-0005's boundary and the reasoning ADR-0004 rests on, which is a new ADR rather than a field. This is not `ODEC-02`: that asks what the pipe's two version floors are, a question the floor answers only once someone has said what the pipe carries. Until it is chosen, `connector/internal/dispatch`'s `Identity` -- whose comment says none of it comes from the payload -- has no producer, and no `cmd/` process can be written against a transport the contracts do not describe.",
-      "options": [
-        "one pipe instance per sender: identity is *which pipe* the host opened, so the pipe's naming and creation contract moves into `packages/schema` and `protocol/framing.json#/senderPolicy/rateLimitFacts/scopeOfBudget`'s 'per sender id' becomes a per-pipe count wherever one sender holds more than one pipe",
-        "an out-of-band startup handshake on the pipe before the first envelope, carrying `{senderId, allowlisted, pipeVersion}`: permitted by ADR-0005's 'versioned separately', but a second protocol on one pipe -- the objection doc 25 §5 raises against the temp-file handoff, 'gives the pipe two protocols instead of one' -- and a message no envelope contract covers",
-        "OS peer credentials on hop 2 (`SO_PEERCRED`, the named-pipe client pid) mapped to the host process the connector was started by: authentic, and it needs no new message, but it authenticates the *host*, not the extension, so it still requires option one or option two for the sender id",
-        "a sender field in the envelope: excluded by ADR-0004 rule 3 and by the closed fourteen-field object, recorded so the exclusion is not re-litigated, the way `protocol/framing.json#/oversizedPayloads/alternativesRejected` records the handoff it also refuses"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "This defers to `docs/architecture/40-open-decisions.md`; its entry names the four"
-        }
-      ]
-    },
-    {
       "id": "ODEC-37",
       "question": "Which remaining core-routing predicates can Xray 24.11.11 actually honor, especially invert and protocol values beyond the loopback-tested HTTP match, after the inbound, built-in, sniffing and array spellings have been measured?",
       "decidedBy": "upstream",
@@ -1142,6 +1118,18 @@
         "freed": {
           "verification": [
             "VER-88"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-35",
+        "decided": "2026-11-07",
+        "was": "how the sender identity crosses hop 2 -- the nexora-host to nexora-connector local pipe -- and what that pipe's message schema is",
+        "artefact": "ADR-0022 (docs/adr/0022-hop-2-identity-is-which-pipe.md): one pipe instance per sender -- identity is which pipe the host opened, injected at spawn -- and the local pipe carries the same envelope the extension-facing protocol defines, guarded by the pipe floor. The out-of-band handshake, OS-peer-credentials-as-identity and sender-field readings are recorded as rejected. It closes VER-77, the only row this entry gated, in the same commit",
+        "freed": {
+          "verification": [
+            "VER-77"
           ],
           "compatibility": []
         }

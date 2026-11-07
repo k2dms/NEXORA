@@ -68,7 +68,7 @@ authenticates the *host*, so it still needs (a) or (b) for the sender id. (d) A 
 **excluded, not open** — forbidden twice over, by ADR-0004 rule 3 and by the closed object above, and recorded here
 the way `packages/schema/protocol/framing.json#/oversizedPayloads/alternativesRejected` records the handoff it also
 refuses. (a), (b) and (c) survive and disagree about where identity lives, so nothing can drive the front door as a
-real process until one is chosen. This defers to `docs/architecture/40-open-decisions.md`; its entry names the four.
+real process until one is chosen. Answered 2026-11-07 by ADR-0022: one pipe instance per sender, the same envelope on both hops guarded by the pipe floor, no second protocol and no sender field.
 
 ## 3. Framing
 
@@ -312,7 +312,7 @@ and no bidirectional streaming RPC semantics.
 | Frame limits are the documented ones and ordered | framing sanity block, `packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 1 MB", "the effective cross-browser limit is not larger than the smallest documented cap" and "host-to-extension cap is at least the reverse direction" | **GREEN** |
 | Envelope `required` is exactly `v,id,type,sentAt` | `#/required` + ajv compile of every fixture frame | **GREEN** |
 | `request`/`response`/`event` field discipline | `#/allOf` + the two must-reject envelope examples | **GREEN** |
-| The sender identity crosses hop 2 by a named mechanism, and hop 2 has a contract of its own | nothing | Verified: NO — deferred to Phase 2 (the envelope is closed at fourteen fields and none of them is a sender, and no file in `packages/schema/` states the local pipe's message schema or its version field — see §2's last three paragraphs; naming that contract is the assertion this row promises) |
+| The sender identity crosses hop 2 by a named mechanism, and hop 2 has a contract of its own | the sender is which pipe the host opened, injected at spawn; the pipe carries the same envelope, guarded by `pipeVersion` | Verified as data — ADR-0022 states the boundary; the runtime half is the live rows, still `SKIPPED` |
 | Chunk shape is one object mirrored in `profile.import` | "the envelope chunk shape and profile.import args.chunk are one shape" assertion | **GREEN** |
 | Chunk groups complete and non-vacuous | the chunk-group block with its absent-group, clean-group and split-hash guards | **GREEN** |
 | Slice bodies reassemble to the document the sender hashed | nothing | Verified: NO — deferred to Phase 2 (the contract says what a slice *is* and never says where its bytes ride — see §5's last paragraph; the reassembly test is the assertion this row promises) |

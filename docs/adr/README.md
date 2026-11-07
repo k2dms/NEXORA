@@ -42,6 +42,7 @@ already committed.
 | 0019 | [Xray is a pinned downloadable asset](0019-xray-as-integrity-pinned-downloadable-asset.md) | Accepted | 2026-11-04 | Exact tag, sha256 and signature verified, never in git, never in the zip, no self-update |
 | 0020 | [Test strategy](0020-test-strategy.md) | Accepted | 2026-11-04 | Schema validity, golden configs, env-gated live matrix -- and egress must be proven |
 | 0021 | [Subscription Servers travel in the refresh result](0021-subscription-servers-travel-in-the-refresh-result.md) | Accepted | 2026-11-07 | The feed body never crosses the pipe; parsed Servers arrive in one result frame; an event carries counts |
+| 0022 | [Hop 2 identity is which pipe the host opened](0022-hop-2-identity-is-which-pipe.md) | Accepted | 2026-11-07 | One pipe per sender; the same envelope with a pipeVersion floor; no second protocol, no sender field |
 
 ## How the set fits together
 

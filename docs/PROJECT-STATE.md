@@ -198,14 +198,14 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `195` labelled lines over `44` documents partitioned into `73` live rows — the issued range is
-`VER-01…VER-88`, and `15` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
-sites over `15` documents partitioned into `37` entries — its issued range is `ODEC-01…ODEC-45`, and `ODEC-02`,
-`ODEC-40`, `ODEC-33`, `ODEC-39`, `ODEC-38`, `ODEC-41`, `ODEC-36` and `ODEC-44`
+The queue is `194` labelled lines over `45` documents partitioned into `72` live rows — the issued range is
+`VER-01…VER-88`, and `16` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `59` deferral
+sites over `14` documents partitioned into `36` entries — its issued range is `ODEC-01…ODEC-45`, and `ODEC-02`,
+`ODEC-40`, `ODEC-33`, `ODEC-39`, `ODEC-38`, `ODEC-41`, `ODEC-36`, `ODEC-44` and `ODEC-35`
 now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 14, `adr` 5, `measurement` 2, `upstream` 2), three options — 36 of the 37,
+(`product` 14, `contract` 14, `adr` 4, `measurement` 2, `upstream` 2), three options — 35 of the 36,
 with `ODEC-35` the one entry that carries a fourth, recording the reading ADR-0004 rule 3 already excludes rather than
 leaving it unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
@@ -613,6 +613,11 @@ its §8 site and its §9 row stop citing now that the site is answered and the r
 and the two names its argument no longer cites. This file `0 / +1 / 0`, the pointer into the installRoot
 description its own record names. The labelled row in doc 27 §9 reads Verified — `marker.counted` 196 → 195 —
 and the first command frame a test sends now reaches the registered method.
+§4.43 moves the set a thirty-eighth time — **2309 / 602 / 1593**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of 2aef19a: ADR-0022 `0 / +2 / +7`, the
+new ADR's own pointers and names; doc 25 `0 / 0 / -1`, the name its answered site no longer defers to; and this
+file `0 / +1 / 0`, the pointer into the ADR its own record names. The corpus is one document longer (45), and
+the live rows are one shorter (`VER-77` left the queue with the decision that answered it).
 the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
 citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
 
@@ -3106,6 +3111,33 @@ repository — the receipt the wiring reads is doc 33 §5 step 10's, and nothing
 
 ---
 
+---
+
+### 4.43 The identity is which pipe — `ODEC-35` answered as ADR-0022, and the hop-2 boundary is stated (2026-11-07)
+
+**What the decision is.** `docs/adr/0022-hop-2-identity-is-which-pipe.md` states what the corpus implied and no
+document said: one pipe instance per sender — identity is *which pipe* the host opened, injected at spawn — and
+the local pipe carries the same envelope the extension-facing protocol already defines, guarded by the `pipe`
+floor `framing.json` declares. The out-of-band handshake, OS-peer-credentials-as-identity and sender-field
+readings are recorded as rejected, and OS peer credentials are kept as a future hardening layer rather than an
+identity source. This is the register's first `adr` answer since `ODEC-33`/ADR-0021, and the first that moved
+ADR-0005's boundary rather than a field.
+
+**What closed.** `VER-77` — hop 2 has no transport contract — closed with the ADR in the same commit. The labelled
+row in doc 25 §11 reads Verified as data. The `minPipeVersion` comparison at the framing layer is still `VER-18`'s
+declared residual, not a new row. The register is 36 entries over 59 sites, the queue 72 rows with sixteen
+tombstones, `adr` at four and `decision` at three. Doc 25 §2's site is answered and no longer defers.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1230 checks**. `node tools/check-doc-evidence.mjs` →
+green; §4.4's final ledger paragraph has the set and the per-file deltas. `node tools/check-no-secrets.mjs` →
+**496 files**, unchanged. ADR shape → **22 records**, the new file 103 lines within the 102–140 bound. Layout
+guards and the legacy backup check → green. `go -C connector test -count=1 ./...` → thirteen `ok` lines,
+`gofmt -l connector` empty, `go -C connector vet ./...` silent. What this ADR does not claim: the
+`minPipeVersion` comparison at the framing layer (still `VER-18`'s declared residual), a running host on a real
+pipe (the live rows are `SKIPPED`), or the OS-peer-credentials hardening (a future layer, not identity).
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -3255,7 +3287,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched. Next: host transport (ODEC-35, an adr). ODEC-37 is narrowed to
+is built, the keystore opened, and the method dispatched. Next: the headersRef materialization (ODEC-45) and the remaining predicate semantics (ODEC-37), then the live rows. ODEC-35 is answered (ADR-0022).
 residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.
@@ -3939,8 +3971,8 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 195 labelled lines over 44 documents, the queue is 73 rows with fifteen tombstones, and the register is 37
-questions over 60 sites with eight retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 194 labelled lines over 45 documents, the queue is 72 rows with sixteen tombstones, and the register is 36
+questions over 59 sites with nine retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a
