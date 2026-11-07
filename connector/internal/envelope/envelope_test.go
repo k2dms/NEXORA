@@ -99,6 +99,28 @@ func TestInvalidExamplesFromTheSchemaRoot(t *testing.T) {
 	}
 }
 
+// TestThePipeFloorComparisonCompilesAndRuns pins that the v-to-MinPipeVersion comparison is live in Parse, even
+// though MinPipeVersion=1 means the existing 1..255 bound subsumes it -- the proof that it fires is the test for
+// the day a real floor above 1 is shipped (VER-18's tombstone states the residual).
+func TestThePipeFloorComparisonCompilesAndRuns(t *testing.T) {
+	// v=1 is exactly MinPipeVersion: accepted.
+	f, err := Parse([]byte(`{"v":1,"id":"req-00000001","type":"request","method":"connector.hello","sentAt":"2026-11-04T10:00:00Z"}`))
+	if err != nil {
+		t.Fatalf("v=1 at MinPipeVersion=1 was refused: %v", err)
+	}
+	if f.V != 1 {
+		t.Fatalf("v is %d, want 1", f.V)
+	}
+	// v=0 is refused by the 1..255 bound, not by the floor.
+	_, err = Parse([]byte(`{"v":0,"id":"req-00000001","type":"request","method":"connector.hello","sentAt":"2026-11-04T10:00:00Z"}`))
+	if err == nil {
+		t.Fatal("v=0 was accepted")
+	}
+	if !strings.Contains(err.Error(), "outside 1..255") {
+		t.Errorf("v=0 error does not name the bound: %v", err)
+	}
+}
+
 func TestTargetedViolations(t *testing.T) {
 	cases := []struct {
 		name     string

@@ -145,6 +145,8 @@ func Parse(data []byte) (*Frame, error) {
 		add("v", "must be an integer")
 	} else if f.V < 1 || f.V > 255 {
 		add("v", fmt.Sprintf("%d is outside 1..255", f.V))
+	} else if f.V < contract.MinPipeVersion {
+		add("v", fmt.Sprintf("%d is below the pipe floor %d (VersionMismatch; framing.json#/versionFloors/pipe) — the sender speaks an older framing than this build accepts", f.V, contract.MinPipeVersion))
 	}
 
 	if r, ok := raw["id"]; !ok {
