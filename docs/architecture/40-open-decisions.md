@@ -151,10 +151,9 @@ incompetence. Every entry here resisted that, and the reasons are of six kinds.
 5. **The answer is held by someone else.** `ODEC-14` asks what `block` means against the browser stack: DNS
    disposition, WebRTC, and the `chrome.alarms` floor that every fail-closed timer in
    `docs/architecture/30-failure-policy.md` rests on. `ODEC-37` asks the same kind of question of the other process:
-   four positions in an emitted Core config — an inbound's protocol, the protocol behind a `direct` or `block`
-   outbound, where `sniffing` rides, and whether routing's `network` and `protocol` are arrays or one string — have no
-   spelling anywhere in this repository, and the file that holds the answer is the pinned binary's own accepted
-   config. Both are `upstream`, and the only honest closing artefact is a measured residual plus a sentence the user
+   the four formerly missing spellings are implemented, but the pinned binary silently ignores `invert` and
+   config acceptance does not establish every protocol predicate. The remaining answer needs paired runtime
+   evidence, not another successful parse. Both are `upstream`, and the only honest closing artefact is a measured residual plus a sentence the user
    can read: an invention here would be a byte string some other project is free to stop accepting.
 6. **The answer was hidden by a check that passes.** `ODEC-34` asks where a chunk's bytes ride. Nothing in
    `packages/schema` says, and `packages/schema/scripts/verify.mjs` prints a green chunk block anyway, because every
@@ -287,7 +286,7 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-34` | where a chunk slice carries its bytes, and which byte string its `contentHash` names | `contract` | `VER-76` |
 | `ODEC-35` | how the sender identity crosses hop 2, and what the local pipe's message schema is | `adr` | `VER-77` |
 | `ODEC-36` | which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `contract` | `VER-78` |
-| `ODEC-37` | what bytes the Compiler emits for the four positions the corpus names and never spells | `upstream` | `VER-28`, `VER-78` |
+| `ODEC-37` | residual core-routing predicate semantics after measuring the four byte spellings; inversion and protocol-specific matches | `upstream` | `VER-28`, `VER-78` |
 | `ODEC-38` | over what span the ladder's restart attempts are spent, and how long a restarted Core must stay up to earn a fresh budget | `contract` | `VER-79` |
 | `ODEC-39` | where `config.apply` gets the intent its ids cannot carry, which two directories it is handed, and what the compiled config is called | `contract` | `VER-80` |
 | `ODEC-41` | which artefact carries the pipe half of the version negotiation — a field on the event that writes the browser half down, a declared shape for the diagnostics section, or nothing | `contract` | `VER-82` |
@@ -386,14 +385,15 @@ answer is a field, which is why this is `contract` and not `adr`: `failure-polic
 has one integer and no window, so none of the three readings is expressible in the shipped data, and no test can bound
 consecutive deaths until one of them is.
 
-`ODEC-37` (the four spellings a golden must pin) is the one before it: it was born from the golden pass that pinned three of
-doc 27 §3's six fixtures and found the other three unpinnable for three different reasons — shape C needs the handle
-answer in `ODEC-36`, the fail-closed fixture has no bytes to pin because `docs/architecture/30-failure-policy.md` §7
-puts the block in `chrome.proxy` rather than in Core's config, and the core-plane fixture is this entry: the rules it
-would emit have no spelled form in this repository. Its citing lines are
-`docs/architecture/23-unified-server-model.md` §9, which now names the list rather than pretending the three canonical
-configs all compile, and the §9 row in `docs/architecture/27-config-compilation-pipeline.md` that defers to this
-register.
+`ODEC-37` began with four missing byte spellings. They now have emitted forms and a fourth golden:
+SOCKS5 inbounds, declared direct/block outbounds, inbound sniffing, and network/protocol arrays. Xray 24.11.11
+accepts the four materialized fixtures; loopback HTTP and actual SOCKS5 UDP exercise the routing rules with
+positive and negative controls. The runtime probe also shows why acceptance is not enough: `invert:true` is
+ignored, and an unknown outbound falls back to the default. The compiler reports inverted rules whole and
+never emits unknown tags. The question is narrowed, not retired: remaining protocol predicates need their own
+matching/nonmatching evidence, and inversion has no proven equivalent lowering. Its sites remain
+`docs/architecture/23-unified-server-model.md` §9 and `docs/architecture/27-config-compilation-pipeline.md` §9.
+Shape C still needs `ODEC-36`; fail-closed still belongs in `chrome.proxy`, not a separate Core golden.
 
 `ODEC-36` (which byte string `configHash` names) is the one before that: its citing line is the §9 invariant row in
 `docs/architecture/27-config-compilation-pipeline.md` that defers to this register, and the claim it turns on is the

@@ -128,6 +128,13 @@ func Compile(in Input) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	for _, b := range routing.BuiltIns {
+		obs = append(obs, builtinOutbound(b))
+	}
+	// Without these fallbacks, every unmatched inbound uses the first server's outbound.
+	for _, tag := range resolved.Tags {
+		routing.Rules = append(routing.Rules, Document{"inboundTag": []string{"in-" + tag}, "outboundTag": tag})
+	}
 
 	doc := Document{
 		// doc 36 §9: the Compiler writes this section as part of every config it emits, and shapes B and C of doc 23 §9
@@ -138,10 +145,10 @@ func Compile(in Input) (*Result, error) {
 			"access":   noAccessLog,
 			"dnsLog":   false,
 		},
-		"inbounds":  inbounds(resolved.Servers, assigned, host),
+		"inbounds":  inbounds(resolved.Servers, assigned, host, routing.Sniffing),
 		"outbounds": obs,
 		// doc 23 §9's shape A shows the policy section with no levels; it is part of the shape the golden files pin.
-		"policy":  Document{"levels": []any{}},
+		"policy":  Document{"levels": Document{}},
 		"routing": routingSection(routing),
 	}
 
@@ -205,29 +212,31 @@ func routingSection(r *Routing) Document {
 	return Document{"domainStrategy": r.DomainStrategy, "rules": rules}
 }
 
-// inboundDocument is the shape doc 23 §9's two socks inbounds show: `auth: noauth`, because the browser cannot be
-// given a credential to carry (the Connector's own trust boundary is a loopback connection, ADR-0006), and
-// `udp: true`, because doc 27 §5 calls the per-tag inbound a socks or http one and both socks shapes in §9 state it.
-//
-// `"protocol": "socks"` for every tag is the compiler taking one side of an open question and saying so: §9's shape B
-// is an `http` inbound, doc 27 §5 writes "socks or http" without a rule, and `docs/architecture/23-unified-server-model.md`
-// §8 shows the legacy handler producing both `SOCKS5 127.0.0.1:<port>` and `PROXY 127.0.0.1:<port>`. ODEC-37 decides
-// the choice; until it does, the config is valid and socks is the one shape two of the three illustrations show.
-func inboundDocument(tag string, port int, host string) Document {
-	return Document{
+// Sniffing is an inbound sibling, not a SOCKS setting; routeOnly prevents destination rewriting.
+func inboundDocument(tag string, port int, host string, sniffing *Sniffing) Document {
+	in := Document{
 		"tag":      "in-" + tag,
 		"port":     port,
 		"protocol": "socks",
 		"listen":   host,
 		"settings": Document{"auth": "noauth", "udp": true},
 	}
+	if sniffing != nil {
+		s := Document{"enabled": true}
+		if len(sniffing.Protocols) > 0 {
+			s["destOverride"] = sniffing.Protocols
+		}
+		s["routeOnly"] = true
+		in["sniffing"] = s
+	}
+	return in
 }
 
-func inbounds(servers []Server, assigned map[string]int, host string) []any {
+func inbounds(servers []Server, assigned map[string]int, host string, sniffing *Sniffing) []any {
 	list := make([]any, len(servers))
 	for i, s := range servers {
 		tag := ServerTag(s.ID)
-		list[i] = inboundDocument(tag, assigned[tag], host)
+		list[i] = inboundDocument(tag, assigned[tag], host, sniffing)
 	}
 	return list
 }

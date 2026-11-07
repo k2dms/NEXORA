@@ -61,14 +61,14 @@ func profileWith(t *testing.T, name string, serverIDs ...string) Profile {
 }
 
 // shapeABytes is doc 23 §9's "A. VLESS + TCP + TLS + Vision" as this compiler emits it: keys sorted, the `log` and
-// `policy` sections doc 36 §9 requires in every config, the handle at `vnext[0].id` rather than the secret (doc 22 §9:
+// `policy` sections doc 36 §9 requires in every config, the handle at `vnext[0].users[0].id` rather than the secret (doc 22 §9:
 // every layer above the keystore carries a handle), and 20100 instead of the illustration's 20101 — the first free
 // port of the shipped range, which is what an allocator with no memory hands out.
 const shapeABytes = `{"inbounds":[{"listen":"127.0.0.1","port":20100,"protocol":"socks","settings":{"auth":"noauth","udp":true},"tag":"in-srv-3f2a1c9e"}],` +
 	`"log":{"access":"none","dnsLog":false,"loglevel":"info"},` +
-	`"outbounds":[{"protocol":"vless","settings":{"vnext":[{"address":"se1.example.net","encryption":"none","flow":"xtls-rprx-vision","id":"keystore://server/3f2a1c9e/user-id","port":443}]},"streamSettings":{"network":"tcp","security":"tls","tlsSettings":{"alpn":["h2","http/1.1"],"fingerprint":"chrome","serverName":"se1.example.net"}},"tag":"srv-3f2a1c9e"}],` +
-	`"policy":{"levels":[]},` +
-	`"routing":{"domainStrategy":"AsIs","rules":[]}}`
+	`"outbounds":[{"protocol":"vless","settings":{"vnext":[{"address":"se1.example.net","port":443,"users":[{"encryption":"none","flow":"xtls-rprx-vision","id":"keystore://server/3f2a1c9e/user-id"}]}]},"streamSettings":{"network":"tcp","security":"tls","tlsSettings":{"alpn":["h2","http/1.1"],"fingerprint":"chrome","serverName":"se1.example.net"}},"tag":"srv-3f2a1c9e"}],` +
+	`"policy":{"levels":{}},` +
+	`"routing":{"domainStrategy":"AsIs","rules":[{"inboundTag":["in-srv-3f2a1c9e"],"outboundTag":"srv-3f2a1c9e"}]}}`
 
 func TestShapeACompilesFromTheContractExample(t *testing.T) {
 	server := example[Server](t, "server.vision-tcp-tls.json")

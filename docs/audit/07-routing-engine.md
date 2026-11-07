@@ -33,7 +33,7 @@ per condition and invalidated by a tag built from the type plus the handler's ow
 `HostWildcardCondition`, `BypassCondition`, `KeywordCondition`, `IpCondition`, `HostLevelsCondition`,
 `WeekdayCondition`, `TimeCondition`. **VERIFIED** — this confirms PROJECT-STATE §2.7 and contradicts the
 early nine-condition draft. The contract file states the same number
-`packages/schema/routing-policy.schema.json:163-164`.
+`packages/schema/routing-policy.schema.json:160-161`.
 
 | # | conditionType (def) | abbrs | fields | `match` semantics | `compile` → PAC expression |
 |---|---|---|---|---|---|
@@ -227,22 +227,22 @@ targets and the top-level `domainStrategy`, `sniffing`, `balancers`, `reverse`).
 
 | Omega condition / rule-list feature | How it is evaluated today | Expressible in Xray `routing`? | Lost / must be approximated | Verdict |
 |---|---|---|---|---|
-| `TrueCondition` `omega-pac/src/conditions.coffee:230` | compiled `true` in browser PAC `omega-pac/src/conditions.coffee:234`; in-process `match` on listener paths `omega-pac/src/conditions.coffee:233` | only as an always-matching rule; `coreRule` requires a selector (`minProperties: 2`, `packages/schema/routing-policy.schema.json:355-363`), so the idiom is `port: "0-65535"` (`packages/schema/examples/routing.two-plane.json:44-45`) | no "no selector" rule exists in the contract; the port idiom silently excludes future non-IP transports | APPROXIMATE |
+| `TrueCondition` `omega-pac/src/conditions.coffee:230` | compiled `true` in browser PAC `omega-pac/src/conditions.coffee:234`; in-process `match` on listener paths `omega-pac/src/conditions.coffee:233` | only as an always-matching rule; `coreRule` requires a selector (`minProperties: 2`, `packages/schema/routing-policy.schema.json:352-360`), so the idiom is `port: "0-65535"` (`packages/schema/examples/routing.two-plane.json:44-45`) | no "no selector" rule exists in the contract; the port idiom silently excludes future non-IP transports | APPROXIMATE |
 | `FalseCondition` `omega-pac/src/conditions.coffee:238` | compiled `false` `omega-pac/src/conditions.coffee:242` — a *disabled* rule `omega-pac/src/rule_list.coffee:101-102` | trivially: emit nothing | "disabled but remembered" state is lost unless kept browser-side | EXACT (as deletion) |
 | `UrlRegexCondition` `omega-pac/src/conditions.coffee:248` | `/re/.test(url)` in PAC `omega-pac/src/conditions.coffee:253-254` | **no** — Xray matches destination domain/IP/port/`protocol`, never a URL; only sniffed HTTP `Host` + SNI are visible | path/query/host-portion semantics disappear; HTTPS URLs are never recoverable | UNSUPPORTED |
 | `UrlWildcardCondition` `omega-pac/src/conditions.coffee:256` | `|`-alternated glob over URL `omega-pac/src/conditions.coffee:259-266` | **no**, same reason | everything right of `host:port` disappears; `http://*x*`-style AutoProxy keywords become unmatchable | UNSUPPORTED |
-| `HostRegexCondition` `omega-pac/src/conditions.coffee:268` | `/re/.test(host)` `omega-pac/src/conditions.coffee:273-274` | yes as a `regexp:` domain matcher (`domain` array `packages/schema/routing-policy.schema.json:363-370`) | JS regex vs Xray's matcher dialect; `\|` alternation must be rewritten; the contract has **no field** declaring which dialect a string is in | APPROXIMATE |
+| `HostRegexCondition` `omega-pac/src/conditions.coffee:268` | `/re/.test(host)` `omega-pac/src/conditions.coffee:273-274` | yes as a `regexp:` domain matcher (`domain` array `packages/schema/routing-policy.schema.json:360-367`) | JS regex vs Xray's matcher dialect; `\|` alternation must be rewritten; the contract has **no field** declaring which dialect a string is in | APPROXIMATE |
 | `HostWildcardCondition` `omega-pac/src/conditions.coffee:276` | glob→regex with the `*.` subtree special case `omega-pac/src/conditions.coffee:279-294`, `omega-pac/src/shexp_utils.coffee:22-51` | yes: `*.x` ≡ Xray `domain:x` suffix rule; `x` ≡ `full:x` | `**.` (any-depth) and `?` single-char have no Xray equivalent; `trimAsterisk` makes a trailing `*` a no-op `omega-pac/src/shexp_utils.coffee:28-34` | APPROXIMATE |
-| `BypassCondition` `omega-pac/src/conditions.coffee:300` | *three* sites: Omega's own `match` `omega-pac/src/conditions.coffee:366-385`, compiled PAC `omega-pac/src/conditions.coffee:393-439`, and Chromium's bypass list via `_formatBypassItem` `omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:74-77` | CIDR → `ip` (`packages/schema/routing-policy.schema.json:373-380`), `host:port` → `domain` + `port` (`packages/schema/routing-policy.schema.json:383-386`) | `<local>` = "127.0.0.1, ::1, or **any dotless host**" `omega-pac/src/conditions.coffee:370-380` cannot be expressed by any Xray matcher; scheme-prefixed bypass (`http://…`) collapses | PARTIAL |
+| `BypassCondition` `omega-pac/src/conditions.coffee:300` | *three* sites: Omega's own `match` `omega-pac/src/conditions.coffee:366-385`, compiled PAC `omega-pac/src/conditions.coffee:393-439`, and Chromium's bypass list via `_formatBypassItem` `omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:74-77` | CIDR → `ip` (`packages/schema/routing-policy.schema.json:370-377`), `host:port` → `domain` + `port` (`packages/schema/routing-policy.schema.json:380-383`) | `<local>` = "127.0.0.1, ::1, or **any dotless host**" `omega-pac/src/conditions.coffee:370-380` cannot be expressed by any Xray matcher; scheme-prefixed bypass (`http://…`) collapses | PARTIAL |
 | `KeywordCondition` `omega-pac/src/conditions.coffee:441` | HTTP-only substring of the URL `omega-pac/src/conditions.coffee:444-445` | **no** — the Core never sees a substring of a URL; sniffed HTTP host is *nearest* and not equivalent | non-HTTP requests can never match today either, and the approximation changes behaviour | UNSUPPORTED |
 | `IpCondition` `omega-pac/src/conditions.coffee:467` | `isInNet`/`isInNetEx` inside the browser PAC `omega-pac/src/conditions.coffee:531-561`, or `ip-address` subnet math in-process `omega-pac/src/conditions.coffee:487-492` | yes: CIDR in `ip` | the browser version **resolves the host to test an IP literal guard first** `omega-pac/src/conditions.coffee:493-530`; Xray's `domainStrategy` decides resolution *policy* instead (`packages/schema/routing-policy.schema.json:72-79`) — see defect §7.3 | EXACT (DNS side-effects differ) |
 | `HostLevelsCondition` `omega-pac/src/conditions.coffee:579` | dot count `omega-pac/src/conditions.coffee:583-590` / `host.split('.').length` `omega-pac/src/conditions.coffee:591-603` | **no** label-count matcher exists; only an enumerated `regexp` expansion | unbounded label sets ⇒ cannot be generated for wide ranges | UNSUPPORTED (approximable per-value) |
 | `WeekdayCondition` `omega-pac/src/conditions.coffee:613` | `new Date().getDay()` at PAC evaluation time, on the browser host `omega-pac/src/conditions.coffee:616-619` | **no** calendar predicate in `routing` | also: "browser-local week" ≠ "core-local week" if the connector runs in another TZ/timezone-locked container | UNSUPPORTED |
 | `TimeCondition` `omega-pac/src/conditions.coffee:661` | `new Date().getHours()` `omega-pac/src/conditions.coffee:664-666` | **no** clock predicate in `routing` | same TZ hazard; hour granularity only | UNSUPPORTED |
-| SwitchProfile ordered first-match `omega-pac/src/profiles.coffee:418-422` | PAC `if/else` chain in rule order `omega-pac/src/profiles.coffee:423-436`; Xray rules are likewise "first match wins" (INFERRED) | yes, order preserved as an array (`packages/schema/routing-policy.schema.json:111-115`) | nothing lost *if* every condition survives; a dropped condition reorders the rest | EXACT (mechanically) |
+| SwitchProfile ordered first-match `omega-pac/src/profiles.coffee:418-422` | PAC `if/else` chain in rule order `omega-pac/src/profiles.coffee:423-436`; Xray rules are likewise "first match wins" (INFERRED) | yes, order preserved as an array (`packages/schema/routing-policy.schema.json:108-112`) | nothing lost *if* every condition survives; a dropped condition reorders the rest | EXACT (mechanically) |
 | `defaultProfileName` fallback `omega-pac/src/profiles.coffee:422` | last `return` of the chain `omega-pac/src/profiles.coffee:435-436` | yes, as a trailing catch-all rule | requires the `port: "0-65535"` idiom above | APPROXIMATE |
 | Chain-of-profiles ("result") `omega-pac/src/pac_generator.coffee:74-142` | runtime `while` following `+Name` keys until a PAC string appears | **no** — Xray routes a connection to exactly one outbound; there is no "then ask the user's other profile" | the entire multi-profile intent hierarchy is invisible to the Core (see §4.2) | UNSUPPORTED |
-| Rule-list `@with result` `omega-pac/src/rule_list.coffee:207-233` | per-rule destination profile | yes, if every destination maps to a compiled `ConnectorProfile` outbound | `unrepresentable` reporting is free text (`packages/schema/routing-policy.schema.json:118-126`), not per-condition | PARTIAL |
+| Rule-list `@with result` `omega-pac/src/rule_list.coffee:207-233` | per-rule destination profile | yes, if every destination maps to a compiled `ConnectorProfile` outbound | `unrepresentable` reporting is free text (`packages/schema/routing-policy.schema.json:115-123`), not per-condition | PARTIAL |
 | Exclusive `!` rules `omega-pac/src/rule_list.coffee:217-220`, `omega-pac/src/rule_list.coffee:101-102` | re-pointed to the default profile | yes as normal rules | loses the "exclusive" marker; round-trip through `compose` re-derives it from `profileName == defaultProfileName` only | PARTIAL |
 | `@note` `omega-pac/src/rule_list.coffee:211-212` | carried in `rule.note`, re-emitted | no Xray analogue | cosmetic; keep browser-side (`note` field exists in the contract, `packages/schema/routing-policy.schema.json:54-56`) | EXACT (browser plane only) |
 | FixedProfile `bypassList` `omega-pac/src/profiles.coffee:265-277` | delegated to Chromium `omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:68-72` | yes for host/CIDR items | identical `<local>` hole as row 7 | PARTIAL |
@@ -288,15 +288,15 @@ asterisks `omega-pac/src/shexp_utils.coffee:28-34`, and the anchors are only add
 
 | Xray capability | Omega analogue in this tree | Evidence status |
 |---|---|---|
-| `balancers` / `balancerTag` (load-balanced outbound groups, health-aware) | none: profile selection is a fixed chain; `selection.mode` is a *new* contract concept | INFERRED Xray side; repo side **VERIFIED** absent — `packages/schema/routing-policy.schema.json:158-160` allows only `direct`, `block`, `srv-<hex8>`, i.e. balancer targets are *forbidden by the contract* |
+| `balancers` / `balancerTag` (load-balanced outbound groups, health-aware) | none: profile selection is a fixed chain; `selection.mode` is a *new* contract concept | INFERRED Xray side; repo side **VERIFIED** absent — `packages/schema/routing-policy.schema.json:155-157` allows only `direct`, `block`, `srv-<hex8>`, i.e. balancer targets are *forbidden by the contract* |
 | `reverse` (bridge/portals, inbound-driven reverse proxying) | none, and out of scope for a browser proxy client | UNVERIFIED |
-| `sniffing` (derive domain from HTTP Host / TLS SNI) | none — Omega already holds the full URL, so it never needed sniffing | contract models it: `packages/schema/routing-policy.schema.json:81-87`, `routeOnly` default `true` `packages/schema/routing-policy.schema.json:105-107` |
-| `protocol` matchers (`http`,`tls`,`quic`,`fakedns`,`ws`,`bittorrent`) | none: only `scheme` (`http`/`https`/`ftp`) exists in the request `omega-pac/src/conditions.coffee:11-14`, and `KeywordCondition` hard-codes `scheme==='http'` `omega-pac/src/conditions.coffee:444-445` | contract allows six values: `packages/schema/routing-policy.schema.json:400-412` |
-| `network` tcp/udp | none — PAC cannot see transport | `packages/schema/routing-policy.schema.json:388-396` |
-| destination `port` / ranges | only `host:port` inside `BypassCondition` `omega-pac/src/conditions.coffee:332-337` | `packages/schema/routing-policy.schema.json:383-386` |
+| `sniffing` (derive domain from HTTP Host / TLS SNI) | none — Omega already holds the full URL, so it never needed sniffing | contract models it: `packages/schema/routing-policy.schema.json:81-87`, `routeOnly` default `true` `packages/schema/routing-policy.schema.json:101-104` |
+| `protocol` matchers (`http`,`tls`,`quic`,`fakedns`,`ws`,`bittorrent`) | none: only `scheme` (`http`/`https`/`ftp`) exists in the request `omega-pac/src/conditions.coffee:11-14`, and `KeywordCondition` hard-codes `scheme==='http'` `omega-pac/src/conditions.coffee:444-445` | contract allows six values: `packages/schema/routing-policy.schema.json:397-409` |
+| `network` tcp/udp | none — PAC cannot see transport | `packages/schema/routing-policy.schema.json:385-393` |
+| destination `port` / ranges | only `host:port` inside `BypassCondition` `omega-pac/src/conditions.coffee:332-337` | `packages/schema/routing-policy.schema.json:380-383` |
 | `domainStrategy` DNS-disposition model | the inverse: Omega *avoids* DNS by guarding on host shape first `omega-pac/src/conditions.coffee:493-530` | `packages/schema/routing-policy.schema.json:72-79` |
-| `inboundTag` / `user` / `sourceIp` / `userGeoip` / `inferenceOnly` / geo databases | none — no client identity, no geo concept anywhere in `omega-pac/src/conditions.coffee` | UNVERIFIED for Xray spelling; **VERIFIED** absent from the contract (`coreRule` lists exactly seven properties, `packages/schema/routing-policy.schema.json:362-421`) |
-| Ordered first-match with `invert` | match order only, no negation primitive | `packages/schema/routing-policy.schema.json:416-418` |
+| `inboundTag` / `user` / `sourceIp` / `userGeoip` / `inferenceOnly` / geo databases | none — no client identity, no geo concept anywhere in `omega-pac/src/conditions.coffee` | UNVERIFIED for Xray spelling; **VERIFIED** absent from the contract (`coreRule` lists exactly seven properties, `packages/schema/routing-policy.schema.json:359-418`) |
+| Ordered first-match with `invert` | match order only, no negation primitive | `packages/schema/routing-policy.schema.json:413-415` |
 
 ## 5. The reverse direction, stated plainly
 
@@ -320,8 +320,8 @@ The code already separates the two decisions; the audit vocabulary for it is:
   `omega-target-chromium-extension/src/module/proxy/proxy_impl_settings.coffee:37-41`,
   `omega-target-chromium-extension/src/module/proxy/proxy_impl_listener.coffee:28-34`.
 - **Core plane** — *which outbound inside the profile that traffic reached*. Expressed by
-  `routing.rules[]` `packages/schema/routing-policy.schema.json:111-115` over compiled outbounds named by
-  `packages/schema/routing-policy.schema.json:158-160`.
+  `routing.rules[]` `packages/schema/routing-policy.schema.json:108-112` over compiled outbounds named by
+  `packages/schema/routing-policy.schema.json:155-157`.
 
 **Invariant (observation): exactly one plane decides the fate of a request.** Given §4.1, the only
 consistent assignment is: the browser plane decides *profile*, the core plane decides *outbound*, and a
@@ -339,33 +339,33 @@ Omega rules are only *approximately* portable. The contract's own wording alread
 ### 7.1 `packages/schema/routing-policy.schema.json`
 
 `$defs.condition` accepts **all twelve** legacy types across eight `oneOf` branches:
-`TrueCondition` `packages/schema/routing-policy.schema.json:171-172`,
-`FalseCondition` `packages/schema/routing-policy.schema.json:179-180`,
+`TrueCondition` `packages/schema/routing-policy.schema.json:168-169`,
+`FalseCondition` `packages/schema/routing-policy.schema.json:176-177`,
 `UrlRegexCondition`/`UrlWildcardCondition`
-`packages/schema/routing-policy.schema.json:194-197`,
+`packages/schema/routing-policy.schema.json:191-194`,
 `HostRegexCondition`/`HostWildcardCondition`/`BypassCondition`/`KeywordCondition`
-`packages/schema/routing-policy.schema.json:211-216`,
-`IpCondition` `packages/schema/routing-policy.schema.json:231-232`,
-`HostLevelsCondition` `packages/schema/routing-policy.schema.json:253-254`,
-`WeekdayCondition` `packages/schema/routing-policy.schema.json:271-272` (with `days` XOR
-`startDay/endDay` expressed as `anyOf` `packages/schema/routing-policy.schema.json:290-320`),
-`TimeCondition` `packages/schema/routing-policy.schema.json:332-333`. Its own description states the
-count and points at the registry `packages/schema/routing-policy.schema.json:163-164` — **consistent
+`packages/schema/routing-policy.schema.json:208-213`,
+`IpCondition` `packages/schema/routing-policy.schema.json:228-229`,
+`HostLevelsCondition` `packages/schema/routing-policy.schema.json:250-251`,
+`WeekdayCondition` `packages/schema/routing-policy.schema.json:268-269` (with `days` XOR
+`startDay/endDay` expressed as `anyOf` `packages/schema/routing-policy.schema.json:287-317`),
+`TimeCondition` `packages/schema/routing-policy.schema.json:329-330`. Its own description states the
+count and points at the registry `packages/schema/routing-policy.schema.json:160-161` — **consistent
 with the twelve found in code**. Browser-plane rule shape is `{condition, profileName, note?}`
 `packages/schema/routing-policy.schema.json:37-56` with `defaultProfileName`
 `packages/schema/routing-policy.schema.json:34-35`, and profile names must not carry the envelope `+`
-`packages/schema/routing-policy.schema.json:151-156` (matching `omega-pac/src/profiles.coffee:93-96`).
+`packages/schema/routing-policy.schema.json:148-153` (matching `omega-pac/src/profiles.coffee:93-96`).
 **VERIFIED**
 
 Per-branch coverage of the *core* side (`$defs.coreRule`
-`packages/schema/routing-policy.schema.json:355-421` offers exactly `domain`
-`packages/schema/routing-policy.schema.json:363-370`, `ip`
-`packages/schema/routing-policy.schema.json:373-380`, `port`
-`packages/schema/routing-policy.schema.json:383-386`, `network`
-`packages/schema/routing-policy.schema.json:388-396`, `protocol`
-`packages/schema/routing-policy.schema.json:400-412`, `invert`
-`packages/schema/routing-policy.schema.json:416-418`, `outbound`
-`packages/schema/routing-policy.schema.json:420-421`):
+`packages/schema/routing-policy.schema.json:352-418` offers exactly `domain`
+`packages/schema/routing-policy.schema.json:360-367`, `ip`
+`packages/schema/routing-policy.schema.json:370-377`, `port`
+`packages/schema/routing-policy.schema.json:380-383`, `network`
+`packages/schema/routing-policy.schema.json:385-393`, `protocol`
+`packages/schema/routing-policy.schema.json:397-409`, `invert`
+`packages/schema/routing-policy.schema.json:413-415`, `outbound`
+`packages/schema/routing-policy.schema.json:417-418`):
 
 | Condition | Has a core-plane target? | How |
 |---|---|---|
@@ -377,7 +377,7 @@ Per-branch coverage of the *core* side (`$defs.coreRule`
 | `BypassCondition` | partial | host/CIDR/port subsets only; `<local>` unrepresentable |
 | `UrlWildcardCondition`, `UrlRegexCondition`, `KeywordCondition`, `HostLevelsCondition`, `WeekdayCondition`, `TimeCondition` | **no** | must land in `unrepresentable` |
 
-`unrepresentable` `packages/schema/routing-policy.schema.json:118-126` is `{source, reason}` free text
+`unrepresentable` `packages/schema/routing-policy.schema.json:115-123` is `{source, reason}` free text
 (max 200 chars each) — so it can record a decision but cannot be machine-checked for *which* of the twelve
 were dropped. The shipped example does exactly that for `WeekdayCondition` and `KeywordCondition`
 `packages/schema/examples/routing.two-plane.json:49-56`, and the reason text there is the correct
@@ -407,11 +407,11 @@ protocol-wide, not schema-local.
    this is a *finding to confirm in Phase 2 against the pinned binary*, not a proven defect; if the
    external reading is right, a valid-per-schema config would be rejected or defaulted by Xray at parse
    time, and `verify.mjs` would still pass.
-2. The contract's outbound vocabulary `packages/schema/routing-policy.schema.json:158-160` deliberately
+2. The contract's outbound vocabulary `packages/schema/routing-policy.schema.json:155-157` deliberately
    excludes `balancerTag`, so §4.4's `balancers` capability is unreachable by design. That is a decision to
    make explicit in ADR-0013, not leave as a pattern accident.
 3. `coreRule` has no field for `userGeoip`, `inferenceOnly`, ruleset references, `sourceIp`, `inboundTag`
-   or `user` `packages/schema/routing-policy.schema.json:362-421`, so a NEXORA UI cannot express geo-based
+   or `user` `packages/schema/routing-policy.schema.json:359-418`, so a NEXORA UI cannot express geo-based
    routing at all even though Xray can; `geosite:` currently leaks in as a magic string inside `domain[]`
    `packages/schema/examples/routing.two-plane.json:40`.
 4. Nothing in either contract says which *dialect* a `domain[]` string is in (`full` / `suffix` /
@@ -438,7 +438,7 @@ protocol-wide, not schema-local.
 5. `isInNetEx` availability in real PAC engines
    `omega-pac/src/conditions.coffee:543-547` — the code already treats it as optional.
 6. That the twelve-type count matches every *derived* document in the repo other than
-   `packages/schema/routing-policy.schema.json:163-164`; sibling audit/architecture docs were being written
+   `packages/schema/routing-policy.schema.json:160-161`; sibling audit/architecture docs were being written
    concurrently and were not on disk at authoring time.
 7. Test-suite status for `conditions`/`rule_list`/`pac_generator` was not re-run here; the pinned floor is
    142 passing / 1 failing (PROJECT-STATE §5).

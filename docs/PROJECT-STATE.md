@@ -6,8 +6,9 @@
 > falsified the original plan, the exact inventory of what exists on disk, and the precise next steps.
 > Written 2026-11-04. English because it is the repository language.
 
-Status of this branch: **Phase 0 (audit) + Phase 1 (architecture) in progress, committed and pushed. No
-product code is written yet, and none should be in this iteration.** §7 records the commits and the ref.
+Status as of 2026-11-07: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
+supervisor, health prober and receipt verifier.** The latest continuation is §4.36; older scope and inventory
+paragraphs below are dated history, not a prohibition on implementation. §7 records the push authorization and ref.
 
 ---
 
@@ -213,7 +214,7 @@ different owners — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
 a claim or a deferral is unowned, owned twice, or if a document reads a distribution the data does not have.
 
-`npm --prefix packages/schema run verify` → **green: 1223 checks, 13 schemas, 19 command docs,
+`npm --prefix packages/schema run verify` → **green: 1230 checks, 13 schemas, 19 command docs,
 20 valid examples, 24 invalid rejected, 112 frames replayed**. The only note printed is `compiled 13 schemas`;
 every `DEFERRED:` note the earlier drafts printed is gone: `26-command-surface.md`,
 `37-ui-architecture.md`, `38-compatibility-matrix.md`, `39-verification-matrix.md` and
@@ -570,6 +571,9 @@ documents only through `verification.json`, which the census does not walk, and 
 already in `docs/` — the split re-owns existing markers rather than acquiring new lines. A slice can land a
 package, split a row and register a `no-run` state without the citation set seeing anything of it; what the set
 cannot see, `VER-87`'s state column is there to say.
+§4.36 measures **2311 / 596 / 1596**, 68 labels and 52 `Cited by` rows. Against a clean archive of c17da8c,
+only doc 27 and doc 40 change the citation counts: each loses one doc-name reference. The 45 repaired line
+citations preserve their evidence targets without changing the count. All other per-file counts are unchanged.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -2800,6 +2804,36 @@ same two `no test files` notes as before.
 
 ---
 
+### 4.36 Real Xray config and routing checks (2026-11-07)
+
+**Implemented.** Four golden configs now cover the two canonical server shapes, multi-server ordering and
+core-plane rules. Real materialization followed by Xray 24.11.11 config validation exposed and fixed two
+pre-existing format errors: policy levels must be an object, and VLESS credentials belong inside each vnext
+entry's users array. Every inbound now has an explicit fallback to its own server after authored policy rules;
+otherwise Xray uses its first outbound for all unmatched connections. The golden changes have these named
+reasons, not a formatting refresh.
+
+The compiler emits referenced direct/freedom and block/blackhole outbounds, preserves network/protocol arrays,
+and places sniffing on inbounds. The schema and compiler restrict sniffing to http/tls/quic/fakedns and require
+routeOnly true; Xray rejects the former mp4/mkv/ps/www values. Twenty loopback cases exercise HTTP through
+SOCKS5 and real SOCKS5 UDP datagrams with positive and negative controls. They also demonstrate two silent
+behaviors: unknown outbound tags fall back to the default, and invert true is ignored. Inverted rules are now
+reported whole with a positional source, without leaking destinations or emitting the opposite predicate.
+Authored reports still survive the command response unchanged.
+
+**Evidence and limits.** Four materialized goldens and an invalid-port negative control pass with
+NEXORA_XRAY_BIN pointing to the gitignored local executable. Compiler, apply and command tests pass uncached;
+targeted vet passes. The runtime harness checks readiness, bounds commands and sockets, and terminates/reaps
+only its own children. These tests do not contact a remote server. They prove neither a REALITY handshake nor
+browser integration, trusted installation, production command wiring or cross-platform behavior. ODEC-37 stays
+open only for residual predicate semantics; VER-28 and VER-78 remain open for the missing fixture/hash decisions.
+The previous receipt slice was published as c17da8c; this slice uses the same authorized refspec in §7.
+
+**Gates.** Schema verification passes 1230 checks, including seven new sniffing cases; document evidence,
+ADR shape and layout guards pass. Evidence and secret-scanner selftests pass. The targeted Go packages pass
+both with and without the binary environment variable, and gofmt reports no changes. No live verification row
+or open-decision count changes. The race detector and Linux runtime were not exercised.
+
 ## 5. Verification state to the letter
 
 
@@ -2848,9 +2882,8 @@ same two `no test files` notes as before.
   in `config_apply_test.go` — the synthetic credential value, profile id and server id in its constant block and the second
   server's id in its fixture — because Go's test convention puts a `_test.go` beside the package it tests and therefore
   outside every path the guard exempts.
-- `npm --prefix packages/schema run verify` → **green** (1223 checks: §4.29 adds one, the assertion that reads doc 40's
-  own tallies out of its sentences; §4.28's two are the shape of the two version floors and the freshness of the labels
-  doc 40 §9 cites; see §4.4).
+- `npm --prefix packages/schema run verify` → **green** (1230 checks: §4.36 adds seven sniffing checks; §4.29 adds
+  the assertion that reads doc 40's own tallies; §4.28 adds version-floor shape and label freshness checks; see §4.4).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
   is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
@@ -2943,6 +2976,13 @@ same two `no test files` notes as before.
 ---
 
 ## 6. The exact next steps (task #6 → #11)
+
+**Current queue, 2026-11-07 (supersedes historical sequencing below):** §4.36 supplies real Xray config and
+loopback routing probes, so a missing local Core binary is no longer a blocker. Next: exercise the complete
+compiled multi-server VLESS path on loopback, then production intent/path wiring (ODEC-39), hash-subject decision
+(ODEC-36) and host transport (ODEC-35). ODEC-37 is narrowed to residual predicate semantics, not missing byte
+spellings. Remote VLESS/REALITY, browser integration, trusted installation and parent-death containment are not
+proved by the loopback tests. The user authorizes continued implementation and publication under §7.
 
 **#5 `packages/schema` — done.** It is now the green, re-runnable test of this iteration:
 `npm --prefix packages/schema run verify` → `OK: 13 schemas compile, 19 command docs conform, 20 examples
@@ -3361,7 +3401,7 @@ written before any behaviour existed. What each next milestone has to make true:
   can state a final count of executions and survive its own push. This file's next push is therefore one more
   fast-forward and one more execution, and what decides whether it is a finding is §12's rule — a run enters the table
   when its shape differs — not any count in this file.
-- **Every push requires separate explicit confirmation.** No `--force`, no `--no-verify`, no amend of published commits.
+- **Since 2026-11-07 the user explicitly authorizes autonomous commits and pushes of completed slices**, superseding the earlier per-push confirmation rule. Use only `git push nexora nexora/architecture:master`. No `--force`, no `--no-verify`, no amend of published commits.
   Pushes go one at a time and wait for their own run: `concurrency.cancel-in-progress` in `.github/workflows/verify.yml`
   makes a second push inside one build cancel the first run's verdict, which is how `42029092102` ended.
 - Never `git add --renormalize .` (the repo has `core.autocrlf=true` on this host; mass re-normalization is exactly

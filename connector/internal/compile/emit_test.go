@@ -10,19 +10,17 @@ import (
 
 // shapeACanonical is docs/architecture/23-unified-server-model.md §9's "A. VLESS + TCP + TLS + Vision" as the emitted
 // bytes must be: keys sorted at every depth, arrays in the order the model gives them, no whitespace between tokens.
-const shapeACanonical = `{"inbounds":[{"listen":"127.0.0.1","port":20101,"protocol":"socks","settings":{"auth":"noauth","udp":true},"tag":"in-srv-3f2a1c9e"}],"log":{"access":"none","dnsLog":false,"loglevel":"warning"},"outbounds":[{"protocol":"vless","settings":{"vnext":[{"address":"se1.example.net","encryption":"none","flow":"xtls-rprx-vision","id":"⟨secret: userIdRef keystore://server/3f2a1c9e/user-id⟩","port":443}]},"streamSettings":{"network":"tcp","security":"tls","tlsSettings":{"alpn":["h2","http/1.1"],"fingerprint":"chrome","serverName":"se1.example.net"}},"tag":"srv-3f2a1c9e"}],"policy":{"levels":[]},"routing":{"domainStrategy":"AsIs","rules":[]}}`
+const shapeACanonical = `{"inbounds":[{"listen":"127.0.0.1","port":20101,"protocol":"socks","settings":{"auth":"noauth","udp":true},"tag":"in-srv-3f2a1c9e"}],"log":{"access":"none","dnsLog":false,"loglevel":"warning"},"outbounds":[{"protocol":"vless","settings":{"vnext":[{"address":"se1.example.net","port":443,"users":[{"encryption":"none","flow":"xtls-rprx-vision","id":"⟨secret: userIdRef keystore://server/3f2a1c9e/user-id⟩"}]}]},"streamSettings":{"network":"tcp","security":"tls","tlsSettings":{"alpn":["h2","http/1.1"],"fingerprint":"chrome","serverName":"se1.example.net"}},"tag":"srv-3f2a1c9e"}],"policy":{"levels":{}},"routing":{"domainStrategy":"AsIs","rules":[{"inboundTag":["in-srv-3f2a1c9e"],"outboundTag":"srv-3f2a1c9e"}]}}`
 
-// shapeAHash is the lowercase hex sha256 of those 642 bytes, and the reason it is spelled out: a golden hash is what
-// catches an emitter change that leaves the shape A string above stale in the same commit.
-// Recomputed with: node -e 'console.log(require("crypto").createHash("sha256").update(<file>).digest("hex"))'
-const shapeAHash = "8e15609ec3558e401c7ff850ce96ecc582b6a816628cfb5b5377a0bd09b56618"
+// Computed independently with Node crypto over the UTF-8 fixture bytes.
+const shapeAHash = "7ed985e92cc166af6c70f8f9c7ab2a4e46001222834b909a73e20842d2f68511"
 
 // shapeA is the same document, written with keys in the order doc 23 happens to list them — deliberately not sorted —
 // so that a passing comparison is evidence about the encoder rather than about the ordering of this test's literals.
 func shapeA() Document {
 	return Document{
-		"routing": Document{"rules": []any{}, "domainStrategy": "AsIs"},
-		"policy":  Document{"levels": []string{}},
+		"routing": Document{"rules": []any{Document{"outboundTag": "srv-3f2a1c9e", "inboundTag": []string{"in-srv-3f2a1c9e"}}}, "domainStrategy": "AsIs"},
+		"policy":  Document{"levels": Document{}},
 		"outbounds": []any{
 			Document{
 				"tag":      "srv-3f2a1c9e",
@@ -30,11 +28,13 @@ func shapeA() Document {
 				"settings": Document{
 					"vnext": []any{
 						Document{
-							"id":         "⟨secret: userIdRef keystore://server/3f2a1c9e/user-id⟩",
-							"port":       443,
-							"address":    "se1.example.net",
-							"encryption": "none",
-							"flow":       "xtls-rprx-vision",
+							"port":    443,
+							"address": "se1.example.net",
+							"users": []any{Document{
+								"id":         "⟨secret: userIdRef keystore://server/3f2a1c9e/user-id⟩",
+								"encryption": "none",
+								"flow":       "xtls-rprx-vision",
+							}},
 						},
 					},
 				},

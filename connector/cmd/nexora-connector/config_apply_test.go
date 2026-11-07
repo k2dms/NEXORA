@@ -1071,15 +1071,10 @@ func TestTheAnswerCarriesOnlyFieldsTheResultSchemaDeclares(t *testing.T) {
 	}
 }
 
-// TestAReportedRuleTravelsInTheAnswer is ADR-0013's promise at the layer the promise was made for: the command
-// answer. `split.go` producing an `unrepresentable[]` entry is only half of "report, do not drop" — the other half is
-// that the entry leaves the Connector in the frame the extension reads, in the same answer that says the config was
-// applied. Refusing the apply instead would be the second way to break the promise, because doc 27 §7 exists so that
-// an unemittable rule does not have to cost a working config.
 func TestAReportedRuleTravelsInTheAnswer(t *testing.T) {
-	enabled := true
-	h := harnessWith(t, func(_ *testing.T, in *Intent) {
-		in.Routing.CorePlane.Sniffing.Enabled = &enabled
+	policy := example[compile.RoutingPolicy](t, "routing.two-plane.json")
+	h := harnessWith(t, func(t *testing.T, in *Intent) {
+		in.Routing = &policy
 	})
 	answer, raw, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
 	if ref != nil {
@@ -1090,33 +1085,24 @@ func TestAReportedRuleTravelsInTheAnswer(t *testing.T) {
 	}
 	entries, ok := raw["unrepresentable"].([]any)
 	if !ok || len(entries) != 2 {
-		t.Fatalf("the answer carries %+v, want the shipped policy's built-in-tag rule plus the sniffing control", raw["unrepresentable"])
+		t.Fatalf("the answer carries %+v, want the shipped policy's two authored reports", raw["unrepresentable"])
 	}
-	sources := map[string]string{}
-	for _, e := range entries {
+	for i, e := range entries {
 		entry, _ := e.(map[string]any)
-		source, _ := entry["source"].(string)
-		reason, _ := entry["reason"].(string)
-		if reason == "" {
-			t.Errorf("the report for %q carries a source and no reason, which tells the operator nothing", source)
+		want := policy.CorePlane.Unrepresentable[i]
+		if entry["source"] != want.Source || entry["reason"] != want.Reason {
+			t.Errorf("authored report changed: got %v, want %+v", entry, want)
 		}
-		sources[source] = reason
-	}
-	// Two causes, both present: the rule the shipped policy already had, and the control this test added. A report
-	// that only ever carried one entry could be a report that dropped the other.
-	if _, e1 := sources["corePlane rule #0"]; !e1 {
-		t.Errorf("the policy's own built-in-tag rule is missing from %+v", sources)
-	}
-	if _, e2 := sources["corePlane.sniffing"]; !e2 {
-		t.Errorf("the control this case enabled is missing from %+v", sources)
 	}
 	if got := len(answer.Unrepresentable); got != 2 {
 		t.Errorf("the typed answer carries %+v, so one of the two reports was read as an absence", answer.Unrepresentable)
 	}
-	// The rule that could not be emitted is a routing control the user configured and did not get, so the config
-	// Core loaded must not contain a half-emitted version of it.
-	if loaded := string(h.appliedConfig(t)); strings.Contains(loaded, "sniffing") {
-		t.Error("the compiled config carries a `sniffing` section the pipeline reported as unrepresentable")
+	loaded := string(h.appliedConfig(t))
+	if !strings.Contains(loaded, `"sniffing"`) {
+		t.Error("the compiled config carries no sniffing block; the shipped policy enabled it and the inbound field is the position the pinned release reads")
+	}
+	if !strings.Contains(loaded, `"blackhole"`) || !strings.Contains(loaded, `"freedom"`) {
+		t.Error("the compiled config carries no declared built-ins; a rule naming block or direct would have no destination at runtime")
 	}
 }
 

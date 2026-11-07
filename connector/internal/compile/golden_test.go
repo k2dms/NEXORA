@@ -21,14 +21,10 @@ var updateGoldens = flag.Bool("golden.update", false, "rewrite the golden files 
 //   - shape A (vision over tcp+tls) and shape B (reality over xhttp): pinnable.
 //   - one multi-server profile: pinnable, and it is the case where the allocator's output is visible — two inbounds,
 //     two outbounds, and the tags pairing them.
+//   - one with core-plane rules: sniffing and direct/block declarations; authored reports stay outside config bytes.
 //   - shape C (grpc): refused, not pinnable. `server.grpc-tls.json` carries a `headersRef`, and no decision says how a
 //     handle for an *object* is materialized — `TestShapeCIsRefusedAtTheHeadersRef` pins the refusal, and ODEC-36
 //     owns the answer.
-//   - one with core-plane rules: refused by the reports, not pinnable. Neither shipped policy emits a routing rule:
-//     `routing.minimal.json`'s only rule names `network`, whose emitted form (array or comma-joined string) the corpus
-//     never states, and `routing.two-plane.json`'s two rules name the built-in tags `block` and `direct`, whose
-//     emitted outbounds no document shows — `TestTheShippedRoutingExamplesCompileIntoReports` pins both, and ODEC-37
-//     owns the spellings.
 //   - one fail-closed variant: no such file. docs/architecture/30-failure-policy.md §7 puts the fail-closed proxy in
 //     `chrome.proxy`, not in the Xray document, so a fail-closed profile compiles to the same bytes with a different
 //     `Block` carry-through, which the golden for shape A already shows.
@@ -40,6 +36,7 @@ func TestTheCompiledShapesMatchTheirGoldens(t *testing.T) {
 		{"shape-a-vision-tcp-tls.golden.json", goldenShapeA},
 		{"shape-b-reality-xhttp.golden.json", goldenShapeB},
 		{"multi-server-ordered.golden.json", goldenMultiServer},
+		{"two-plane-core-rules.golden.json", goldenTwoPlaneCoreRules},
 	} {
 		got := tc.build(t)
 		root, err := contractgen.FindRepoRoot(".")
@@ -113,6 +110,30 @@ func goldenMultiServer(t *testing.T) []byte {
 	}
 	if len(result.Inbounds) != 2 || len(result.ServerTags) != 2 {
 		t.Fatalf("a two-server profile compiled to %d inbounds and %d tags", len(result.Inbounds), len(result.ServerTags))
+	}
+	rules := result.Document["routing"].(Document)["rules"].([]any)
+	if len(rules) != 2 {
+		t.Fatalf("expected two fallback rules, got %v", rules)
+	}
+	for i, tag := range result.ServerTags {
+		rule := rules[i].(Document)
+		if rule["outboundTag"] != tag || rule["inboundTag"].([]string)[0] != "in-"+tag {
+			t.Errorf("inbound is not paired to its server: %v", rule)
+		}
+	}
+	return result.Bytes
+}
+
+func goldenTwoPlaneCoreRules(t *testing.T) []byte {
+	t.Helper()
+	server := example[Server](t, "server.vision-tcp-tls.json")
+	policy := example[RoutingPolicy](t, "routing.two-plane.json")
+	result, err := Compile(shippedInput(t, []Server{server}, []Profile{profileWith(t, "profile.fixed.json", server.ID)}, &policy))
+	if err != nil {
+		t.Fatalf("Compile(two-plane): %v", err)
+	}
+	if len(result.Unrepresentable) != 2 {
+		t.Fatalf("the two-plane fixture compiled with %d reports, want the policy's two authored ones: %+v", len(result.Unrepresentable), result.Unrepresentable)
 	}
 	return result.Bytes
 }

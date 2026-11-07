@@ -907,6 +907,43 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   check(checked >= 4, 'the domainStrategy cross-check saw the routing documents', `${checked} files`);
 }
 
+{
+  const validate = ajv.getSchema('https://schema.nexora.local/routing-policy.schema.json');
+  const example = await readJson(join(PKG, 'examples', 'routing.two-plane.json'));
+  const allowed = structuredClone(example);
+  allowed.corePlane.sniffing.protocols = ['http', 'tls', 'quic', 'fakedns'];
+  check(
+    validate(allowed),
+    'corePlane.sniffing accepts the protocols supported by Xray v24.11.11',
+    JSON.stringify(validate.errors),
+  );
+  for (const protocol of ['mp4', 'mkv', 'ps', 'www']) {
+    const unsupported = structuredClone(example);
+    unsupported.corePlane.sniffing.protocols = [protocol];
+    check(
+      !validate(unsupported) && (validate.errors ?? []).some((e) =>
+        e.keyword === 'enum' && e.instancePath === '/corePlane/sniffing/protocols/0'),
+      `corePlane.sniffing rejects unsupported protocol by enum: ${protocol}`,
+      JSON.stringify(validate.errors),
+    );
+  }
+  const rewriting = structuredClone(example);
+  rewriting.corePlane.sniffing.routeOnly = false;
+  check(
+    !validate(rewriting) && (validate.errors ?? []).some((e) =>
+      e.keyword === 'const' && e.instancePath === '/corePlane/sniffing/routeOnly'),
+    'corePlane.sniffing rejects routeOnly false by const',
+    JSON.stringify(validate.errors),
+  );
+  const omitted = structuredClone(example);
+  delete omitted.corePlane.sniffing.routeOnly;
+  check(
+    validate(omitted),
+    'corePlane.sniffing permits omission of routeOnly',
+    JSON.stringify(validate.errors),
+  );
+}
+
 // ---------------------------------------------------------------- required sets are real
 //
 // A name in `required` that is not in `properties` silently rejects every instance

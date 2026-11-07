@@ -163,11 +163,11 @@ transit.
 Two of the three are pinned by a golden file today — `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`
 and `shape-b-reality-xhttp.golden.json` hold the emitted bytes, compared byte-for-byte by
 `connector/internal/compile/golden_test.go` — and shape C is refused rather than pinned, because its `headersRef` is
-a handle for an *object* and no decision says how one is materialized (`ODEC-36`). The four spellings none of the
-three shapes shows are a question of the same kind, not a gap in the emitter: whether an inbound per server tag is
-`socks` or `http`, what a core-plane rule naming the built-in `direct` or `block` emits, where `sniffing` sits in the
-document, and whether routing `network` and `protocol` are arrays or one comma-joined string. The compiler reports
-all four instead of inventing them, and `docs/architecture/40-open-decisions.md` keeps the list as `ODEC-37`.
+a handle for an *object* and no decision says how one is materialized (`ODEC-36`). Four byte mappings are now
+implemented: every per-server inbound is SOCKS5; `direct` and `block` declare `freedom` and `blackhole` outbounds;
+`sniffing` is an inbound sibling with `protocols` renamed to `destOverride`; routing `network` and `protocol`
+remain arrays. The materialized goldens pass Xray 24.11.11's config test, not a remote-server handshake.
+Remaining routing evidence is tracked separately; `docs/architecture/40-open-decisions.md` keeps the list as `ODEC-37`.
 
 **A. VLESS + TCP + TLS + Vision**
 
@@ -183,16 +183,18 @@ all four instead of inventing them, and `docs/architecture/40-open-decisions.md`
     { "tag": "srv-3f2a1c9e", "protocol": "vless",
       "settings": { "vnext": [ {
         "address": "se1.example.net", "port": 443,
-        "id": "⟨secret: userIdRef keystore://server/3f2a1c9e/user-id⟩",
-        "encryption": "none", "flow": "xtls-rprx-vision"
+        "users": [{ "id": "⟨secret: userIdRef keystore://server/3f2a1c9e/user-id⟩",
+                    "encryption": "none", "flow": "xtls-rprx-vision" }]
       } ] },
       "streamSettings": {
         "network": "tcp", "security": "tls",
         "tlsSettings": { "serverName": "se1.example.net",
                           "alpn": ["h2", "http/1.1"], "fingerprint": "chrome" } } }
   ],
-  "policy": { "levels": [] },
-  "routing": { "domainStrategy": "AsIs", "rules": [] }
+  "policy": { "levels": {} },
+  "routing": { "domainStrategy": "AsIs", "rules": [
+    { "inboundTag": ["in-srv-3f2a1c9e"], "outboundTag": "srv-3f2a1c9e" }
+  ] }
 }
 ```
 
@@ -201,14 +203,14 @@ all four instead of inventing them, and `docs/architecture/40-open-decisions.md`
 ```jsonc
 {
   "inbounds": [
-    { "tag": "in-srv-8b1d4e70", "port": 20102, "protocol": "http",
-      "listen": "127.0.0.1", "settings": { "allowTransparent": false } }
+    { "tag": "in-srv-8b1d4e70", "port": 20102, "protocol": "socks",
+      "listen": "127.0.0.1", "settings": { "auth": "noauth", "udp": true } }
   ],
   "outbounds": [
     { "tag": "srv-8b1d4e70", "protocol": "vless",
       "settings": { "vnext": [ {
         "address": "nl2.example.net", "port": 443,
-        "id": "⟨secret⟩", "encryption": "none", "flow": ""
+        "users": [{ "id": "⟨secret⟩", "encryption": "none", "flow": "" }]
       } ] },
       "streamSettings": {
         "network": "xhttp", "security": "reality",
@@ -217,7 +219,9 @@ all four instead of inventing them, and `docs/architecture/40-open-decisions.md`
                               "publicKey": "hv2uW3Yx7Z9aBcDeFgHiJkLmNoPqRsTuVwXyZ012345",
                               "shortId": "1a2b3c", "spiderX": "/" } } }
   ],
-  "routing": { "domainStrategy": "AsIs", "rules": [] }
+  "routing": { "domainStrategy": "AsIs", "rules": [
+    { "inboundTag": ["in-srv-8b1d4e70"], "outboundTag": "srv-8b1d4e70" }
+  ] }
 }
 ```
 
@@ -236,7 +240,7 @@ make a REALITY handshake failure undiagnosable. Their field-level masking rules 
   "outbounds": [
     { "tag": "srv-c7e5a2d1", "protocol": "vless",
       "settings": { "vnext": [ { "address": "de1.example.net", "port": 443,
-        "id": "⟨secret⟩", "encryption": "none" } ] },
+        "users": [{ "id": "⟨secret⟩", "encryption": "none" }] } ] },
       "streamSettings": {
         "network": "grpc", "security": "tls",
         "tlsSettings": { "serverName": "de1.example.net",
@@ -245,7 +249,9 @@ make a REALITY handshake failure undiagnosable. Their field-level masking rules 
                           "authority": "de1.example.net",
                           "headers": { ":authorization": "⟨secret: headersRef⟩" } } } }
   ],
-  "routing": { "domainStrategy": "AsIs", "rules": [] }
+  "routing": { "domainStrategy": "AsIs", "rules": [
+    { "inboundTag": ["in-srv-c7e5a2d1"], "outboundTag": "srv-c7e5a2d1" }
+  ] }
 }
 ```
 
@@ -263,7 +269,7 @@ one inbound with internal routing — is considered and rejected there, not here
 | Every field has a description | the undocumented-field coverage check in `packages/schema/scripts/verify.mjs` | **GREEN** |
 | `h2` implies `tls` | `allOf` clause 8 + `packages/schema/examples/invalid/server.h2-without-tls.json` | **GREEN** |
 | A subscription server names its subscription | `allOf` clause 9 | **GREEN** |
-| The three canonical configs compile byte-for-byte as shown | two of three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json` and `shape-b-reality-xhttp.golden.json`, compared by `connector/internal/compile/golden_test.go`; shape C is refused at its `headersRef` (`ODEC-36`) and no shipped policy emits a core-plane rule (`ODEC-37`) | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
+| The three canonical configs compile byte-for-byte as shown | two of three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json` and `shape-b-reality-xhttp.golden.json`, compared by `connector/internal/compile/golden_test.go`; shape C is refused at its `headersRef` (`ODEC-36`) and `ODEC-37` tracks the remaining predicate semantics beyond the measured core-plane fixture | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
 | Tag collision across the server set is a compile error | `connector/internal/compile/resolve.go` refuses a second server whose derived tag is taken, naming both ids — `TestATagCollisionNamesBothServers` | Verified: NO — deferred to Phase 2 |
 | The generated config file is owner-only on disk | nothing | Verified: NO — LIVE-18 |
 | A non-VLESS server in a legacy subscription is reported, not dropped | nothing (parser does not exist) | Verified: NO — `LIVE-14` carries the import; `docs/architecture/39-verification-matrix.md` will own the row |

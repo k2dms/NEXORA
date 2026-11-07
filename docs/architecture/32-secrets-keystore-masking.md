@@ -55,7 +55,7 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | `docs/architecture/22-component-contracts.md:111` | "never returns an unmasked secret in any frame, including `diagnostics.get`" | §8, §9 |
 | `docs/architecture/22-component-contracts.md:317` | a probe must not reveal a secret in result or logs | §8 |
 | `docs/architecture/22-component-contracts.md:397` | masking happens at the sink, not the call site | §8 |
-| `docs/architecture/23-unified-server-model.md:226` | field-level rules for `publicKey`/`shortId` | §10 |
+| `docs/architecture/23-unified-server-model.md:230` | field-level rules for `publicKey`/`shortId` | §10 |
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
 | `docs/architecture/25-native-messaging-protocol.md:238` | `SecretRedacted` vs a corrupt document | §11 |
 | `docs/architecture/26-command-surface.md:171` | `maskedConfig` must contain no keystore value | §13 |
@@ -303,7 +303,7 @@ The other half of the policy, and the half that protects the user from the engin
 
 | Field | Class | Why it stays legible |
 |---|---|---|
-| `publicKey`, `shortId` | REALITY parameters | public by construction; masking makes a REALITY handshake undiagnosable — the case `docs/architecture/23-unified-server-model.md:216-218` names |
+| `publicKey`, `shortId` | REALITY parameters | public by construction; masking makes a REALITY handshake undiagnosable — the case `docs/architecture/23-unified-server-model.md:218-220` names |
 | `address`, `port` | server location | the user must be able to say which server failed; they identify a VPS, they do not authorise anything |
 | `serverName`, `alpn`, TLS `fingerprint` | transport parameters | SNI is on the wire in clear anyway; pinning a CA-style fingerprint is integrity, not confidentiality |
 | entity ids, tags, `displayName` | identity | they are how a UI refers to a thing; the identifier inside a reference is *derived from* the value's owner, never from the value (§5) |

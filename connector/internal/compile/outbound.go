@@ -25,11 +25,7 @@ func buildOutbounds(servers []Server) ([]any, error) {
 	return list, nil
 }
 
-// outboundDocument is the one place the model's vocabulary becomes Xray's. `settings.vnext[0].id` is the value of
-// `userIdRef` — a `keystore://` handle, which is what doc 23 §9's shape A prints at that position
-// (`⟨secret: userIdRef keystore://server/3f2a1c9e/user-id⟩`) and what docs/architecture/22-component-contracts.md §9
-// requires of every layer above the keystore. `encryption: "none"` is stated because all three shapes state it; VLESS
-// has no other value in this model.
+// Credentials remain handles until materialization; Xray requires them inside vnext[].users[].
 func outboundDocument(s Server, tag string) (Document, error) {
 	if s.Protocol != "vless" {
 		return nil, fmt.Errorf("compile: server %s has protocol %q; `server.schema.json` pins the field to the const \"vless\" and an expansion needs an ADR (doc 23 §10)", s.ID, s.Protocol)
@@ -38,14 +34,14 @@ func outboundDocument(s Server, tag string) (Document, error) {
 	if err != nil {
 		return nil, err
 	}
-	vnext := Document{
-		"address":    s.Address,
-		"port":       s.Port,
-		"id":         s.UserIDRef,
-		"encryption": "none",
-	}
+	user := Document{"id": s.UserIDRef, "encryption": "none"}
 	if s.Flow != nil {
-		vnext["flow"] = *s.Flow
+		user["flow"] = *s.Flow
+	}
+	vnext := Document{
+		"address": s.Address,
+		"port":    s.Port,
+		"users":   []any{user},
 	}
 	return Document{
 		"tag":            tag,

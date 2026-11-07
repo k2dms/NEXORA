@@ -46,35 +46,51 @@ func TestAnEmptyCorePlaneStillEmitsASection(t *testing.T) {
 	}
 }
 
-// `#/$defs/coreOutbound` admits three shapes and only one of them names something the compiler emits today.
-func TestABuiltinOutboundIsReportedNotInvented(t *testing.T) {
+// An undeclared tag can fall back to the default outbound, so every referenced builtin must be declared.
+func TestABuiltinOutboundIsDeclaredAndItsRuleIsEmitted(t *testing.T) {
 	for _, builtin := range []string{"direct", "block"} {
 		got, err := Split(policyWith(CoreRule{Domain: []string{"example.net"}, Outbound: builtin}), oneTag)
 		if err != nil {
 			t.Fatalf("Split(%s): %v", builtin, err)
 		}
-		if len(got.Rules) != 0 {
-			t.Errorf("%s compiled to %v; the emitted outbound protocol behind the tag is ODEC-37's", builtin, got.Rules)
+		if len(got.Rules) != 1 {
+			t.Fatalf("%s did not emit its rule: %v", builtin, got.Rules)
 		}
-		if len(got.Unrepresentable) != 1 {
-			t.Fatalf("%s produced %d reports, want 1", builtin, len(got.Unrepresentable))
+		if fmt.Sprint(got.Rules[0]["outboundTag"]) != builtin {
+			t.Errorf("rule #%d names %v, want the tag the policy wrote", 0, got.Rules[0]["outboundTag"])
 		}
-		r := got.Unrepresentable[0]
-		if r.Source != "corePlane rule #0" {
-			t.Errorf("source = %q; a core rule has no name field, so the position is the only identifier that leaks nothing", r.Source)
+		if len(got.Unrepresentable) != 0 {
+			t.Errorf("%s produced reports %+v; the measurement retired the refusal", builtin, got.Unrepresentable)
 		}
-		if !strings.Contains(r.Reason, builtin) || !strings.Contains(r.Reason, "ODEC-37") {
-			t.Errorf("reason %q names neither the tag nor the decision that owes it", r.Reason)
+		if len(got.BuiltIns) != 1 || got.BuiltIns[0] != builtin {
+			t.Errorf("BuiltIns = %v, want exactly [%s]", got.BuiltIns, builtin)
 		}
-		if len(r.Reason) > maxReportReason || len(r.Source) > maxReportSource {
-			t.Errorf("the composed report is past the bound the schema declares: %q", r.Reason)
+		doc := builtinOutbound(builtin)
+		want := map[string]string{"direct": "freedom", "block": "blackhole"}[builtin]
+		if fmt.Sprint(doc["protocol"]) != want {
+			t.Errorf("builtinOutbound(%s) is %v, want protocol %s behind the tag", builtin, doc, want)
 		}
 	}
 }
 
-// A rule that matches on `network` or `protocol` cannot be placed either: the model holds both as arrays and no file
-// in this repository shows whether Xray's routing rule takes an array or one comma-joined string.
-func TestAUndecidedMatchFieldReportsTheWholeRule(t *testing.T) {
+func TestBuiltinOutboundsComeInFixedOrderAndDeduplicate(t *testing.T) {
+	reversed, err := Split(policyWith(
+		CoreRule{Domain: []string{"geosite:category-ads-all"}, Outbound: "block"},
+		CoreRule{IP: []string{"10.0.0.0/8"}, Outbound: "direct"},
+		CoreRule{Domain: []string{"example.net"}, Outbound: "block"},
+	), oneTag)
+	if err != nil {
+		t.Fatalf("Split: %v", err)
+	}
+	if len(reversed.BuiltIns) != 2 || reversed.BuiltIns[0] != "direct" || reversed.BuiltIns[1] != "block" {
+		t.Errorf("BuiltIns = %v, want [direct block] whatever order the rules named them", reversed.BuiltIns)
+	}
+	if len(reversed.Rules) != 3 {
+		t.Errorf("%d rules emitted, want all three including the duplicate built-in rule", len(reversed.Rules))
+	}
+}
+
+func TestNetworkAndProtocolArraysPassThrough(t *testing.T) {
 	got, err := Split(policyWith(
 		CoreRule{Network: []string{"udp"}, Port: "53", Outbound: "srv-3f2a1c9e"},
 		CoreRule{Protocol: []string{"bittorrent"}, Outbound: "srv-3f2a1c9e"},
@@ -83,16 +99,45 @@ func TestAUndecidedMatchFieldReportsTheWholeRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Split: %v", err)
 	}
-	if len(got.Rules) != 0 {
-		t.Errorf("a rule with an undecided field was emitted as %v; half a rule matches more traffic than the user wrote", got.Rules)
+	if len(got.Rules) != 3 {
+		t.Fatalf("got %d rules, want 3: %v", len(got.Rules), got.Rules)
 	}
-	if len(got.Unrepresentable) != 3 {
-		t.Fatalf("got %d reports, want 3", len(got.Unrepresentable))
+	if len(got.Unrepresentable) != 0 {
+		t.Fatalf("reports %v; the array form is measured against the pinned release", got.Unrepresentable)
 	}
-	for i, want := range []string{"network", "protocol", "network and protocol"} {
-		if !strings.Contains(got.Unrepresentable[i].Reason, want) {
-			t.Errorf("report #%d does not name %s: %q", i, want, got.Unrepresentable[i].Reason)
-		}
+	if fmt.Sprint(got.Rules[0]["network"]) != "[udp]" {
+		t.Errorf("rule #0 network = %v, want the model's array verbatim", got.Rules[0]["network"])
+	}
+	if fmt.Sprint(got.Rules[1]["protocol"]) != "[bittorrent]" {
+		t.Errorf("rule #1 protocol = %v, want the model's array verbatim", got.Rules[1]["protocol"])
+	}
+	if fmt.Sprint(got.Rules[2]["network"]) != "[tcp udp]" || fmt.Sprint(got.Rules[2]["protocol"]) != "[http]" {
+		t.Errorf("rule #2 is %v, want both arrays verbatim", got.Rules[2])
+	}
+}
+
+func TestSniffingRidesOnlyWhenEnabled(t *testing.T) {
+	on := policyWith()
+	on.CorePlane.Sniffing = Sniffing{Enabled: boolPtr(true), Protocols: []string{"http", "tls"}, RouteOnly: boolPtr(true)}
+	got, err := Split(on, oneTag)
+	if err != nil {
+		t.Fatalf("Split: %v", err)
+	}
+	if got.Sniffing == nil {
+		t.Fatal("an enabled sniffing block did not ride to the assembler")
+	}
+	if fmt.Sprint(got.Sniffing.Protocols) != "[http tls]" {
+		t.Errorf("protocols = %v; the assembler renames to destOverride, stage 2 carries the model whole", got.Sniffing.Protocols)
+	}
+
+	off := policyWith()
+	off.CorePlane.Sniffing = Sniffing{Enabled: boolPtr(false), Protocols: []string{"http"}}
+	absent, err := Split(off, oneTag)
+	if err != nil {
+		t.Fatalf("Split(disabled): %v", err)
+	}
+	if absent.Sniffing != nil {
+		t.Errorf("a disabled block rode anyway: %+v", absent.Sniffing)
 	}
 }
 
@@ -101,14 +146,14 @@ func TestAUndecidedMatchFieldReportsTheWholeRule(t *testing.T) {
 func TestARepresentableRuleRenamesOutboundAndKeepsEveryOtherName(t *testing.T) {
 	got, err := Split(policyWith(
 		CoreRule{Domain: []string{"geosite:category-ads-all"}, Outbound: "srv-3f2a1c9e"},
-		CoreRule{IP: []string{"10.0.0.0/8"}, Port: "0-65535", Invert: boolPtr(true), Outbound: "srv-3f2a1c9e"},
+		CoreRule{IP: []string{"10.0.0.0/8"}, Port: "0-65535", Invert: boolPtr(false), Outbound: "srv-3f2a1c9e"},
 	), oneTag)
 	if err != nil {
 		t.Fatalf("Split: %v", err)
 	}
 	want := []Document{
 		{"outboundTag": "srv-3f2a1c9e", "domain": []string{"geosite:category-ads-all"}},
-		{"outboundTag": "srv-3f2a1c9e", "ip": []string{"10.0.0.0/8"}, "port": "0-65535", "invert": true},
+		{"outboundTag": "srv-3f2a1c9e", "ip": []string{"10.0.0.0/8"}, "port": "0-65535"},
 	}
 	if len(got.Rules) != len(want) {
 		t.Fatalf("got %d rules, want %d", len(got.Rules), len(want))
@@ -208,18 +253,82 @@ func TestReportBoundsAreEnforcedNotTruncated(t *testing.T) {
 	}
 }
 
-// The two shipped routing examples are the corpus's own policies; both are reported, and neither is a failure.
-func TestTheShippedRoutingExamplesCompileIntoReports(t *testing.T) {
+func TestAnInvertedRuleIsReportedWholeWithoutDeclaringItsOutbound(t *testing.T) {
+	got, err := Split(policyWith(
+		CoreRule{Domain: []string{"private.example"}, Invert: boolPtr(true), Outbound: "block"},
+		CoreRule{Network: []string{"tcp"}, Outbound: "direct"},
+	), oneTag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Unrepresentable) != 1 || got.Unrepresentable[0].Source != "corePlane rule #0" || !strings.Contains(got.Unrepresentable[0].Reason, "invert") {
+		t.Fatalf("missing positional invert report: %+v", got.Unrepresentable)
+	}
+	if strings.Contains(fmt.Sprint(got.Unrepresentable), "private.example") {
+		t.Error("report leaked the rule's destination")
+	}
+	if len(got.Rules) != 1 || got.Rules[0]["outboundTag"] != "direct" || fmt.Sprint(got.BuiltIns) != "[direct]" {
+		t.Fatalf("inverted rule leaked into config: %+v", got)
+	}
+}
+
+func TestSniffingRejectsUnsupportedValues(t *testing.T) {
+	for _, protocol := range []string{"mp4", "mkv", "ps", "www"} {
+		policy := policyWith()
+		policy.CorePlane.Sniffing.Protocols = []string{protocol}
+		if _, err := Split(policy, oneTag); err == nil {
+			t.Errorf("accepted unsupported sniffing protocol %s", protocol)
+		}
+	}
+	policy := policyWith()
+	policy.CorePlane.Sniffing.RouteOnly = boolPtr(false)
+	if _, err := Split(policy, oneTag); err == nil {
+		t.Error("accepted destination rewriting")
+	}
+}
+
+func TestSniffingEmitsInboundFieldsAndDefaultsToRouteOnly(t *testing.T) {
+	for _, protocols := range [][]string{nil, {"http", "tls", "quic", "fakedns"}} {
+		policy := policyWith()
+		policy.CorePlane.Sniffing = Sniffing{Enabled: boolPtr(true), Protocols: protocols}
+		routing, err := Split(policy, oneTag)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in := inboundDocument(oneTag[0], 20100, loopbackHost, routing.Sniffing)
+		sniffing := in["sniffing"].(Document)
+		if sniffing["enabled"] != true || sniffing["routeOnly"] != true {
+			t.Fatalf("wrong sniffing defaults: %v", sniffing)
+		}
+		if fmt.Sprint(sniffing["destOverride"]) != fmt.Sprint(protocols) && len(protocols) > 0 {
+			t.Errorf("protocols changed: %v", sniffing)
+		}
+		if _, exists := sniffing["protocols"]; exists {
+			t.Error("model field leaked into Xray config")
+		}
+		if _, exists := in["settings"].(Document)["sniffing"]; exists {
+			t.Error("sniffing was placed inside SOCKS settings")
+		}
+	}
+	if _, exists := inboundDocument(oneTag[0], 20100, loopbackHost, nil)["sniffing"]; exists {
+		t.Error("disabled sniffing was emitted")
+	}
+}
+
+func TestTheShippedRoutingExamplesCompileClean(t *testing.T) {
 	minimal := example[RoutingPolicy](t, "routing.minimal.json")
 	got, err := Split(&minimal, oneTag)
 	if err != nil {
 		t.Fatalf("Split(routing.minimal.json): %v", err)
 	}
-	if len(got.Rules) != 0 || len(got.Unrepresentable) != 1 {
-		t.Errorf("minimal policy: %d rules, %d reports; its one rule names direct and matches on network", len(got.Rules), len(got.Unrepresentable))
+	if len(got.Rules) != 1 || len(got.Unrepresentable) != 0 {
+		t.Errorf("minimal policy: %d rules, %d reports; its udp/53 rule matches on network, an array the pinned release reads", len(got.Rules), len(got.Unrepresentable))
 	}
-	if !strings.Contains(got.Unrepresentable[0].Reason, "direct") {
-		t.Errorf("the minimal policy reported %q; its blocker is the built-in outbound", got.Unrepresentable[0].Reason)
+	if len(got.BuiltIns) != 1 || got.BuiltIns[0] != "direct" {
+		t.Errorf("minimal policy BuiltIns = %v, want [direct] for its one direct rule", got.BuiltIns)
+	}
+	if fmt.Sprint(got.Rules[0]["network"]) != "[udp]" || fmt.Sprint(got.Rules[0]["port"]) != "53" {
+		t.Errorf("the udp/53 rule emitted as %v, want the network array and the port string verbatim", got.Rules[0])
 	}
 
 	twoPlane := example[RoutingPolicy](t, "routing.two-plane.json")
@@ -229,20 +338,13 @@ func TestTheShippedRoutingExamplesCompileIntoReports(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Split(routing.two-plane.json): %v", err)
 	}
-	// 2 authored entries + 1 sniffing + 2 rules naming block and direct.
-	if len(got.Rules) != 0 || len(got.Unrepresentable) != 5 {
-		t.Errorf("two-plane policy: %d rules, %d reports, want 0 and 5: %+v", len(got.Rules), len(got.Unrepresentable), got.Unrepresentable)
+	if len(got.Rules) != 2 || len(got.Unrepresentable) != 2 {
+		t.Errorf("two-plane policy: %d rules, %d reports, want 2 and 2 (the authored ones): %+v", len(got.Rules), len(got.Unrepresentable), got.Unrepresentable)
 	}
-	var sniffing bool
-	for _, r := range got.Unrepresentable {
-		if r.Source == "corePlane.sniffing" {
-			sniffing = true
-			if !strings.Contains(r.Reason, "ODEC-37") {
-				t.Errorf("the sniffing report names no decision: %q", r.Reason)
-			}
-		}
+	if len(got.BuiltIns) != 2 || got.BuiltIns[0] != "direct" || got.BuiltIns[1] != "block" {
+		t.Errorf("two-plane BuiltIns = %v, want [direct block] though the block rule is written first", got.BuiltIns)
 	}
-	if !sniffing {
-		t.Error("a policy with sniffing.enabled true reported no sniffing entry; doc 27 §6 puts routeOnly in the same undecided group")
+	if got.Sniffing == nil || got.Sniffing.RouteOnly == nil || !*got.Sniffing.RouteOnly {
+		t.Errorf("two-plane sniffing = %+v; the shipped block carries routeOnly true and the one-plane rule keeps it", got.Sniffing)
 	}
 }

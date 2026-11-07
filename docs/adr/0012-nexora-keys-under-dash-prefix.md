@@ -42,7 +42,7 @@ proxy for the user who never touched that key.
    a profile the user can select -- e.g. a ConnectorProfile surfaced as a `VirtualProfile`. That
    `+`-keyed object is legacy-owned surface data; the authoritative entity remains under `-nexora.*`. The
    derived object MUST be reconstructible from the `-` key, never the other way round.
-4. Within values, bare profile names MUST NOT carry the `+`: `packages/schema/routing-policy.schema.json:155`
+4. Within values, bare profile names MUST NOT carry the `+`: `packages/schema/routing-policy.schema.json:152`
    enforces `^(?!\+).+$`, because `nameAsKey` adds the prefix itself and a stored `+direct` produces a rule
    that can never match.
 5. Two further prefixes are reserved by the legacy engine and MUST NOT be reused: the attachment convention

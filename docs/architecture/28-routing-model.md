@@ -110,9 +110,10 @@ asserted by the key-pattern check over the routing examples in `packages/schema/
 
 The rank-4/5 ordering is the practical consequence of §2: a core rule can only refine a decision the browser
 already made, never reverse it. A core rule that *would* reverse it — e.g. "traffic to 1.2.3.4 must never use
-srv-abcd1234" — is expressible (`invert: true`, `#/$defs/coreRule/properties/invert`) but is reported to the UI
-as a cross-plane contradiction, because a user who wrote "always via VPN" in the browser and a matching
-"direct" rule in the core plane has one of those two intentions, not both.
+srv-abcd1234" — is expressible in the model (`invert: true`, `#/$defs/coreRule/properties/invert`) but cannot
+be passed through: Xray 24.11.11 ignores that field. The compiler reports the entire inverted rule as
+unrepresentable; it does not emit the opposite match. Cross-plane contradiction reporting in the browser is
+still separate work, not something that Core's config parser certifies.
 
 ## 8. What the compiler may and may not do
 

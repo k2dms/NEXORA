@@ -94,16 +94,13 @@
                   "http",
                   "tls",
                   "quic",
-                  "fakedns",
-                  "mp4",
-                  "mkv",
-                  "ps",
-                  "www"
+                  "fakedns"
                 ]
               }
             },
             "routeOnly": {
               "type": "boolean",
+              "const": true,
               "default": true
             }
           }

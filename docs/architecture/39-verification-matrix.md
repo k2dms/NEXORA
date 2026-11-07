@@ -312,8 +312,8 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-24 | no secret shown absent from logs, diagnostics or an exported bundle by a real run | `connector` · LIVE-10 | 3 · 3 |
 | VER-25 | no negative runtime test that a `-nexora.server.<id>` key yields no PAC entry, no `availableProfiles` row, no rule option | `extension` · assertion | 1 · 1 |
 | VER-26 | two version stamps coexisting (`-schemaVersion` 2, `-nexora.schemaVersion` 3) never loaded by the legacy engine together | `extension` · LIVE-14 | 1 · 1 |
-| VER-27 | the envelope→Xray compiler does not exist: representability, lowering, and the rank-5 bound are unread | `connector` · LIVE-04 | 2 · 3 |
-| VER-28 | golden compiled configs do not exist, so byte-determinism and the three canonical shapes are unproven | `connector` · assertion | 3 · 5 |
+| VER-27 | core-plane compilation and explicit per-tag fallbacks exist; browser-rule lowering and the LIVE-04 session remain unproved | `connector` · LIVE-04 | 2 · 3 |
+| VER-28 | four of doc 27 §3's six golden cases compare byte-for-byte; shape C's `headersRef` remains unresolved (`ODEC-36`), and fail-closed belongs in `chrome.proxy`, not a distinct Xray config | `connector` · assertion | 3 · 5 |
 | VER-30 | `core.select` performing no config write is asserted by nothing (and §9.5 changes what the row means) | `connector` · assertion: the applied-config hash is unchanged | 1 · 1 |
 | VER-31 | cross-entity referential integrity — a dangling `serverId` — checked by nothing, because JSON Schema cannot see a sibling key | `extension` · assertion | 3 · 4 |
 | VER-33 | the migration runner does not exist: ordering, resume, `dryRun`, per-step verify, restore-then-compare | `extension` · LIVE-23 | 2 · 3 |
@@ -351,7 +351,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-75 | `<local>` expansion shown in the UI — and there is no UI | `ui` · LIVE-15 | 1 · 1 |
 | VER-76 | chunk reassembly has no slice body — the contract says what a slice is, never where its bytes ride | `connector` · assertion | 1 · 1 |
 | VER-77 | hop 2 has no transport contract: the local pipe's message schema is undefined, and nothing says how the sender identity crosses it | `connector` · assertion | 1 · 1 |
-| VER-78 | the compiled bytes are byte-deterministic and `configHash` covers the byte string `ODEC-36` names — no compiler, so neither stability nor the hash's subject is proven | `connector` · assertion | 1 · 1 |
+| VER-78 | four goldens have a compiler producer and byte-stability checks; which byte string `configHash` covers is still gated by `ODEC-36` | `connector` · assertion | 1 · 1 |
 | VER-79 | the ladder spends its attempts per death, so a crash-looping Core is handed a fresh budget forever; no field bounds the deaths and none states a stability window | `connector` · decision (`ODEC-38`) | 1 · 1 |
 | VER-80 | the `config.apply` path from a frame to a replaced config and a restarted Core has no production caller: the method is not registered, and nothing supplies the intent an ids-only call cannot carry | `connector` · decision (`ODEC-39`) | 1 · 1 |
 | VER-82 | the pipe half of the version negotiation has nowhere to be written down: doc 21 §6 promises the negotiation result reaches the connector log and `diagnostics.get`, and every field that could carry it names only `protocolVersion` | `contracts` · decision (`ODEC-41`) | 1 · 1 |
@@ -563,6 +563,18 @@ split honest. The distribution moves with it (`no-code` 57 unchanged — the row
 `no-run` 6 → 7, 76 rows → 77, `connector` 41 → 42, `live-row` 39 → 40). Corrected in the same pass, because the run
 measured it rather than trusted it: ¶4's `38 of the 57` has said 37 against the data since a previous slice added a
 connector `no-code` row without touching a sentence no readNumbers regex covers.
+
+**Compiler evidence continuation.** `VER-28` and `VER-78` now name four compared goldens, including
+`two-plane-core-rules`. `connector/internal/apply/drive_test.go` recompiles each golden input and calls `apply.Write`
+before Xray 24.11.11 `run -test -c`: all four materialized configs were accepted and the invalid-port control rejected.
+The compiler now emits object-shaped `policy.levels`, VLESS credentials under `vnext[].users[]`, referenced
+`direct`/`freedom` and `block`/`blackhole` outbounds, array `network`/`protocol` selectors, and per-tag fallback rules
+after authored policy rules. All per-tag inbounds are SOCKS5; enabled sniffing is an inbound sibling of `settings`, with
+`protocols` mapped to `destOverride`. Schema and compiler restrict sniffing to `http`, `tls`, `quic`, `fakedns` and
+refuse `routeOnly: false`. Twenty loopback HTTP/UDP cases now exercise the measured routing subset; ignored
+`invert: true` is reported whole. This narrows rather than retires `ODEC-37`. `VER-28` retains shape C's unresolved `headersRef` and the fail-closed case owned by
+`chrome.proxy`; `VER-78` still owes the `ODEC-36` hash-subject decision. No row, state, distribution or marker count
+changes; doc 27 §3's existing anchor changes from three remaining cases to two in `verification.json` with the prose.
 
 **Open items.**
 
