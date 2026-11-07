@@ -28,10 +28,16 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 196
+    "counted": 195
   },
   "states": {
-    "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
+    "values": [
+      "no-code",
+      "no-check",
+      "no-run",
+      "no-fixture",
+      "needs-human"
+    ],
     "meaning": {
       "no-code": "the thing the claim is about does not exist yet -- no Connector, no compiler, no UI screen. Nothing can assert it until Phase 2 writes the component.",
       "no-check": "the thing exists (a contract, a document rule, an inherited file) and nothing asserts the claim about it. Closing it is a checker, not a feature.",
@@ -42,7 +48,17 @@
     "why": "The five states are five different jobs. A queue that only said 'not verified' would put 'write the Go compiler' and 'add one invalid example file' in the same column, and the first reading of it would be a wall."
   },
   "owners": {
-    "values": ["connector", "extension", "packages", "ui", "contracts", "tools", "ci", "human", "external"],
+    "values": [
+      "connector",
+      "extension",
+      "packages",
+      "ui",
+      "contracts",
+      "tools",
+      "ci",
+      "human",
+      "external"
+    ],
     "meaning": {
       "connector": "Go code under `connector/` plus its tests -- the supervisor, compiler, keystore, prober.",
       "extension": "the browser side: `nexora/extension/**` and the inherited `omega-*` behaviour it must not break.",
@@ -56,7 +72,16 @@
     }
   },
   "closingKinds": {
-    "values": ["live-row", "new-live-row", "assertion", "gate", "tool", "ci-step", "decision", "external-measurement"],
+    "values": [
+      "live-row",
+      "new-live-row",
+      "assertion",
+      "gate",
+      "tool",
+      "ci-step",
+      "decision",
+      "external-measurement"
+    ],
     "meaning": {
       "live-row": "closed by executing an existing `LIVE-NN` row of docs/verification/live-matrix.md; `ref` is that id.",
       "new-live-row": "closed by a `LIVE-NN` row that does not exist yet and must be written first -- the honest version of 'there is a test for it'.",
@@ -77,32 +102,110 @@
     "rule": "A row here that closes by `live-row` inherits that row's status. When a live row is executed, the rows pointing at it move from `no-run` to green in the same commit; a design document may not report a live row as done on the strength of its specification."
   },
   "vocabulary": [
-    { "doc": "docs/adr/0001-adr-practice.md", "anchor": "nothing checks it, the file MUST contain the literal line `Verified: N" },
-    { "doc": "docs/adr/0001-adr-practice.md", "anchor": "check or admit `Verified: NO` in public; append-only numbering means n" },
-    { "doc": "docs/adr/0020-test-strategy.md", "anchor": "per claim in this ADR, including the ones that are currently `Verified" },
-    { "doc": "docs/adr/README.md", "anchor": "names its own check or is recorded as `Verified: NO -- deferred to Pha" },
-    { "doc": "docs/adr/README.md", "anchor": "4. Name the check in `## Verification`, or state `Verified: NO -- defe" },
-    { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "> either enforced by a command that runs today or is demoted to a `Ver" },
-    { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "assertion with no automated or live check carries `Verified: NO — defe" },
-    { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "Every `Verified: NO` row above is owned by `docs/architecture/39-verif" },
-    { "doc": "docs/architecture/21-system-context.md", "anchor": "target layout; every behavioural claim with no check today carries `Ve" },
-    { "doc": "docs/architecture/22-component-contracts.md", "anchor": "verify` checks today, or carries `Verified: NO — deferred to Phase 2` " },
-    { "doc": "docs/architecture/31-security-model.md", "anchor": "- A control with no check behind it is labelled `Verified: NO — deferr" },
-    { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "secret-control claim with no check behind it is labelled `Verified: NO" },
-    { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "`Verified: NO — deferred to Phase 2` appears at the point of use throu" },
-    { "doc": "docs/architecture/36-observability.md", "anchor": "5. The runtime half of every row in §14 marked **NO — Phase 2**, which" },
-    { "doc": "docs/architecture/36-observability.md", "anchor": "write a record yet. `Verified: NO — deferred to Phase 2`." },
-    { "doc": "docs/architecture/37-ui-architecture.md", "anchor": "Every row in that table is a fact some other document needed and could" },
-    { "doc": "docs/architecture/37-ui-architecture.md", "anchor": "`Verified: NO` and named in §11." },
-    { "doc": "docs/architecture/38-compatibility-matrix.md", "anchor": "> makes a registry check and a no-Connector popup behaviour its two `V" },
-    { "doc": "docs/architecture/38-compatibility-matrix.md", "anchor": "browser-side halves, which are `Verified: NO` and named in §11." },
-    { "doc": "docs/audit/00-scope-and-method.md", "anchor": "each carries a row in `docs/architecture/39-verification-matrix.md` wi" },
-    { "doc": "docs/PROJECT-STATE.md", "anchor": "`Verified: NO — deferred to Phase 2`." },
-    { "doc": "docs/README.md", "anchor": "`architecture/39-verification-matrix.md` with `Verified: NO — deferred" },
-    { "doc": "docs/verification/live-env-contract.md", "anchor": "empty, the runner reports `SKIPPED` and the row keeps `Verified: NO`. " },
-    { "doc": "docs/verification/live-env-contract.md", "anchor": "row's `Verified:` column set to `NO — deferred to Phase 2` except wher" },
-    { "doc": "docs/verification/live-matrix.md", "anchor": "Status legend — `NO — Phase 2`: not executed, blocked on the connector" },
-    { "doc": "docs/verification/live-matrix.md", "anchor": "4. `Verified: NO` rows must appear in `docs/architecture/39-verificati" }
+    {
+      "doc": "docs/adr/0001-adr-practice.md",
+      "anchor": "nothing checks it, the file MUST contain the literal line `Verified: N"
+    },
+    {
+      "doc": "docs/adr/0001-adr-practice.md",
+      "anchor": "check or admit `Verified: NO` in public; append-only numbering means n"
+    },
+    {
+      "doc": "docs/adr/0020-test-strategy.md",
+      "anchor": "per claim in this ADR, including the ones that are currently `Verified"
+    },
+    {
+      "doc": "docs/adr/README.md",
+      "anchor": "names its own check or is recorded as `Verified: NO -- deferred to Pha"
+    },
+    {
+      "doc": "docs/adr/README.md",
+      "anchor": "4. Name the check in `## Verification`, or state `Verified: NO -- defe"
+    },
+    {
+      "doc": "docs/architecture/20-target-repository-layout.md",
+      "anchor": "> either enforced by a command that runs today or is demoted to a `Ver"
+    },
+    {
+      "doc": "docs/architecture/20-target-repository-layout.md",
+      "anchor": "assertion with no automated or live check carries `Verified: NO — defe"
+    },
+    {
+      "doc": "docs/architecture/20-target-repository-layout.md",
+      "anchor": "Every `Verified: NO` row above is owned by `docs/architecture/39-verif"
+    },
+    {
+      "doc": "docs/architecture/21-system-context.md",
+      "anchor": "target layout; every behavioural claim with no check today carries `Ve"
+    },
+    {
+      "doc": "docs/architecture/22-component-contracts.md",
+      "anchor": "verify` checks today, or carries `Verified: NO — deferred to Phase 2` "
+    },
+    {
+      "doc": "docs/architecture/31-security-model.md",
+      "anchor": "- A control with no check behind it is labelled `Verified: NO — deferr"
+    },
+    {
+      "doc": "docs/architecture/32-secrets-keystore-masking.md",
+      "anchor": "secret-control claim with no check behind it is labelled `Verified: NO"
+    },
+    {
+      "doc": "docs/architecture/33-binary-integrity.md",
+      "anchor": "`Verified: NO — deferred to Phase 2` appears at the point of use throu"
+    },
+    {
+      "doc": "docs/architecture/36-observability.md",
+      "anchor": "5. The runtime half of every row in §14 marked **NO — Phase 2**, which"
+    },
+    {
+      "doc": "docs/architecture/36-observability.md",
+      "anchor": "write a record yet. `Verified: NO — deferred to Phase 2`."
+    },
+    {
+      "doc": "docs/architecture/37-ui-architecture.md",
+      "anchor": "Every row in that table is a fact some other document needed and could"
+    },
+    {
+      "doc": "docs/architecture/37-ui-architecture.md",
+      "anchor": "`Verified: NO` and named in §11."
+    },
+    {
+      "doc": "docs/architecture/38-compatibility-matrix.md",
+      "anchor": "> makes a registry check and a no-Connector popup behaviour its two `V"
+    },
+    {
+      "doc": "docs/architecture/38-compatibility-matrix.md",
+      "anchor": "browser-side halves, which are `Verified: NO` and named in §11."
+    },
+    {
+      "doc": "docs/audit/00-scope-and-method.md",
+      "anchor": "each carries a row in `docs/architecture/39-verification-matrix.md` wi"
+    },
+    {
+      "doc": "docs/PROJECT-STATE.md",
+      "anchor": "`Verified: NO — deferred to Phase 2`."
+    },
+    {
+      "doc": "docs/README.md",
+      "anchor": "`architecture/39-verification-matrix.md` with `Verified: NO — deferred"
+    },
+    {
+      "doc": "docs/verification/live-env-contract.md",
+      "anchor": "empty, the runner reports `SKIPPED` and the row keeps `Verified: NO`. "
+    },
+    {
+      "doc": "docs/verification/live-env-contract.md",
+      "anchor": "row's `Verified:` column set to `NO — deferred to Phase 2` except wher"
+    },
+    {
+      "doc": "docs/verification/live-matrix.md",
+      "anchor": "Status legend — `NO — Phase 2`: not executed, blocked on the connector"
+    },
+    {
+      "doc": "docs/verification/live-matrix.md",
+      "anchor": "4. `Verified: NO` rows must appear in `docs/architecture/39-verificati"
+    }
   ],
   "retired": {
     "rule": "A row closes by deletion -- §9 rule 2 of docs/architecture/39-verification-matrix.md forbids closing it by editing its state -- and the id it held retires here. Ids are never renumbered or recycled: that is ADR-0001 rule 2 for ADR numbers, and the queue takes it because a `VER-NN` is cited across the corpus, in the step names of .github/workflows/verify.yml, and verbatim in runner logs, so renumbering would silently change what every earlier citation means. The harness refuses an id that is both live and retired, a retired id that is not in the issued range, and any hole in that range this list does not name -- which is what keeps a deletion a declared closure rather than a disappearance.",
@@ -190,6 +293,12 @@
         "closed": "2026-11-07",
         "was": "the compiled bytes are byte-deterministic over four goldens; which byte string `configHash` covers remains gated by `ODEC-36` -- the stability has a producer, the hash subject still has no decision",
         "artefact": "ODEC-36 answered by its own first option: `configHash` is the handle-bearing document's digest, and the decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material, the written bytes deliberately not the subject. The stability half the row already had: `emit_test.go` pins shape A's hash of the handle-bearing document and four goldens compile byte-for-byte, accepted by the pinned Xray. The labelled row in doc 27 §9 reads Verified as data; the cost its option carried -- a rotation behind an unchanged reference does not move this hash -- is stated beside the decision and owned by `core.restart`"
+      },
+      {
+        "id": "VER-88",
+        "closed": "2026-11-07",
+        "was": "the `config.apply` method is still not registered: the surface is wired end to end except the supervisor's `Launch`, and no document says where a production build gets the Core binary path from",
+        "artefact": "ODEC-44 answered by its own first option and the registration it unblocked is wired in the same commit: `main.go` builds the per-user layout of doc 34 §7 (state, config, keystore, core), opens the keystore with the platform's own protector, constructs the supervisor whose `Launch` reads the install receipt per spawn (`Launch` now returns an error the start reports, so Core not being installed is a refusal naming the reason, not a generic failure), and registers `config.apply` in the dispatcher. The wiring tests measure the registration from the wire -- the ids-only call answers the intent BadRequest a registered method answers -- and the Launch resolution from the receipt. The labelled row in doc 27 §9 reads Verified now"
       }
     ]
   },
@@ -199,12 +308,27 @@
       "subject": "the import boundary -- nothing under `nexora/**` or `packages/**` may import from `omega-*` -- is asserted by nothing",
       "state": "no-code",
       "owner": "ci",
-      "closesBy": { "kind": "gate", "ref": "import-graph assertion in .github/workflows/verify.yml" },
+      "closesBy": {
+        "kind": "gate",
+        "ref": "import-graph assertion in .github/workflows/verify.yml"
+      },
       "at": [
-        { "doc": "docs/adr/0002-keep-omega-directories-additive-layout.md", "anchor": "Verified: NO — deferred to Phase 2 (rule 4's import boundary has no ch" },
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "`nexora/**` and `packages/**` import nothing from `omega-*`" },
-        { "doc": "docs/architecture/22-component-contracts.md", "anchor": "or the command handlers. Testable as an import-graph assertion; `Verif" },
-        { "doc": "docs/architecture/37-ui-architecture.md", "anchor": "(`docs/architecture/20-target-repository-layout.md` §7). `Verified: NO" }
+        {
+          "doc": "docs/adr/0002-keep-omega-directories-additive-layout.md",
+          "anchor": "Verified: NO — deferred to Phase 2 (rule 4's import boundary has no ch"
+        },
+        {
+          "doc": "docs/architecture/20-target-repository-layout.md",
+          "anchor": "`nexora/**` and `packages/**` import nothing from `omega-*`"
+        },
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "or the command handlers. Testable as an import-graph assertion; `Verif"
+        },
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "(`docs/architecture/20-target-repository-layout.md` §7). `Verified: NO"
+        }
       ],
       "why": "ADR-0002's whole bargain is that the legacy tree keeps working untouched; the boundary is the only thing enforcing it, and it is a rule with no enforcement until there is code on one side of it."
     },
@@ -213,10 +337,19 @@
       "subject": "no CI grep gate fails when `vless|reality|xtls` appears as executable code under `packages/` or `nexora/`",
       "state": "no-code",
       "owner": "ci",
-      "closesBy": { "kind": "ci-step", "ref": "protocol-code grep in .github/workflows/verify.yml" },
+      "closesBy": {
+        "kind": "ci-step",
+        "ref": "protocol-code grep in .github/workflows/verify.yml"
+      },
       "at": [
-        { "doc": "docs/adr/0003-xray-implements-all-transport-protocols.md", "anchor": "Verified: NO — deferred to Phase 2." },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "No protocol code in `nexora/**`" }
+        {
+          "doc": "docs/adr/0003-xray-implements-all-transport-protocols.md",
+          "anchor": "Verified: NO — deferred to Phase 2."
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "No protocol code in `nexora/**`"
+        }
       ],
       "why": "Constraint 1 is the reason the Connector exists. A violation is a rewrite of the architecture, so it is guarded by a machine and not by review."
     },
@@ -225,11 +358,23 @@
       "subject": "extension identity and the version-line continuity are asserted by nothing in-repo -- the wipe trap is a behaviour of the store, not of this tree",
       "state": "needs-human",
       "owner": "external",
-      "closesBy": { "kind": "external-measurement", "ref": "LIVE-14 plus a store-side upgrade observation" },
+      "closesBy": {
+        "kind": "external-measurement",
+        "ref": "LIVE-14 plus a store-side upgrade observation"
+      },
       "at": [
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "Extension identity and version-line continuity" },
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "`omega-target-chromium-extension/src/coffee/background.coffee:41` is w" },
-        { "doc": "docs/adr/0015-continue-zeroomega-version-line.md", "anchor": "- Verified: NO -- deferred to Phase 2: a release-gate assertion \"publi" }
+        {
+          "doc": "docs/architecture/20-target-repository-layout.md",
+          "anchor": "Extension identity and version-line continuity"
+        },
+        {
+          "doc": "docs/architecture/20-target-repository-layout.md",
+          "anchor": "`omega-target-chromium-extension/src/coffee/background.coffee:41` is w"
+        },
+        {
+          "doc": "docs/adr/0015-continue-zeroomega-version-line.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: a release-gate assertion \"publi"
+        }
       ],
       "why": "The most destructive failure available (a `1.x` restart wipes user data on the second update) has a release-gate assertion specified and no run behind it; the rest cannot be measured without publishing."
     },
@@ -238,10 +383,19 @@
       "subject": "the Ladder A legacy build chain ran by hand on one host and is green on three runner images at the pinned floors (docs/audit/99-baseline-report.md §12, 2026-11-05); what the row still owes is the half no run can give it while no lockfile is tracked -- that the dependency set which built there is the set a later host resolves",
       "state": "no-run",
       "owner": "ci",
-      "closesBy": { "kind": "ci-step", "ref": "legacy build + mocha-summary floor parsing in .github/workflows/verify.yml" },
+      "closesBy": {
+        "kind": "ci-step",
+        "ref": "legacy build + mocha-summary floor parsing in .github/workflows/verify.yml"
+      },
       "at": [
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "Legacy build graph still reachable from `omega-build`" },
-        { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "Verified: NO — deferred to Phase 2: none of the cells above for a root" }
+        {
+          "doc": "docs/architecture/20-target-repository-layout.md",
+          "anchor": "Legacy build graph still reachable from `omega-build`"
+        },
+        {
+          "doc": "docs/architecture/20-target-repository-layout.md",
+          "anchor": "Verified: NO — deferred to Phase 2: none of the cells above for a root"
+        }
       ],
       "why": "A build that works only on the machine that produced it cannot be the floor everything else is pinned to; no lockfile is tracked, so even the dependency set is a claim (docs/PROJECT-STATE.md §9.2)."
     },
@@ -250,10 +404,19 @@
       "subject": "no test shows that a second Native Messaging connection re-adopts the running Connector instead of starting a second one",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-13" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-13"
+      },
       "at": [
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "Reconnect adopts the running Connector instead of starting a second one" },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "`CoreAlreadyRunning`, never a second Core. `Verified: NO — deferred to" }
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "Reconnect adopts the running Connector instead of starting a second one"
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "`CoreAlreadyRunning`, never a second Core. `Verified: NO — deferred to"
+        }
       ],
       "why": "Two Cores means two sets of inbounds and one silently winning; the lock-file format is itself an open decision (docs/architecture/40-open-decisions.md)."
     },
@@ -262,11 +425,23 @@
       "subject": "reconnect semantics after a port teardown (re-run `connector.hello`, then reconcile by `config.snapshot` hash) have never been executed",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-13" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-13"
+      },
       "at": [
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "`Verified: NO — deferred to Phase 2`." },
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "(`docs/architecture/30-failure-policy.md`). `Verified: NO — deferred t" },
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Jittered reconnect actually jitters" }
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "`Verified: NO — deferred to Phase 2`."
+        },
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "(`docs/architecture/30-failure-policy.md`). `Verified: NO — deferred t"
+        },
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "Jittered reconnect actually jitters"
+        }
       ],
       "why": "The reconcile step is what turns 'the pipe came back' into 'the state we believe is the state that is applied'; without it every drift claim is an assumption."
     },
@@ -275,12 +450,27 @@
       "subject": "the scope is now built, assigned and proven for the child the Connector spawns, but nothing proves the three-level containment (`Xray ⊆ connector ⊆ host`) survives a killed parent above that child, or that the Connector runs in the interactive session and never as a service",
       "state": "no-run",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-13" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-13"
+      },
       "at": [
-        { "doc": "docs/adr/0005-two-process-connector.md", "anchor": "Verified: NO — deferred to Phase 2." },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "at spawn time and re-adopted on reconnect. `Verified: NO — deferred to" },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "`Xray ⊆ connector ⊆ host` containment holds after a SIGKILL of the parent" },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "The Connector runs in the interactive user's session and never as a service/agent" }
+        {
+          "doc": "docs/adr/0005-two-process-connector.md",
+          "anchor": "Verified: NO — deferred to Phase 2."
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "at spawn time and re-adopted on reconnect. `Verified: NO — deferred to"
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "`Xray ⊆ connector ⊆ host` containment holds after a SIGKILL of the parent"
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "The Connector runs in the interactive user's session and never as a service/agent"
+        }
       ],
       "why": "On Windows a bare child outlives its parent, so containment must be *requested* (Job Objects); an installer that registers a service turns a per-user proxy into a machine-wide one. `connector/internal/supervisor` now requests it, reports the answer, and ends its own child by closing the job in a test that runs on this host -- which is why the row is `no-run` and not closed: the parent it kills is the test process, not the host (`cmd/nexora-host`, unwritten, `ODEC-35`), and the session that kills a real parent is LIVE-13."
     },
@@ -289,8 +479,16 @@
       "subject": "no test shows that the host registers exactly one Native Messaging entry point per installation",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-16" },
-      "at": [{ "doc": "docs/architecture/21-system-context.md", "anchor": "Exactly one Native Messaging entry point per extension installation" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-16"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "Exactly one Native Messaging entry point per extension installation"
+        }
+      ],
       "why": "Two manifests for one extension id give the browser two paths into one Connector and the sender policy one untested assumption."
     },
     {
@@ -298,12 +496,27 @@
       "subject": "the runtime half of the loopback-only rule is unmeasured: nothing shows a compiled non-loopback inbound is refused, or that `chrome.proxy` never points outside 127.0.0.1",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-03" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-03"
+      },
       "at": [
-        { "doc": "docs/adr/0006-loopback-only-inbounds.md", "anchor": "Verified: NO — deferred to Phase 2 (rule 1 only, and only declarativel" },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "No inbound binds non-loopback" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Non-loopback bind is impossible to emit" },
-        { "doc": "docs/architecture/24-options-envelope-compat.md", "anchor": "`ConnectorProfile` compiles to a loopback proxy string" }
+        {
+          "doc": "docs/adr/0006-loopback-only-inbounds.md",
+          "anchor": "Verified: NO — deferred to Phase 2 (rule 1 only, and only declarativel"
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "No inbound binds non-loopback"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "Non-loopback bind is impossible to emit"
+        },
+        {
+          "doc": "docs/architecture/24-options-envelope-compat.md",
+          "anchor": "`ConnectorProfile` compiles to a loopback proxy string"
+        }
       ],
       "why": "Constraint 4. The `const` in the schema makes the value unfalsifiable at the contract layer, and stage 7 closes the door a compiler could otherwise open: `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before the bytes are handed on, and `compile_test.go` shows an `0.0.0.0` inbound cannot pass it. What stays unmeasured is this row's own word -- measured: only `Get-NetTCPConnection` / `ss -ltnp` can say that a running Connector holds no listener outside loopback, and `ADR-0006:108` names that as the untested half of its rule 1."
     },
@@ -312,8 +525,16 @@
       "subject": "no test shows the Connector listens on nothing but its loopback inbounds -- there is no HTTP control surface to grep",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-03" },
-      "at": [{ "doc": "docs/adr/0004-native-messaging-only-no-loopback-http-control.md", "anchor": "Verified: NO — deferred to Phase 2." }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-03"
+      },
+      "at": [
+        {
+          "doc": "docs/adr/0004-native-messaging-only-no-loopback-http-control.md",
+          "anchor": "Verified: NO — deferred to Phase 2."
+        }
+      ],
       "why": "ADR-0004's negative is the security property every other control assumes; a stray 127.0.0.1:8080 would be invisible to this repository's checks."
     },
     {
@@ -321,10 +542,19 @@
       "subject": "the idempotency window has no field and no test: nothing bounds `dedupeWindow`, and no run shows two identical commands answering identically",
       "state": "no-fixture",
       "owner": "contracts",
-      "closesBy": { "kind": "assertion", "ref": "the idempotency window is a bounded field, and a duplicate pair has exactly one side effect" },
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the idempotency window is a bounded field, and a duplicate pair has exactly one side effect"
+      },
       "at": [
-        { "doc": "docs/adr/0008-idempotency-and-replay.md", "anchor": "Verified: NO — deferred to Phase 2 (rule 2 has no check and no data ye" },
-        { "doc": "docs/architecture/22-component-contracts.md", "anchor": "identical answers (ADR-0008). `Verified: NO — deferred to Phase 2` for" }
+        {
+          "doc": "docs/adr/0008-idempotency-and-replay.md",
+          "anchor": "Verified: NO — deferred to Phase 2 (rule 2 has no check and no data ye"
+        },
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "identical answers (ADR-0008). `Verified: NO — deferred to Phase 2` for"
+        }
       ],
       "why": "The replay fixtures prove a recorded pair answers once; only a live run can prove the window's bounds, and today no contract even states them."
     },
@@ -333,12 +563,27 @@
       "subject": "`UnsupportedCombination` is in the taxonomy with a transport-combination meaning, so a user-supplied port overlap has a refusal and no code that names it",
       "state": "no-check",
       "owner": "contracts",
-      "closesBy": { "kind": "assertion", "ref": "the overlap refusal is a named error code, not BadRequest" },
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the overlap refusal is a named error code, not BadRequest"
+      },
       "at": [
-        { "doc": "docs/architecture/22-component-contracts.md", "anchor": "`UnsupportedCombination` — `Verified: NO — deferred to Phase 2`, and f" },
-        { "doc": "docs/architecture/30-failure-policy.md", "anchor": "`Verified: NO — deferred to Phase 2`." },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2`." },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Block port range and allocation range are disjoint" }
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "`UnsupportedCombination` — `Verified: NO — deferred to Phase 2`, and f"
+        },
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "`Verified: NO — deferred to Phase 2`."
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "`Verified: NO — deferred to Phase 2`."
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "Block port range and allocation range are disjoint"
+        }
       ],
       "why": "Nothing about either document is malformed, so a generic error would blame the user. The refusal exists: `connector/internal/compile/ports.go` refuses an allocation range that overlaps the block range rather than drawing around it, so no partial document reaches the writer. Two halves stay owed. The refusal is a Go error with no command surface, and the code doc 30 §8 promises for it means 'semantically invalid transport combination' (`packages/schema/protocol/error-taxonomy.json:14`), which an overlap is not -- `ODEC-03` holds that reading. And the shipped disjointness of the two files is checked where both are loaded, which is now stage 3 of the compiler (`model_test.go`), not a schema rule."
     },
@@ -347,12 +592,27 @@
       "subject": "the browser half of fail-closed has never run: no kill of the Core shows a closed block port, a badge, and no `DirectProfile` left applied",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-11" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-11"
+      },
       "at": [
-        { "doc": "docs/adr/0009-fail-closed-by-default.md", "anchor": "Verified: PARTIAL — the contract half is green today and runs in CI; t" },
-        { "doc": "docs/architecture/30-failure-policy.md", "anchor": "browser is `Verified: NO — deferred to Phase 2` and owned by row `LIVE" },
-        { "doc": "docs/architecture/30-failure-policy.md", "anchor": "The block is proven closed before it is written" },
-        { "doc": "docs/architecture/36-observability.md", "anchor": "`inForcePort` is the port `chrome.proxy.settings` holds, and a refusal is reported as a refusal" }
+        {
+          "doc": "docs/adr/0009-fail-closed-by-default.md",
+          "anchor": "Verified: PARTIAL — the contract half is green today and runs in CI; t"
+        },
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "browser is `Verified: NO — deferred to Phase 2` and owned by row `LIVE"
+        },
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "The block is proven closed before it is written"
+        },
+        {
+          "doc": "docs/architecture/36-observability.md",
+          "anchor": "`inForcePort` is the port `chrome.proxy.settings` holds, and a refusal is reported as a refusal"
+        }
       ],
       "why": "Constraint 10. The failure mode is silently not proxying, so the assertion must be about the absence of traffic and the presence of a refusal, which only a real browser and a listener on the block port can show."
     },
@@ -361,11 +621,23 @@
       "subject": "the runtime data-split invariant is unmeasured: no dump of `chrome.storage.local`, the state mirror and `chrome.storage.sync` after genuine use",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-22" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-22"
+      },
       "at": [
-        { "doc": "docs/adr/0010-data-split-extension-intent-connector-truth.md", "anchor": "Verified: NO — deferred to Phase 2 for the runtime invariant; the stru" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "Nothing secret-shaped ever reaches `chrome.storage.sync`, and Lite keeps intent readable" },
-        { "doc": "docs/architecture/24-options-envelope-compat.md", "anchor": "`transformValueForSync` honours the registry for `-nexora.*`" }
+        {
+          "doc": "docs/adr/0010-data-split-extension-intent-connector-truth.md",
+          "anchor": "Verified: NO — deferred to Phase 2 for the runtime invariant; the stru"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "Nothing secret-shaped ever reaches `chrome.storage.sync`, and Lite keeps intent readable"
+        },
+        {
+          "doc": "docs/architecture/24-options-envelope-compat.md",
+          "anchor": "`transformValueForSync` honours the registry for `-nexora.*`"
+        }
       ],
       "why": "The structural half is green (namespace loop, `secretBearing ⇒ ¬syncEligible`); the runtime half is expected to fail on `zeroOmegaSync` until the §17 open item closes, which is exactly why it is a row and not a claim."
     },
@@ -374,13 +646,31 @@
       "subject": "no live run has shown a DPAPI round-trip, a rotation, a purge or an owner-only config file -- the store, its round-trip and its rotation are Go tests over the real crypt32 call on Windows (`connector/internal/keystore`), and the owner-only file is now written and re-read by Go tests too (`connector/internal/apply`); `keystore.purge` and the masking sink are not written",
       "state": "no-run",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-18" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-18"
+      },
       "at": [
-        { "doc": "docs/adr/0011-windows-keystore-dpapi.md", "anchor": "- Verified: NO -- deferred to Phase 2: DPAPI round-trip, same-user dec" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "The keystore round-trips, rotates, purges, and its compiled config is owner-only" },
-        { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "itself is `Verified: NO — deferred to Phase 2` (LIVE-18)." },
-        { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "The generated config file is owner-only on disk" },
-        { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "In memory" }
+        {
+          "doc": "docs/adr/0011-windows-keystore-dpapi.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: DPAPI round-trip, same-user dec"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "The keystore round-trips, rotates, purges, and its compiled config is owner-only"
+        },
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "itself is `Verified: NO — deferred to Phase 2` (LIVE-18)."
+        },
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "The generated config file is owner-only on disk"
+        },
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "In memory"
+        }
       ],
       "why": "ADR-0011 chose DPAPI over home-grown crypto precisely so the OS would be the part no test of ours can fake; the test now calls that part for real, which proves the call and not the session around it."
     },
@@ -389,11 +679,23 @@
       "subject": "no secret has been shown absent from logs, diagnostics or an exported bundle by a real run -- the offline gate is green, the artefacts do not exist",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-10" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-10"
+      },
       "at": [
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "No secret in transit, logs or diagnostics" },
-        { "doc": "docs/architecture/26-command-surface.md", "anchor": "`diagnostics.get` output contains no secret" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "Secrets never exist as values in a syncing or logging place" }
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "No secret in transit, logs or diagnostics"
+        },
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "`diagnostics.get` output contains no secret"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "Secrets never exist as values in a syncing or logging place"
+        }
       ],
       "why": "Constraint 9. `tools/check-no-secrets.mjs` cannot prove absence over a real keystore; only a grep of artefacts produced by a real session can."
     },
@@ -402,8 +704,16 @@
       "subject": "no negative runtime test shows that a `-nexora.server.<id>` key produces no PAC entry, no `availableProfiles` row and no rule picker option",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "assertion", "ref": "the negative PAC and profile-list test over the inherited engine" },
-      "at": [{ "doc": "docs/adr/0012-nexora-keys-under-dash-prefix.md", "anchor": "- Verified: NO -- deferred to Phase 2: the negative runtime test \"a `-"}],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the negative PAC and profile-list test over the inherited engine"
+      },
+      "at": [
+        {
+          "doc": "docs/adr/0012-nexora-keys-under-dash-prefix.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: the negative runtime test \"a `-"
+        }
+      ],
       "why": "ADR-0012's whole scheme rests on the `+`-only iteration at `omega-pac/src/profiles.coffee:111-118`; the prefix rejection is asserted on the data, and the engine's behaviour is the other half."
     },
     {
@@ -411,8 +721,16 @@
       "subject": "the two version stamps coexisting (`-schemaVersion` at 2, `-nexora.schemaVersion` at 3) has never been loaded by the legacy engine alongside the new one",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-14" },
-      "at": [{ "doc": "docs/architecture/24-options-envelope-compat.md", "anchor": "`-schemaVersion` stays `2` while `-nexora.schemaVersion` is `3`" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-14"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/24-options-envelope-compat.md",
+          "anchor": "`-schemaVersion` stays `2` while `-nexora.schemaVersion` is `3`"
+        }
+      ],
       "why": "If the legacy chain reads the newer stamp it starts its own migration, which is the destructive path ADR-0014 exists to avoid."
     },
     {
@@ -420,12 +738,27 @@
       "subject": "core-plane compilation and per-tag fallbacks exist; browser-rule lowering, cross-plane representability and the LIVE-04 session remain unproved",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-04" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-04"
+      },
       "at": [
-        { "doc": "docs/adr/0013-omega-conditions-compiles-into-xray-routing.md", "anchor": "- Verified: NO -- deferred to Phase 2: the compiler itself, the repres" },
-        { "doc": "docs/architecture/28-routing-model.md", "anchor": "Lowering a rule never changes its meaning" },
-        { "doc": "docs/architecture/28-routing-model.md", "anchor": "Rank 5 is unreachable in a compiled config" },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "fixtures. `Verified: NO — Phase 2` for a compiler that could violate i" }
+        {
+          "doc": "docs/adr/0013-omega-conditions-compiles-into-xray-routing.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: the compiler itself, the repres"
+        },
+        {
+          "doc": "docs/architecture/28-routing-model.md",
+          "anchor": "Lowering a rule never changes its meaning"
+        },
+        {
+          "doc": "docs/architecture/28-routing-model.md",
+          "anchor": "Rank 5 is unreachable in a compiled config"
+        },
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "fixtures. `Verified: NO — Phase 2` for a compiler that could violate i"
+        }
       ],
       "why": "The compiler now emits the shipped core-plane rules in authored order and explicit inbound-to-server fallbacks. Four goldens and local Xray config acceptance pin those bytes; loopback HTTP/UDP tests exercise the measured routing subset. Invert:true is reported whole because the pinned release ignores it. These checks do not lower legacy browser conditions or execute LIVE-04's browser session, cross-plane reporting and containment. ODEC-37 retains residual predicate semantics; ODEC-05 and ODEC-23 still gate resolver and geo-data behavior. The fourth anchor is doc 33's door-back prohibition: loopback inspection and fixtures exist, but the complete installed session remains unproved."
     },
@@ -434,13 +767,31 @@
       "subject": "golden compiled configs pin four of doc 27 §3's six fixtures; shape C's headersRef remains unresolved and fail-closed belongs in chrome.proxy rather than a distinct Xray config",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "golden config snapshots under connector/testdata/config/*.golden.json" },
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "golden config snapshots under connector/testdata/config/*.golden.json"
+      },
       "at": [
-        { "doc": "docs/adr/0020-test-strategy.md", "anchor": "- Verified: NO -- deferred to Phase 2: the golden-config snapshots, th" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2` (two of the six, for two reasons)" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Compilation is byte-deterministic" },
-        { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "`Verified: NO — deferred to Phase 2` for byte-exactness (ADR-0020's go" },
-        { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "The three canonical configs compile byte-for-byte as shown" }
+        {
+          "doc": "docs/adr/0020-test-strategy.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: the golden-config snapshots, th"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "`Verified: NO — deferred to Phase 2` (two of the six, for two reasons)"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "Compilation is byte-deterministic"
+        },
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "`Verified: NO — deferred to Phase 2` for byte-exactness (ADR-0020's go"
+        },
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "The three canonical configs compile byte-for-byte as shown"
+        }
       ],
       "why": "Tier 2 of ADR-0020. A diff in a golden file is a contract change; its reason belongs in the same diff. Four exist: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `multi-server-ordered` and `two-plane-core-rules` under `connector/testdata/config/`, compared byte-for-byte by `connector/internal/compile/golden_test.go`, which writes only with `-golden.update`. `connector/internal/apply/drive_test.go` recompiles all four, checks the snapshots, materializes with `apply.Write`, and drives Xray 24.11.11 `run -test -c`: all four written configs were accepted and the invalid-port negative control rejected. The corrected bytes use object-shaped policy.levels, VLESS vnext[].users[], explicit per-tag fallbacks after authored rules, referenced freedom/blackhole outbounds, array selectors and inbound-sibling sniffing. This is config acceptance, not runtime routing evidence, and `ODEC-37` remains open. The remaining two cases are shape C's unresolved `headersRef` materialization (`ODEC-36`) and the fail-closed variant, which has no distinct Xray bytes because docs/architecture/30-failure-policy.md §7 puts the block in `chrome.proxy`."
     },
@@ -449,11 +800,23 @@
       "subject": "no live run shows that a failed `config.apply` leaves the previous config applied and reports `previousConfigHash` -- the writer and its rollback are Go tests over a temp directory (`connector/internal/apply`); the apply that failed was never driven by a browser",
       "state": "no-run",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-03" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-03"
+      },
       "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "the writer and its rollback are Go tests in `connector/internal/apply`" },
-        { "doc": "docs/architecture/26-command-surface.md", "anchor": "`config.apply` restarts only on hash change" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "A failed apply leaves the previous config applied" }
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "the writer and its rollback are Go tests in `connector/internal/apply`"
+        },
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "`config.apply` restarts only on hash change"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "A failed apply leaves the previous config applied"
+        }
       ],
       "why": "Same principle as the subscription rule at two layers; a half-applied config is the state where nothing is true. The mechanism is now code and its rollback is measured: `connector/internal/apply` writes a temp file, syncs, chmods, renames, and a document whose secret is missing fails before any byte is written, so the file on disk keeps both its bytes and the hash `previousConfigHash` would report (`write_test.go`). What that does not prove is the sentence's subject: an apply that failed under a running Core, from a real extension, over a real frame."
     },
@@ -462,8 +825,16 @@
       "subject": "`core.select` is specified to perform no config write, and no assertion or run proves it",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "core.select leaves the applied-config hash unchanged" },
-      "at": [{ "doc": "docs/architecture/26-command-surface.md", "anchor": "`core.select` performs no config write" }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "core.select leaves the applied-config hash unchanged"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "`core.select` performs no config write"
+        }
+      ],
       "why": "Switching a profile is the hottest operation in the product; if it rewrites the config the hash-equality rule in VER-29 and every 'nothing changed' claim are false. Note that the inbound-per-tag decision (docs/PROJECT-STATE.md §9.5) determines what this row even means. No live row covers it -- LIVE-05 is a transport row, so the earlier citation of it here was wrong; the closer is a handler assertion over the applied-config hash."
     },
     {
@@ -471,12 +842,27 @@
       "subject": "cross-entity referential integrity -- a dangling `serverId` -- is checked by nothing, because JSON Schema cannot see a sibling envelope key",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "assertion", "ref": "the ProfileRegistry load test refusing a profile with a named reason" },
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the ProfileRegistry load test refusing a profile with a named reason"
+      },
       "at": [
-        { "doc": "docs/architecture/22-component-contracts.md", "anchor": "performs it at load and refuses the profile with a named reason; `Veri" },
-        { "doc": "docs/architecture/26-command-surface.md", "anchor": "`profile.import` rejects a dangling `serverId`" },
-        { "doc": "docs/architecture/26-command-surface.md", "anchor": "Phase-2 live row, not a schema rule. Recorded as `Verified: NO — defer" },
-        { "doc": "docs/architecture/28-routing-model.md", "anchor": "Every browser rule maps to a profile that exists" }
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "performs it at load and refuses the profile with a named reason; `Veri"
+        },
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "`profile.import` rejects a dangling `serverId`"
+        },
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "Phase-2 live row, not a schema rule. Recorded as `Verified: NO — defer"
+        },
+        {
+          "doc": "docs/architecture/28-routing-model.md",
+          "anchor": "Every browser rule maps to a profile that exists"
+        }
       ],
       "why": "The one class of invalid data the contract layer provably cannot catch, and the one a restored backup is most likely to contain (VER-38)."
     },
@@ -485,10 +871,19 @@
       "subject": "the `unrepresentable[]` shape is validated as data and the command answer now carries it; nothing shows a browser reporting rather than dropping",
       "state": "no-run",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-04" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-04"
+      },
       "at": [
-        { "doc": "docs/architecture/26-command-surface.md", "anchor": "`{source, reason}`, never silently discarded. **Verified as data; the " },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`unrepresentable` shape is identical in policy and command" }
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "`{source, reason}`, never silently discarded. **Verified as data; the "
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "`unrepresentable` shape is identical in policy and command"
+        }
       ],
       "why": "ADR-0013's promise is 'report instead of drop'. The shape being identical in two files is the cheap half; a compiler that silently omits a rule is the defect the promise is about. The promise has a producer -- `connector/internal/compile/split.go` turns a built-in tag, an undecided match spelling or the policy's own note into an `unrepresentable[]` entry and enforces doc 27 §7's 200-character and 256-entry bounds rather than truncating -- and it now has an answer: `connector/cmd/nexora-connector/config_apply.go` puts `Result.Unrepresentable` into the `config.apply` result, and `config_apply_test.go` shows the shipped policy's built-in-tag rule and a control enabled on top of it both arriving in one frame while the config stays applied, so a report with one entry in it cannot be a report that dropped the other. What is unmeasured is the half this row was always about: `LIVE-04`, a real extension reading that array and a real user being shown it. ADR-0013 forbids the drop, not the silence at the far end."
     },
@@ -497,11 +892,23 @@
       "subject": "the migration runner does not exist: ordering, idempotency, resume, `dryRun`, per-step verification and restore-then-compare are all unrun",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-23" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-23"
+      },
       "at": [
-        { "doc": "docs/adr/0014-schema-version-3-and-backup-before-migrate.md", "anchor": "- Verified: NO -- deferred to Phase 2: the runner itself (ordering, id" },
-        { "doc": "docs/architecture/35-schema-versioning-migration.md", "anchor": "A run orders, verifies, resumes, restores and aborts as specified" },
-        { "doc": "docs/architecture/35-schema-versioning-migration.md", "anchor": "The snapshot survives quota pressure and MV3 teardown" }
+        {
+          "doc": "docs/adr/0014-schema-version-3-and-backup-before-migrate.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: the runner itself (ordering, id"
+        },
+        {
+          "doc": "docs/architecture/35-schema-versioning-migration.md",
+          "anchor": "A run orders, verifies, resumes, restores and aborts as specified"
+        },
+        {
+          "doc": "docs/architecture/35-schema-versioning-migration.md",
+          "anchor": "The snapshot survives quota pressure and MV3 teardown"
+        }
       ],
       "why": "Constraint 13 and ADR-0014: a migration test that never restores has shown nothing about recoverability, and MV3 teardown is a mid-write event on a real worker, not a unit-test metaphor."
     },
@@ -510,8 +917,16 @@
       "subject": "a future envelope is specified to be held read-only while the legacy chain does not fire; neither half has been executed",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-24" },
-      "at": [{ "doc": "docs/architecture/35-schema-versioning-migration.md", "anchor": "A future envelope is held read-only and the legacy chain does not fire" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-24"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/35-schema-versioning-migration.md",
+          "anchor": "A future envelope is held read-only and the legacy chain does not fire"
+        }
+      ],
       "why": "The inherited engine's behaviour on the same input is to delete the envelope and write defaults -- which is why this is one row with two halves and not a schema rule."
     },
     {
@@ -519,11 +934,23 @@
       "subject": "an envelope restored onto a machine whose keystore does not hold the value is specified to degrade visibly with `InvalidProfile`; never demonstrated",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-19" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-19"
+      },
       "at": [
-        { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "Another machine holding the envelope" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "A restored envelope with a dangling reference degrades visibly" },
-        { "doc": "docs/architecture/24-options-envelope-compat.md", "anchor": "copy). `Verified: NO — deferred to Phase 2`; `LIVE-19` is the row that" }
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "Another machine holding the envelope"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "A restored envelope with a dangling reference degrades visibly"
+        },
+        {
+          "doc": "docs/architecture/24-options-envelope-compat.md",
+          "anchor": "copy). `Verified: NO — deferred to Phase 2`; `LIVE-19` is the row that"
+        }
       ],
       "why": "The difference between 'your credential is missing' and 'this server is broken' is the difference between a fixable state and a leak: an unresolvable server must never become a reason to go direct."
     },
@@ -532,10 +959,19 @@
       "subject": "no run shows the Svelte cut-over parity matrix gating a flip, and no popup startup budget has been measured",
       "state": "no-code",
       "owner": "ui",
-      "closesBy": { "kind": "assertion", "ref": "the parity matrix + popup startup budget measurement in nexora/extension" },
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the parity matrix + popup startup budget measurement in nexora/extension"
+      },
       "at": [
-        { "doc": "docs/adr/0016-svelte-5-vite-typescript.md", "anchor": "- Verified: NO -- deferred to Phase 2: the parity matrix gating cut-ov" },
-        { "doc": "docs/architecture/37-ui-architecture.md", "anchor": "every budget measured, popup startup" }
+        {
+          "doc": "docs/adr/0016-svelte-5-vite-typescript.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: the parity matrix gating cut-ov"
+        },
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "every budget measured, popup startup"
+        }
       ],
       "why": "ADR-0016 makes cut-over a measurement, not a date; without the matrix the popup flips on opinion."
     },
@@ -544,8 +980,16 @@
       "subject": "the UI budgets table is a set of targets with no measurement behind any of them",
       "state": "needs-human",
       "owner": "external",
-      "closesBy": { "kind": "external-measurement", "ref": "the budgets measured in the shipped browsers" },
-      "at": [{ "doc": "docs/architecture/37-ui-architecture.md", "anchor": "Every budget is `Verified: NO — deferred to Phase 2`: a number with no" }],
+      "closesBy": {
+        "kind": "external-measurement",
+        "ref": "the budgets measured in the shipped browsers"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "Every budget is `Verified: NO — deferred to Phase 2`: a number with no"
+        }
+      ],
       "why": "A budget is only a budget once something has tried to exceed it; the row is here so nobody mistakes the table for a result."
     },
     {
@@ -553,8 +997,16 @@
       "subject": "no build-time scan proves that a Svelte root is never mounted inside AngularJS DOM",
       "state": "no-code",
       "owner": "packages",
-      "closesBy": { "kind": "gate", "ref": "mount-point scan over nexora/extension/src/ui/**" },
-      "at": [{ "doc": "docs/architecture/37-ui-architecture.md", "anchor": "no Svelte root inside AngularJS DOM" }],
+      "closesBy": {
+        "kind": "gate",
+        "ref": "mount-point scan over nexora/extension/src/ui/**"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "no Svelte root inside AngularJS DOM"
+        }
+      ],
       "why": "ADR-0016's hard rule; the failure is intermittent and presents as a framework bug, which is the most expensive kind of defect to attribute."
     },
     {
@@ -562,8 +1014,16 @@
       "subject": "no control on any screen is proven to be disabled-with-a-reason when its backend is Phase 2 (constraint 11)",
       "state": "no-code",
       "owner": "ui",
-      "closesBy": { "kind": "assertion", "ref": "per-screen review recorded against the §'popup must not' list" },
-      "at": [{ "doc": "docs/architecture/22-component-contracts.md", "anchor": "reviewable per screen. `Verified: NO — deferred to Phase 2`." }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "per-screen review recorded against the §'popup must not' list"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "reviewable per screen. `Verified: NO — deferred to Phase 2`."
+        }
+      ],
       "why": "This one cannot be automated away: 'a button implies a feature' is a fact about a reader, so the honest close is a review per screen, not an assertion."
     },
     {
@@ -571,10 +1031,19 @@
       "subject": "the `.po`-to-catalog compiler, the `localeSupport` table and the promotion threshold do not exist",
       "state": "no-code",
       "owner": "packages",
-      "closesBy": { "kind": "assertion", "ref": "packages/i18n compiles the catalog and emits the localeSupport table" },
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "packages/i18n compiles the catalog and emits the localeSupport table"
+      },
       "at": [
-        { "doc": "docs/adr/0017-single-i18n-source-compiled-twice.md", "anchor": "- Verified: NO -- deferred to Phase 2: the `.po`-to-catalog compiler, " },
-        { "doc": "docs/architecture/37-ui-architecture.md", "anchor": "locale completion threshold and promotion" }
+        {
+          "doc": "docs/adr/0017-single-i18n-source-compiled-twice.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: the `.po`-to-catalog compiler, "
+        },
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "locale completion threshold and promotion"
+        }
       ],
       "why": "ADR-0017's single-source promise is only real once both outputs come from one compile; and the scope of the 20 unsupplied locales is still a human decision (docs/PROJECT-STATE.md §9.6)."
     },
@@ -583,11 +1052,23 @@
       "subject": "no download, sha256, minisign verification, refusal-on-mismatch, install ACL, upgrade-with-rollback or `manual` channel has been exercised -- `connector/testdata/pins.json` does not exist",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-02" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-02"
+      },
       "at": [
-        { "doc": "docs/adr/0019-xray-as-integrity-pinned-downloadable-asset.md", "anchor": "- Verified: NO -- deferred to Phase 2: download, sha256 and minisign v" },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "`connector/` tree is absent, and this is the document's largest `Verif" },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "Upstream release substituted (compromised host or asset)" }
+        {
+          "doc": "docs/adr/0019-xray-as-integrity-pinned-downloadable-asset.md",
+          "anchor": "- Verified: NO -- deferred to Phase 2: download, sha256 and minisign v"
+        },
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "`connector/` tree is absent, and this is the document's largest `Verif"
+        },
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "Upstream release substituted (compromised host or asset)"
+        }
       ],
       "why": "The largest deferral in the corpus: the schema conforms and the invalid example is rejected, but the instance that ships and the code that reads it are both absent."
     },
@@ -596,8 +1077,16 @@
       "subject": "none of the twelve first-run steps, or what the user sees when one of them fails, has been exercised",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-20" },
-      "at": [{ "doc": "docs/architecture/33-binary-integrity.md", "anchor": "what the user sees, and every one of them is `Verified: NO — deferred " }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-20"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "what the user sees, and every one of them is `Verified: NO — deferred "
+        }
+      ],
       "why": "The order of the twelve steps is what makes a partial failure safe; the order can only be tested by failing at each of them."
     },
     {
@@ -605,9 +1094,15 @@
       "subject": "the archive-entry refusal that runs before anything is written does not exist -- no extractor, so a zip's entry names have never been refused anywhere",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-21" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-21"
+      },
       "at": [
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "Malicious archive entries" }
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "Malicious archive entries"
+        }
       ],
       "why": "Step 7 calls the archive an attacker-controlled directory listing and refuses its names before the first write. The row split when the pre-exec half grew code: this is the clause of the old subject nothing even has a seam for yet."
     },
@@ -616,8 +1111,16 @@
       "subject": "the Core `log` section is specified to suppress the access log; no started Core has been looked at",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-18" },
-      "at": [{ "doc": "docs/architecture/36-observability.md", "anchor": "Xray's `log` section as emitted really suppresses the access log" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-18"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/36-observability.md",
+          "anchor": "Xray's `log` section as emitted really suppresses the access log"
+        }
+      ],
       "why": "The config half is green; the runtime half needs the binary, and an access log is where a destination address becomes a secret nobody declared."
     },
     {
@@ -625,10 +1128,19 @@
       "subject": "the redaction pass has never been run against a live credential in any of the five sinks",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-10" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-10"
+      },
       "at": [
-        { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "\"sink\"` so the location is data, not prose. `Verified: NO — Phase 2` f" },
-        { "doc": "docs/architecture/36-observability.md", "anchor": "The value-keyed pass destroys a live credential in all five sinks" }
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "\"sink\"` so the location is data, not prose. `Verified: NO — Phase 2` f"
+        },
+        {
+          "doc": "docs/architecture/36-observability.md",
+          "anchor": "The value-keyed pass destroys a live credential in all five sinks"
+        }
       ],
       "why": "A value-keyed pass is the only masking that survives an attacker who knows the field names, and the only kind a unit test can fake."
     },
@@ -637,8 +1149,16 @@
       "subject": "no two-plane fixture shows a trace id surviving the boundary, and no migration run shows the correlation history kept",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-23" },
-      "at": [{ "doc": "docs/architecture/36-observability.md", "anchor": "A trace id survives the boundary unchanged and a migration keeps the history" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-23"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/36-observability.md",
+          "anchor": "A trace id survives the boundary unchanged and a migration keeps the history"
+        }
+      ],
       "why": "Correlation is the only way an incident spans planes; a migration that strips it destroys the evidence the migration is supposed to protect."
     },
     {
@@ -646,8 +1166,16 @@
       "subject": "the diagnostics export is specified to upload nothing; no review or grep of the options-page bundle has happened",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-10" },
-      "at": [{ "doc": "docs/architecture/36-observability.md", "anchor": "The export never uploads anything" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-10"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/36-observability.md",
+          "anchor": "The export never uploads anything"
+        }
+      ],
       "why": "A negative about network behaviour cannot be proven by a schema; it is a bundle review plus the permission table, which is why doc 31 owns the surface."
     },
     {
@@ -655,8 +1183,16 @@
       "subject": "no run shows a record actually being written, masked and rotated, with real `seq` gaps and a ring that evicts",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "a Go test over a fake sink set, then the grep of a real exported bundle that LIVE-10 owns" },
-      "at": [{ "doc": "docs/architecture/36-observability.md", "anchor": "A record is actually written, masked and rotated at runtime; `seq` gaps are real; the ring evicts" }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "a Go test over a fake sink set, then the grep of a real exported bundle that LIVE-10 owns"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/36-observability.md",
+          "anchor": "A record is actually written, masked and rotated at runtime; `seq` gaps are real; the ring evicts"
+        }
+      ],
       "why": "The record shape, the sink list and the bounds are asserted as data today; a `seq` that is only contiguous in a fixture proves nothing about a ring that has filled and evicted under a real session."
     },
     {
@@ -664,13 +1200,31 @@
       "subject": "framing enforcement, clause by clause: the sender-side rejection before write and the late-answer discard have tests, the three-missed-heartbeat verdict does not and cannot yet",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "the framing peer refuses an oversized write, discards a late answer by id, and treats three missed heartbeats as a lost peer" },
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the framing peer refuses an oversized write, discards a late answer by id, and treats three missed heartbeats as a lost peer"
+      },
       "at": [
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "`Verified: NO — deferred to Phase 2` for enforcement itself; the *valu" },
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Sender-side rejection before write" },
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "one. `Verified: NO — deferred to Phase 2` for the discard path." },
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Late-answer discard by `id`" },
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Heartbeat / missed-heartbeat behaviour" }
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "`Verified: NO — deferred to Phase 2` for enforcement itself; the *valu"
+        },
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "Sender-side rejection before write"
+        },
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "one. `Verified: NO — deferred to Phase 2` for the discard path."
+        },
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "Late-answer discard by `id`"
+        },
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "Heartbeat / missed-heartbeat behaviour"
+        }
       ],
       "why": "The framing values are asserted today (that is the green half); a limit that only exists in a document is a limit the peer has never seen enforced. No live row covers enforcement -- the document cited LIVE-05 and LIVE-06 here, both transport rows, which was wrong -- so the closers are a codec test that refuses an oversized write, a request-table test for the late answer, and a liveness test driving the 25 s heartbeat and the three-miss deadline. As of 2026-11-05 the first two clauses have those tests (connector/internal/peer/ -- docs/PROJECT-STATE.md §4.7); the row stays open on the third, and not for a lack of code: protocol/framing.json#/liveness gives the heartbeat a direction, host-to-extension, so on the hop that has a heartbeat the Go endpoint is the one sending the beats and the extension is the one counting misses, and protocol/envelope.schema.json#/properties/type has four values none of which carries a beat. Which endpoint arms the deadline, and what arrives on the wire to be missed, is docs/PROJECT-STATE.md §9's eighth question."
     },
@@ -679,8 +1233,16 @@
       "subject": "`server.test` results are specified never to be replayed from cache; the static half is green and the runtime half has not happened",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-05" },
-      "at": [{ "doc": "docs/architecture/26-command-surface.md", "anchor": "`server.test` layer results are not replayed" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-05"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "`server.test` layer results are not replayed"
+        }
+      ],
       "why": "ADR-0020 rule 3: a cached latency number in an assertion is a lie, and the fixtures can only prove that one recorded probe has one answer."
     },
     {
@@ -688,8 +1250,16 @@
       "subject": "no run shows that the probe rate budget is enforced independently of the UI, that the popup performs no side-effecting command on mount, or that `force` bypasses backoff but not the limit",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-17" },
-      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "rate limit (`docs/architecture/29-subscriptions-and-servers.md` §7" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-17"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "rate limit (`docs/architecture/29-subscriptions-and-servers.md` §7"
+        }
+      ],
       "why": "The failure mode is a popup that hammers every VPS the user has ever saved; it is a UI bug and a rate-limit bug at once, so it rides on both planes."
     },
     {
@@ -697,12 +1267,27 @@
       "subject": "the sender policy's runtime refusal is unmeasured: an unknown extension id gets `UnauthorizedExtension` and nothing else, refusals are bounded, and a second registration does not double a budget",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-16" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-16"
+      },
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "render without being granted power. `Verified: NO — deferred to Phase " },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "Foreign extension drives the proxy" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "Refusals and ports are bounded" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "An unallowlisted sender cannot use a second registration to get around a budget" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "render without being granted power. `Verified: NO — deferred to Phase "
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "Foreign extension drives the proxy"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "Refusals and ports are bounded"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "An unallowlisted sender cannot use a second registration to get around a budget"
+        }
       ],
       "why": "The privileged-set assertions are green at the contract layer; the refusal, the amplification guard and the per-sender budget are all host behaviour that no fixture can perform."
     },
@@ -711,8 +1296,16 @@
       "subject": "no command handler exists to prove that no shell, path or bind address is caller-chosen at run time",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-03" },
-      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "No shell, path or bind address is caller-chosen" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-03"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "No shell, path or bind address is caller-chosen"
+        }
+      ],
       "why": "Schema validation is the whole of today's proof; the argument this row exists to keep is that validation at the boundary is not enforcement inside it."
     },
     {
@@ -720,10 +1313,19 @@
       "subject": "the inherited external surface still exists: another extension can still read the whole options object, and nothing has been removed or measured",
       "state": "needs-human",
       "owner": "human",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-10`, read with docs/PROJECT-STATE.md §9 item 1 (SEC-1 timing)" },
+      "closesBy": {
+        "kind": "decision",
+        "ref": "docs/architecture/40-open-decisions.md `ODEC-10`, read with docs/PROJECT-STATE.md §9 item 1 (SEC-1 timing)"
+      },
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "source. `Verified: NO — deferred to Phase 2` — the honest statement to" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "Whole-options read by another extension" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "source. `Verified: NO — deferred to Phase 2` — the honest statement to"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "Whole-options read by another extension"
+        }
       ],
       "why": "This is the one row whose answer changes what Phase 2's first PR is; the honest statement today is that the surface exists in the inherited tree and the removal is a product behaviour change, not a document edit."
     },
@@ -732,8 +1334,16 @@
       "subject": "no run shows a per-sender rate budget counted *before* dispatch, answered with retryable `Busy`, and producing no side effect",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-17" },
-      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "Buggy UI hammers a feed / every VPS" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-17"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "Buggy UI hammers a feed / every VPS"
+        }
+      ],
       "why": "The budgets are declared in the framing contract and asserted as shape today; an exhausted `subscription.refresh` that still starts a fetch, or an exhausted `server.test` that still opens a connection, is the difference between a budget and a form of address."
     },
     {
@@ -741,10 +1351,19 @@
       "subject": "no tool reads the shipped manifest: the permission target column and 'grants exactly what §13 says today' are unmeasured",
       "state": "no-check",
       "owner": "tools",
-      "closesBy": { "kind": "tool", "ref": "tools/check-manifest-delta.mjs" },
+      "closesBy": {
+        "kind": "tool",
+        "ref": "tools/check-manifest-delta.mjs"
+      },
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "The shipped manifest grants exactly what is in §13's \"today\" column" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "test, not with this document. `Verified: NO — deferred to Phase 2` for" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "The shipped manifest grants exactly what is in §13's \"today\" column"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "test, not with this document. `Verified: NO — deferred to Phase 2` for"
+        }
       ],
       "why": "`check-doc-evidence.mjs` proves the cited lines exist; a permission removed from a manifest is a behaviour change with no witness today."
     },
@@ -753,10 +1372,19 @@
       "subject": "no CI build shows the packaged bundle survives the declared CSP",
       "state": "no-run",
       "owner": "ci",
-      "closesBy": { "kind": "ci-step", "ref": "CSP load test of the packaged bundle in .github/workflows/verify.yml" },
+      "closesBy": {
+        "kind": "ci-step",
+        "ref": "CSP load test of the packaged bundle in .github/workflows/verify.yml"
+      },
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "`.github/workflows/verify.yml` that the packaged bundle survives the d" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "The packaged bundle survives the declared CSP" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "`.github/workflows/verify.yml` that the packaged bundle survives the d"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "The packaged bundle survives the declared CSP"
+        }
       ],
       "why": "The bundle is built today and never loaded under the policy; a CSP violation is silent until the page is blank."
     },
@@ -765,8 +1393,16 @@
       "subject": "the negative security rules of SEC-3 are unguarded: NEXORA must not add `web_accessible_resources` or inject fetched text",
       "state": "no-check",
       "owner": "tools",
-      "closesBy": { "kind": "tool", "ref": "tools/check-layout-guards.mjs" },
-      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "shipped manifests leave absent per `docs/audit/10-manifest-packaging-d" }],
+      "closesBy": {
+        "kind": "tool",
+        "ref": "tools/check-layout-guards.mjs"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "shipped manifests leave absent per `docs/audit/10-manifest-packaging-d"
+        }
+      ],
       "why": "A rule about absence is cheapest to enforce as a diff against the manifest, and nothing performs that diff."
     },
     {
@@ -774,8 +1410,16 @@
       "subject": "a fetched body is specified never to be executed (compile-not-execute, https-only, byte caps, SSRF guard) and no run has a body to try",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-12" },
-      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "A fetched body is executed" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-12"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "A fetched body is executed"
+        }
+      ],
       "why": "The schema rejects the invalid feeds; the engine that receives a hostile feed does not exist, which is the only part of the claim that matters."
     },
     {
@@ -783,8 +1427,16 @@
       "subject": "every command that writes the keystore is specified to name `KeystoreUnavailable` and `SecretRedacted`; no run has produced either",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-18" },
-      "at": [{ "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "(`docs/architecture/31-security-model.md` §17 records the amendment). " }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-18"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "(`docs/architecture/31-security-model.md` §17 records the amendment). "
+        }
+      ],
       "why": "The coverage rule is checkable at the contract layer for the *naming*, which is green; producing the error is a host behaviour."
     },
     {
@@ -792,8 +1444,16 @@
       "subject": "the doc-33 detection controls (sender identity, loopback-only, typed commands, `protocolVersion`/`pinsVersion` refusal) are not code, so even detection is unproven",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-02" },
-      "at": [{ "doc": "docs/architecture/33-binary-integrity.md", "anchor": "labelled as such — `Verified: NO — Phase 2` for even that much, since " }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-02"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "labelled as such — `Verified: NO — Phase 2` for even that much, since "
+        }
+      ],
       "why": "Stated as detection, not proof; the row keeps the distinction honest in the queue rather than letting it read as coverage."
     },
     {
@@ -801,8 +1461,16 @@
       "subject": "a failed subscription refresh is specified to keep the last good version and record durable status; never executed",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-12" },
-      "at": [{ "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "An HTTP 404 never deletes a subscription" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-12"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "An HTTP 404 never deletes a subscription"
+        }
+      ],
       "why": "Constraint 7. The invariant is in the command contract and the fixture has both frames; only a real 404 against a real feed distinguishes the two halves."
     },
     {
@@ -810,11 +1478,23 @@
       "subject": "nothing prevents the engine from fetching, or proves that no feed body enters the browser process",
       "state": "no-code",
       "owner": "packages",
-      "closesBy": { "kind": "gate", "ref": "build-graph assertion: no fetch/XMLHttpRequest under nexora/extension/src/subscriptions/**" },
+      "closesBy": {
+        "kind": "gate",
+        "ref": "build-graph assertion: no fetch/XMLHttpRequest under nexora/extension/src/subscriptions/**"
+      },
       "at": [
-        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "The engine never fetches, and no feed body enters the browser process" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "The feed body never enters the browser process" },
-        { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "for the guard this decision makes load-bearing" }
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "The engine never fetches, and no feed body enters the browser process"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "The feed body never enters the browser process"
+        },
+        {
+          "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md",
+          "anchor": "for the guard this decision makes load-bearing"
+        }
       ],
       "why": "Testable as a build-graph assertion today; it is the row that keeps the Connector's fetch responsibility from drifting back into the browser by 'temporary' convenience. ADR-0021 made it load-bearing rather than tidy: that decision forbids a feed body on the pipe, and this is the only row that could catch the breach."
     },
@@ -823,8 +1503,16 @@
       "subject": "no live row covers guards being applied to every redirect hop -- the omission, not the behaviour, is the finding",
       "state": "no-check",
       "owner": "contracts",
-      "closesBy": { "kind": "new-live-row", "ref": "a redirect-chain row must be added to docs/verification/live-matrix.md" },
-      "at": [{ "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "Guards are applied to every redirect hop" }],
+      "closesBy": {
+        "kind": "new-live-row",
+        "ref": "a redirect-chain row must be added to docs/verification/live-matrix.md"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "Guards are applied to every redirect hop"
+        }
+      ],
       "why": "The document cites a row that does not exist. Registered here as owed so the citation is an obligation rather than a false reference; a feed that redirects to metadata is the cheapest SSRF bypass available."
     },
     {
@@ -832,8 +1520,16 @@
       "subject": "`format: auto` is specified never to resolve ambiguously, and there is no fixture for the two-detectors-both-true case",
       "state": "no-fixture",
       "owner": "contracts",
-      "closesBy": { "kind": "assertion", "ref": "an invalid example: a source whose base64 and text detectors both fire" },
-      "at": [{ "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "`format: auto` never resolves ambiguously" }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "an invalid example: a source whose base64 and text detectors both fire"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "`format: auto` never resolves ambiguously"
+        }
+      ],
       "why": "Closeable today with one file under packages/schema/examples/invalid/; it waits only because nobody has written it."
     },
     {
@@ -841,10 +1537,19 @@
       "subject": "server id, tag and userIdRef are specified stable across refreshes, with a feed name never overwriting a user rename; nothing checks it",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-12" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-12"
+      },
       "at": [
-        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "Id reuse across refreshes: `id`, `tag`, `userIdRef` stable, feed name does not overwrite a user rename" },
-        { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "ids, not a silent suffix: `Verified: NO — deferred to Phase 2`." }
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "Id reuse across refreshes: `id`, `tag`, `userIdRef` stable, feed name does not overwrite a user rename"
+        },
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "ids, not a silent suffix: `Verified: NO — deferred to Phase 2`."
+        }
       ],
       "why": "An id that changes on refresh orphans every rule that names the server, which is the same failure ADR-0012 avoids at the envelope level."
     },
@@ -853,8 +1558,16 @@
       "subject": "the cap ladder is specified to warn before it applies; neither the warning nor the application has run",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-04" },
-      "at": [{ "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "The cap ladder warns before applying" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-04"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "The cap ladder warns before applying"
+        }
+      ],
       "why": "Constraint 11 applies here too: a silent trim of a 900-server feed reads as 'the subscription is small'."
     },
     {
@@ -862,8 +1575,16 @@
       "subject": "a non-VLESS server in a legacy subscription is specified to be reported, not dropped; there is no parser",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-14" },
-      "at": [{ "doc": "docs/architecture/23-unified-server-model.md", "anchor": "A non-VLESS server in a legacy subscription is reported, not dropped" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-14"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "A non-VLESS server in a legacy subscription is reported, not dropped"
+        }
+      ],
       "why": "The lossiness is by construction (doc 29 §5); the promise is that the user is told, which needs a parser and a screen."
     },
     {
@@ -871,8 +1592,16 @@
       "subject": "tag uniqueness over the whole server set is a compile error naming both ids in stage 1; it has never met a registry that arrives unsorted from a subscription import",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "the eight-hex collision test over the canonical server examples" },
-      "at": [{ "doc": "docs/architecture/23-unified-server-model.md", "anchor": "Tag collision across the server set is a compile error" }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the eight-hex collision test over the canonical server examples"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "Tag collision across the server set is a compile error"
+        }
+      ],
       "why": "Deterministic tags are what make byte-stability and Core logs usable; a silent suffix would break both and be invisible until two tunnels crossed. `connector/internal/compile/resolve.go` checks the whole set, not one profile, and names both server ids and the shared tag when they clash (`TestATagCollisionNamesBothServers`), which is the claim doc 23 §10 makes; the row stays open because the collision this predicts arrives from a feed, where two URLs sharing the first eight hex characters of a generated uuid is a subscription-refresh event rather than a unit test, and because the promise doc 23 §6 makes is that the tag is *derived*, never stored -- a server whose stored `tag` disagrees with its id is refused today, and no real import has tried."
     },
     {
@@ -880,8 +1609,16 @@
       "subject": "`protocol` enum expansion requires an ADR, and that process rule is asserted by nothing",
       "state": "no-check",
       "owner": "contracts",
-      "closesBy": { "kind": "assertion", "ref": "the protocol enum equals the five shipped transports, and only an ADR changes it" },
-      "at": [{ "doc": "docs/architecture/23-unified-server-model.md", "anchor": "`protocol` enum expansion requires an ADR" }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the protocol enum equals the five shipped transports, and only an ADR changes it"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "`protocol` enum expansion requires an ADR"
+        }
+      ],
       "why": "Every added transport is an added Core dependency and a new compatibility surface; a machine check is the only thing that makes 'requires an ADR' mean something."
     },
     {
@@ -889,8 +1626,16 @@
       "subject": "existing `SwitchProfile` rules selecting a NEXORA profile unchanged is unproven on Firefox and on a real install",
       "state": "no-code",
       "owner": "extension",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-15" },
-      "at": [{ "doc": "docs/architecture/24-options-envelope-compat.md", "anchor": "Existing `SwitchProfile` rules select a NEXORA profile unchanged" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-15"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/24-options-envelope-compat.md",
+          "anchor": "Existing `SwitchProfile` rules select a NEXORA profile unchanged"
+        }
+      ],
       "why": "Constraint 8's cousin: the routing the user built must survive cut-over, and the Firefox half of the parity matrix has never been run at all."
     },
     {
@@ -898,10 +1643,19 @@
       "subject": "the 64-inbound ceiling is specified to produce `QuotaExceeded`, not a partially applied config",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-03" },
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-03"
+      },
       "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "The 64-inbound ceiling produces `QuotaExceeded`, not a partial config" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "`Verified: NO — deferred to Phase 2`; the ceiling value itself is an o" }
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "The 64-inbound ceiling produces `QuotaExceeded`, not a partial config"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "`Verified: NO — deferred to Phase 2`; the ceiling value itself is an o"
+        }
       ],
       "why": "A partial config is the state where some traffic is proxied and some is not, which is the failure the whole failure-policy document is built to make impossible. The refusal exists and is whole-set-or-nothing: `connector/internal/compile/ports.go` answers a 65th tag by naming the count and refusing every port in the document, so no partial config can reach the writer -- and whether `QuotaExceeded`, a `storage`-layer code meaning 'chrome.storage.sync or keystore quota hit' (`protocol/error-taxonomy.json:14`), is that count's code is `ODEC-03`'s question rather than this row's. The second line is doc 27 §5's plain statement of the same limit -- 200 servers need 200 inbounds, `profile.import` answers `QuotaExceeded` naming the count -- and it adds that the number itself is still unchosen, which is `ODEC-06`'s question rather than this row's obligation."
     },
@@ -910,11 +1664,23 @@
       "subject": "the four COMP rows whose numbers live in a browser (browser floor, cohort count, envelope sizes, `unlimitedStorage` ceiling) are unmeasured",
       "state": "needs-human",
       "owner": "external",
-      "closesBy": { "kind": "external-measurement", "ref": "COMP-07, COMP-10, COMP-14, COMP-18 measured in real browsers, alongside LIVE-15" },
+      "closesBy": {
+        "kind": "external-measurement",
+        "ref": "COMP-07, COMP-10, COMP-14, COMP-18 measured in real browsers, alongside LIVE-15"
+      },
       "at": [
-        { "doc": "docs/architecture/38-compatibility-matrix.md", "anchor": "browser floors, cohort counts, envelope sizes" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "compatibility matrix — `docs/architecture/38-compatibility-matrix.md`," },
-        { "doc": "docs/architecture/30-failure-policy.md", "anchor": "(`docs/architecture/38-compatibility-matrix.md`, `Verified: NO`). The " }
+        {
+          "doc": "docs/architecture/38-compatibility-matrix.md",
+          "anchor": "browser floors, cohort counts, envelope sizes"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "compatibility matrix — `docs/architecture/38-compatibility-matrix.md`,"
+        },
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "(`docs/architecture/38-compatibility-matrix.md`, `Verified: NO`). The "
+        }
       ],
       "why": "Constraint 11 forbids shipping a control that depends on them, so they are queued as measurements rather than rounded into numbers. The same family holds the browser's minimum alarm period, which is coarser than the `graceSeconds: 0` the contract admits -- the imprecision costs only the deliberate test, but the number is a platform fact this tree cannot measure."
     },
@@ -923,8 +1689,16 @@
       "subject": "`<local>` expansion is specified to be shown in the UI, and there is no UI",
       "state": "no-code",
       "owner": "ui",
-      "closesBy": { "kind": "live-row", "ref": "LIVE-15" },
-      "at": [{ "doc": "docs/architecture/28-routing-model.md", "anchor": "`<local>` expansion is shown in the UI" }],
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-15"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/28-routing-model.md",
+          "anchor": "`<local>` expansion is shown in the UI"
+        }
+      ],
       "why": "A rule that silently expands to a CIDR list is a rule the user cannot audit; the row is the promise that they will be able to."
     },
     {
@@ -932,8 +1706,16 @@
       "subject": "chunk reassembly has no slice body: the contract says what a slice is and never says where its bytes ride",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "reassembled slice bodies hash to the document the sender declared" },
-      "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "Slice bodies reassemble to the document the sender hashed" }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "reassembled slice bodies hash to the document the sender declared"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "Slice bodies reassemble to the document the sender hashed"
+        }
+      ],
       "why": "Every clause of doc 25 §5 that verify.mjs asserts is slice metadata, and the recorded group is consistent with three different byte-level readings -- announcements-only, a fragment field that does not exist, or a valid subset of the typed `profiles`/`servers` arrays -- which disagree about the exact byte string `chunk.contentHash` names. The gap-to-`IntegrityMismatch` rule and validate-then-apply are both written against that string, so `connector/internal/chunk` is not a package awaiting code but a package awaiting a contract answer (`ODEC-34`)."
     },
     {
@@ -941,8 +1723,16 @@
       "subject": "hop 2 has no transport contract: the local pipe's message schema is undefined, and nothing says how the sender identity crosses it",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "assertion", "ref": "the local pipe names the sender the host resolved and refuses a frame whose sender it cannot resolve" },
-      "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "The sender identity crosses hop 2 by a named mechanism" }],
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the local pipe names the sender the host resolved and refuses a frame whose sender it cannot resolve"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "The sender identity crosses hop 2 by a named mechanism"
+        }
+      ],
       "why": "ADR-0005 rule 2 promises a pipe schema versioned separately, carrying its own version field, refusing a mismatch rather than guessing, and no file in `packages/schema` defines it: `framing.json` describes itself as the contract for the extension-to-host pipe, and the one part of it that reaches this process -- `senderPolicy`, whose budgets `docs/architecture/31-security-model.md` §8 counts in the Connector -- resolves the sender from an OS event on the other hop. Doc 25 §2 then says the same closed fourteen-field envelope crosses hop 2 verbatim, and none of its properties is a sender, so the `Identity` value `connector/internal/dispatch` demands on every call -- whose own comment says none of it comes from the payload -- has no producer. Three transport shapes survive and they disagree about where identity lives, which is a boundary (`ODEC-35`), not a field."
     },
     {
@@ -950,9 +1740,15 @@
       "subject": "the section half of a document citation -- a backticked path under `docs/` followed by `§N` -- is the one citation form in the corpus that no pass of `tools/check-doc-evidence.mjs` resolves, so an anchor can name a section its document never had and the run stays green",
       "state": "no-check",
       "owner": "tools",
-      "closesBy": { "kind": "gate", "ref": "a section-anchor pass in tools/check-doc-evidence.mjs, beside the four citation forms it already resolves" },
+      "closesBy": {
+        "kind": "gate",
+        "ref": "a section-anchor pass in tools/check-doc-evidence.mjs, beside the four citation forms it already resolves"
+      },
       "at": [
-        { "doc": "docs/README.md", "anchor": "no pass opens a section number against the headings of the file it names" }
+        {
+          "doc": "docs/README.md",
+          "anchor": "no pass opens a section number against the headings of the file it names"
+        }
       ],
       "why": "The guard resolves four things today and every one of them is a *location*: a `path:line` cite is opened and refused if the line is blank, a `path#/pointer` cite is walked through the compiled schema, a backticked document name is refused unless the file exists, and a harness label is refused unless the verifier carries it; the fifth pass reads a `Cited by` row against the table it claims to belong to. What none of them reads is the section number that follows a document name -- `docs/architecture/20-target-repository-layout.md` §3 is the corpus's cheapest cite and the only one that can rot without moving a byte the checker looks at. Measured on 2026-11-07 over every markdown file under `docs/` (a scratch census, not a committed tool): 568 cites of this form, 8 of them naming a section the target document does not have, all 8 re-aimed by hand in the same sitting and recorded in `docs/PROJECT-STATE.md` §4.33. Two findings are worth the row rather than only the repair. The first is that one of the eight was `docs/architecture/20-target-repository-layout.md` §60 -- a *number*, not a word, in a document whose headings run §1 to §13, and it resolved nowhere while the sentence around it stayed entirely plausible; a section that does not exist is not a typo the current passes can see. The second is that the census's own rule is not enough either: `docs/architecture/31-security-model.md` cited `docs/architecture/22-component-contracts.md` §4 \"of the health section\", and doc 22 has a §4 -- CoreSupervisor -- while the HealthProber is §8, so a pass that only asks \"does the number exist\" certifies the neighbour error the corpus has now been caught making three times. That is why the closing artefact is a pass in the existing guard rather than a new document rule: the rule already reads `docs/README.md`, and the sentence that wants the checker is the one carrying this row's label."
     },
@@ -961,9 +1757,15 @@
       "subject": "the HealthProber and its `server.test` command surface are built and tested under `connector/`, and neither is registered in the front door: the prober refuses to build without the egress endpoint and expected address that no schema field carries, and the surface reads a server store no document has placed",
       "state": "no-code",
       "owner": "connector",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-42`" },
+      "closesBy": {
+        "kind": "decision",
+        "ref": "docs/architecture/40-open-decisions.md `ODEC-42`"
+      },
       "at": [
-        { "doc": "docs/architecture/22-component-contracts.md", "anchor": "registration in the front door is **Verified: NO" }
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "registration in the front door is **Verified: NO"
+        }
       ],
       "why": "What exists is measured, not promised: `connector/internal/health` is six files and 38 green tests -- the four layers over a loopback core that speaks real SOCKS5 (a fake in the test, the same client code a real Xray inbound will answer), the egress fetch whose answer is compared against the expected address, the consecutive-failure streak and cooldown of `packages/schema/connector-profile.schema.json#/properties/failover`, the per-server retention ring behind doc 36 §8's 64 KiB `health` cap, and a constructor that refuses the wiring this package is forbidden to invent; and `connector/cmd/nexora-connector/health_probe.go` decodes the closed args list and maps every refusal to a code `server.test#/errors` declares. What is missing is not code either: it is two facts and one store. The egress endpoint and the expected address have no field under `packages/schema/` to live in -- `connector-settings.schema.json#/properties` has five keys and none is a probe target -- which is ODEC-42; and the server id the frame names resolves through a store whose path and owner ODEC-39's `intent-down` half has not placed, the same seam that leaves `config.apply` built but unregistered. The row closes by that decision like VER-82 does, because the artefact that unblocks registration is a contract commit: a field, an example and the prober's wiring reading them, plus the inventory assertion in `connector/cmd/nexora-connector/main_test.go` that today names exactly `connector.hello` and `connector.version` moving with it."
     },
@@ -972,9 +1774,15 @@
       "subject": "which error code answers a request whose args violate the call contract is decided per command by analogy -- `connector.hello` answers `HandshakeFailed` and the `server.test` surface answers `HealthCheckFailed` -- and no rule in the corpus decides it for the thirteen of nineteen commands whose `#/errors` does not declare `BadRequest`",
       "state": "no-check",
       "owner": "contracts",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-43`" },
+      "closesBy": {
+        "kind": "decision",
+        "ref": "docs/architecture/40-open-decisions.md `ODEC-43`"
+      },
       "at": [
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "the two answers already shipped are analogies" }
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "the two answers already shipped are analogies"
+        }
       ],
       "why": "The files exist and nothing asserts a mapping, which is `no-check` rather than `no-code`. Measured on 2026-11-07 over `packages/schema/protocol/commands/*.json`: six command docs declare `BadRequest` (`config.apply`, `keystore.purge`, `profile.import`, `profile.remove`, `profile.validate`, `subscription.refresh`), thirteen do not, and `packages/schema/protocol/error-taxonomy.json#/codes` registers `BadRequest`'s meaning as 'Frame is well-formed JSON but violates the call contract (missing args, wrong shape)' -- a case every command can face and thirteen cannot answer with a code they cite. The dispatcher is not the fallback: `connector/internal/dispatch` answers `BadRequest` only for a frame that is not a request at all, before a method is named. Doc 25 §8 rule 2 makes a handler answering an undeclared code a doc lie, and the same section's stability note makes the total answer a breaking change with a documented fallback, so the two shipped analogies are honest stopgaps and not a rule -- which is exactly the shape of a question the register owns and this row waits on."
     },
@@ -1005,23 +1813,24 @@
         "ref": "LIVE-21"
       },
       "at": [
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "chose to defend against. `Verified: NO — Phase 2`, and `LIVE-21` owns " },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "Post-install file replacement by a lower-privilege or non-user actor" },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "A binary that is not on the pinned list running anyway" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "The binary and its receipts are verified before execution" }
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "chose to defend against. `Verified: NO — Phase 2`, and `LIVE-21` owns "
+        },
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "Post-install file replacement by a lower-privilege or non-user actor"
+        },
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "A binary that is not on the pinned list running anyway"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "The binary and its receipts are verified before execution"
+        }
       ],
       "why": "The check is green where it has run: the package's own tests, and a drive over the real release asset that hashes the binary in tens of milliseconds and refuses a one-byte tamper. Where the claim needs it nothing runs: no registered command reaches the spawn path, and the receipt's writer is the installer VER-42 waits for, whose signature half is pinned open twice (ODEC-22, ODEC-25)."
-    },
-    {
-      "id": "VER-88",
-      "subject": "the `config.apply` method is still not registered: the surface is wired end to end except the supervisor's `Launch`, and no document says where a production build gets the Core binary path from",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-42`" },
-      "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reachable from one command frame" }
-      ],
-      "why": "The seam `VER-80` named had two halves and 2026-11-07 answered both of the first kind: the intent rides the frame and the two directories are doc 34 §7's layout, and the span the constructor demanded is ODEC-36's answer now -- the constructor no longer refuses and the span switch is gone. What remains is the one producer the surface cannot build without: `coreProcess`, whose production implementation is the supervisor, whose `New` demands a `Launch` -- a function from config path to the command that runs Core. No document says where that path comes from: `settings.core.installRoot` defaults to null, the install channel is `pinned`, and `connector/internal/receipt` verifies a binary it was handed rather than one it found -- which is `ODEC-42`'s question and this row's gate. The labelled row in doc 27 §9 is this row's, as it has been since `VER-80` left"
     }
   ]
 }

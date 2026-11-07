@@ -133,10 +133,10 @@ func hold(recordPath string) {
 }
 
 func fakeLaunch(mode string) Launch {
-	return func(configPath string) *exec.Cmd {
+	return func(configPath string) (*exec.Cmd, error) {
 		cmd := exec.Command(os.Args[0], "-test.run=TestFakeCore", "-test.count=1")
 		cmd.Env = append(os.Environ(), fakeMode+"="+mode, fakeConfig+"="+configPath)
-		return cmd
+		return cmd, nil
 	}
 }
 
@@ -242,7 +242,7 @@ func waitForFile(t *testing.T, path string, timeout time.Duration) []byte {
 // New refuses the three places a caller could hand it an invention instead of a fact.
 func TestNewRefusesToGuessItsSeams(t *testing.T) {
 	dir := t.TempDir()
-	launch := func(string) *exec.Cmd { return exec.Command(os.Args[0], "-test.run=TestFakeCore") }
+	launch := func(string) (*exec.Cmd, error) { return exec.Command(os.Args[0], "-test.run=TestFakeCore"), nil }
 	anyVerify := func(string) error { return nil }
 
 	for _, tc := range []struct {
@@ -285,10 +285,10 @@ func TestStartHandsTheConfigPathOnTheCommandLineAndRecordsTheProcess(t *testing.
 	ev := new(recorder)
 	s, err := New(Config{
 		Dir: dir,
-		Launch: func(configPath string) *exec.Cmd {
-			cmd := fakeLaunch(modeWait)(configPath)
+		Launch: func(configPath string) (*exec.Cmd, error) {
+			cmd, _ := fakeLaunch(modeWait)(configPath)
 			cmd.Env = append(cmd.Env, fakeRecord+"="+record)
-			return cmd
+			return cmd, nil
 		},
 		Verify: alwaysProves,
 		Death:  Death{},
@@ -350,10 +350,10 @@ func TestSameHashStartIsANoOpAndADifferentHashRefuses(t *testing.T) {
 func TestUnexpectedExitIsRestartedByTheLadderAndRecoveryIsPublished(t *testing.T) {
 	dir := t.TempDir()
 	mark := filepath.Join(dir, "first-child-exited")
-	launch := func(configPath string) *exec.Cmd {
-		cmd := fakeLaunch(modeOnce)(configPath)
+	launch := func(configPath string) (*exec.Cmd, error) {
+		cmd, _ := fakeLaunch(modeOnce)(configPath)
 		cmd.Env = append(cmd.Env, fakeMark+"="+mark)
-		return cmd
+		return cmd, nil
 	}
 	ev := new(recorder)
 	s, err := New(Config{
@@ -499,19 +499,19 @@ func TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut(t *testing.
 	dir := t.TempDir()
 	spawns := 0
 	var mu sync.Mutex
-	launch := func(configPath string) *exec.Cmd {
+	launch := func(configPath string) (*exec.Cmd, error) {
 		mu.Lock()
 		n := spawns
 		spawns++
 		mu.Unlock()
-		cmd := fakeLaunch(modeOnce)(configPath)
+		cmd, _ := fakeLaunch(modeOnce)(configPath)
 		if n > 0 {
 			// The recovered children hold; the trigger file is the only thing that ends one. The first child keeps
 			// the modeOnce marker behaviour so the first death is its own.
-			cmd = fakeLaunch(modeExitWhen)(configPath)
+			cmd, _ = fakeLaunch(modeExitWhen)(configPath)
 			cmd.Env = append(cmd.Env, fakeTrigger+"="+filepath.Join(dir, "die-"+strconv.Itoa(n)))
 		}
-		return cmd
+		return cmd, nil
 	}
 	ev := new(recorder)
 	s, err := New(Config{
@@ -596,13 +596,13 @@ func TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut(t *testing.
 func TestAStableCoreEarnsAFreshBudget(t *testing.T) {
 	spawns := 0
 	var mu sync.Mutex
-	launch := func(configPath string) *exec.Cmd {
+	launch := func(configPath string) (*exec.Cmd, error) {
 		mu.Lock()
 		spawns++
 		mu.Unlock()
-		cmd := fakeLaunch(modeExitAfter)(configPath)
+		cmd, _ := fakeLaunch(modeExitAfter)(configPath)
 		cmd.Env = append(cmd.Env, fakeDuration+"=700ms")
-		return cmd
+		return cmd, nil
 	}
 	ev := new(recorder)
 	s, err := New(Config{

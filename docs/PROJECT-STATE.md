@@ -198,14 +198,14 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `196` labelled lines over `44` documents partitioned into `74` live rows — the issued range is
-`VER-01…VER-88`, and `14` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
-sites over `15` documents partitioned into `38` entries — its issued range is `ODEC-01…ODEC-45`, and `ODEC-02`,
-`ODEC-40`, `ODEC-33`, `ODEC-39`, `ODEC-38`, `ODEC-41` and `ODEC-36`
+The queue is `195` labelled lines over `44` documents partitioned into `73` live rows — the issued range is
+`VER-01…VER-88`, and `15` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
+sites over `15` documents partitioned into `37` entries — its issued range is `ODEC-01…ODEC-45`, and `ODEC-02`,
+`ODEC-40`, `ODEC-33`, `ODEC-39`, `ODEC-38`, `ODEC-41`, `ODEC-36` and `ODEC-44`
 now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 15, `adr` 5, `measurement` 2, `upstream` 2), three options — 37 of the 38,
+(`product` 14, `contract` 14, `adr` 5, `measurement` 2, `upstream` 2), three options — 36 of the 37,
 with `ODEC-35` the one entry that carries a fourth, recording the reading ADR-0004 rule 3 already excludes rather than
 leaving it unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
@@ -606,6 +606,13 @@ deferral sentence the new entry was born from naming the register and the config
 `-1 / +2 / -2`, the path:line cite into doc 27 §3 the retired argument had been carrying, the two pointers the
 retirement gained by stating the full path of the field it decided, and the two names its argument no longer cites.
 Five line citations and one pointer cite were re-anchored with their claims re-read as the files around them grew, and this file `0 / +1 / 0`, the pointer into the configHash description its own record names.
+§4.42 moves the set a thirty-seventh time — **2309 / 599 / 1587**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of 4e8d647: doc 27 `0 / 0 / -1`, the name
+its §8 site and its §9 row stop citing now that the site is answered and the row reads Verified, and doc 40
+`-1 / +2 / -2`, the path:line cite its retired argument had been carrying, the two pointers the retirement gained,
+and the two names its argument no longer cites. This file `0 / +1 / 0`, the pointer into the installRoot
+description its own record names. The labelled row in doc 27 §9 reads Verified — `marker.counted` 196 → 195 —
+and the first command frame a test sends now reaches the registered method.
 the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
 citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
 
@@ -3065,6 +3072,40 @@ claim: a registered `config.apply` (that is `VER-88` and `ODEC-44` now), a rotat
 
 ---
 
+---
+
+### 4.42 The method is registered — `ODEC-44` answered, the per-user layout wired, and `config.apply` reaches the dispatcher (2026-11-07)
+
+**What the decision is.** The register's first option: `settings.installRoot` overrides the pin, null resolves to
+the pin's own per-user core directory, and the supervisor's `Launch` reads the install receipt at that root per
+spawn — the receipt names the active version's path, and the pre-exec proof re-hashes the file it names. The rule
+is stated in `connector-settings.schema.json#/properties/core/properties/installRoot`'s description and in doc 33
+§7 beside its receipts bullet. The cost the option named honestly: the first-run download's network-egress and
+pin-write responsibilities move into this process, where ADR-0019's verification already lives — and that download
+is not wired yet, which is `VER-41`'s and the live rows' business, so a receipt that does not exist answers a real
+refusal naming the reason instead of pretending.
+
+**What landed in the wiring.** `main.go` builds the per-user layout of doc 34 §7 — state, config, keystore and
+core directories, one root, four flags overriding it for tests and sandboxes — opens the keystore with the
+platform's own protector (`keystore.NewSystemProtector`, the exported constructor ADR-0011's DPAPI binding always
+implied), constructs the supervisor, and registers `config.apply` in the dispatcher. The supervisor's `Launch`
+signature gained an error return, because Core not being installed is a named refusal — "the install receipt could
+not be read; the first-run download has not run or the install is broken" — rather than a generic failure. The
+labelled row in doc 27 §9 reads Verified, and the first command frame a test sends now reaches the registered
+method: the ids-only call answers the intent BadRequest (ODEC-39's rule, measured from the wire), not
+`UnknownMethod`.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1230 checks**. `node tools/check-doc-evidence.mjs` →
+green; §4.4's final ledger paragraph has the set and the per-file deltas. `node tools/check-no-secrets.mjs` →
+**496 files** — the one synthetic UUID in the new wiring test carries its annotation. ADR shape, layout guards and
+the legacy backup check → green. `go -C connector test -count=1 ./...` → thirteen `ok` lines, the cmd package's
+suite now measuring the registration from the wire and the Launch resolution from the receipt; `gofmt -l connector`
+empty, `go -C connector vet ./...` silent. What this slice does not claim: a live frame from a real browser (the
+live rows are still `SKIPPED`), a first-run download (`VER-41`), or a receipt written by anything in this
+repository — the receipt the wiring reads is doc 33 §5 step 10's, and nothing here writes one.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -3213,9 +3254,8 @@ loopback routing probes, so a missing local Core binary is no longer a blocker; 
 compiled two-server VLESS path on loopback, with server selection proven by the source address the target saw; §4.38
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
-budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor. Next: the
-`config.apply` registration's last blocker (ODEC-44, the Core binary source its `VER-88` gates), then host
-transport (ODEC-35). ODEC-37 is narrowed to
+budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
+is built, the keystore opened, and the method dispatched. Next: host transport (ODEC-35, an adr). ODEC-37 is narrowed to
 residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.
@@ -3899,8 +3939,8 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 196 labelled lines over 44 documents, the queue is 74 rows with fourteen tombstones, and the register is 38
-questions over 61 sites with seven retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 195 labelled lines over 44 documents, the queue is 73 rows with fifteen tombstones, and the register is 37
+questions over 60 sites with eight retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a

@@ -79,10 +79,10 @@ func TestFakeCoreAgent(t *testing.T) {
 }
 
 func agentLaunch(mode, record string) supervisor.Launch {
-	return func(configPath string) *exec.Cmd {
+	return func(configPath string) (*exec.Cmd, error) {
 		cmd := exec.Command(os.Args[0], "-test.run=TestFakeCoreAgent", "-test.count=1")
 		cmd.Env = append(os.Environ(), agentMode+"="+mode, agentConfig+"="+configPath, agentRecord+"="+record)
-		return cmd
+		return cmd, nil
 	}
 }
 
@@ -519,7 +519,7 @@ func TestAChangedIntentReplacesTheFileAndTheProcess(t *testing.T) {
 	h := &harness{intent: intent, record: &fakeRecord{inner: fileStateRecord{dir: d.state}}, dirs: d, store: store}
 	sup, err := supervisor.New(supervisor.Config{
 		Dir: d.state,
-		Launch: func(configPath string) *exec.Cmd {
+		Launch: func(configPath string) (*exec.Cmd, error) {
 			mu.Lock()
 			defer mu.Unlock()
 			at := spawns
@@ -530,7 +530,7 @@ func TestAChangedIntentReplacesTheFileAndTheProcess(t *testing.T) {
 			cmd := exec.Command(os.Args[0], "-test.run=TestFakeCoreAgent", "-test.count=1")
 			cmd.Env = append(os.Environ(), agentMode+"="+modeHold, agentConfig+"="+configPath,
 				agentRecord+"="+records[at])
-			return cmd
+			return cmd, nil
 		},
 		Verify: func(string) error { return nil },
 		Death:  supervisor.Death{},
@@ -955,7 +955,7 @@ func TestASpawnFailureAfterTheRenameIsReportedAndNotRolledBack(t *testing.T) {
 	sup, err := supervisor.New(supervisor.Config{
 		Dir: d.state,
 		// A command line no ADR-0019 repository could contain: the exec itself fails, after the rename.
-		Launch: func(string) *exec.Cmd { return exec.Command("nexora-core-binary-this-does-not-exist") },
+		Launch: func(string) (*exec.Cmd, error) { return exec.Command("nexora-core-binary-this-does-not-exist"), nil },
 		Verify: func(string) error { return nil },
 		Death:  supervisor.Death{},
 	})

@@ -175,10 +175,10 @@ failed refresh keeps the last good version" — is `docs/architecture/29-subscri
 are the same principle at two layers, which is why neither is allowed to be "best effort".
 The fsync above is the file's: a directory-level flush has no Windows equivalent, so a power loss between the rename
 and the metadata flush can lose the rename — and the config is re-derivable from intent plus keystore, so the answer
-is a re-apply, not a recovery. What this section does not say is who hands the supervisor its `Launch` in production:
-a Core binary source — the pinned install root under doc 34 §7's layout, resolved from settings and the install
-receipt — is a decision the corpus has not taken, and it is the one thing between the wired surface and a method an
-extension can call, so it belongs to `docs/architecture/40-open-decisions.md`.
+is a re-apply, not a recovery. Who hands the supervisor its `Launch` in production is decided: `settings.installRoot` overrides
+the pin, null resolves to the pin's own per-user core directory, and the supervisor's `Launch` reads the install
+receipt at that root per spawn — the rule doc 33 §7 states beside its receipts bullet, and what let `main.go` register
+the method.
 `Verified: NO — deferred to Phase 2` (the writer and its rollback are Go tests in `connector/internal/apply`, and
 `connector/cmd/nexora-connector/config_apply.go` now calls them from inside one command frame; what no test can show
 is an apply that failed while a real Core was loading the previous config).
@@ -198,7 +198,7 @@ is an apply that failed while a real Core was loading the previous config).
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | `ports.go` refuses the whole set naming the count, so no partial document is ever emitted; whether `QuotaExceeded` is that count's code is `ODEC-03`'s question | Verified: NO — deferred to Phase 2 |
 | The core-rule and per-tag inbound spellings a golden must pin | §5–§6 record the implemented interim forms; `split_test.go` and `golden_test.go` pin their emitted bytes, and `connector/internal/apply/drive_test.go` measures acceptance of four materialized configs by Xray 24.11.11. Loopback HTTP/UDP tests additionally verify the measured routing subset; `invert: true` is reported whole because Core ignores it. `ODEC-37` retains the remaining predicate semantics | open decision, `docs/architecture/40-open-decisions.md` |
 | A failed apply leaves the previous config applied | `connector/internal/apply/write_test.go` writes a document whose secret is missing over a good config and re-reads the file, byte-for-byte, plus the hash the contract would report | Verified: NO — deferred to Phase 2 |
-| §2's seven stages and §8's write are reachable from one command frame | `connector/cmd/nexora-connector/config_apply.go` — compare-and-swap against the applied-state record, the intent documents the frame itself carries, compile, atomic write, port reservation into the applied-state record, stop-then-start — with `config_apply_test.go` showing a compiled file on disk, a child handed that path, and each refusal leaving everything after it untouched | Verified: NO — deferred to Phase 2: the intent documents ride the frame and the two directories are doc 34 §7's per-user layout, but the method is still not registered — `main.go` publishes nothing that needs the `configHash` span, and `ODEC-36` is the decision that registration waits on |
+| §2's seven stages and §8's write are reachable from one command frame | `connector/cmd/nexora-connector/config_apply.go` — compare-and-swap against the applied-state record, the intent documents the frame itself carries, compile, atomic write, port reservation into the applied-state record, stop-then-start — with `config_apply_test.go` showing a compiled file on disk, a child handed that path, and each refusal leaving everything after it untouched | Verified — the intent documents ride the frame, the directories are doc 34 §7's per-user layout, and `main.go` registers `config.apply` in the dispatcher; the runtime half of a real frame from an extension is the live rows, which are still `SKIPPED` |
 | `localDNS` semantics decided before Phase 2 ships | — | open decision, `docs/architecture/40-open-decisions.md` |
 | Which byte string `configHash` covers — the handle-bearing document or the materialized bytes | answered 2026-11-07 by ODEC-36's first option: the handle-bearing document, whose digest `emit_test.go` pins for shape A — machine-independent, and a digest whose input holds no secret material, which is why the written bytes are not the subject (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`'s description states the rotation cost beside it) | Verified as data |
 

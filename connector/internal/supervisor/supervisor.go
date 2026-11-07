@@ -153,7 +153,7 @@ type RestartResult struct {
 }
 
 // Launch builds the child for one config file. See the package doc for why argv is not this package's fact.
-type Launch func(configPath string) *exec.Cmd
+type Launch func(configPath string) (*exec.Cmd, error)
 
 // Verify is doc 33 §6's table row "every core.start / core.restart, before exec: sha256 of the file being
 // spawned, compared to the install receipt". It runs before every spawn, a ladder retry included, because that
@@ -341,7 +341,10 @@ func (s *Supervisor) Start(ctx context.Context, p StartParams) (*Status, error) 
 
 // spawnLocked is one exec: verify, build, contain, start, record, publish. It is called with s.mu held.
 func (s *Supervisor) spawnLocked(ctx context.Context, p StartParams, attempt int) (*Status, error) {
-	cmd := s.cfg.Launch(p.ConfigPath)
+	cmd, launchErr := s.cfg.Launch(p.ConfigPath)
+	if launchErr != nil {
+		return nil, fmt.Errorf("supervisor: %w", launchErr)
+	}
 	if cmd == nil {
 		return nil, errors.New("supervisor: Launch returned no command")
 	}

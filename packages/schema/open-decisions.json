@@ -23,18 +23,42 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 61
+    "counted": 60
   },
   "notADeferral": [
-    { "doc": "docs/PROJECT-STATE.md", "anchor": "exist now, so their cross-checks are real assertions." },
-    { "doc": "docs/PROJECT-STATE.md", "anchor": "`docs/architecture/40-open-decisions.md`, `packages/schema/verification.json` and" },
-    { "doc": "docs/README.md", "anchor": "and the row in 39 names the register entry that gates it." },
-    { "doc": "docs/architecture/20-target-repository-layout.md", "anchor": "`docs/architecture/39-verification-matrix.md`, `docs/architecture/40-open-decisions.md`" },
-    { "doc": "docs/architecture/39-verification-matrix.md", "anchor": "`docs/architecture/40-open-decisions.md`, `docs/audit/00-scope-and-method.md`" },
-    { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "recorded the premise as" }
+    {
+      "doc": "docs/PROJECT-STATE.md",
+      "anchor": "exist now, so their cross-checks are real assertions."
+    },
+    {
+      "doc": "docs/PROJECT-STATE.md",
+      "anchor": "`docs/architecture/40-open-decisions.md`, `packages/schema/verification.json` and"
+    },
+    {
+      "doc": "docs/README.md",
+      "anchor": "and the row in 39 names the register entry that gates it."
+    },
+    {
+      "doc": "docs/architecture/20-target-repository-layout.md",
+      "anchor": "`docs/architecture/39-verification-matrix.md`, `docs/architecture/40-open-decisions.md`"
+    },
+    {
+      "doc": "docs/architecture/39-verification-matrix.md",
+      "anchor": "`docs/architecture/40-open-decisions.md`, `docs/audit/00-scope-and-method.md`"
+    },
+    {
+      "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md",
+      "anchor": "recorded the premise as"
+    }
   ],
   "decidedBy": {
-    "values": ["product", "contract", "adr", "measurement", "upstream"],
+    "values": [
+      "product",
+      "contract",
+      "adr",
+      "measurement",
+      "upstream"
+    ],
     "meaning": {
       "product": "a human must choose behaviour the user will see; no measurement and no schema can decide it",
       "contract": "the answer is a field, an enum member or an error code in `packages/schema`; choosing it costs a commit",
@@ -49,7 +73,13 @@
       "id": "ODEC-01",
       "question": "Who owns the single Connector when two browser profiles -- or a browser and a manual run -- reach the same per-user instance: does the second caller adopt, get refused by `CoreAlreadyRunning`, or replace?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-12", "VER-14"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-12",
+          "VER-14"
+        ],
+        "compatibility": []
+      },
       "why": "The adoption rule is stated (`a lock file with {pid, pipeVersion, startedAt, configHash}`, then adopt rather than replace) but the file's format, its staleness rule and what a *dead* lock means are not decided, and the same ownership question returns as 'two browser profiles, one Connector': whose policy document decides the block. Until the answer exists, no test can distinguish a correct adopt from a correct refusal.",
       "options": [
         "adopt-and-share: both profiles drive one Connector and one policy, and the first writer of the policy wins until a reload",
@@ -57,30 +87,58 @@
         "first-writer-holds: a second profile gets `CoreAlreadyRunning` with the owner's identity and must explicitly take over"
       ],
       "at": [
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "browser profile already owns the instance" },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "recorded in `docs/architecture/40-open-decisions.md`" },
-        { "doc": "docs/architecture/21-system-context.md", "anchor": "Reconnect adopts the running Connector instead of starting a second one" },
-        { "doc": "docs/architecture/30-failure-policy.md", "anchor": "- **Two browser profiles, one Connector.**" }
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "browser profile already owns the instance"
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "recorded in `docs/architecture/40-open-decisions.md`"
+        },
+        {
+          "doc": "docs/architecture/21-system-context.md",
+          "anchor": "Reconnect adopts the running Connector instead of starting a second one"
+        },
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "- **Two browser profiles, one Connector.**"
+        }
       ]
     },
     {
       "id": "ODEC-03",
       "question": "Do the two codes the compiler's refusals answer with mean what the refusals are -- `UnsupportedCombination` is registered for transport combinations while the prose uses it for a bind address and a port overlap, and `QuotaExceeded` is a storage-layer code given a port ceiling?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-16", "VER-20"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-16",
+          "VER-20"
+        ],
+        "compatibility": []
+      },
       "why": "A refusal needs a code whose meaning carries its own remediation, and `docs/architecture/31-security-model.md` §6.1 makes that the rule with two worked rows. `protocol/error-taxonomy.json:14` registers `UnsupportedCombination` as 'Semantically invalid transport combination, e.g. xtls-rprx-vision over ws', and the corpus then uses it for three things that are not transport combinations: a non-loopback inbound (`docs/architecture/22-component-contracts.md:113`), an overlap of the block range with the allocation range (`docs/architecture/30-failure-policy.md:248-249`, where the point of the code is 'nothing about either document is malformed'), and a platform with no pinned-binary entry (`docs/architecture/33-binary-integrity.md:405`), which is a lookup miss. `docs/adr/0006-loopback-only-inbounds.md:57` reads the same code as 'semantically invalid configs' at large. `QuotaExceeded` runs the stretch the other way: its entry is layer `storage` and says 'chrome.storage.sync or keystore quota hit', and `docs/architecture/31-security-model.md:221` rejects exactly this pattern for a rate-limit budget -- 'using it for a budget tells the client it has run out of disk' -- while `docs/architecture/27-config-compilation-pipeline.md:115`, its §9 invariant row and `docs/architecture/29-subscriptions-and-servers.md:306` all give the 64-inbound ceiling to that same code. This is no longer a question about whether a code exists: `connector/internal/compile/validate.go` refuses the bind, `ports.go` refuses the overlap and the ceiling, and the taxonomy has both codes, so all three refusals have an answer today. Two things remain undecided and they are contract decisions, not code. First, whether the `meaning` strings -- which `docs/architecture/32-secrets-keystore-masking.md:34` makes the per-command source of remediation -- are allowed to stretch to cover three non-transport refusals and one non-storage ceiling. Second, whether `core.start` declares the code its own ADR says it needs: `docs/adr/0006-loopback-only-inbounds.md:110` records 'Adding `UnsupportedCombination` to `core.start`'s declared errors is a Phase 2 contract change with a fixture of its own', and `protocol/commands/core.start.json` declares `QuotaExceeded` and nine others without it, so the refusal ADR-0006 promises arrives as a code that command has not promised.",
       "options": [
         "widen the two `meaning` strings in place: `UnsupportedCombination` becomes 'an intent that cannot be compiled into a Core config without inventing a field', and `QuotaExceeded` gains the count-ceiling use -- no new codes, every prose use already reads this way, and the cost is a code whose `layer` says `validation` or `storage` while it answers two different failures, which is the property `docs/architecture/31-security-model.md:221` objects to",
         "name each refusal: keep `UnsupportedCombination` for doc 23 §10's transport clause, add `UnsupportedBind` for ADR-0006 and `PortRangeConflict` for doc 30 §8, and give the inbound ceiling a code of its own -- the meanings stay one-to-one and remediation stays derivable from the code, at the cost of three taxonomy entries, a declared-error list per command, and `docs/adr/0006-loopback-only-inbounds.md:57`'s wording needing the same pass",
         "one code plus the field that made it impossible: `UnsupportedCombination` remains the compiler's only refusal and its payload must carry the offending path, the way `unrepresentable[]` carries `{source, reason}` for a rule -- the taxonomy grows not at all and each refusal explains itself from data, but the storage-layer objection to `QuotaExceeded` for a port ceiling is decorated by a payload rather than answered, and `core.start` still has to declare the code"
       ],
-      "at": [{ "doc": "docs/architecture/22-component-contracts.md", "anchor": "decision in `docs/architecture/40-open-decisions.md`" }]
+      "at": [
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "decision in `docs/architecture/40-open-decisions.md`"
+        }
+      ]
     },
     {
       "id": "ODEC-04",
       "question": "How is the fail-closed block port range kept disjoint from the inbound allocation range, when the two live in different files and JSON Schema cannot span them?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-20"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-20"
+        ],
+        "compatibility": []
+      },
       "why": "`failure-policy.schema.json#/properties/block/properties/portRange` chooses a port to *leave closed*. If it overlaps the allocation range in `connector-settings.schema.json`, a fail-closed write can point at a live inbound and silently proxy -- the exact inversion of constraint 10. The rule is real; only its expression is open, and no cross-file constraint exists in draft 2020-12 today.",
       "options": [
         "one owner: the allocation range is declared in `connector-settings.schema.json` and the block range is derived from it, never written by the user",
@@ -88,15 +146,27 @@
         "a named error code for the overlap and a runtime refusal at `core.start`, accepting that a bad document can still be authored"
       ],
       "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "disjointness is an open item for Phase 2 data" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "| Block port range and allocation range are disjoint |" }
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "disjointness is an open item for Phase 2 data"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "| Block port range and allocation range are disjoint |"
+        }
       ]
     },
     {
       "id": "ODEC-05",
       "question": "What does `localDNS` mean, and is `domainStrategy: IPIfNonMatch` the right default when a name that matches no rule may be resolved locally?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-27", "VER-75"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-27",
+          "VER-75"
+        ],
+        "compatibility": []
+      },
       "why": "A resolver setting changes what 'the same rule' means, and Phase 1 has no evidence for which default a ZeroOmega user expects; the model deliberately leaves the field out. `IPIfNonMatch` has a DNS consequence -- a leak of a different shape from the one `block` closes -- and `docs/architecture/28-routing-model.md` owns the analysis while the *decision* is open here. `<local>` expansion (VER-75) is the UI half of the same answer.",
       "options": [
         "keep the default `IPIfNonMatch`, document the leak, and show `<local>` expansion in the UI so the user sees which names resolve locally",
@@ -104,16 +174,31 @@
         "expose `localDNS` as a per-profile field only after `docs/verification/live-matrix.md` has a row measuring what the browser does anyway"
       ],
       "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "| `localDNS` / resolver choice |" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "| `localDNS` semantics decided before Phase 2 ships |" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "and the open half in `docs/architecture/40-open-decisions.md`" }
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "| `localDNS` / resolver choice |"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "| `localDNS` semantics decided before Phase 2 ships |"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "and the open half in `docs/architecture/40-open-decisions.md`"
+        }
       ]
     },
     {
       "id": "ODEC-06",
       "question": "Is 64 inbounds the ceiling, and when a subscription has 200 servers -- refuse, split, or compile a subset?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-68", "VER-73"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-68",
+          "VER-73"
+        ],
+        "compatibility": []
+      },
       "why": "`routing-policy.schema.json` bounds the inbound list at `maxItems: 64`, and a profile with 200 servers exceeds it. The stated behaviour is a refusal that names the count and a UI ask to split; whether that number is a product limit or an implementation accident is undecided, and silently allocating ports until the range is exhausted is already ruled out.",
       "options": [
         "keep 64, refuse with `QuotaExceeded` naming the count, and make splitting profiles the documented answer",
@@ -121,42 +206,81 @@
         "compile a subset per active profile: inbounds exist only for servers a reachable rule can select"
       ],
       "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "(`docs/architecture/40-open-decisions.md`)." },
-        { "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "| 3 | Should the 64-inbound ceiling rise" },
-        { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "`ODEC-06`) ever raises" }
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "(`docs/architecture/40-open-decisions.md`)."
+        },
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "| 3 | Should the 64-inbound ceiling rise"
+        },
+        {
+          "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md",
+          "anchor": "`ODEC-06`) ever raises"
+        }
       ]
     },
     {
       "id": "ODEC-07",
       "question": "May the Connector fetch a subscription through another proxy, and if so may that proxy be a loopback one -- i.e. may NEXORA's own tunnel carry the fetch that configures it?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-59", "VER-65"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-59",
+          "VER-65"
+        ],
+        "compatibility": []
+      },
       "why": "Feeds reachable only through another proxy exist, and the answer needs three things at once: a schema field on the subscription source, an address guard for the proxy itself (the SSRF rules guard the feed, not the hop that carries it), and a decision about a feedback loop -- a fetch that depends on the config it is fetching would make first-run and refresh order-dependent.",
       "options": [
         "no fetch-time proxy in NEXORA v1: refuse the source, name the reason, and let the user proxy the browser instead",
         "allow an external proxy address, never a loopback one, so the tunnel can never be its own dependency",
         "allow any configured proxy but only after the first successful refresh, and mark the source as needing it in the UI"
       ],
-      "at": [{ "doc": "docs/architecture/29-subscriptions-and-servers.md", "anchor": "| 1 | A fetch-time proxy for feeds" }]
+      "at": [
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "| 1 | A fetch-time proxy for feeds"
+        }
+      ]
     },
     {
       "id": "ODEC-08",
       "question": "What happens to a legacy subscription full of Shadowsocks, Trojan or WireGuard entries: reported, dropped with a count, or refused as a source?",
       "decidedBy": "adr",
-      "blocks": { "verification": ["VER-69", "VER-71"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-69",
+          "VER-71"
+        ],
+        "compatibility": []
+      },
       "why": "`protocol` is `const \"vless\"` (ADR-0003), so legacy feeds are lossy *by construction*. That is a product-visible consequence of an accepted decision, and expanding the enum needs an ADR of its own (VER-71 asserts that process rule and nothing does today). The honest Phase-1 statement is: the parser must report, never silently skip -- the shape of the report is the open part.",
       "options": [
         "report-and-import: import the VLESS subset, list the rest with counts and reasons, and keep the source usable",
         "refuse-the-source: a feed containing a non-VLESS entry is not imported at all until the user opts into the subset",
         "expand the enum with a new ADR, accepting the Xray-side matrix and every golden config that follows"
       ],
-      "at": [{ "doc": "docs/architecture/23-unified-server-model.md", "anchor": "`docs/architecture/40-open-decisions.md`." }]
+      "at": [
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "`docs/architecture/40-open-decisions.md`."
+        }
+      ]
     },
     {
       "id": "ODEC-09",
       "question": "Does `password` join the sync strip set -- which changes what existing users' synced envelopes contain?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-22", "VER-74"], "compatibility": ["COMP-18"] },
+      "blocks": {
+        "verification": [
+          "VER-22",
+          "VER-74"
+        ],
+        "compatibility": [
+          "COMP-18"
+        ]
+      },
       "why": "The list contains the legacy four plus `headers` (closing SEC-1) plus `body`, and deliberately not `password`, because stripping it is a cross-device behaviour change: an envelope synced today and opened tomorrow would lose a value the old build still reads. COMP-18 carries the verdict `deferred-needs-measurement`, so the question is not whether it is safer but what it costs a user mid-sync.",
       "options": [
         "strip it in the next schema version, gated by the migration ledger so a pre-strip envelope still loads",
@@ -164,16 +288,30 @@
         "leave it: it is a legacy field no NEXORA profile writes, so it decays without a breaking change"
       ],
       "at": [
-        { "doc": "docs/architecture/24-options-envelope-compat.md", "anchor": "`docs/architecture/40-open-decisions.md`, owned by" },
-        { "doc": "docs/architecture/38-compatibility-matrix.md", "anchor": "| COMP-18 | `password` is stripped from the synced blob |" },
-        { "doc": "docs/architecture/38-compatibility-matrix.md", "anchor": "cross-device behaviour change and therefore lives in" }
+        {
+          "doc": "docs/architecture/24-options-envelope-compat.md",
+          "anchor": "`docs/architecture/40-open-decisions.md`, owned by"
+        },
+        {
+          "doc": "docs/architecture/38-compatibility-matrix.md",
+          "anchor": "| COMP-18 | `password` is stripped from the synced blob |"
+        },
+        {
+          "doc": "docs/architecture/38-compatibility-matrix.md",
+          "anchor": "cross-device behaviour change and therefore lives in"
+        }
       ]
     },
     {
       "id": "ODEC-10",
       "question": "Does any external API surface survive for third-party compatibility -- and if one does, may it be the whole-options read or the `disable` path that resolves to `system`?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-54"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-54"
+        ],
+        "compatibility": []
+      },
       "why": "Whether *any* external surface survives is a compatibility question, not a security one: tools that drive SwitchyOmega today would stop working. That is user-visible, so the security document constrains the answer instead of making it -- `getOptions` cannot survive a per-command contract and secrets-never-values, and neither can a `disable` that resolves the system proxy.",
       "options": [
         "no external surface: NEXORA speaks typed commands only, and third-party tools break with a documented migration",
@@ -181,28 +319,52 @@
         "keep the legacy surface for one release behind an explicit user opt-in that states what it grants"
       ],
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "`system`. Tracked in `docs/architecture/40-open-decisions.md`." },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "- whether any external-API surface survives" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "`system`. Tracked in `docs/architecture/40-open-decisions.md`."
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "- whether any external-API surface survives"
+        }
       ]
     },
     {
       "id": "ODEC-11",
       "question": "When can `<all_urls>` be dropped from the manifest, given that both the Connector owning every fetch and the legacy authenticated-proxy path no longer needing `webRequest` must be true first?",
       "decidedBy": "measurement",
-      "blocks": { "verification": ["VER-56"], "compatibility": ["COMP-07"] },
+      "blocks": {
+        "verification": [
+          "VER-56"
+        ],
+        "compatibility": [
+          "COMP-07"
+        ]
+      },
       "why": "This is a permission shrink, and the review cost of the grant is only worth paying once. The gate is a cohort count: COMP-07 asks how many users still have an authenticated legacy proxy, because that path is what needs `webRequest` today. No tool in this repository can produce the number.",
       "options": [
         "drop it in the release where the Connector owns every fetch and no legacy authenticated-proxy path remains",
         "keep it and record in doc 31 that the grant is inherited, not chosen",
         "make it an optional grant requested at runtime when a legacy proxy is actually loaded"
       ],
-      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "- removing `<all_urls>`, which is gated on" }]
+      "at": [
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "- removing `<all_urls>`, which is gated on"
+        }
+      ]
     },
     {
       "id": "ODEC-12",
       "question": "Do loopback inbounds get per-profile credentials, for the protocols that can authenticate -- which would add a fifth secret field class and a fifth mask rule?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-23", "VER-45"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-23",
+          "VER-45"
+        ],
+        "compatibility": []
+      },
       "why": "Loopback inbounds are unauthenticated today, which is defensible because the pipe is same-user; a shared machine with two logins is the counter-example, and `docs/architecture/31-security-model.md` §12 names it as a decision rather than an oversight. Adding the field is cheap; the consequence is a new field class, a new mask rule, and one more value the keystore must hold.",
       "options": [
         "no inbound credentials: same-user is the security boundary, stated in doc 31 as a chosen limit",
@@ -210,15 +372,27 @@
         "add them only for `socks` inbounds, where an authenticated fallback exists today"
       ],
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "- per-profile inbound credentials for loopback inbounds whose protocol can authenticate" },
-        { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "- per-profile inbound credentials for loopback inbounds, which would add" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "- per-profile inbound credentials for loopback inbounds whose protocol can authenticate"
+        },
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "- per-profile inbound credentials for loopback inbounds, which would add"
+        }
       ]
     },
     {
       "id": "ODEC-13",
       "question": "How is the Firefox AMO id managed, given that it is simultaneously the upgrade-continuity constraint and the security principal -- so it cannot rotate and must be reviewed like a credential?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-15", "VER-52"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-15",
+          "VER-52"
+        ],
+        "compatibility": []
+      },
       "why": "The id is an author's email address in `manifest-firefox.json:51` and ADR-0015 forbids changing it, because changing it means a new install and a lost user. So the sender identity that the Native Messaging allowlist trusts is a value nobody may rotate and everybody who touches the release must be able to keep. The answer is a custody process, not a field.",
       "options": [
         "document the id as a credential: named custodians, a review cadence, and a note in doc 31 that rotation is impossible",
@@ -226,15 +400,31 @@
         "accept the constraint and record that a compromised author address is an unmitigable, disclosed risk"
       ],
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "credential, which is a decision rather than an accident" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "- the Firefox AMO id as a security principal that cannot rotate" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "credential, which is a decision rather than an accident"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "- the Firefox AMO id as a security principal that cannot rotate"
+        }
       ]
     },
     {
       "id": "ODEC-14",
       "question": "What does `block` actually promise against the browser stack -- DNS resolution, WebRTC, and the alarm floor the whole fail-closed timer rests on?",
       "decidedBy": "upstream",
-      "blocks": { "verification": ["VER-21", "VER-74"], "compatibility": ["COMP-07", "COMP-10", "COMP-14"] },
+      "blocks": {
+        "verification": [
+          "VER-21",
+          "VER-74"
+        ],
+        "compatibility": [
+          "COMP-07",
+          "COMP-10",
+          "COMP-14"
+        ]
+      },
       "why": "`chrome.proxy` does not cover every path: the inherited default bypass list literally contains `127.0.0.1`, `::1` and `localhost`, an empty FixedProfile degrades to `mode: direct`, and WebRTC can bypass the proxy setting entirely. NEXORA's `block` primitive has no bypass list to leak, which is asserted in data; the browser half is not ours to decide, and `docs/architecture/30-failure-policy.md` marks the alarm floor and Chromium's DNS disposition `INFERRED`.",
       "options": [
         "measure it, state the residual leak surface in doc 38, and let the user decide with that sentence visible",
@@ -242,16 +432,31 @@
         "escalate: pair the proxy write with the browser controls that exist per platform and document that they are not equivalent"
       ],
       "at": [
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "| DNS and WebRTC around `chrome.proxy` |" },
-        { "doc": "docs/architecture/31-security-model.md", "anchor": "- DNS disposition and WebRTC while blocked" },
-        { "doc": "docs/architecture/30-failure-policy.md", "anchor": "- **The alarm floor**" }
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "| DNS and WebRTC around `chrome.proxy` |"
+        },
+        {
+          "doc": "docs/architecture/31-security-model.md",
+          "anchor": "- DNS disposition and WebRTC while blocked"
+        },
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "- **The alarm floor**"
+        }
       ]
     },
     {
       "id": "ODEC-15",
       "question": "How does the built-in sync config -- `gistId`, `gistToken`, `syncUsername` -- leave `chrome.storage.sync`, given that its write path never passes through `transformValueForSync` and no strip entry can reach it?",
       "decidedBy": "adr",
-      "blocks": { "verification": ["VER-22", "VER-24"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-22",
+          "VER-24"
+        ],
+        "compatibility": []
+      },
       "why": "This is SEC-5's one open half and the catalogue's one admitted 'none, open item' mitigation. Adding `gistToken` to the strip list is necessary and not sufficient: the sufficient half is a migration decision about a storage key the legacy engine owns, written whole by `options_sync.coffee:240-242`. ADR-0014's ledger and ADR-0011's keystore are both in scope, so the answer needs a new ADR rather than a field.",
       "options": [
         "migrate the sync config into the keystore behind a reference, with a migration step and a documented loss for a device that never runs it",
@@ -259,148 +464,278 @@
         "leave the value where it is, name it as the one admitted exception, and gate any sync backend that is not the user's own account"
       ],
       "at": [
-        { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "about that storage key, and it goes to" },
-        { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "**SEC-5's built-in-sync path:" },
-        { "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "- the built-in-sync `gistToken` write" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "`docs/architecture/40-open-decisions.md` — *exactly one credential" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "- the `zeroOmegaSync` half of SEC-5" }
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "about that storage key, and it goes to"
+        },
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "**SEC-5's built-in-sync path:"
+        },
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "- the built-in-sync `gistToken` write"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "`docs/architecture/40-open-decisions.md` — *exactly one credential"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "- the `zeroOmegaSync` half of SEC-5"
+        }
       ]
     },
     {
       "id": "ODEC-16",
       "question": "What does the UI say about a legacy authenticated HTTP/SOCKS proxy in an imported backup, since NEXORA's model has no field for it?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-31"], "compatibility": ["COMP-07"] },
+      "blocks": {
+        "verification": [
+          "VER-31"
+        ],
+        "compatibility": [
+          "COMP-07"
+        ]
+      },
       "why": "The ingest must report such an entry rather than stash it (an orphaned credential is what VER-31's registry refusal is for), and 'report' is a screen: `docs/architecture/37-ui-architecture.md` §4 and §5 own the wording. The cohort that has one is the same count COMP-07 asks for, so the size of the problem and its shape are both unknown.",
       "options": [
         "a named import result: '3 servers could not be imported because they need an authenticated proxy', with no silent drop",
         "an explicit legacy profile kind, visible and inert, so the user sees what was lost",
         "refuse the whole import until the user removes those entries, with the count in the error"
       ],
-      "at": [{ "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "- legacy authenticated HTTP/SOCKS proxies imported from a backup" }]
+      "at": [
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "- legacy authenticated HTTP/SOCKS proxies imported from a backup"
+        }
+      ]
     },
     {
       "id": "ODEC-17",
       "question": "Is the pre-migration snapshot encrypted at rest, or is a file the user may move exactly as exposed as the store blob DPAPI protects?",
       "decidedBy": "adr",
-      "blocks": { "verification": ["VER-33"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-33"
+        ],
+        "compatibility": []
+      },
       "why": "ADR-0011 forbids self-written crypto and permits DPAPI for a store blob; a snapshot file the user can copy to a USB drive is a different threat model -- DPAPI binds it to this account on this machine, which defeats the purpose of a backup, and no encryption at all makes the backup a credential dump. The question needs an ADR because it may narrow what a backup is allowed to contain.",
       "options": [
         "no encryption, and the snapshot carries references only -- a stolen file then holds nothing worth stealing",
         "DPAPI on the snapshot, accepting that it is restorable only on the same account and machine",
         "an encrypted export with a user passphrase, which is a new ADR and a new support burden"
       ],
-      "at": [{ "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "- whether the pre-migration snapshot should be encrypted at rest" }]
+      "at": [
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "- whether the pre-migration snapshot should be encrypted at rest"
+        }
+      ]
     },
     {
       "id": "ODEC-18",
       "question": "Does the `host`-entity fingerprint key rotate, and what does an installation's diagnostic history mean after it does?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-23", "VER-45"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-23",
+          "VER-45"
+        ],
+        "compatibility": []
+      },
       "why": "Fingerprints are the only way a log or a support bundle can talk about a credential without carrying it. A key that never rotates makes `fp-` values stable across years -- which is a correlation handle; a key that rotates makes an installation's own history unreadable across the rotation. Neither is acceptable by default, so the rule has to be chosen and expressed in the keystore contract.",
       "options": [
         "never rotate, and document that `fp-` values are a stable handle within one installation only",
         "rotate on demand with an explicit 'this breaks the history' warning in the purge command",
         "rotate on a schedule and keep the previous key for a bounded window so recent logs stay comparable"
       ],
-      "at": [{ "doc": "docs/architecture/32-secrets-keystore-masking.md", "anchor": "- rotation of the `host`-entity fingerprint key" }]
+      "at": [
+        {
+          "doc": "docs/architecture/32-secrets-keystore-masking.md",
+          "anchor": "- rotation of the `host`-entity fingerprint key"
+        }
+      ]
     },
     {
       "id": "ODEC-19",
       "question": "What happens when `restartAttempts` says 10 and `restartBackoffSeconds` offers one delay: repeat the last, stop early, or refuse the document?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-29"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-29"
+        ],
+        "compatibility": []
+      },
       "why": "The schema admits 10 attempts and a ladder of 1 to 10 entries, so the disagreement is constructible today and the schema permits it on purpose. Three readings are all defensible, which is precisely why the document must not silently pick one in the Connector: the difference is how long a user sits with no proxy.",
       "options": [
         "repeat the last entry for every remaining attempt -- the ladder is a shape, not a budget",
         "stop when the ladder is exhausted and report the restart as abandoned, fail-closed",
         "make the two fields agree in data: `minItems` equals the attempts, so the disagreement cannot be authored"
       ],
-      "at": [{ "doc": "docs/architecture/30-failure-policy.md", "anchor": "- **Ladder length vs attempt count.**" }]
+      "at": [
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "- **Ladder length vs attempt count.**"
+        }
+      ]
     },
     {
       "id": "ODEC-20",
       "question": "Who owns the state 'Core is alive, unmanaged and unsupervised' -- `contained: false` with no exit?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-14", "VER-21"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-14",
+          "VER-21"
+        ],
+        "compatibility": []
+      },
       "why": "Two mechanisms report it (the health check and the integrity event) and no plane owns the classification, so the same condition can be described as healthy by one surface and as an integrity event by another. §5 of the failure document handles the *episode*; what the state is *called*, and which surface may say it, is the open half.",
       "options": [
         "a named event on the Connector plane and one badge state on the extension plane, with the event as the only source",
         "treat it as `CoreExited` with a reason, so fail-closed needs no new classification",
         "add it to `events.json` as its own kind and let doc 36 assign a sink and a mask"
       ],
-      "at": [{ "doc": "docs/architecture/30-failure-policy.md", "anchor": "- **`contained: false` without an exit.**" }]
+      "at": [
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "- **`contained: false` without an exit.**"
+        }
+      ]
     },
     {
       "id": "ODEC-21",
       "question": "Does 'blocked' need its own field to survive an enterprise reading of the policy, given that a `subscription.refresh` must still work while the user's browsing is blocked?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-21", "VER-63"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-21",
+          "VER-63"
+        ],
+        "compatibility": []
+      },
       "why": "The document defines `blocked` as the user's browsing traffic, never as a network-wide policy, because the Connector -- not the browser -- fetches feeds. That distinction is prose in one file and an inference in another; an implementer who reads only the schema could make `block` mean 'everything', which would break refreshes and hide why.",
       "options": [
         "an explicit field on the block policy naming what is exempt, with the default being nothing",
         "keep the definition in prose and add a contract invariant that a refresh is never blocked",
         "make the fetch a separate plane-level concern that the block policy cannot reach at all"
       ],
-      "at": [{ "doc": "docs/architecture/30-failure-policy.md", "anchor": "- **Feed egress while blocked.**" }]
+      "at": [
+        {
+          "doc": "docs/architecture/30-failure-policy.md",
+          "anchor": "- **Feed egress while blocked.**"
+        }
+      ]
     },
     {
       "id": "ODEC-22",
       "question": "Is the pin inside the Connector (upgrades coupled to releases) or fetched separately (a signed detached pin update), and what does each cost the user?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-41", "VER-42"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-41",
+          "VER-42"
+        ],
+        "compatibility": []
+      },
       "why": "Pinning inside the host means a Core upgrade waits for a Connector release -- safe, and slow for a protocol change upstream. A detached signed pin update is faster and adds a second verification path with its own key custody. ADR-0019 chose an integrity-pinned downloadable asset; this is the coupling question that choice left open, and users experience it as 'the tunnel broke and the fix is not shipped yet'.",
       "options": [
         "coupled: Connector releases carry pins; the user waits or installs a new Connector",
         "detached signed pin update: a small, separately signed document that can move ahead of a release",
         "coupled by default with an explicit, user-initiated 'check upstream' that re-verifies from beginning to end"
       ],
-      "at": [{ "doc": "docs/architecture/33-binary-integrity.md", "anchor": "- the coupling of Core upgrades to Connector releases" }]
+      "at": [
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "- the coupling of Core upgrades to Connector releases"
+        }
+      ]
     },
     {
       "id": "ODEC-23",
       "question": "Is `geosite`/`geoip` routing a NEXORA feature at all -- and if it is, how does a data file get pinned when `pins.schema.json#/$defs/asset` describes executables?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-27", "VER-41"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-27",
+          "VER-41"
+        ],
+        "compatibility": []
+      },
       "why": "ZeroOmega's rule language has no geo concept, so this is a new feature rather than a migrated one, and Xray's geo rules need files that change weekly. Pinning them means an asset kind that is not an executable, a different rotation, and a different failure mode (a stale file silently mis-routes instead of refusing to start).",
       "options": [
         "no geo rules in NEXORA v1: the rule vocabulary stays what ZeroOmega users had",
         "ship geo rules with a bundled snapshot and no updates, accepting that it drifts",
         "add a data-asset kind to the pin contract and treat geo files as first-class pinned content"
       ],
-      "at": [{ "doc": "docs/architecture/33-binary-integrity.md", "anchor": "- geo-data:" }]
+      "at": [
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "- geo-data:"
+        }
+      ]
     },
     {
       "id": "ODEC-24",
       "question": "What does an air-gapped install do when the Core on disk is newer than the pin -- run it, refuse it, or ask?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-41", "VER-62"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-41",
+          "VER-62"
+        ],
+        "compatibility": []
+      },
       "why": "The integrity model verifies what it downloads against a pinned hash. A machine that never downloads, because someone copied a newer binary in, is outside that story: refusing is safe and useless, running it unverified is the thing ADR-0019 forbids, and the publisher alternative ADR-0019 rejected is what the user will reach for. §9 of the integrity document names the gap.",
       "options": [
         "refuse, and show the operator the exact reason plus the pin that would accept it",
         "run with a persistent 'unverified Core' badge and an event that never clears silently",
         "add a first-run trust-on-install mode: hash it once, then treat that as the pin for this machine"
       ],
-      "at": [{ "doc": "docs/architecture/33-binary-integrity.md", "anchor": "- air-gapped-and-newer-than-the-pin" }]
+      "at": [
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "- air-gapped-and-newer-than-the-pin"
+        }
+      ]
     },
     {
       "id": "ODEC-25",
       "question": "Does NEXORA sign the Core it rehosts (Authenticode), given that the certificate has a custody cost and the rebuild pipeline has a correctness cost?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-41", "VER-43"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-41",
+          "VER-43"
+        ],
+        "compatibility": []
+      },
       "why": "§13 of the integrity document lists this as a control against a threat the project chose to defend against differently: minisign already proves provenance, while Authenticode is what Windows Defender and an enterprise endpoint policy actually look at. Signing our own build means the binary users get is not upstream's bytes, which is a change of trust shape, not just of metadata.",
       "options": [
         "no Authenticode: distribute upstream bytes, verify upstream signatures, document what SmartScreen will do",
         "sign a rebuilt Core with a held certificate, and state in the pin that the asset is ours",
         "offer both as separate channels and let the operator pick the one their endpoint policy accepts"
       ],
-      "at": [{ "doc": "docs/architecture/33-binary-integrity.md", "anchor": "- Authenticode signing of a NEXORA-built Core" }]
+      "at": [
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "- Authenticode signing of a NEXORA-built Core"
+        }
+      ]
     },
     {
       "id": "ODEC-26",
       "question": "What removes the compiled config after an unclean kill, when deletion is a shutdown step and not a guarantee?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-23", "VER-24"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-23",
+          "VER-24"
+        ],
+        "compatibility": []
+      },
       "why": "The contract says the compiled config exists only while Core may run, is owner-only, and is gone after `core.stop` -- and a SIGKILL does not run `core.stop`. Three documents flag the same residual because it is genuinely shared: the file is a masked-but-structured artefact on disk whose lifetime is a promise. The fix has to be a rule an implementer can execute at boot, not a wish.",
       "options": [
         "reconcile at boot: no live Core with a recorded pid means the config file is deleted before anything else runs",
@@ -408,94 +743,173 @@
         "keep deletion at shutdown and add a periodic sweep of receipts older than one boot"
       ],
       "at": [
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "guarantee. §17 sends that to" },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "- cleanup of the compiled config after an unclean kill" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "- the compiled config after an unclean kill" }
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "guarantee. §17 sends that to"
+        },
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "- cleanup of the compiled config after an unclean kill"
+        },
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "- the compiled config after an unclean kill"
+        }
       ]
     },
     {
       "id": "ODEC-27",
       "question": "What are the Linux and macOS equivalents of the Windows integrity and ACL story, given that 'owner-only' means three different things?",
       "decidedBy": "adr",
-      "blocks": { "verification": ["VER-23", "VER-43"], "compatibility": ["COMP-12"] },
+      "blocks": {
+        "verification": [
+          "VER-23",
+          "VER-43"
+        ],
+        "compatibility": [
+          "COMP-12"
+        ]
+      },
       "why": "ADR-0011 scoped the keystore to Windows DPAPI, and the same scoping problem returns for file permissions, process containment and provenance: POSIX mode bits, macOS quarantine and TCC, and the absence of a Job Object analogue. COMP-12 currently reads as a refusal on those platforms, and each answer needs its own ADR the way the keystore got one.",
       "options": [
         "one ADR per platform, each naming what 'owner-only' and 'contained' mean there",
         "declare Windows the only supported platform for v1 and keep COMP-12 a refusal",
         "write the contract in portable terms and let three ADRs refine it as each platform is implemented"
       ],
-      "at": [{ "doc": "docs/architecture/33-binary-integrity.md", "anchor": "- Linux and macOS provenance" }]
+      "at": [
+        {
+          "doc": "docs/architecture/33-binary-integrity.md",
+          "anchor": "- Linux and macOS provenance"
+        }
+      ]
     },
     {
       "id": "ODEC-28",
       "question": "How many `-nexora.backup.*` snapshots are kept, and who answers when the disk is full?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-33"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-33"
+        ],
+        "compatibility": []
+      },
       "why": "Retention is the only place where the migration ledger's safety and the user's quota meet: ADR-0014 requires a snapshot before a migration, and the store has a hard cap. The interesting case is not the count but the collision -- what the build does when keeping the last good snapshot and migrating cannot both be true.",
       "options": [
         "keep N (2 or 3) and prune oldest-first, with the newest snapshot never prunable",
         "keep 1 and make `dryRun` the only way to see a before-image of anything older",
         "keep N, and when the store is full refuse the migration with a named reason rather than prune to fit"
       ],
-      "at": [{ "doc": "docs/architecture/34-data-split.md", "anchor": "- how many `-nexora.backup.*` snapshots to retain" }]
+      "at": [
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "- how many `-nexora.backup.*` snapshots to retain"
+        }
+      ]
     },
     {
       "id": "ODEC-29",
       "question": "Are legacy `derived` fields inside profiles (`pacScript`, `ruleList`) ever evicted toward the Connector, or frozen where ADR-0002 put them?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-22"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-22"
+        ],
+        "compatibility": []
+      },
       "why": "These are computed caches inside the intent plane. Leaving them means the browser keeps data nothing in NEXORA's model reads; evicting them means touching envelopes the legacy engine still compiles in the inherited tree, which ADR-0002 forbids. The safe answer is 'leave', and the honest answer is that nobody measured the cost of leaving.",
       "options": [
         "frozen: never read, never written, kept because the inherited engine still touches them",
         "dropped at migration to version 4, where credential extraction already rewrites profiles",
         "kept but excluded from every size budget, and asserted absent from any dump VER-22 greps"
       ],
-      "at": [{ "doc": "docs/architecture/34-data-split.md", "anchor": "- whether legacy `derived` fields inside profiles" }]
+      "at": [
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "- whether legacy `derived` fields inside profiles"
+        }
+      ]
     },
     {
       "id": "ODEC-30",
       "question": "Do the unbounded `log-store` and state blob get a compaction policy, or are they declared legacy-only and left?",
       "decidedBy": "product",
-      "blocks": { "verification": ["VER-48"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-48"
+        ],
+        "compatibility": []
+      },
       "why": "Both grow without a bound today, and VER-48 needs a real ring with real `seq` gaps to prove masking and rotation -- which means the store has to have a bounded shape before that assertion can mean anything. Declaring them legacy-only is defensible and leaves a quota failure to the user; compacting them is a policy with a lossy edge.",
       "options": [
         "declare legacy-only, assert they are never read by NEXORA, and let the user clear them",
         "ring-buffer them with a recorded cap, which is what VER-48's eviction test needs anyway",
         "move the log to the Connector plane entirely and leave the browser store empty by design"
       ],
-      "at": [{ "doc": "docs/architecture/34-data-split.md", "anchor": "- whether the unbounded `log-store`" }]
+      "at": [
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "- whether the unbounded `log-store`"
+        }
+      ]
     },
     {
       "id": "ODEC-31",
       "question": "What are the real envelope sizes without `unlimitedStorage` -- the number doc 34 §9's three conditions depend on?",
       "decidedBy": "measurement",
-      "blocks": { "verification": ["VER-74"], "compatibility": ["COMP-14"] },
+      "blocks": {
+        "verification": [
+          "VER-74"
+        ],
+        "compatibility": [
+          "COMP-14"
+        ]
+      },
       "why": "COMP-14 is owed a measurement, not an argument: the quota per item, the quota total, and the behaviour at the edge are properties of a shipped browser. Until they are recorded, the retention answer in ODEC-28 and the size caps in doc 34 are guesses, and `unlimitedStorage` is a grant the project would rather not take.",
       "options": [
         "measure on the two shipped browsers, record it in COMP-14 with a date and a version, then choose caps",
         "take `unlimitedStorage` and remove the whole class of question from the product",
         "design against the smallest documented quota today and treat measurement as a later confirmation"
       ],
-      "at": [{ "doc": "docs/architecture/34-data-split.md", "anchor": "- envelope-size measurements without `unlimitedStorage`" }]
+      "at": [
+        {
+          "doc": "docs/architecture/34-data-split.md",
+          "anchor": "- envelope-size measurements without `unlimitedStorage`"
+        }
+      ]
     },
     {
       "id": "ODEC-32",
       "question": "Are the `-nexora.<id>` keys for mirrored legacy profiles derived from the profile name or minted randomly?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-33"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-33"
+        ],
+        "compatibility": []
+      },
       "why": "`packages/schema/migrations.json#/openDecisions` already records this as data: derived ids make a replay free -- steps 5 and 6 depend on one -- and make a rename a data event. Random ids make a rename cheap and a replay need a journal. This is the one place in the design where a content-derived identifier is about naming rather than secrecy, so ADR-0012's ban on content-addressed secrets does not decide it.",
       "options": [
         "derived from the profile name, so a replay is a no-op and a rename must be journalled",
         "minted randomly at first mirror, stored in the id map, and a rename is then just an edit",
         "derived, with a collision suffix, and an assertion that a rename cannot produce two owners of one id"
       ],
-      "at": [{ "doc": "docs/architecture/35-schema-versioning-migration.md", "anchor": "`packages/schema/migrations.json#/openDecisions`, to be decided in" }]
+      "at": [
+        {
+          "doc": "docs/architecture/35-schema-versioning-migration.md",
+          "anchor": "`packages/schema/migrations.json#/openDecisions`, to be decided in"
+        }
+      ]
     },
     {
       "id": "ODEC-34",
       "question": "In a chunked `profile.import`, what are the bytes of a slice, and which byte string does `chunk.contentHash` hash?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-76"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-76"
+        ],
+        "compatibility": []
+      },
       "why": "doc 25 §5 is complete about slice metadata and silent about the slice body, and the silence is not a gap in the prose -- it is a gap in `packages/schema`. `protocol/envelope.schema.json#/properties/chunk` allows four fields and no others, and `protocol/commands/profile.import.json#/args/properties/profiles/items` is a `$ref` to the profile schema, so a byte fragment cannot be sent through the only two list fields that exist. The recorded group in `fixtures/protocol/import-chunked.jsonl` then carries the whole document in its last slice and empty arrays in the others, all three declaring `encoding: \"base64\"`. Choosing an answer is one contract addition plus its examples; refusing to choose leaves `connector/internal/chunk` unwritable and, worse, leaves `#/oversizedPayloads/mechanism/atomicity` asserting the hash of a byte string nobody has defined -- which is exactly the reassembly bug ADR-0008's replay discipline exists to prevent.",
       "options": [
         "announcement model -- excluded by the data, recorded so the exclusion is not re-litigated: only the final slice carries the document, which leaves that frame over the 1 MiB sender cap §4 states and `framing.json#/oversizedPayloads/mechanism/cap` counting bytes nobody reassembled",
@@ -503,15 +917,26 @@
         "subset model: each slice carries a valid subset of `profiles` and `servers`, `contentHash` over the canonical serialization of the union -- keeps every frame individually schema-valid, but makes `encoding: \"base64\"` meaningless on a frame of JSON objects, leaves the enum's other member (`json`) as the natural fit, and requires a canonical byte form this repository has never defined"
       ],
       "at": [
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "cannot be written from this document without guessing" },
-        { "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md", "anchor": "`ODEC-34` still holds is a `profile.import`" }
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "cannot be written from this document without guessing"
+        },
+        {
+          "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md",
+          "anchor": "`ODEC-34` still holds is a `profile.import`"
+        }
       ]
     },
     {
       "id": "ODEC-35",
       "question": "How does the sender identity cross hop 2 -- the `nexora-host` to `nexora-connector` local pipe -- and what is that pipe's message schema?",
       "decidedBy": "adr",
-      "blocks": { "verification": ["VER-77"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-77"
+        ],
+        "compatibility": []
+      },
       "why": "The corpus states a requirement and no field to read an answer out of: ADR-0005 rule 2 (`docs/adr/0005-two-process-connector.md:30-32`) makes the pipe's schema a contract 'versioned separately' that 'MUST carry its own version field', and the only transport contract in `packages/schema` -- `protocol/framing.json` -- describes itself as the one for 'the extension-to-host pipe', and the half of it that reaches this process is written from the other side: `senderPolicy`'s identity facts resolve from an OS event on hop 1, while its budgets are counted in the Connector (`docs/architecture/31-security-model.md` §8), so the process that spends a sender's budget cannot see which sender it is. doc 25 §2 then closes the last escape: the same envelope crosses both hops untranslated, `protocol/envelope.schema.json#/additionalProperties` is `false` over fourteen properties none of which is a sender, and ADR-0004 rule 3 forbids a payload field from becoming identity even if the object were opened -- the same ADR rejects a self-framed pipe because there 'the sender identity becomes whoever can open the pipe' (`docs/adr/0004-native-messaging-only-no-loopback-http-control.md:74-76`). So the survivors disagree about where identity lives, and choosing between them moves ADR-0005's boundary and the reasoning ADR-0004 rests on, which is a new ADR rather than a field. This is not `ODEC-02`: that asks what the pipe's two version floors are, a question the floor answers only once someone has said what the pipe carries. Until it is chosen, `connector/internal/dispatch`'s `Identity` -- whose comment says none of it comes from the payload -- has no producer, and no `cmd/` process can be written against a transport the contracts do not describe.",
       "options": [
         "one pipe instance per sender: identity is *which pipe* the host opened, so the pipe's naming and creation contract moves into `packages/schema` and `protocol/framing.json#/senderPolicy/rateLimitFacts/scopeOfBudget`'s 'per sender id' becomes a per-pipe count wherever one sender holds more than one pipe",
@@ -519,28 +944,49 @@
         "OS peer credentials on hop 2 (`SO_PEERCRED`, the named-pipe client pid) mapped to the host process the connector was started by: authentic, and it needs no new message, but it authenticates the *host*, not the extension, so it still requires option one or option two for the sender id",
         "a sender field in the envelope: excluded by ADR-0004 rule 3 and by the closed fourteen-field object, recorded so the exclusion is not re-litigated, the way `protocol/framing.json#/oversizedPayloads/alternativesRejected` records the handoff it also refuses"
       ],
-      "at": [{ "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "This defers to `docs/architecture/40-open-decisions.md`; its entry names the four" }]
+      "at": [
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "This defers to `docs/architecture/40-open-decisions.md`; its entry names the four"
+        }
+      ]
     },
     {
       "id": "ODEC-37",
       "question": "Which remaining core-routing predicates can Xray 24.11.11 actually honor, especially invert and protocol values beyond the loopback-tested HTTP match, after the inbound, built-in, sniffing and array spellings have been measured?",
       "decidedBy": "upstream",
-      "blocks": { "verification": ["VER-28"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-28"
+        ],
+        "compatibility": []
+      },
       "why": "The original four byte positions are implemented and measured: SOCKS5 per tag, declared freedom/direct and blackhole/block, inbound-level sniffing with destOverride, and array-valued network/protocol. connector/internal/apply/drive_test.go checks four materialized goldens with Xray 24.11.11; connector/internal/compile/drive_test.go checks real loopback HTTP and SOCKS5 UDP, including paired controls. The runtime checks found that an undeclared outbound falls back to the default and invert:true is silently ignored. The compiler therefore declares every referenced builtin, pairs every inbound with its server after policy rules, and reports an inverted rule whole rather than emitting a changed match. This entry remains open for the residual predicate semantics: a config-test acceptance cannot prove that every protocol enum value is detected or that an inverted predicate has an equivalent lowering. The four goldens do not certify those untested combinations.",
       "options": [
         "keep invert:true explicitly unrepresentable and establish each remaining protocol predicate with paired runtime fixtures before expanding the supported set",
         "derive an equivalent lowering from the pinned upstream implementation and prove both matching and nonmatching traffic preserve the authored predicate"
       ],
       "at": [
-        { "doc": "docs/architecture/23-unified-server-model.md", "anchor": "keeps the list as `ODEC-37`" },
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "The core-rule and per-tag inbound spellings a golden must pin" }
+        {
+          "doc": "docs/architecture/23-unified-server-model.md",
+          "anchor": "keeps the list as `ODEC-37`"
+        },
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "The core-rule and per-tag inbound spellings a golden must pin"
+        }
       ]
     },
     {
       "id": "ODEC-42",
       "question": "Which artefact carries the egress probe's endpoint and the expected public address it must answer -- a field in `connector-settings.schema.json`, a field on each server document, or a probe document of its own?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-84"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-84"
+        ],
+        "compatibility": []
+      },
       "why": "`packages/schema/protocol/commands/server.test.json#/args/properties/egressProbe` tells the prober to 'fetch the configured egress endpoint through the Core and return the observed public IP', and `#/result/properties/matchesExpectedEgress` is the comparison that makes `not-proxied` reachable -- the verdict that says traffic leaked rather than merely failed, which `#/result/properties/overall`'s own description separates from `partial` as 'two different user-visible facts'. Measured on 2026-11-07, no field under `packages/schema/` names either fact: `connector-settings.schema.json#/properties` declares five keys (`schemaVersion`, `core`, `ports`, `telemetry`, `proxy`) and none is a probe target; `server.schema.json`'s properties name identity and transport facts about the VPS, not what the machine running the probe should fetch; `packages/schema/observability.json#/events/6` carries a server id and nothing else; and `docs/verification/live-matrix.md` LIVE-04 licenses only a `server.test` answer whose egress layer compared against the expected address, so the fact the live row needs is the fact the schema has nowhere to put. The gap bites in the prober's constructor: `connector/internal/health` refuses to build without both facts -- the same refusal shape `internal/supervisor` applies to a build without a pinned binary -- so the component is written, tested and unregistrable until the contract says where they live. It is `contract` for the reason `ODEC-34`, `ODEC-36`, `ODEC-38`, `ODEC-39`, `ODEC-40` and `ODEC-41` are: the artefact that would close `VER-84` is a property, a bound and the examples that carry them, which costs a commit and a verifier run rather than a person, a browser or a binary.",
       "options": [
         "a field in `packages/schema/connector-settings.schema.json` -- one endpoint and one expected address for every server, the reading that treats the fetch as a property of the machine running the probe rather than of the VPS; costs one settings field, its example row and the prober's wiring reading it, and makes a per-server checkip endpoint impossible to express",
@@ -548,14 +994,22 @@
         "a probe document of the prober's own (a sixth entry beside `packages/schema/protocol/data-ownership.json`'s stores, or a section of `connector-settings.schema.json`) -- the reading that keeps both facts out of the settings the apply pipeline compiles and the servers the ingest door validates; costs a new artefact, its owner row and its citation, and is the only option that survives a mixed fleet where different servers publish different check endpoints"
       ],
       "at": [
-        { "doc": "docs/architecture/22-component-contracts.md", "anchor": "the prober refuses to build without the egress endpoint and expected address that no schema field carries" }
+        {
+          "doc": "docs/architecture/22-component-contracts.md",
+          "anchor": "the prober refuses to build without the egress endpoint and expected address that no schema field carries"
+        }
       ]
     },
     {
       "id": "ODEC-43",
       "question": "Which code answers a request whose args violate the call contract, for the thirteen of nineteen commands whose `#/errors` does not declare `BadRequest` -- the closest declared meaning chosen per command, `BadRequest` added to every command doc, or the dispatcher answering it for all methods before dispatch?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-85"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-85"
+        ],
+        "compatibility": []
+      },
       "why": "`packages/schema/protocol/error-taxonomy.json#/codes` registers `BadRequest` as 'Frame is well-formed JSON but violates the call contract (missing args, wrong shape)', and every command can receive one -- but measured on 2026-11-07 only six of the nineteen command docs declare it (`config.apply`, `keystore.purge`, `profile.import`, `profile.remove`, `profile.validate`, `subscription.refresh`); the other thirteen, `server.test` among them, have ten or fewer codes between them and none means that. The dispatcher is not the answer either: `connector/internal/dispatch` answers `BadRequest` only for a frame that is not a request at all, before any method is named, which is transport-layer and outside the per-command arrays. `docs/architecture/25-native-messaging-protocol.md` §8 rule 2 -- 'Every command doc cites only codes it can actually return' -- makes a handler answering a code its command does not declare a doc lie, and the same section's stability note makes adding the code to a command doc a breaking change that 'arrives only with a documented fallback'. Two analogies have already shipped rather than a rule: `connector/internal/hello` answers `HandshakeFailed` for unreadable hello args, recorded at the site as 'which is also literally what happened', and the `server.test` surface answers `HealthCheckFailed`, the command's own umbrella for 'the probe did not complete'. Both sentences are honest and neither is a rule the taxonomy or a test enforces, which is what this entry asks for. It is `contract` because every surviving answer is a line in `packages/schema` -- a code added to thirteen arrays, or a rule sentence with its verifier assertion -- and none of them needs a browser, a store or a person.",
       "options": [
         "the closest declared meaning, chosen per command and recorded at the site -- the reading both shipped answers follow; costs no contract change and no client update, and costs every future command surface a private analogy the taxonomy never states, so two handlers can answer the same malformed payload differently and both be right",
@@ -563,29 +1017,22 @@
         "the dispatcher answers `BadRequest` for every method before dispatch -- the reading that moves the case out of the per-command arrays entirely; costs an amendment to §8 rule 2, because a code the command doc does not cite becomes answerable, and a fixture proving the dispatcher refuses a shape the handler would also have refused"
       ],
       "at": [
-        { "doc": "docs/architecture/25-native-messaging-protocol.md", "anchor": "have no honest member of their own `#/errors` for it" }
-      ]
-    },
-    {
-      "id": "ODEC-44",
-      "question": "Where does a production supervisor's `Launch` get the Core binary path from -- the pinned install root under doc 34 §7's layout resolved from settings and the install receipt, the host handing the path across the pipe, or a first-run download this repository performs itself?",
-      "decidedBy": "contract",
-      "blocks": { "verification": ["VER-88"], "compatibility": [] },
-      "why": "`config.apply`'s surface is wired end to end except one constructor argument: `coreProcess`, whose production implementation is the supervisor, whose `New` demands a `Launch` -- a function from config path to the command that runs Core. Doc 27 §8's new deferral names the gap and doc 34 §7's layout names the directory tree, but no document says which file in it is the binary or who resolved it there: `settings.core.installRoot` defaults to null, `installChannel` is `pinned`, and `connector/internal/receipt` verifies a binary it was handed rather than one it found. ADR-0019 decides that the binary is an integrity-pinned downloadable asset and forbids committing it; it does not decide who runs the download, who writes the pin, or whether the path crosses the pipe. It is `contract` because the answer is a field and a rule in `packages/schema` -- an `installRoot` resolution rule and a receipt row -- not a person or a browser.",
-      "options": [
-        "the Connector resolves the pinned install root itself: `installRoot` null means the per-user default under doc 34 §7's layout, the receipt at that root identifies the binary, and a first-run download -- the `pinned` channel's own step -- is the Connector's, at the cost of the network-egress and pin-write responsibilities moving into this process, where ADR-0019's verification already lives",
-        "the host owns the install and hands the path across the pipe: the first-run download, the pin write and the receipts are the shim's or the installer's, and the Connector receives the resolved binary path the way it receives the sender id -- at the cost of a second decided transport fact (`ODEC-35`'s pipe carries another injected fact) and a trust boundary the config.apply surface cannot see",
-        "the pin document ships the absolute path: `pins.json` names the install root it was written against, and the Connector reads the binary only from there -- at the cost of a machine-specific path inside a document this corpus keeps machine-independent, which doc 27 §3.3's own rule refuses for the hashed config and would refuse here too"
-      ],
-      "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "extension can call, so it belongs to" }
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "have no honest member of their own `#/errors` for it"
+        }
       ]
     },
     {
       "id": "ODEC-45",
       "question": "How does a `keystore://` handle for an *object* reach the compiled config -- the materializer resolving the handle into the key-value map the stored value holds, the compiler refusing object handles until a schema field names the map, or shape C losing headers entirely?",
       "decidedBy": "contract",
-      "blocks": { "verification": ["VER-28"], "compatibility": [] },
+      "blocks": {
+        "verification": [
+          "VER-28"
+        ],
+        "compatibility": []
+      },
       "why": "The half of the old `ODEC-36` that its hash-subject answer did not settle. Shape C of doc 23 §9 prints a headers object whose keys come from the stored map (a colon-prefixed key name mapping to the secret value) -- one string in the model standing where the config needs an object, so the key names live in the document and the values in the store. `unsupportedHeaders` in `connector/internal/compile/outbound.go` refuses a server carrying one, which is why shape C has no golden and why VER-28 pins four fixtures rather than six. No decision says whether the materializer expands the handle from the stored map, whether a schema field must name the map first, or whether headers are dropped. It is `contract` because the answer is a field and a refusal rule in `packages/schema` -- not a person, a browser or a binary.",
       "options": [
         "the materializer expands the handle: a `keystore://` handle whose stored value is a JSON object is materialized key by key into the config position, at the cost of a value-shape rule in the keystore and a masking rule per key name the store cannot know in advance",
@@ -593,10 +1040,12 @@
         "shape C loses headers: the model drops the field, authenticated feeds that need headers are refused like any other unsupported shape, and the corpus says so -- no new field anywhere, at the cost of the shape C users the loss table in doc 29 §5 would have to name"
       ],
       "at": [
-        { "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "reaches the compiled config is its own question" }
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "reaches the compiled config is its own question"
+        }
       ]
     }
-
   ],
   "retired": {
     "rule": "An entry leaves this file when it is answered -- the description's own rule, and the same one doc 39 §9 rule 2 imposes on a queue row -- and the id it held retires here rather than being reused. Ids are issued once: doc 39 §9 rule 8 adopted ADR-0001 rule 2 for `VER-NN` because those ids are cited across the corpus, and an `ODEC-NN` is cited the same way, in `verification.json` rows whose `closesBy.ref` names the question it waits on, in the tables of docs/architecture/39 and 40, and in docs/PROJECT-STATE.md's ledger. A gapless, re-derived numbering would therefore make answering a question silently rewrite every answer that cited a later one, which is why this list exists and why the register's ids are no longer required to be dense.",
@@ -606,49 +1055,96 @@
         "decided": "2026-11-06",
         "was": "what the two version floors are, and what each refuses to speak",
         "artefact": "packages/schema/protocol/framing.json#/minPipeVersion and #/versionFloors -- the register's first answer by the first option its own entry listed, a contract addition; it closes VER-18, the only row that entry gated, in the same commit",
-        "freed": { "verification": ["VER-18"], "compatibility": [] }
+        "freed": {
+          "verification": [
+            "VER-18"
+          ],
+          "compatibility": []
+        }
       },
       {
         "id": "ODEC-40",
         "decided": "2026-11-07",
         "was": "where the format an `auto` parse resolved to is recorded -- a field in the refresh result, a value stored from something else, or nowhere",
         "artefact": "the first option its own entry listed, as a contract addition: `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format` -- required, enum the source schema's minus `auto` -- the exception its `#/args` description now states, the format amendment in `packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row, the resolved-format sentence that replaced the labelled line in `docs/architecture/29-subscriptions-and-servers.md` §5, the `format` row of that document §7's status table, and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` that carries the field; it closes `VER-81`, the only row this entry gated, in the same commit",
-        "freed": { "verification": ["VER-81"], "compatibility": [] }
+        "freed": {
+          "verification": [
+            "VER-81"
+          ],
+          "compatibility": []
+        }
       },
       {
         "id": "ODEC-33",
         "decided": "2026-11-07",
         "was": "whether the Connector owns subscriptions end to end, or the extension may receive feed-derived Servers through chunked events",
         "artefact": "`docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` -- the third `adr` question and the first answered by elimination rather than by choice, because two of its three options were already excluded by data this repository carries and checks: `packages/schema/observability.json#/events/7/payload` is closed at four count fields so an event cannot hold a Server, `packages/schema/protocol/envelope.schema.json#/properties/chunk` names `profile.import` as its only sender, and `docs/architecture/29-subscriptions-and-servers.md` §11's invariant makes the raw-body reading cost a security rule rather than a line of code. The surviving option is the one the data already requires: `servers` is in `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required`. It closes `VER-61`, the only row this entry gated, in the same commit, moves that row's labelled line out of `docs/architecture/29-subscriptions-and-servers.md` §13 item 6, and hands its deferral claim to `VER-64`: the ADR's own `## Verification` states the build-graph half as deferred, so the count of deferred claims in the corpus is unchanged and the guard a decision depends on is now named by the decision that needs it",
-        "freed": { "verification": ["VER-61"], "compatibility": [] }
+        "freed": {
+          "verification": [
+            "VER-61"
+          ],
+          "compatibility": []
+        }
       },
       {
         "id": "ODEC-39",
         "decided": "2026-11-07",
         "was": "where `config.apply` obtains the intent documents its own arguments cannot carry, which two directories the surface is handed, and what the compiled config file is called",
         "artefact": "one answer per clause, each the option its own entry listed: the intent rides the frame (`config.apply.json#/args/properties/intent`, required -- the `intent-down` movement made literal, an ids-only call the BadRequest its description states, the test-double seam gone from the Go half); doc 34 section 7 spells the per-user layout and the `compiled-config` row of `data-ownership.json` carries it as data; and the compiled config keeps the stable `config.json` doc 27 section 8 renames over, the hash-derived wording retired beside the question that made it. It closes `VER-80`; the registration its second clause also named is `VER-88` now, gated by `ODEC-36`'s span",
-        "freed": { "verification": ["VER-80"], "compatibility": [] }
+        "freed": {
+          "verification": [
+            "VER-80"
+          ],
+          "compatibility": []
+        }
       },
       {
         "id": "ODEC-38",
         "decided": "2026-11-07",
         "was": "over what span the ladder's restart attempts are spent, and how long a restarted Core must stay up to earn a fresh budget",
         "artefact": "the second option its own entry listed: `coreDeath.stabilityWindowSeconds` (default 300, floor 1, ceiling 86 400) in `packages/schema/failure-policy.schema.json`, with the episode rule doc 30 §4 now states and `connector/internal/supervisor` enforces -- re-arm only past the window, resume mid-episode inside it, and a spent episode's next death re-publishes the block without spawning. It closes `VER-79`, the only row this entry gated, in the same commit",
-        "freed": { "verification": ["VER-79"], "compatibility": [] }
+        "freed": {
+          "verification": [
+            "VER-79"
+          ],
+          "compatibility": []
+        }
       },
       {
         "id": "ODEC-41",
         "decided": "2026-11-07",
         "was": "which artefact carries the pipe half of the version negotiation -- a field on the event that already writes the browser half down, a declared shape for the diagnostics section, or nothing",
         "artefact": "the first option its own entry listed: `connector.connected`'s payload gained the required `pipeVersion` beside `protocolVersion`, the `versions` section's `contains` and the export footer name it, and the recorded handshake fixture carries the field -- the one answer that keeps doc 21 §6's promise one sentence, at the cost its option text named honestly: a new field on a wire-visible closed payload. It closes `VER-82`, the only row this entry gated, in the same commit",
-        "freed": { "verification": ["VER-82"], "compatibility": [] }
+        "freed": {
+          "verification": [
+            "VER-82"
+          ],
+          "compatibility": []
+        }
       },
       {
         "id": "ODEC-36",
         "decided": "2026-11-07",
         "was": "which byte string `configHash` covers -- the compiler's handle-bearing document with `keystore://<ref>` in every credential position, or the materialized bytes the Connector writes to disk",
         "artefact": "the first option its own entry listed: the handle-bearing document. The decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material -- and the disclosure argument the entry carried is its own answer: the written bytes hold plaintext credentials and the digest is logged by `config.applied`, so a values span would put a fingerprint of a credential-bearing file into every log. The switch it held in `connector/cmd/nexora-connector/config_apply.go` is gone, the two tests that kept the spans apart died with it, and the cost its option named -- a rotation behind an unchanged reference does not move this hash -- is `core.restart`'s, stated beside the decision. It closes `VER-78` in the same commit",
-        "freed": { "verification": ["VER-78"], "compatibility": [] }
+        "freed": {
+          "verification": [
+            "VER-78"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-44",
+        "decided": "2026-11-07",
+        "was": "where a production supervisor's `Launch` gets the Core binary path from -- the pinned install root resolved from settings and the install receipt, the host handing the path across the pipe, or a first-run download this repository performs itself",
+        "artefact": "the first option its own entry listed: `settings.installRoot` overrides the pin, null resolves to the pin's own per-user core directory (`connector-settings.schema.json#/properties/core/properties/installRoot`'s description now states the rule), the supervisor's `Launch` reads the install receipt at that root per spawn -- `Launch` returning an error is what makes Core not being installed a named refusal -- and doc 33 §7 states the rule beside its receipts bullet. The registration it gated is wired in `main.go` the same commit: the per-user layout is built, the keystore opened with the platform protector, and `config.apply` registered -- it closes `VER-88` in the same commit",
+        "freed": {
+          "verification": [
+            "VER-88"
+          ],
+          "compatibility": []
+        }
       }
     ]
   }

@@ -210,6 +210,7 @@ What this does **not** buy: a claim that a same-user adversary is stopped. §16 
 - **Extraction is a trust boundary, not a convenience.** Step 7 of §5 is the whole of Zip-Slip: the archive's own
   entry names are attacker-controlled bytes, so the expected set is enumerated from the pin and anything outside it
   is refused before the first write.
+- **The Connector resolves the active binary itself.** `settings.installRoot` overrides the pin, null resolves to the pin's own per-user core directory, and the supervisor's `Launch` reads the install receipt at that root per spawn: the receipt names the active version's path, and the pre-exec proof re-hashes the file it names. A receipt that does not exist is Core not being installed yet -- the first-run download of §5 has not run -- and the answer on the apply path is a refusal, never a download mid-apply and never a directory listing. This is the answer ODEC-44 gave the question its entry carried, and it is why `config.apply`'s surface could finally be registered in `main.go`.
 - **Receipts, not directory listings.** "Which version is verified" is answered by a receipt written at step 10, so
   a stray directory in the install root — left by an interrupted upgrade, or dropped there by something else — is
   not a candidate for execution. This is what makes "no path runs whatever binary is on disk" (ADR-0019 rule 7)

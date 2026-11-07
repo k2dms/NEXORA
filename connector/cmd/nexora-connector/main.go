@@ -18,14 +18,21 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/k2dms/nexora/connector/internal/contract"
 	"github.com/k2dms/nexora/connector/internal/dispatch"
 	"github.com/k2dms/nexora/connector/internal/envelope"
 	"github.com/k2dms/nexora/connector/internal/hello"
+	"github.com/k2dms/nexora/connector/internal/keystore"
 	"github.com/k2dms/nexora/connector/internal/peer"
+	"github.com/k2dms/nexora/connector/internal/receipt"
+	"github.com/k2dms/nexora/connector/internal/supervisor"
 )
 
 // config is what this process is told and cannot measure for itself: the host's platform-resolved answer injected by
@@ -37,6 +44,14 @@ type config struct {
 	allowlisted bool
 	jsonl       bool
 	version     string
+
+	// stateDir, configDir, keystoreDir and coreDir are the per-user layout of doc 34 §7, overridable one flag
+	// each because a test or a sandboxed run must be able to point them at a temp tree. The empty string means
+	// the default: %LOCALAPPDATA%\NEXORA\ and the subdirectory of the same name, which is what production uses.
+	stateDir    string
+	configDir   string
+	keystoreDir string
+	coreDir     string
 }
 
 // duplex joins the connector's two descriptors into the single io.ReadWriteCloser internal/peer takes: Native
@@ -70,15 +85,113 @@ type service struct {
 	stop error
 }
 
+// nexoraRoot is the per-user tree of doc 34 §7: %LOCALAPPDATA%\NEXORA. The same root the keystore's
+// own platform helper resolves, stated here for the three directories beside it.
+func nexoraRoot() (string, error) {
+	base := os.Getenv("LOCALAPPDATA")
+	if base == "" {
+		return "", errors.New("%LOCALAPPDATA% is empty, and doc 34 §7 names no other per-user root for the Connector's state, config and keystore")
+	}
+	return filepath.Join(base, "NEXORA"), nil
+}
+
+// defaultDirs is the layout one flag-less run uses. Every directory is a subdirectory of one root, and the
+// keystore's own helper must agree with the keystore entry, so the root is computed once and shared.
+func defaultDirs() (state, config, keystore, core string, err error) {
+	root, err := nexoraRoot()
+	if err != nil {
+		return "", "", "", "", err
+	}
+	return filepath.Join(root, "state"), filepath.Join(root, "config"), filepath.Join(root, "keystore"), filepath.Join(root, "core"), nil
+}
+
+// coreLaunch is ODEC-44's answer as a function: the supervisor's Launch reads the install receipt at the core
+// directory per spawn, and the receipt names the active binary. A receipt that does not exist is Core not being
+// installed yet (the first-run download of doc 33 §5 has not run), and the error travels into the start's
+// refusal instead of a directory listing being trusted.
+func coreLaunch(coreDir string) supervisor.Launch {
+	return func(configPath string) (*exec.Cmd, error) {
+		r, err := receipt.Load(filepath.Join(coreDir, "receipt.json"))
+		if err != nil {
+			return nil, fmt.Errorf("Core is not installed: the install receipt could not be read (%v); the first-run download has not run or the install is broken (doc 33 §5, VER-41)", err)
+		}
+		bin := r.Path
+		if _, err := os.Stat(bin); err != nil {
+			return nil, fmt.Errorf("Core is not installed: the receipt names %s and the file is not there (doc 33 §7: receipts, not directory listings)", bin)
+		}
+		return exec.Command(bin, "run", "-config", configPath), nil
+	}
+}
+
+// binaryName is the platform spelling of the Xray executable inside the install root.
+func binaryName() string {
+	if runtime.GOOS == "windows" {
+		return "xray.exe"
+	}
+	return "xray"
+}
+
 func newService(cfg config) (*service, error) {
 	responder, err := hello.New(hello.Facts{ConnectorVersion: cfg.version})
 	if err != nil {
 		return nil, err
 	}
-	d, err := dispatch.New(dispatch.Config{Handlers: map[string]dispatch.Handler{
+	handlers := map[string]dispatch.Handler{
 		"connector.hello":   responder.Handle,
 		"connector.version": versionResponder(cfg.version),
-	}})
+	}
+	// The config.apply surface: the directories of doc 34 §7 (flags first, per-user defaults under them), the
+	// platform's own keystore protector, and the supervisor whose Launch resolves the pinned binary per spawn.
+	// A wiring that cannot be built — no per-user root, no protector — is a process that refuses to start rather
+	// than one that answers the method with guesses.
+	stateDir, configDir, keystoreDir, coreDir := cfg.stateDir, cfg.configDir, cfg.keystoreDir, cfg.coreDir
+	if stateDir == "" || configDir == "" || keystoreDir == "" || coreDir == "" {
+		state, conf, keys, core, err := defaultDirs()
+		if err != nil {
+			return nil, err
+		}
+		if stateDir == "" {
+			stateDir = state
+		}
+		if configDir == "" {
+			configDir = conf
+		}
+		if keystoreDir == "" {
+			keystoreDir = keys
+		}
+		if coreDir == "" {
+			coreDir = core
+		}
+	}
+	protector, err := keystore.NewSystemProtector()
+	if err != nil {
+		return nil, fmt.Errorf("no keystore protector on this platform: %w", err)
+	}
+	store, err := keystore.New(keystoreDir, protector)
+	if err != nil {
+		return nil, fmt.Errorf("the keystore could not be opened at %s: %w", keystoreDir, err)
+	}
+	sup, err := supervisor.New(supervisor.Config{
+		Dir:    stateDir,
+		Launch: coreLaunch(coreDir),
+		Verify: receipt.NewVerifier(filepath.Join(coreDir, "receipt.json")),
+		Death: supervisor.Death{
+			Attempts:  3,
+			Backoff:   []time.Duration{time.Second, 5 * time.Second, 30 * time.Second},
+			Stability: 300 * time.Second,
+			Notify:    true,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("the Core supervisor could not be built: %w", err)
+	}
+	ca, err := newConfigApply(applyConfig{StateDir: stateDir, ConfigDir: configDir},
+		fileStateRecord{dir: stateDir}, store, sup)
+	if err != nil {
+		return nil, fmt.Errorf("the config.apply surface could not be built: %w", err)
+	}
+	handlers["config.apply"] = ca.Handle
+	d, err := dispatch.New(dispatch.Config{Handlers: handlers})
 	if err != nil {
 		return nil, err
 	}
@@ -228,9 +341,14 @@ func main() {
 	allowlisted := fs.Bool("allowlisted", false, "whether that id is in the host's on-disk allowlist; false refuses every frame, so it is the default")
 	jsonl := fs.Bool("jsonl", false, "one frame per stdin line and one response per stdout line; a shell affordance, not the contract's transport")
 	version := fs.String("connector-version", buildVersion(), "product version connector.hello and connector.version answer with")
+	stateDir := fs.String("state-dir", "", "override of the per-user state directory (doc 34 §7); tests and sandboxes only, production uses the default")
+	configDir := fs.String("config-dir", "", "override of the per-user compiled-config directory (doc 34 §7)")
+	keystoreDir := fs.String("keystore-dir", "", "override of the per-user keystore directory (ADR-0011)")
+	coreDir := fs.String("core-dir", "", "override of the pinned Core install root (doc 33 §7)")
 	_ = fs.Parse(os.Args[1:])
 
-	cfg := config{senderID: *senderID, allowlisted: *allowlisted, jsonl: *jsonl, version: *version}
+	cfg := config{senderID: *senderID, allowlisted: *allowlisted, jsonl: *jsonl, version: *version,
+		stateDir: *stateDir, configDir: *configDir, keystoreDir: *keystoreDir, coreDir: *coreDir}
 	if err := run(cfg, duplex{os.Stdin, os.Stdout}, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "nexora-connector: %v\n", err)
 		os.Exit(1)

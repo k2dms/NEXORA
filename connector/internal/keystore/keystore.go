@@ -108,3 +108,17 @@ func init() {
 		}
 	}
 }
+
+// NewSystemProtector is the platform's own protector as an exported constructor: ADR-0011 binds Windows to DPAPI
+// and names no other platform's protector, so this is the one protector a production caller may use — and a
+// platform without one refuses here rather than protecting nothing.
+func NewSystemProtector() (Protector, error) {
+	return platformProtector()
+}
+
+// SystemKeystoreDir is the platform's per-user keystore directory (ADR-0011 rule 1: %LOCALAPPDATA%NEXORAkeystore
+// on Windows). The rest of the per-user tree is the caller's, because the keystore owns one directory and not the
+// layout.
+func SystemKeystoreDir() (string, error) {
+	return platformKeystoreDir()
+}

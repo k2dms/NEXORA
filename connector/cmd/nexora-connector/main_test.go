@@ -39,12 +39,21 @@ type nopWriteCloser struct{ io.Writer }
 
 func (nopWriteCloser) Close() error { return nil }
 
-func jsonlConfig(allowlisted bool) config {
-	return config{senderID: pinned, allowlisted: allowlisted, jsonl: true, version: "1.0.0"}
+// wiringDirs isolates the per-user layout a test's wiring writes into: every test gets its own temp tree, so a
+// run of the suite never touches the real %LOCALAPPDATA%.
+func wiringDirs(t *testing.T) (state, config, keystore, core string) {
+	base := t.TempDir()
+	return filepath.Join(base, "state"), filepath.Join(base, "config"), filepath.Join(base, "keystore"), filepath.Join(base, "core")
 }
 
-func framedConfig(allowlisted bool) config {
-	cfg := jsonlConfig(allowlisted)
+func jsonlConfig(t *testing.T, allowlisted bool) config {
+	state, conf, keys, core := wiringDirs(t)
+	return config{senderID: pinned, allowlisted: allowlisted, jsonl: true, version: "1.0.0",
+		stateDir: state, configDir: conf, keystoreDir: keys, coreDir: core}
+}
+
+func framedConfig(t *testing.T, allowlisted bool) config {
+	cfg := jsonlConfig(t, allowlisted)
 	cfg.jsonl = false
 	return cfg
 }
@@ -182,7 +191,7 @@ func TestJSONLModeAnswersTheFrontDoorCases(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got, err := runJSONL(t, jsonlConfig(c.allowlisted), append(append([]string{}, c.warm...), c.request)...)
+			got, err := runJSONL(t, jsonlConfig(t, c.allowlisted), append(append([]string{}, c.warm...), c.request)...)
 			if c.wantStreamEnd {
 				if err == nil {
 					t.Fatal("a frame the codec rejects was treated as something to read on past")
@@ -225,7 +234,7 @@ func TestJSONLModeAnswersTheFrontDoorCases(t *testing.T) {
 func TestTheNegotiationGateOpensOnlyAfterHelloCrossesThePipe(t *testing.T) {
 	hostEnd, extEnd := net.Pipe()
 	done := make(chan error, 1)
-	go func() { done <- run(framedConfig(true), hostEnd, io.Discard) }()
+	go func() { done <- run(framedConfig(t, true), hostEnd, io.Discard) }()
 
 	driver := peer.New(extEnd, peer.ToHost())
 	go func() { _ = driver.Serve() }()
@@ -326,7 +335,7 @@ func TestTheFramedModeUsesThePrefixAndTheHostsOwnReadCeiling(t *testing.T) {
 	in.Write(hdr[:])
 
 	var out bytes.Buffer
-	err := run(framedConfig(true), duplex{io.NopCloser(bytes.NewReader(in.Bytes())), nopWriteCloser{&out}}, io.Discard)
+	err := run(framedConfig(t, true), duplex{io.NopCloser(bytes.NewReader(in.Bytes())), nopWriteCloser{&out}}, io.Discard)
 
 	var tooLarge *frames.TooLargeError
 	if !errors.As(err, &tooLarge) {
@@ -416,7 +425,7 @@ func TestTheRecordedHandshakeReplaysThroughThisDispatcher(t *testing.T) {
 	// the corpus recorded: the ok flag, the code, the retryable verdict, and the four hello fields both sides hold.
 	for _, c := range replayable(t) {
 		t.Run(*c.req.Method+"/"+c.req.ID, func(t *testing.T) {
-			got, err := runJSONL(t, jsonlConfig(true), string(c.line))
+			got, err := runJSONL(t, jsonlConfig(t, true), string(c.line))
 			if err != nil {
 				t.Fatalf("run: %v", err)
 			}
@@ -493,10 +502,81 @@ func TestAnAllowlistedFlagAbsentMeansNothingIsAllowed(t *testing.T) {
 	checkRefusal(t, answered(t, got, "req-failclosed-1"), "req-failclosed-1", "UnauthorizedExtension")
 }
 
+// TestTheRegisteredConfigApplyRefusesWithoutACore is VER-88's registration measured from the wire: the method is
+// dispatched after the hello, and with no install receipt at the core directory the answer is the refusal ODEC-44
+// stated -- Core not being installed yet, never a download on the apply path and never a directory listing.
+func TestTheRegisteredConfigApplyRefusesWithoutACore(t *testing.T) {
+	var out, notes bytes.Buffer
+	in := requestLine(t, "req-apply-hello", "connector.hello", recordedHelloArgs) + "\n" +
+		requestLine(t, "req-apply-0001", "config.apply", `{"profileIds":["b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"]}`) + "\n" // nexora-secret-allow: synthetic profile id, nothing behind it
+	if err := run(jsonlConfig(t, true), bufferPipe(t, in, &out), &notes); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("the pipe answered %d lines, want one per frame", len(lines))
+	}
+	if !strings.Contains(lines[1], "\"code\":\"BadRequest\"") || !strings.Contains(lines[1], "intent is required") {
+		t.Fatalf("the apply line is %s, want the ids-only BadRequest a registered method answers", lines[1])
+	}
+}
+
+// TestTheWiringDefaultsToThePerUserLayout pins the default half of the same decision: a config whose dir fields
+// are empty resolves to the per-user tree of doc 34 §7 and its named subdirectories.
+func TestTheWiringDefaultsToThePerUserLayout(t *testing.T) {
+	state, conf, keys, core, err := defaultDirs()
+	if err != nil {
+		t.Skipf("no per-user root on this host: %v", err)
+	}
+	base := filepath.Dir(state)
+	if base != filepath.Dir(conf) || base != filepath.Dir(keys) || base != filepath.Dir(core) {
+		t.Errorf("the four directories do not share one root: %s, %s, %s, %s", state, conf, keys, core)
+	}
+	if filepath.Base(state) != "state" || filepath.Base(conf) != "config" || filepath.Base(keys) != "keystore" || filepath.Base(core) != "core" {
+		t.Errorf("the subdirectory names are not doc 34 section 7's: %s, %s, %s, %s", state, conf, keys, core)
+	}
+}
+
+// TestCoreLaunchResolvesFromTheReceipt pins ODEC-44's answer as the Launch's behaviour: the receipt names the
+// active binary, its absence is Core not being installed, and the command it builds carries the config path.
+func TestCoreLaunchResolvesFromTheReceipt(t *testing.T) {
+	core := t.TempDir()
+	launch := coreLaunch(core)
+
+	// No receipt: Core is not installed, and the error says so rather than listing a directory.
+	if _, err := launch("a.json"); err == nil || !strings.Contains(err.Error(), "Core is not installed") {
+		t.Fatalf("a core directory with no receipt gave %v, want the not-installed refusal", err)
+	}
+
+	bin := filepath.Join(core, "xray.bin")
+	if err := os.WriteFile(bin, []byte("not really Xray"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	receipt := filepath.Join(core, "receipt.json")
+	const zeros = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	payload, err := json.Marshal(map[string]string{"tag": "r1", "pinsVersion": "1", "sha256": zeros, "verifiedAt": "2026-11-07T00:00:00Z", "path": bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(receipt, payload, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd, err := launch("a.json")
+	if err != nil {
+		t.Fatalf("a receipt naming an existing binary gave %v", err)
+	}
+	if cmd.Path != bin {
+		t.Errorf("the command runs %s, want the receipt's binary %s", cmd.Path, bin)
+	}
+	if !strings.Contains(strings.Join(cmd.Args, " "), "a.json") {
+		t.Errorf("the command %v does not carry the config path", cmd.Args)
+	}
+}
+
 func TestTheStartupLineNamesTheIdentityInjectionAsAnAffordance(t *testing.T) {
 	var out, notes bytes.Buffer
 	in := requestLine(t, "req-affordance", "connector.hello", recordedHelloArgs) + "\n"
-	if err := run(jsonlConfig(true), bufferPipe(t, in, &out), &notes); err != nil {
+	if err := run(jsonlConfig(t, true), bufferPipe(t, in, &out), &notes); err != nil {
 		t.Fatal(err)
 	}
 	line := strings.TrimSpace(notes.String())
@@ -511,13 +591,13 @@ func TestTheStartupLineNamesTheIdentityInjectionAsAnAffordance(t *testing.T) {
 }
 
 func TestThisBuildRegistersOnlyTheMethodsItCanAnswer(t *testing.T) {
-	s, err := newService(jsonlConfig(true))
+	s, err := newService(jsonlConfig(t, true))
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := s.d.Methods()
-	if len(got) != 2 || got[0] != "connector.hello" || got[1] != "connector.version" {
-		t.Errorf("this build registers %v, want exactly connector.hello and connector.version", got)
+	if len(got) != 3 || got[0] != "config.apply" || got[1] != "connector.hello" || got[2] != "connector.version" {
+		t.Errorf("this build registers %v, want exactly config.apply, connector.hello and connector.version", got)
 	}
 	for _, name := range got {
 		if _, published := contract.LookupMethod(name); !published {
@@ -527,7 +607,7 @@ func TestThisBuildRegistersOnlyTheMethodsItCanAnswer(t *testing.T) {
 }
 
 func TestTheVersionAnswerIgnoresWhatThePeerClaimsAboutItself(t *testing.T) {
-	s, err := newService(jsonlConfig(true))
+	s, err := newService(jsonlConfig(t, true))
 	if err != nil {
 		t.Fatal(err)
 	}
