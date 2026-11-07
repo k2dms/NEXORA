@@ -197,14 +197,14 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `195` labelled lines over `43` documents partitioned into `73` live rows — the issued range is still
-`VER-01…VER-82`, and `9` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
-sites over `15` documents partitioned into `39` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`
-and `ODEC-40`
+The queue is `196` labelled lines over `44` documents partitioned into `73` live rows — the issued range is
+`VER-01…VER-83`, and `10` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
+sites over `16` documents partitioned into `38` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
+`ODEC-40` and `ODEC-33`
 now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 15, `adr` 6, `measurement` 2, `upstream` 2), three options — 36 of the 39,
+(`product` 14, `contract` 15, `adr` 5, `measurement` 2, `upstream` 2), three options — 35 of the 38,
 since `ODEC-35` carries a fourth that records the reading ADR-0004 rule 3 already excludes rather than leaving it
 unwritten, `ODEC-37` carries a fourth that needs a Core binary `docs/adr/0013-omega-conditions-compiles-into-xray-routing.md:98`
 records as absent on this host, and `ODEC-39` carries a fourth that answers only the second half of its own question —
@@ -535,6 +535,15 @@ sixth time in seven entries, and the reason is the same as §4.31's: a closure b
 pointers and at documents, never at a line of code. What the 68 labels do prove here is the hand-off: doc 29 §13 item 6's
 label left and ADR-0021's `## Verification` arrived, and the guard's fourth figure is the number that says the exchange
 was even rather than the number that says anybody checked.
+§4.33 moves the set a thirtieth time — **2311 / 595 / 1594**, 68 labels — measured after this paragraph and its own
+record were written, so it reports the set the tool prints rather than the set its sentences produced. Per file against
+a clean `git archive` of the commit before: this file `0 / 0 / +19` and `docs/README.md` `0 / 0 / +2`, the guard's own
+name and this file's, which is the second time a citation-convention bullet has had to cite the record of its own
+measurement. The eight re-aimed section cites move **no figure at all**, and that is the finding rather than an
+observation: every one of them replaces a document name plus a section number with a document name plus a section
+number, so the three counters that could have seen the repair count exactly what they counted before, green before and
+green after. The only arithmetic that distinguishes the two states is the one that asks whether the section the number
+names exists — which is `VER-83`, and is not a number yet.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -2481,7 +2490,7 @@ successor was written into the ADR under `VER-64`, which gained the ADR as a thi
 questions in its own text, so `ODEC-06` gained a site at 2 and `ODEC-34` at 2, its Context's mention of the retired
 `ODEC-33` went into `#/notADeferral` — a citation of an answer, not unregistered work — and `citation.counted` is 61 in
 16 documents. doc 39 §8 step 3 reads four gated rows instead of five, doc 40 §3's `adr` row and its §10 ledger read five
-and four, and `docs/audit/09-subscriptions-import-export-sync.md` §9's ninth row, which had been pointing at
+and four, and the ninth row of `docs/audit/09-subscriptions-import-export-sync.md`'s UNVERIFIED registry, which had been pointing at
 "open decision, PROJECT-STATE §9.4", now points at the ADR.
 
 **What this slice does not claim.** The decision is load-bearing and the guard is not: `VER-64` still says nothing in
@@ -2504,6 +2513,89 @@ moved the data, so the read-aloud check verified the documents against the data 
 tools/check-no-secrets.mjs`, `node tools/check-layout-guards.mjs` (and `--selftest`) and `node
 tools/check-legacy-backup.mjs` (and `--selftest`) → green. `go -C connector test -count=1 ./...`, `gofmt -l connector`
 and `go -C connector vet ./...` → unchanged; this slice touches no Go file.
+
+---
+
+### 4.33 The citation form the guard never opens — eight dangling `§N` anchors, `VER-83`, and what a section check cannot see (2026-11-07)
+
+**Why this slice exists.** Task #46 measured the closable-today set and it is empty: of the six `no-check` rows, four
+are named in an open decision's `blocks` and the fifth needs a `nexora/**` that holds no code — the emptiness §8
+declines to count as evidence. Everything else is stopped by a decision, a binary this host does not have, or a
+browser. What an agent can still do without inventing work is read the corpus against itself, and `docs/README.md`'s
+citation convention names five forms `tools/check-doc-evidence.mjs` resolves — `path:line`, `path#/pointer`, a document
+name, a harness assertion label, and the `Cited by` tables §4.31 added. The form the corpus uses *most* is in none of
+them: a backticked path followed by `§N`. An anchor of that shape can name a section its document never had, and the
+run stays green, because no pass opens the number.
+
+**The census.** `tmp/section-anchor-census.mjs` (scratch, gitignored — the committed artefact is the row, not the
+script) matches `` `<path>.md` §N `` and the quoted `` §"a phrase" `` form, reads every heading of the named file, and
+resolves a number against the leading `N.` of a heading and a phrase against a heading that contains it. Over HEAD it
+measured **568 cites of the form, 8 dangling**; over this tree after the repairs, **570 and 0** — the two extra are
+cites this record itself writes. All eight were re-aimed by hand, and each repair is one line with the same number of
+lines before and after it, so nothing else in these documents moved. The record's own first draft carried two of the
+class it was recording: quoting a broken cite in backticks writes one, and the census refused this document before it
+was re-worded to describe the eight instead of reproducing them. That is the cheapest argument that `VER-83` is not a
+hypothetical row.
+
+1. `docs/architecture/22-component-contracts.md`:24 — the `HealthProber` row cited
+   `docs/architecture/29-subscriptions-and-servers.md` at a section named `health`. Doc 29 has no section by that name
+   at all; the prober's behaviour home is `docs/architecture/26-command-surface.md` §3, the per-method notes that carry
+   `server.probe`'s non-replayability.
+2. `docs/architecture/24-options-envelope-compat.md`:117 — `docs/audit/04-data-model-and-options-envelope.md`
+   §dispatcher → §2, whose hook table the sentence is transcribing.
+3. `docs/architecture/27-config-compilation-pipeline.md`:134 — doc 29 §link table → §5's loss table. The heading says
+   "Formats and the loss tables"; "link table" was a name the target never used.
+4. `docs/architecture/29-subscriptions-and-servers.md`:362 — the cap ladder's compile half cited doc 27 §10; that
+   document ends at §9. The warn-don't-block rule is §7's third rule.
+5. `docs/architecture/31-security-model.md`:237 — doc 29 §scheduling → §7, "Durable status and the schedule", which is
+   where the `force` clause that bypasses backoff and not the rate limit actually lives.
+6. `docs/architecture/31-security-model.md`:272 — the quoted `§"as a state"` → §1 rule 2, the numbered rule whose text
+   is "Fail-closed is a state, not an action".
+7. `docs/architecture/33-binary-integrity.md`:100 — `docs/architecture/20-target-repository-layout.md` at a section
+   number of 60, in a document whose headings run §1 to §13. This is the census's sharpest case: a *number*, not a
+   word, resolving nowhere inside a plausible sentence — the file it means is the `connector/` row of §3's ownership
+   table.
+8. `docs/PROJECT-STATE.md`:2484 — doc 09 §9; that document's registry heading is the unnumbered
+   "## UNVERIFIED registry", so the cite was re-worded to name the table rather than a section number.
+
+**The ninth, which the census cannot see.** `docs/architecture/31-security-model.md`:236 cited
+`docs/architecture/22-component-contracts.md` §4 "of the health section" — and doc 22 *has* a §4. It is
+CoreSupervisor; HealthProber is §8, and the fourth invariant of §8 is the probe-rate budget that exact sentence is
+promising. A pass that asks only "does this section exist" certifies this one. It was found by reading the sentence
+against the table it cites, the same way §4.31 found the `Cited by` rows that resolved to a real line in the wrong
+document — which is why `VER-83`'s `why` names both cases: existence is the cheapest half of the check, and the
+implementing slice has to decide whether it also tries to catch the neighbour.
+
+**The bookkeeping.** `packages/schema/verification.json` gained `VER-83` — `no-check`, owner `tools`, closing mechanism
+`gate`, its anchor a labelled sentence in `docs/README.md`'s citation conventions ("no pass opens a section number
+against the headings of the file it names"), which is the document that states the convention the row says is
+unenforced. `marker.counted` 195 → 196, the queue is 73 live rows with ten retired, `no-check` 5 → 6, owner `tools`
+2 → 3, mechanism `gate` 3 → 4, and `verify.mjs`'s three distribution constants were amended in the same commit as the
+data, so the read-aloud check verified the documents against the data rather than the other way round. doc 39 moved
+thirteen places by script (`tmp/move39.mjs`, each substitution guarded on a single occurrence): its §1 purpose line and
+§3's "Who owns the 196 deferrals", §4's state table, the `no-check` paragraph — which now reads six and names the
+third row in that column that a checker alone closes — §5's owner and mechanism tables, §8's steps, §10's new row and
+the issued range, and §11's `VER-01`…`VER-83`. The §4 intro paragraph above was brought to the same measurement and found to carry eight numbers that §4.29 and §4.32
+had moved without a reader coming back to this paragraph — which is what a document that is prose rather
+than data costs. One anchor had to move *because* of a repair: `VER-51`'s `at[]` quotes the doc 31 `force` sentence verbatim, so
+re-aiming §scheduling → §7 changed the substring the harness searches for, and the row went red until the anchor was
+re-aimed with it — the corpus's own demonstration that an anchor is a claim about bytes, not about meaning.
+
+**What this slice does not claim.** Nothing closed. Eight sentences were re-aimed and one class was registered; the
+guard still has five passes, and the next `§60` is one commit away unless `VER-83`'s pass lands. The census is not the
+guard and is deliberately not registered: its two resolution rules are this sitting's reading of what a `§N` should
+resolve against, and putting them in `docs/` as a rule would make an unenforced convention look like a checked one —
+which is the mistake the row exists to prevent. And the 568 count is a count of *matches*, not of anchors: the census
+does not try to tell a cite from a heading that happens to sit after a backticked name, so the number is an upper
+bound on what the pass will read.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks**. `node tools/check-doc-evidence.mjs` →
+green, and §4.4's final ledger paragraph carries the set and the per-file deltas; the citation *set* is what the repair
+changed, not the citation *count* of any form the guard resolves, because every one of the eight re-aims replaces a
+document name plus a section number with a document name plus a section number. `node tools/check-adr-shape.mjs` (and
+`--selftest`), `node tools/check-layout-guards.mjs` (and `--selftest`), `node tools/check-legacy-backup.mjs` (and
+`--selftest`) and `node tools/check-no-secrets.mjs` → green. `go -C connector test -count=1 ./...`, `gofmt -l
+connector` and `go -C connector vet ./...` → unchanged; this slice touches no Go file.
 
 ---
 
@@ -2590,7 +2682,7 @@ and `go -C connector vet ./...` → unchanged; this slice touches no Go file.
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 566 pointers, 1539 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 595 pointers, 1594 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
@@ -2607,7 +2699,7 @@ and `go -C connector vet ./...` → unchanged; this slice touches no Go file.
   `node tools/verify-vendor.mjs` runs against the
   working tree.
 - `node tools/check-adr-shape.mjs --selftest` and `node tools/check-adr-shape.mjs` → **green here**: 15 injected
-  defects refused (10 record cases, 5 index cases) and 20 records plus one index passing, the shortest record 102 lines
+  defects refused (10 record cases, 5 index cases) and 21 records plus one index passing, the shortest record 102 lines
   and the longest exactly at rule 11's 140. No runner has printed these two lines yet — the file arrived on 2026-11-06
   and the push that would show it asks for its confirmation each time — while the checks themselves have run there since
   2026-11-05 as the two shell steps §4.26 replaces. It is the `VER-01` step of the workflow bullet below, and `VER-01` is
@@ -2959,6 +3051,14 @@ written before any behaviour existed. What each next milestone has to make true:
    its last `needs-human` row is retired, the deferral line that asked it left doc 29 §13 with the row, and what remains
    is its own turn in the build order plus the guard ADR-0021 made load-bearing, which is `VER-64`. The order the rest builds in is §10's closing
    note.
+3. **`VER-83`, and it is the queue's only row that closes with none of the three things above.** §4.33 counted 568
+   `§N` anchors under `docs/` — the corpus's cheapest citation form and the only one `tools/check-doc-evidence.mjs`
+   does not resolve — repaired the 8 that named a section their document does not have, and registered the class. What
+   closes it is a sixth pass in that guard: read the named file's headings, refuse a number no heading carries, refuse
+   a quoted phrase no heading contains, and drive it with `--selftest` defects the way §4.26 and §4.27 shaped the other
+   two guards, including the one this slice was caught making twice — an anchor whose section exists but is the
+   neighbour of the one the sentence means. It is code under `tools/` and nothing else: no `docs/` edit, no
+   `packages/schema/**` write beyond deleting the row and moving the tallies, and no Go file.
 
 ---
 
@@ -3310,11 +3410,13 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 195 labelled lines over 44 documents, the queue is 72 rows with ten tombstones, and the register is 38
+corpus is 196 labelled lines over 44 documents, the queue is 73 rows with ten tombstones, and the register is 38
 questions over 61 sites with three retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
-about that file.
+about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a
+promise about behaviour: 568 `§N` anchors under `docs/`, 8 of them naming a section the document they name does not
+have, all re-aimed by hand, and `VER-83` as the pass that would have refused them.
 Plus the decisions in §7 and the eight questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth stopped being a question, and why its number stayed.
 Everything in §1, §2, §5 was measured, not inferred — re-run the

@@ -114,7 +114,7 @@ Two shapes are possible and the difference matters:
   entity to the user.
 
 What the handler must implement is the legacy dispatcher contract, unchanged in meaning
-(`docs/audit/04-data-model-and-options-envelope.md` §dispatcher):
+(`docs/audit/04-data-model-and-options-envelope.md` §2):
 
 | Hook | Behaviour of `ConnectorProfile` | Why |
 |---|---|---|

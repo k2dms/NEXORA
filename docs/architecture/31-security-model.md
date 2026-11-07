@@ -233,8 +233,8 @@ browser and wrong for nobody, because the budget's whole purpose is to bound a c
 What the budgets are the enforcement half of (all three promises were written before this table existed, and are
 now pointing at real numbers): opening the popup performs no side-effecting command
 (`docs/architecture/22-component-contracts.md` §"popup must not" list); probe rate is bounded independently of the
-UI (`docs/architecture/22-component-contracts.md` §4 of the health section); `force` bypasses backoff, not the
-rate limit (`docs/architecture/29-subscriptions-and-servers.md` §scheduling). `Verified: NO — deferred to Phase 2`
+UI (`docs/architecture/22-component-contracts.md` §8, whose fourth invariant is this budget); `force` bypasses backoff, not the
+rate limit (`docs/architecture/29-subscriptions-and-servers.md` §7). `Verified: NO — deferred to Phase 2`
 for enforcement (LIVE-17); GREEN for the numbers, the coverage and the arithmetic.
 
 ## 9. What a refusal costs the user
@@ -269,7 +269,7 @@ depth against that is not "we trust the extension less", it is four structural f
 3. **A rule that cannot be expressed is reported, not dropped:**
    `packages/schema/protocol/commands/config.apply.json#/result/properties/unrepresentable`. Silent dropping is how
    a routing decision becomes different from the one the user made.
-4. **Fail-closed is a state, not a reaction** — `docs/architecture/30-failure-policy.md` §"as a state". The applied
+4. **Fail-closed is a state, not a reaction** — `docs/architecture/30-failure-policy.md` §1 rule 2. The applied
    `chrome.proxy` value points at a loopback port only a live Core owns, so MV3 inaction (evicted worker plus dead
    Connector) is already safe. That is why the browser half of this model does not depend on the Connector being
    reachable.

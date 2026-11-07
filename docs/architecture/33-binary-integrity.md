@@ -97,7 +97,7 @@ Two properties follow that are easy to get wrong:
 ### 4.1 Shape versus instance
 
 The shape is `packages/schema/pins.schema.json` and it exists in this repository today. The instance that ships —
-`connector/testdata/pins.json` (`docs/architecture/20-target-repository-layout.md` §60) — does not: the whole
+`connector/testdata/pins.json` (`docs/architecture/20-target-repository-layout.md` §3's `connector/` row) — does not: the whole
 `connector/` tree is absent, and this is the document's largest `Verified: NO`. What does exist is the conforming
 example `packages/schema/examples/pins.xray.json`, which `SEC-6` in
 `docs/audit/11-security-findings.md` cites as the real home of the pin *contract* on disk.

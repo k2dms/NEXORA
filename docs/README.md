@@ -46,6 +46,10 @@ Executable artefacts, outside this directory:
   depend on it: 52 such citations across 14 documents were converted this way on 2026-11-06, and the file
   joined `MUTABLE_CITATION_TARGETS` in the same commit so a new line cite into it is a red run rather than
   a recommendation.
+- **A section cite names a section that exists.** `tools/check-doc-evidence.mjs` resolves four citation forms, and
+  no pass opens a section number against the headings of the file it names: `Verified: NO — deferred to Phase 2`
+  until `VER-83`'s pass lands. 568 cites of this form were counted on 2026-11-07, 8 of them named a section their
+  document does not have, and all 8 were re-aimed by hand — `docs/PROJECT-STATE.md` §4.33 is the record.
 - **Every design claim names its check.** If nothing checks it, it is recorded in
   `architecture/39-verification-matrix.md` with `Verified: NO — deferred to Phase 2` rather than asserted.
 - **A question a check cannot close is a decision, not a deferral.** If the missing artefact is an answer a human

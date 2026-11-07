@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 195
+    "counted": 196
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -669,7 +669,7 @@
       "state": "no-code",
       "owner": "extension",
       "closesBy": { "kind": "live-row", "ref": "LIVE-17" },
-      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "rate limit (`docs/architecture/29-subscriptions-and-servers.md` §sched" }],
+      "at": [{ "doc": "docs/architecture/31-security-model.md", "anchor": "rate limit (`docs/architecture/29-subscriptions-and-servers.md` §7" }],
       "why": "The failure mode is a popup that hammers every VPS the user has ever saved; it is a UI bug and a rate-limit bug at once, so it rides on both planes."
     },
     {
@@ -964,6 +964,17 @@
         { "doc": "docs/architecture/36-observability.md", "anchor": "negotiated versions reach the connector log" }
       ],
       "why": "`docs/architecture/21-system-context.md` §6 ends the case for two processes with a consequence: 'a shim from NEXORA 3.7 may legally talk to a connector from 3.6 when both sides' declared floors overlap, so the negotiation result must be *written down* in the connector log and surfaced in `diagnostics.get`'. The overlap it is describing is the pipe's, not the browser's -- the two processes are joined by the pipe, and §6 is the paragraph about why they are separate -- and since 2026-11-06 the contract says there are two independent windows: `packages/schema/protocol/framing.json#/versionFloors` declares four numbers over `protocol` (`protocolVersion`, `minCompatibleProtocolVersion`, 'negotiatedIn: connector.hello') and `pipe` (`frameFormatVersion`, `minPipeVersion`, 'negotiatedIn: the v field of every frame'), and `packages/schema/protocol/error-taxonomy.json#/codes` refuses both with the single `VersionMismatch` whose own `meaning` says 'today the window that is negotiated is the protocol one'. Nothing in this repository's vocabulary can say the other half. `connector.connected` is the event `packages/schema/observability.json#/events` nominates as the thing that 'writes it down', and its payload is `additionalProperties: false` over exactly `protocolVersion`, `capabilities` and `adoptedExisting`; the `versions` entry of `#/diagnosticsSections` contains 'extension version, Connector version, Core version, protocolVersion, negotiated capabilities'; `#/export/footer/fields` names `protocolVersion` once among ten. The command could in principle answer more: `packages/schema/protocol/commands/diagnostics.get.json#/result` is closed over five properties and its `payload` is `type: ['object', 'null']` with no shape at all, so a section body is the one place an undeclared number could sit and the one place nothing bounds it. The runtime reaches nowhere near either: `connector/internal/hello`'s `Session` holds the negotiation as an unexported `agreed *Answer` and hands the front door only `Negotiated` and `Capabilities`, and `connector/internal/envelope` range-checks an inbound frame's `v` against the envelope's 1..255 and never against `MinPipeVersion`. That the number is not compared is stated plainly in `docs/architecture/25-native-messaging-protocol.md` §1 and in `VER-18`'s tombstone, so this row is not about the missing comparison; it is about the missing name. The other half of the promise -- that no record is written at all, since no file under `connector/**` imports a logging package and nothing emits a `connector.connected` frame -- is doc 36 §16's fifth open item and the runtime rows, which is why this row is `contracts` and not `connector`: the blocker is a field, an enum and two `contains` sentences, and `ODEC-41` is where choosing them belongs."
+    },
+    {
+      "id": "VER-83",
+      "subject": "the section half of a document citation -- a backticked path under `docs/` followed by `§N` -- is the one citation form in the corpus that no pass of `tools/check-doc-evidence.mjs` resolves, so an anchor can name a section its document never had and the run stays green",
+      "state": "no-check",
+      "owner": "tools",
+      "closesBy": { "kind": "gate", "ref": "a section-anchor pass in tools/check-doc-evidence.mjs, beside the four citation forms it already resolves" },
+      "at": [
+        { "doc": "docs/README.md", "anchor": "no pass opens a section number against the headings of the file it names" }
+      ],
+      "why": "The guard resolves four things today and every one of them is a *location*: a `path:line` cite is opened and refused if the line is blank, a `path#/pointer` cite is walked through the compiled schema, a backticked document name is refused unless the file exists, and a harness label is refused unless the verifier carries it; the fifth pass reads a `Cited by` row against the table it claims to belong to. What none of them reads is the section number that follows a document name -- `docs/architecture/20-target-repository-layout.md` §3 is the corpus's cheapest cite and the only one that can rot without moving a byte the checker looks at. Measured on 2026-11-07 over every markdown file under `docs/` (a scratch census, not a committed tool): 568 cites of this form, 8 of them naming a section the target document does not have, all 8 re-aimed by hand in the same sitting and recorded in `docs/PROJECT-STATE.md` §4.33. Two findings are worth the row rather than only the repair. The first is that one of the eight was `docs/architecture/20-target-repository-layout.md` §60 -- a *number*, not a word, in a document whose headings run §1 to §13, and it resolved nowhere while the sentence around it stayed entirely plausible; a section that does not exist is not a typo the current passes can see. The second is that the census's own rule is not enough either: `docs/architecture/31-security-model.md` cited `docs/architecture/22-component-contracts.md` §4 \"of the health section\", and doc 22 has a §4 -- CoreSupervisor -- while the HealthProber is §8, so a pass that only asks \"does the number exist\" certifies the neighbour error the corpus has now been caught making three times. That is why the closing artefact is a pass in the existing guard rather than a new document rule: the rule already reads `docs/README.md`, and the sentence that wants the checker is the one carrying this row's label."
     }
   ]
 }

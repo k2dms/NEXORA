@@ -21,7 +21,7 @@ verify` checks today, or carries `Verified: NO — deferred to Phase 2` and owns
 | ProfileRegistry | `nexora/extension/src/profiles/**` + legacy `omega-pac` | service worker | `docs/audit/04-data-model-and-options-envelope.md` |
 | SubscriptionEngine | `nexora/extension/src/subscriptions/**` | service worker | `docs/architecture/29-subscriptions-and-servers.md` |
 | FeedFetcher | `connector/internal/feed/**` | connector | `docs/architecture/29-subscriptions-and-servers.md` §2 |
-| HealthProber | `connector/internal/health/**` | connector | `docs/architecture/29-subscriptions-and-servers.md` §health |
+| HealthProber | `connector/internal/health/**` | connector | `docs/architecture/26-command-surface.md` §3 |
 | Keystore | `connector/internal/keystore/**` | connector | `docs/architecture/32-secrets-keystore-masking.md` |
 | MigrationRunner | `nexora/extension/src/migrate/**` | service worker (options page) | `docs/architecture/35-schema-versioning-migration.md` |
 | DiagnosticsCollector | `connector/internal/diag/**` + `nexora/extension/src/diag/**` | both | `docs/architecture/36-observability.md` |

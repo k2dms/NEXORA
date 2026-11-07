@@ -359,7 +359,7 @@ no cache-busting parameter at all, and a feed that requires one is served by the
 | Guards are applied to every redirect hop | `docs/verification/live-matrix.md` LIVE row for redirect-to-metadata | Verified: NO — Phase 2 |
 | `format: auto` never resolves ambiguously | `packages/schema/subscription-source.schema.json#/properties/format` declares the enum; the two-true-detectors case has no fixture | Verified: NO — Phase 2 |
 | Id reuse across refreshes: `id`, `tag`, `userIdRef` stable, feed name does not overwrite a user rename | §6 rules, no checker yet | Verified: NO — Phase 2 |
-| The cap ladder warns before applying | §8; the compile half is `docs/architecture/27-config-compilation-pipeline.md` §10 | Verified: NO — Phase 2 |
+| The cap ladder warns before applying | §8; the compile half is `docs/architecture/27-config-compilation-pipeline.md` §7 rule 3 | Verified: NO — Phase 2 |
 
 ## 12. Amendments this document forced
 
