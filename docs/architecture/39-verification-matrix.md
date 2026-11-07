@@ -96,11 +96,11 @@ would have to be re-derived from the design, which is how a verification matrix 
 |---|---|---|---|
 | `no-code` | 57 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
 | `no-check` | 7 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
-| `no-run` | 6 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
+| `no-run` | 7 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 2 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 4 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **57 of 76 rows are `no-code`**: this iteration's claims are overwhelmingly
+The distribution is the finding. **57 of 77 rows are `no-code`**: this iteration's claims are overwhelmingly
 blocked on the Connector, the compiler and the UI existing, not on tests being clever. 7 `no-check` rows read as
 the part closable before Phase 2 writes a line of product code, and four of them — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
@@ -123,15 +123,15 @@ That ordering is not advice; it is what the states say.
 
 ## 5. Nine owners, eight closing mechanisms
 
-`owners` — who can close the row: `connector` 41, `extension` 11, `contracts` 7, `ci` 4, `packages` 3,
+`owners` — who can close the row: `connector` 42, `extension` 11, `contracts` 7, `ci` 4, `packages` 3,
 `ui` 3, `external` 3, `tools` 3, `human` 1.
 
-`closingKinds` — with what: `live-row` 39, `assertion` 18, `decision` 6, `gate` 4, `ci-step` 3,
+`closingKinds` — with what: `live-row` 40, `assertion` 18, `decision` 6, `gate` 4, `ci-step` 3,
 `external-measurement` 3, `tool` 2, `new-live-row` 1.
 
 Three consequences worth stating out loud:
 
-- **39 of 76 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **40 of 77 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -249,7 +249,7 @@ Not a schedule — a dependency graph the states impose:
    why §4 says they cannot be deleted around their gate. Behind them the inbound-per-tag question
    (`ODEC-06`) changes what `VER-30` even asserts. `VER-09`, `VER-37`, `VER-74` wait on browsers and stores, which is
    why they are `needs-human` and not quietly estimated.
-4. **Everything else is `no-code` and waits on the Connector.** 38 of the 57 are owned by it. Four connector rows have
+4. **Everything else is `no-code` and waits on the Connector.** 37 of the 57 are owned by it. Four connector rows have
    left the column since the queue was written — `VER-23`, whose keystore is now code with a green test over the real
    `crypt32` call, `VER-29`, whose writer and rollback are now Go tests over a temp directory
    (`connector/internal/apply`), `VER-14`, whose containment scope is now assigned, reported and proven against a
@@ -265,10 +265,13 @@ Not a schedule — a dependency graph the states impose:
    on 2026-11-07 its register question `ODEC-40` was answered by the field it asked for, and the row left with it.
    `VER-82` entered it in the slice after that, the sixth `contracts` row and the column's only `no-code` one now, and
    the only decision row the Connector does not own.
+   The latest slice moved the column without closing anything: `VER-43` split, its pre-exec half leaving as `VER-87`
+   for `no-run` the moment the receipt code existed (`connector/internal/receipt`), and what stayed is the
+   archive-entry refusal of doc 33 §5 step 7, which has no extractor to be code for.
    What does not exist here is a place to put the answer, not the code that would compute it.
 
-The queue does not pretend this is fast. It is the reason the queue exists: 76 named obligations with 39 of them
-pointing at one executable matrix is a plan; the same 76 as 199 scattered phrases is a mood.
+The queue does not pretend this is fast. It is the reason the queue exists: 77 named obligations with 40 of them
+pointing at one executable matrix is a plan; the same 77 as 199 scattered phrases is a mood.
 
 ---
 
@@ -289,7 +292,7 @@ pointing at one executable matrix is a plan; the same 76 as 199 scattered phrase
 
 ## 10. The queue
 
-76 rows, grouped by state; the 10 ids this queue has closed are in `packages/schema/verification.json#/retired`,
+77 rows, grouped by state; the 10 ids this queue has closed are in `packages/schema/verification.json#/retired`,
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
@@ -322,7 +325,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-40 | the `.po`-to-catalog compiler, the `localeSupport` table and the promotion threshold do not exist | `packages` · assertion | 2 · 2 |
 | VER-41 | no download, sha256, minisign, refusal-on-mismatch, install ACL, rollback or `manual` channel exercised; `pins.json` absent | `connector` · LIVE-02 | 2 · 3 |
 | VER-42 | none of the twelve first-run steps, or what the user sees when one fails, has been exercised | `connector` · LIVE-20 | 1 · 1 |
-| VER-43 | no pre-execution re-hash against a receipt, no archive-entry refusal, no lower-privilege replacement test | `connector` · LIVE-21 | 2 · 5 |
+| VER-43 | the archive-entry refusal that runs before anything is written — a zip is an attacker-controlled directory listing, and the extractor does not exist | `connector` · LIVE-21 | 1 · 1 |
 | VER-44 | the Core `log` section suppressing the access log — no started Core has been looked at | `connector` · LIVE-18 | 1 · 1 |
 | VER-45 | the redaction pass never run against a live credential in any of the five sinks | `connector` · LIVE-10 | 2 · 2 |
 | VER-46 | no two-plane fixture shows a trace id surviving the boundary; no migration run keeps the correlation history | `connector` · LIVE-23 | 1 · 1 |
@@ -367,7 +370,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-83 | a `§N` after a document path is the corpus's cheapest cite and the only one no pass resolves | `tools` · gate | 1 · 1 |
 | VER-85 | which code answers a malformed request is decided per command by analogy — `HandshakeFailed` in `connector.hello`, `HealthCheckFailed` in `server.test` — and thirteen of nineteen command docs declare no `BadRequest` | `contracts` · decision (`ODEC-43`) | 1 · 1 |
 
-### `no-run` — 6
+### `no-run` — 7
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
@@ -377,6 +380,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-29 | no live apply has failed: the temp-file, sync, chmod and rename are Go tests over a temp directory, and a document whose secret is missing leaves the previous config byte-identical — the rollback half of doc 27 §8 is measured, and a command frame now drives it, while the Core half is not | `connector` · LIVE-03 | 2 · 3 |
 | VER-32 | the compiled report reaches the `config.apply` answer and a test shows two entries arriving in one frame while the config stays applied; no browser has been shown the array yet | `connector` · LIVE-04 | 2 · 2 |
 | VER-57 | no CI build shows the packaged bundle survives the declared CSP | `ci` · ci-step | 1 · 2 |
+| VER-87 | the pre-exec hash of doc 33 §6 exists as code — a receipt reader, a verifier and the supervisor's spawn path that runs it before every exec — but no live core.start or core.restart has executed it, and nothing in this build writes the receipt it reads | `connector` · LIVE-21 | 2 · 4 |
 
 ### `no-fixture` — 2
 
@@ -443,7 +447,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-86` beyond the contract layer — 76 live, 10 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-87` beyond the contract layer — 77 live, 10 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 
@@ -546,6 +550,19 @@ changed, which is the second time this document's §11 table has had to follow a
 What this closure does not claim is enforcement on the wire: `minPipeVersion` is a number a build carries and a test
 compares to the version it floors, and nothing yet refuses a frame whose `v` is below it. That half is stated in
 `docs/architecture/25-native-messaging-protocol.md` §1, not queued as if it were done.
+An eighth amendment, 2026-11-07, and the first row that split rather than entered or closed: `connector/internal/receipt`
+— the install receipt reader of doc 33 §5 step 10 and the producer of §6's pre-exec hash — gives the code half of
+`VER-43`'s subject its implementation, so the row divides. `VER-43` keeps the one clause nothing has a seam for yet
+(§5 step 7's archive-entry refusal) and stays `no-code` over its one remaining label; the pre-exec half leaves as
+`VER-87`, takes the §6 label, the two §16 rows it now owns and doc 34 §14's row, and enters the queue in `no-run` —
+a check exists and is green where it has run (the package's own tests, and a drive over the real release asset that
+hashed the 27.4 MB binary in 18 ms and refused a one-byte tamper), but no registered command reaches the spawn path
+and no installer exists to write the receipt, whose signature half is pinned open twice (`ODEC-22`, `ODEC-25`).
+`marker.counted` does not move: a split re-owns labels rather than adding them, which is the property that made the
+split honest. The distribution moves with it (`no-code` 57 unchanged — the row stayed in the column and narrowed,
+`no-run` 6 → 7, 76 rows → 77, `connector` 41 → 42, `live-row` 39 → 40). Corrected in the same pass, because the run
+measured it rather than trusted it: ¶4's `38 of the 57` has said 37 against the data since a previous slice added a
+connector `no-code` row without touching a sentence no readNumbers regex covers.
 
 **Open items.**
 

@@ -167,7 +167,7 @@ type harness struct {
 
 func newHarness(t *testing.T) *harness {
 	t.Helper()
-	h := &harness{t: t, serverID: "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01", clock: &clock{at: time.Date(2026, 11, 7, 10, 0, 0, 0, time.UTC)}}
+	h := &harness{t: t, serverID: "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01", clock: &clock{at: time.Date(2026, 11, 7, 10, 0, 0, 0, time.UTC)}} // nexora-secret-allow: fixture id invented for this test
 	h.core = &fakeCore{}
 	startFakeCore(t, h.core)
 
@@ -232,7 +232,7 @@ func (h *harness) prober(tweak ...func(*Config)) *Prober {
 }
 
 func request(layers ...string) Request {
-	return Request{ServerID: "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01", Layers: layers, Repeat: 1}
+	return Request{ServerID: "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01", Layers: layers, Repeat: 1} // nexora-secret-allow: fixture id invented for this test
 }
 
 // egressRequest is the same probe with the flag that asks for the address set: the fifth row and the two answer
@@ -544,7 +544,7 @@ func TestARequestTheCommandRefusesOpensNoSockets(t *testing.T) {
 		{"no layers", request()},
 		{"five layers", request(LayerDNS, LayerTCP, LayerCoreOutbound, LayerProxiedHTTP, LayerDNS)},
 		{"a repeat past the command's bound", func() Request { r := request(LayerTCP); r.Repeat = 11; return r }()},
-		{"an id the store has never heard of", func() Request { r := request(LayerTCP); r.ServerID = "00000000-0000-4000-8000-000000000000"; return r }()},
+		{"an id the store has never heard of", func() Request { r := request(LayerTCP); r.ServerID = "00000000-0000-4000-8000-000000000000"; return r }()}, // nexora-secret-allow: fixture id invented for this test
 	}
 	for _, c := range cases {
 		if _, err := p.Probe(context.Background(), c.req); err == nil {

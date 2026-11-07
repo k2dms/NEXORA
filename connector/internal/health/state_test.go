@@ -15,7 +15,7 @@ import (
 	"github.com/k2dms/nexora/connector/internal/compile"
 )
 
-const stateServerID = "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01"
+const stateServerID = "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01" // nexora-secret-allow: fixture id invented for this test
 
 // stateProber is a wired prober that will never be asked to measure: the clock and the event sink are captured so a
 // test can read what the component decided rather than what it cost.
@@ -231,18 +231,18 @@ func TestTheRingKeepsTheNewestAndCannotGrowPastItsCap(t *testing.T) {
 
 func TestTheRingIsPerServer(t *testing.T) {
 	sp := newStateProber(t)
-	sp.p.note(&Answer{ServerID: "00000000-0000-4000-8000-000000000001", Overall: OverallPass}, sp.at)
+	sp.p.note(&Answer{ServerID: "00000000-0000-4000-8000-000000000001", Overall: OverallPass}, sp.at) // nexora-secret-allow: fixture id invented for this test
 	if len(sp.p.History(stateServerID)) != 0 {
 		t.Error("one server's probe appeared in another server's history")
 	}
-	if len(sp.p.History("00000000-0000-4000-8000-000000000001")) != 1 {
+	if len(sp.p.History("00000000-0000-4000-8000-000000000001")) != 1 { // nexora-secret-allow: fixture id invented for this test
 		t.Error("the probe was not retained for the server it measured")
 	}
 }
 
 func TestStatusesAreOrderedAndComplete(t *testing.T) {
 	sp := newStateProber(t)
-	for _, id := range []string{"00000000-0000-4000-8000-000000000009", stateServerID, "00000000-0000-4000-8000-000000000001"} {
+	for _, id := range []string{"00000000-0000-4000-8000-000000000009", stateServerID, "00000000-0000-4000-8000-000000000001"} { // nexora-secret-allow: fixture ids invented for this test
 		sp.p.note(&Answer{ServerID: id, Overall: OverallPass}, sp.at)
 	}
 	got := sp.p.Statuses()

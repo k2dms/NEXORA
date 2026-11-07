@@ -578,18 +578,14 @@
     },
     {
       "id": "VER-43",
-      "subject": "nothing proves pre-execution re-hashing against a receipt, archive-entry refusal, or that a lower-privilege actor cannot replace a verified file",
+      "subject": "the archive-entry refusal that runs before anything is written does not exist -- no extractor, so a zip's entry names have never been refused anywhere",
       "state": "no-code",
       "owner": "connector",
       "closesBy": { "kind": "live-row", "ref": "LIVE-21" },
       "at": [
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "chose to defend against. `Verified: NO — Phase 2`, and `LIVE-21` owns " },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "Malicious archive entries" },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "Post-install file replacement by a lower-privilege or non-user actor" },
-        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "A binary that is not on the pinned list running anyway" },
-        { "doc": "docs/architecture/34-data-split.md", "anchor": "The binary and its receipts are verified before execution" }
+        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "Malicious archive entries" }
       ],
-      "why": "A hash verified once is a photograph, not a lock; and roaming-profile replacement is the class ADR-0011 chose to defend against, which makes the defence the same row."
+      "why": "Step 7 calls the archive an attacker-controlled directory listing and refuses its names before the first write. The row split when the pre-exec half grew code: this is the clause of the old subject nothing even has a seam for yet."
     },
     {
       "id": "VER-44",
@@ -1014,6 +1010,23 @@
         }
       ],
       "why": "What exists is the memory half, and it is measured: `connector/internal/health/state.go` retains per-server entries under doc 36 §8's 64 KiB `health` cap, evicts from the front once the marshalled bytes exceed it, and the `packages/schema/protocol/data-ownership.json#/stores` row says `survivesConnectorRemoval: false` while saying nothing about a process restart. What is missing is the row's own medium: `medium` is `disk`, and the bound that justifies it -- \"ring-buffered by design: a user cannot fill a disk by probing more\" -- is a sentence about a disk, which a map that dies with the process satisfies only by never being written. The row closes by an assertion rather than a decision because the corpus has already decided the medium and the shape (\"a ring per server id\"); what remains is code and the test that kills the process and reads the ring back from whatever path the placement decisions land on."
+    },
+    {
+      "id": "VER-87",
+      "subject": "the pre-exec hash of doc 33 §6 exists as code -- a receipt reader, a verifier and the supervisor's spawn path that runs it before every exec -- but no live core.start or core.restart has executed it, and nothing in this build writes the receipt it reads",
+      "state": "no-run",
+      "owner": "connector",
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-21"
+      },
+      "at": [
+        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "chose to defend against. `Verified: NO — Phase 2`, and `LIVE-21` owns " },
+        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "Post-install file replacement by a lower-privilege or non-user actor" },
+        { "doc": "docs/architecture/33-binary-integrity.md", "anchor": "A binary that is not on the pinned list running anyway" },
+        { "doc": "docs/architecture/34-data-split.md", "anchor": "The binary and its receipts are verified before execution" }
+      ],
+      "why": "The check is green where it has run: the package's own tests, and a drive over the real release asset that hashes the binary in tens of milliseconds and refuses a one-byte tamper. Where the claim needs it nothing runs: no registered command reaches the spawn path, and the receipt's writer is the installer VER-42 waits for, whose signature half is pinned open twice (ODEC-22, ODEC-25)."
     }
   ]
 }

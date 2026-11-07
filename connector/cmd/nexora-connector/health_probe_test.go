@@ -15,7 +15,7 @@ import (
 	"github.com/k2dms/nexora/connector/internal/health"
 )
 
-const probeServerID = "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01"
+const probeServerID = "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01" // nexora-secret-allow: fixture id invented for this test
 
 // probeMethod is the wire name the frames in this file carry; the handler never reads it, but a frame that is not
 // a request for `server.test` would not be on this path.

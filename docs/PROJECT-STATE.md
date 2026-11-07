@@ -558,6 +558,18 @@ figures did not move at all, and the shape is §4.31's inverted: a slice that re
 JSON and the JSON's anchors at documents, and the guard counts the citations that live in `docs/`, not the ones that
 arrive there — the corpus grew three labelled sentences, two sites and one row, and the citation set saw exactly the
 two names the sites carry.
+§4.35 does not move the set — the first slice this ledger has measured of which that is true — and the figures it
+reports are §4.34's figures unchanged: **2311 / 596 / 1598**, 68 labels, 52 `Cited by` rows, measured after this
+paragraph, its own record and its gates paragraph were written. Per file against a clean `git archive` of the commit
+before: doc 39 `0 / 0 / 0` across a rewritten VER-43 row, a new VER-87 row, four edited tally cells and an eighth
+amendment paragraph; this file `0 / 0 / 0` across everything §4.35 added to it — eight paragraphs whose only
+backticked names are tool names wrapped across lines, the convention this file's citation bullets prescribe; and the
+other sixty files `0 / 0 / 0` each. The shape is §4.34's taken one step further: that slice's registration still
+cost two doc-name figures, because its deferral sentences named the register; this slice's registration cites
+documents only through `verification.json`, which the census does not walk, and through anchor lines that were
+already in `docs/` — the split re-owns existing markers rather than acquiring new lines. A slice can land a
+package, split a row and register a `no-run` state without the citation set seeing anything of it; what the set
+cannot see, `VER-87`'s state column is there to say.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -2703,6 +2715,91 @@ connector test -count=1 ./...` → **twelve `ok` lines**, the twelfth package be
 
 ---
 
+### 4.35 The receipt that refuses to be written by guesses — `internal/receipt`, the pre-exec hash, and the queue's first split (2026-11-07)
+
+**What landed.** Three files under `connector/internal/receipt`: the install receipt reader, the hasher, and the
+producer of doc 33 §6's pre-exec check — "`sha256` of the file being spawned, compared to the install receipt" — as
+the func internal/supervisor's `Config.Verify` takes. The spawn path that runs it before every exec, ladder retries
+included, has existed since §4.19; what did not exist was a producer reading a real receipt rather than a test's
+stub. The package has no writer, on purpose: data-ownership's `core-binary` row gives that job to "the installer,
+only after signature then hash then size then traversal checks", the first of those four is pinned open twice
+(`verifySignature` is a `const`, and ODEC-22/ODEC-25 own what that signature means for a rehosted Core), and §5's own
+ordering note — signature before hash, so the diagnosis is honest — is why a receipt written without step 5 would be
+a lie about a verification that did not happen, written by the one component whose whole job is not to lie about
+that. Nothing under connector/ writes a receipt in this build, so a missing one is the expected answer until the
+installer exists, and the refusals are fail-closed rather than provisional.
+
+**The closed field list, and the two refusals to invent.** Five fields decode and nothing else — a receipt carrying
+a sixth name claims an authority step 10 never wrote, which is what a closed list exists to refuse. The digest must
+be pins.schema.json's own 64-lowercase-hex charset; the stamp must parse as the date-time the pin's own `verifiedAt`
+uses and is then deliberately not interpreted, because no document states a freshness rule for a receipt and §6's
+control is the hash, not the stamp. No document names the receipt's file name, so the path comes in from the wiring —
+the same seam internal/supervisor's `Dir` and internal/apply's write directory are, for the same reason. The mismatch
+error names both digests and neither path: §12's table needs the diagnosis, the supervisor's own wrap already names
+what was about to run, and the digests are facts about a public asset, not about the user.
+
+**The queue's first split.** VER-43 owned four labelled sentences under one subject — the pre-exec re-hash, the
+archive-entry refusal, the lower-privilege replacement, the receipts-not-listings gate — and the receipt package
+gives three of the four their code, so the row divided instead of closing or entering. VER-43 keeps the one clause
+nothing has a seam for yet (doc 33 §5 step 7's archive guard — no extractor exists to refuse an entry name) and stays
+`no-code`; the pre-exec half leaves as VER-87 in `no-run` — a check exists and is green where it has run, but no
+registered command reaches the spawn path, and the receipt's writer is the installer VER-42 waits for, whose
+signature half is pinned open twice. `marker.counted` does not move: a split re-owns labels rather than adding them,
+which is the property that made the split honest — the queue has had rows enter and rows leave, and never before a
+row that divided.
+
+**The drive over the real asset.** The env-guarded drive test is LIVE-21's runtime half in miniature, on the
+supervisor tests' helper-process precedent: without the variable it skips, with it, it runs the same code over the
+bytes a release actually shipped. Over the extracted 27 383 808-byte `xray.exe` kept under the gitignored tree it
+hashed the file in **18 ms** — §6's price row says "~10 MB hashed, tens of milliseconds", measured here with a
+larger file and room to spare — accepted the very file the drive receipt was written from, refused a copy with one
+mid-file byte flipped while naming both digests, and refused with no receipt on disk. Two digests enter the record
+for the first time, each measured twice by tools that agree: the binary hashes to
+`d9be8bdb58a35b0bf5cd794f976cadba98ca10a028309ce2a36739805145e2f0` and the pinned zip asset it came from to
+`342aa2c384836500c7cdb08090b6149ac5f79f4c31460895a31b1ab7400a1d30` — Go's drive and `certutil` printed the same two
+values, so the receipt chain's inputs are the release's own bytes and the tamper refusal is a refusal of a real
+difference, not of a fixture.
+
+**The guard's first catch of a committed slice.** The no-secrets gate failed in this slice's own run — eight
+`uuid-literal` findings across the health tests §4.34 committed. The gate walks the index, and §4.34's gates
+disclosed the ordering while printing the pre-commit count: its sentence said the eight Go files "join the count at
+commit time", and the re-run that "commit time" promised is the one this slice ran, and it failed — the findings were
+real the moment the commit landed, synthetic fixture ids though all eight are. The repair is the guard's own
+documented remedy, an inline `nexora-secret-allow:` with the reason on each of the eight lines, and the gate is now
+re-run *after* staging, which is the order the previous slice named and skipped.
+
+**What this slice does not claim.** Nothing closed; one row split, no decision opened, no command registered. The
+receipt's writer is still the installer's, and step 5 is still the blocked one. The resolution half of step 12 —
+`config.apply`/`core.start` picking the active version *from* the receipt, which is what its `path` field is for —
+is unclaimed, because the only consumer that could read `Receipt.Path` is wiring this build does not have; the
+verifier deliberately compares bytes and not paths, since §6's row names the hash and ADR-0019 rule 7's "whatever
+binary is on disk" is exactly the file no receipt's digest names.
+
+**Bookkeeping.** The queue moves 76 → 77 live rows (`no-code` 57 unchanged — the row stayed in the column and
+narrowed; `no-run` 6 → 7; owners `connector` 41 → 42; closing kinds `live-row` 39 → 40; ten retired unchanged). The
+register is untouched: no entry opened, no site moved, and the two decisions the split's prose leans on are the ones
+§4.6's era already carried. `marker.counted` stays 199. One figure outside the harness's regexes was corrected by
+hand while correcting the distribution: doc 39's fourth paragraph has said 38 of the 57 since a previous slice added
+a connector `no-code` row without touching a sentence no readNumbers expression covers — the data said 37, and does
+now too.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1223 checks** — the same count as §4.34's run,
+because the split moves the data the checks read, not the number of checks; the duplicate the first editing pass
+left in the matrix (`VER-87` entered twice) is the kind of slip the id-uniqueness assertion exists for, and it fired
+before anything else was measured. `node
+tools/check-doc-evidence.mjs` → green, **2311 / 596 / 1598**, 68 labels, 52 `Cited by` rows; §4.4's final ledger
+paragraph has the set and the per-file deltas. `node
+tools/check-adr-shape.mjs` (and `--selftest`), `node
+tools/check-layout-guards.mjs` (and `--selftest`) and `node
+tools/check-legacy-backup.mjs` → green, untouched. `node
+tools/check-no-secrets.mjs` → **green, 492 files** — the three receipt files join at staging this time, and the
+eight annotated findings above are the delta from the guard's first catch of a committed slice. `gofmt -l connector`
+→ empty; `go -C connector vet ./...` → silent; `go -C
+connector test -count=1 ./...` → **thirteen `ok` lines**, the thirteenth package being `internal/receipt`, with the
+same two `no test files` notes as before.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -2762,8 +2859,9 @@ connector test -count=1 ./...` → **twelve `ok` lines**, the twelfth package be
   `github.com/k2dms/nexora/connector/internal/compile` and §4.17 nine with
   `github.com/k2dms/nexora/connector/internal/keystore`; §4.18 ten with
   `github.com/k2dms/nexora/connector/internal/apply` and §4.19 eleven with
-  `github.com/k2dms/nexora/connector/internal/supervisor`, and §4.34 twelve with
-  `github.com/k2dms/nexora/connector/internal/health`; `gofmt -l connector` still
+  `github.com/k2dms/nexora/connector/internal/supervisor`, §4.34 twelve with
+  `github.com/k2dms/nexora/connector/internal/health` and §4.35 thirteen with
+  `github.com/k2dms/nexora/connector/internal/receipt`; `gofmt -l connector` still
   prints nothing. No `VER-NN` row moves on any of the increments up to §4.16: §4.6's "Not yet"
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
