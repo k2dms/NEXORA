@@ -3114,8 +3114,9 @@ written before any behaviour existed. What each next milestone has to make true:
   closure with `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` (`ccc2cad`), and §4.33's eight
   re-aimed section anchors with `VER-83` (`c02401f`). `git ls-remote --heads nexora` printed one ref before it and one
   ref after: the local working name never became a remote branch, and the refspec law two bullets above is what keeps
-  it that way. This paragraph is the one unpushed fact it records — `git rev-list --count nexora/master..HEAD` reads
-  `1` while you are reading it, and the next push carries the sentence that says so.
+  it that way. A record of a push cannot name the sha it lands under, so this bullet states the range it carried and
+  leaves its own commits to `git rev-list --count nexora/master..HEAD` — the number that says how many records have
+  been written since the remote last moved, and the reason every push carries a sentence about the push before it.
 - Remotes: `origin` = upstream ZeroOmega (**never push**), `nexora` = `git@github.com:k2dms/NEXORA.git`.
 - **Committed and pushed** (2026-11-05: `c367db2..431ea0a`, a clean fast-forward to `nexora/master`, no MR needed),
   in the planned groups — (a) infrastructure: `.gitattributes`, `.env.example`, `.gitignore`, `.npmrc`×5, `tools/*`;
