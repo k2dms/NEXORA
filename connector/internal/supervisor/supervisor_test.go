@@ -23,9 +23,11 @@ const (
 	fakeRecord    = "NEXORA_FAKE_CORE_RECORD"
 	fakeConfig    = "NEXORA_FAKE_CORE_CONFIG"
 	fakeDuration  = "NEXORA_FAKE_CORE_DURATION"
+	fakeTrigger   = "NEXORA_FAKE_CORE_TRIGGER"
 	modeWait      = "wait"
 	modeExit      = "exit"
 	modeExitAfter = "exit-after"
+	modeExitWhen  = "exit-when"
 	modeOnce      = "once"
 	modeParent    = "parent"
 	defaultExit   = 7
@@ -53,6 +55,17 @@ func TestFakeCore(t *testing.T) {
 	switch mode {
 	case modeExit:
 		os.Exit(defaultExit)
+	case modeExitWhen:
+		// A child that dies the moment a trigger file appears: the deterministic unexpected death, because an
+		// external kill races the supervisor's own observation of liveness and a test that means to measure the
+		// ladder's arithmetic must not be measuring a kill's timing instead.
+		trigger := os.Getenv(fakeTrigger)
+		for {
+			if _, err := os.Stat(trigger); err == nil {
+				os.Exit(defaultExit)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
 	case modeExitAfter:
 		// A child that lives for the duration it was told and then dies on its own: the shape a stability
 		// window needs, because "stayed up long enough" is only observable with a child whose lifetime the
@@ -483,18 +496,26 @@ func TestZeroAttemptsBlocksImmediatelyWithNoRetry(t *testing.T) {
 // dies again before the stability window elapsed does not re-arm the ladder, so a crash loop spends one budget
 // and then sits in the permanent block until a user action, instead of restarting forever.
 func TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut(t *testing.T) {
+	dir := t.TempDir()
 	spawns := 0
 	var mu sync.Mutex
 	launch := func(configPath string) *exec.Cmd {
 		mu.Lock()
+		n := spawns
 		spawns++
 		mu.Unlock()
 		cmd := fakeLaunch(modeOnce)(configPath)
+		if n > 0 {
+			// The recovered children hold; the trigger file is the only thing that ends one. The first child keeps
+			// the modeOnce marker behaviour so the first death is its own.
+			cmd = fakeLaunch(modeExitWhen)(configPath)
+			cmd.Env = append(cmd.Env, fakeTrigger+"="+filepath.Join(dir, "die-"+strconv.Itoa(n)))
+		}
 		return cmd
 	}
 	ev := new(recorder)
 	s, err := New(Config{
-		Dir:    t.TempDir(),
+		Dir:    dir,
 		Launch: launch,
 		Verify: alwaysProves,
 		Death:  Death{Attempts: 2, Backoff: []time.Duration{time.Second, time.Second}, Stability: time.Hour, Notify: true},
@@ -511,35 +532,25 @@ func TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut(t *testing.
 	// child 1 dies at once (inside the window): the ladder takes attempt 1, whose child stays up. Killing that
 	// child from the outside is an unexpected death inside the window, so the ladder resumes at attempt 2; the
 	// same kill after attempt 2 finds the budget spent and the block permanent, with no third attempt ever made.
-	// killChild ends one unexpected death from the outside: it waits for a live child with a pid above every
-	// pid it has killed before, kills it, and waits for the supervisor to observe the death -- so the next
-	// call targets the next child rather than racing the one whose exit is still being recorded.
-	killed := map[int]bool{}
-	killChild := func() {
+	// dieOnce ends one unexpected death deterministically: the child exits itself the moment the trigger file
+	// appears, so the test measures the ladder's arithmetic and not the timing of an external kill. The trigger is
+	// removed before the next child spawns, and a new name is used per death so a pending exit cannot carry over.
+	triggers := []string{}
+	dieOnce := func() {
+		path := filepath.Join(dir, "die-"+strconv.Itoa(len(triggers)))
+		triggers = append(triggers, path)
+		if err := os.WriteFile(path, []byte("die"), 0o600); err != nil {
+			t.Fatal(err)
+		}
 		deadline := time.Now().Add(20 * time.Second)
 		for {
 			st := s.Status()
-			if st.Running && st.PID != 0 && !killed[st.PID] {
-				killed[st.PID] = true
-				proc, err := os.FindProcess(st.PID)
-				if err == nil {
-					_ = proc.Kill()
-				}
-				for {
-					if later := s.Status(); !later.Running || later.PID != st.PID {
-						return
-					}
-					if time.Now().After(deadline) {
-						t.Fatalf("the death of pid %d was never observed", st.PID)
-					}
-					time.Sleep(20 * time.Millisecond)
-				}
+			if !st.Running {
+				os.Remove(path)
+				return
 			}
 			if time.Now().After(deadline) {
-				mu.Lock()
-				n := spawns
-				mu.Unlock()
-				t.Fatalf("no live child to kill after spawn #%d; status %+v", n, s.Status())
+				t.Fatalf("the death triggered at %s was never observed; status %+v", path, s.Status())
 			}
 			time.Sleep(20 * time.Millisecond)
 		}
@@ -555,11 +566,11 @@ func TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut(t *testing.
 		}
 		t.Fatalf("%s never reached %d events (have %d: %v)", kind, n, ev.count(kind), ev.kinds())
 	}
-	killChild() // in-window death of the Start child or of attempt 1's child
+	dieOnce() // in-window death of the Start child or of attempt 1's child
 	waitCount(KindRestart, 1, 20*time.Second)
-	killChild() // in-window death again
+	dieOnce() // in-window death again
 	waitCount(KindRestart, 2, 20*time.Second)
-	killChild() // the budget is spent: this death must produce a verdict, not an attempt
+	dieOnce() // the budget is spent: this death must produce a verdict, not an attempt
 	waitCount(KindBlocked, 2, 10*time.Second)
 	blocked := ev.last(t, KindBlocked)
 	if blocked.Hash != hash("a") {

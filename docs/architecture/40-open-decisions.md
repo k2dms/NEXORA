@@ -1,13 +1,13 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 61 deferral sites in 16 documents point here as the place an answer lives, and six more lines name it only to
+> Purpose: 60 deferral sites in 15 documents point here as the place an answer lives, and six more lines name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
 > be closed here, what the choices actually cost, and which kind of artefact would end it. `docs/adr/0001-adr-practice.md`
 > makes an ADR the only place a decision is recorded; `packages/schema/verification.json` queues what nothing checks;
 > this file queues what nobody has chosen. The two are different obligations and one does not substitute for the
-> other: a row that closes by a decision (`VER-54`, `VER-82`) is waiting on an entry here, and an entry here that
+> other: a row that closes by a decision (`VER-54`) is waiting on an entry here, and an entry here that
 > gates no row is a question nobody is blocked by.
 
 Status: Accepted. Normative data: `packages/schema/open-decisions.json`,
@@ -24,8 +24,8 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§9 names the assertio
 
 - The argument for each question: why it is genuinely open rather than merely unfinished, and what a reader would be
   lied to about if Phase 1 had invented an answer.
-- The grouping of the 37 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
-  pile, and so the 13 `contract` questions do not look as expensive as the 6 `adr` ones.
+- The grouping of the 36 entries into the kinds of thing that blocks them — so that "open" is not one undifferentiated
+  pile, and so the 12 `contract` questions do not look as expensive as the 6 `adr` ones.
 - The tie backwards: which `VER-NN` rows and which `COMP-NN` rows stop moving until an entry here is answered.
 
 **Refuses.**
@@ -72,7 +72,7 @@ is worth stating precisely.
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 61 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 60 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -97,19 +97,19 @@ costs to answer:
 | Value | Count | What closing it looks like | Why it is not interchangeable with the others |
 |---|---|---|---|
 | `product` | 14 | a screen, a sentence, or a refusal the user sees — written into `docs/architecture/37-ui-architecture.md` and the command docs | no measurement can decide what the user should be told; a schema field cannot make the choice less arbitrary |
-| `contract` | 15 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
+| `contract` | 14 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
 | `adr` | 5 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
 | `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 2 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-14 of the 38 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+14 of the 37 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
-15 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
+14 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without waiting on a
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
-`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 22 entries gate exactly 2 and 13 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
+`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 22 entries gate exactly 2 and 12 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 Two questions are cited by four or more sites each — `ODEC-15` (the built-in sync secret, five) and `ODEC-01`
@@ -287,7 +287,6 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-35` | how the sender identity crosses hop 2, and what the local pipe's message schema is | `adr` | `VER-77` |
 | `ODEC-36` | which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `contract` | `VER-78`, `VER-88` |
 | `ODEC-37` | residual core-routing predicate semantics after measuring the four byte spellings; inversion and protocol-specific matches | `upstream` | `VER-28`, `VER-78` |
-| `ODEC-41` | which artefact carries the pipe half of the version negotiation — a field on the event that writes the browser half down, a declared shape for the diagnostics section, or nothing | `contract` | `VER-82` |
 | `ODEC-42` | which artefact carries the egress probe's endpoint and the expected public address it must answer — a settings field, a per-server field, or a probe document of its own | `contract` | `VER-84` |
 | `ODEC-43` | which code answers a request whose args violate the call contract, for the thirteen of nineteen commands that declare no `BadRequest` | `contract` | `VER-85` |
 
@@ -312,17 +311,15 @@ unfinished half: that question was answered by writing two floors into
 §6 justifies the two-process split with a risk — the extension is replaced on the browser's schedule and the connector
 on the user's — and closes it with a promise: the negotiation result *must* be written down in the connector log and
 surfaced in `diagnostics.get`. The overlap that sentence describes is the pipe's, the `v` field every frame carries, and
-the contract now says there are two negotiated windows, refused by one `VersionMismatch` whose own `meaning` in
-`packages/schema/protocol/error-taxonomy.json#/codes` states that "today the window that is negotiated is the protocol
-one". Everything that could write it down names only that one: `connector.connected` in
-`packages/schema/observability.json#/events`, whose `why` cites doc 21 §6 by line and calls itself the event that writes
-it down, is `additionalProperties: false` over `protocolVersion`, `capabilities` and `adoptedExisting`; the `versions`
-entry of `#/diagnosticsSections` lists five things and one of them is a version number; `#/export/footer/fields` names
-`protocolVersion` once among ten. Unlike `ODEC-35`, which asks what the pipe *is*, this asks where its outcome rests,
-and all three answers are again a field and two sentences — which is why it is `contract` and why `VER-82` is `no-code`
-with owner `contracts` rather than a connector row. What this entry deliberately does not ask is whether any record gets
+the contract says there are two negotiated windows, refused by one `VersionMismatch`. It is answered on 2026-11-07 by
+its own first option: `connector.connected`'s payload gained the required `pipeVersion` beside `protocolVersion` —
+the `v` of every frame the connector emits, the `pipe` floor the framing contract declares — and the `versions`
+section's `contains` and the export footer name it beside the protocol number, so the recorded handshake fixture
+carries the field and a support bundle can tell which side of the pipe refused. The id is retired in
+`packages/schema/open-decisions.json#/retired`; what this entry deliberately never asked is whether any record gets
 written at all, because nothing in `connector/**` imports a logging package and doc 36 §16's fifth open item already
-says so; a decision here cannot make that true.
+says so — a decision here still cannot make that true, and the labelled row in doc 36 §14 now reads Verified as data
+with the runtime half left where the fifth open item holds it.
 
 `ODEC-42` (where the egress probe's endpoint and its expected answer live) and `ODEC-43` (which code answers a
 malformed request to a command that declares no `BadRequest`) are the two newest, and both were found by writing
@@ -463,14 +460,14 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 38 questions, 61 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 37 questions, 60 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it -- and
    since this document's §3 table read `contract` 16 against a data of 15 for one commit, the run now reads the
    document's own sentences too, the way doc 39 §11 has done since it caught three stale distributions there.
 2. Every question gates at least one row. An entry that blocks nothing is a question the architecture does not need
    answered yet, and belongs in a note rather than the register.
-3. Two rows close by a decision — `VER-54` and `VER-82` — and each is named
-   here (`ODEC-10`, `ODEC-41`); four more closed the same way on 2026-11-07 and left both
+3. One row closes by a decision — `VER-54` — and it is named
+   here (`ODEC-10`); five more closed the same way on 2026-11-07 and left both
    lists — `VER-81` on `ODEC-40`, answered by the field its first option asked for; `VER-61` on `ODEC-33`,
    answered by the ADR its remaining option required; and `VER-80` on `ODEC-39`, answered by the frame
    carrying the intent and by the per-user layout that names the two directories and the file.

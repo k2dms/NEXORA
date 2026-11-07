@@ -198,14 +198,14 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `198` labelled lines over `44` documents partitioned into `76` live rows — the issued range is
-`VER-01…VER-88`, and `12` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
-sites over `16` documents partitioned into `38` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
-`ODEC-40`, `ODEC-33`, `ODEC-39` and `ODEC-38`
+The queue is `197` labelled lines over `44` documents partitioned into `75` live rows — the issued range is
+`VER-01…VER-88`, and `13` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `60` deferral
+sites over `15` documents partitioned into `37` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
+`ODEC-40`, `ODEC-33`, `ODEC-39`, `ODEC-38` and `ODEC-41`
 now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 15, `adr` 5, `measurement` 2, `upstream` 2), three options — 37 of the 38,
+(`product` 14, `contract` 14, `adr` 5, `measurement` 2, `upstream` 2), three options — 36 of the 37,
 with `ODEC-35` the one entry that carries a fourth, recording the reading ADR-0004 rule 3 already excludes rather than
 leaving it unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
@@ -594,6 +594,12 @@ carries its own address too. Eight line citations
 across six documents and one ADR were re-anchored with their claims re-read — doc 30's §4 grew a sentence where the
 rule landed — and two of them had to move past the claim to the line that names the citing document, which is the
 fifth pass's own rule and not this slice's preference.
+§4.40 moves the set a thirty-fifth time — **2310 / 595 / 1589**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of 7c836cd: doc 36 `0 / -4 / -2`, the pointers
+the deleted open item had been carrying into the framing floors, the taxonomy and the observability paths, and the
+two names its answer no longer cites, and doc 40 `0 / -1 / 0`, the pointer its retired entry's argument lost when
+the question became an answer, and this file `0 / +1 / 0`, the pointer into the framing floors its own record names. The path:line figure does not move for the sixth closure running: nothing under `connector/**` or `packages/**`
+was edited, and a closure by decision cites data, not lines.
 the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
 citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
 
@@ -2982,6 +2988,38 @@ supervisor is still built only by tests, and `main.go` still registers nothing t
 
 ---
 
+---
+
+### 4.40 The pipe half is written down — `ODEC-41` answered by its first option, and the support bundle can name both floors (2026-11-07)
+
+**What the decision is.** The register's first option: `connector.connected`'s payload gained the required
+`pipeVersion` beside `protocolVersion` — the `v` of every frame the connector emits, the `pipe` floor
+`packages/schema/protocol/framing.json#/versionFloors` declares — and the two sentences the option said had to
+follow: the `versions` section's `contains` names both numbers, and the export footer lists `pipeVersion` beside
+`protocolVersion`. The recorded handshake fixture carries the field, so the corpus exercises the answer it made
+possible, and doc 21 §6's promise keeps its one-sentence form: the negotiation result is written down, and a support
+bundle can now tell "your extension is too old" from "your connector binary is too old". The cost the option text
+named honestly is paid where it was declared: a new field on a wire-visible closed payload, which an older
+subscriber meets as a key its copy of the contract never declared — the same breaking change every second floor
+made, and the reason the field is a negotiation fact rather than a cosmetic one.
+
+**What closed, and what the slice does not claim.** `VER-82` and `ODEC-41` retired with tombstones — the register is
+37 entries over 60 sites in 15 documents, the queue 75 rows with thirteen tombstones, and `contract` is at fourteen.
+The labelled row in doc 36 §14 reads Verified as data now, its runtime half staying exactly where it was: §16's
+fifth open item, which says plainly that no record is written at all while nothing under `connector/**` imports a
+logging package — a decision cannot make that true, and this one does not pretend to. Doc 36 §16 lost its sixth
+open item, the deferral site the entry was born from, and §4.39's ledger entry gains the pointer arithmetic.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1230 checks** — the recorded-frame assertion caught
+the fixture before the schema admitted the field, and admits it now that both moved. `node tools/check-doc-evidence.mjs`
+→ green; §4.4's final ledger paragraph has the set and the per-file deltas. `node tools/check-no-secrets.mjs` →
+**496 files**, unchanged. ADR shape, layout guards and the legacy backup check → green. `go -C connector test -count=1 ./...`
+→ thirteen `ok` lines — no Go file moved — `gofmt -l connector` empty, `go -C connector vet ./...` silent. No row
+asks about the field's runtime emission beyond the fifth open item that already owns it, and the honest state of the
+queue is one entry shorter on both sides.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -3066,7 +3104,7 @@ supervisor is still built only by tests, and `main.go` still registers nothing t
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2310 `path:line`, 599 pointers, 1591 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2310 `path:line`, 595 pointers, 1589 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
@@ -3131,8 +3169,8 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor. Next: the
-pipe half of the negotiation (ODEC-41, a field and two sentences), then the hash-subject decision (ODEC-36, which
-also opens the `config.apply` registration its `VER-88` gates), then host transport (ODEC-35). ODEC-37 is narrowed to
+hash-subject decision (ODEC-36, which also opens the `config.apply` registration its `VER-88` gates), then host
+transport (ODEC-35). ODEC-37 is narrowed to
 residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.
@@ -3816,8 +3854,8 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 198 labelled lines over 44 documents, the queue is 76 rows with twelve tombstones, and the register is 38
-questions over 61 sites with five retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 197 labelled lines over 44 documents, the queue is 75 rows with thirteen tombstones, and the register is 37
+questions over 60 sites with six retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a

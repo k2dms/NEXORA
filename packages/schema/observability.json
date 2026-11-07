@@ -350,14 +350,20 @@
       "payload": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["protocolVersion"],
+        "required": ["protocolVersion", "pipeVersion"],
         "properties": {
           "protocolVersion": { "type": "integer", "minimum": 1, "maximum": 255 },
+          "pipeVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255,
+            "description": "The frame format version this Connector speaks -- the `v` of every frame it emits and the `pipe` floor `packages/schema/protocol/framing.json#/versionFloors` declares. The pipe half of the negotiation, written down beside the protocol half, which is the answer ODEC-41 gave the promise docs/architecture/21-system-context.md section 6 makes: a support bundle can now tell 'your extension is too old' from 'your connector binary is too old'."
+          },
           "capabilities": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "maxLength": 40 } },
           "adoptedExisting": { "type": "boolean", "default": false }
         }
       },
-      "why": "docs/architecture/21-system-context.md:114 requires the negotiation result to be written down in the connector log and surfaced in diagnostics.get; this is the event that writes it down. 'adoptedExisting' distinguishes a fresh spawn from an adopt, which is the difference between 'the Connector was already running' and 'it just came up', and the shim is allowed to do both.",
+      "why": "docs/architecture/21-system-context.md:114 requires the negotiation result to be written down in the connector log and surfaced in diagnostics.get; this is the event that writes it down. Since 2026-11-07 the payload carries `pipeVersion` beside `protocolVersion`, so the event writes both negotiated halves down, not only the browser-side window. 'adoptedExisting' distinguishes a fresh spawn from an adopt, which is the difference between 'the Connector was already running' and 'it just came up', and the shim is allowed to do both.",
       "note": "capabilities here is the hello announcement, so it is the same set protocol/compatibility-rules.json declares and the handshake fixture records; the parity of those two is already asserted in scripts/verify.mjs."
     },
     {
@@ -426,7 +432,7 @@
     { "name": "config-snapshot", "plane": "connector", "store": "compiled-config", "defaultIncluded": true, "maxBytes": 131072, "contains": "config.snapshot's maskedConfig: structure, tags, hashes, no credential material", "emptyMeans": "never applied; a Core that is running with no snapshot is a contradiction that the section itself reports" },
     { "name": "health", "plane": "connector", "store": "health-history", "defaultIncluded": true, "maxBytes": 65536, "contains": "one row per server: state, last probe time, latency, failure streak", "emptyMeans": "no probe has run; health answers unknown, and a UI that shows green here is lying (docs/verification/live-matrix.md LIVE-04)" },
     { "name": "inbounds", "plane": "core", "store": "applied-state", "defaultIncluded": false, "maxBytes": 32768, "contains": "port, protocol, listen address per inbound -- the runtime half of ADR-0006", "emptyMeans": "Core is not running", "whyDefaultExcluded": "it is the section with the most chance of surprising a user: a loopback bind is the rule, and seeing the list is how you check it" },
-    { "name": "versions", "plane": "connector", "store": "applied-state", "defaultIncluded": true, "maxBytes": 8192, "contains": "extension version, Connector version, Core version, protocolVersion, negotiated capabilities", "emptyMeans": "impossible; a Connector that cannot answer this has nothing to say" },
+    { "name": "versions", "plane": "connector", "store": "applied-state", "defaultIncluded": true, "maxBytes": 8192, "contains": "extension version, Connector version, Core version, protocolVersion, pipeVersion, negotiated capabilities", "emptyMeans": "impossible; a Connector that cannot answer this has nothing to say" },
     { "name": "pins", "plane": "connector", "store": "connector-pin-mirror", "defaultIncluded": false, "maxBytes": 32768, "contains": "the pin document mirror, the install channel, verified hashes, installRoot", "emptyMeans": "no pin has been accepted, which means Core cannot start (docs/architecture/33-binary-integrity.md)" },
     { "name": "routing-decisions", "plane": "connector", "store": "diagnostics-ring", "defaultIncluded": false, "maxBytes": 65536, "contains": "sampled routing.decision records: rank, outcome, serverTag, ruleIndex", "emptyMeans": "sampling produced nothing, or traffic never reached Core", "neverIn": "destination host, URL, SNI, client address" },
     { "name": "failure-policy", "plane": "browser", "store": "extension-log", "defaultIncluded": false, "maxBytes": 32768, "contains": "the policy in force, the port the browser was pointed at, and the decision history", "emptyMeans": "no failure policy has ever fired", "answers": "docs/architecture/30-failure-policy.md §8 asks which block port is in force and why; inForceBlockPort is that answer" }
@@ -508,7 +514,7 @@
     "shape": "JSONL, one record per line, in the order sink -> section -> seq",
     "maxBytes": 4194304,
     "footer": {
-      "fields": ["generatedAt", "extensionVersion", "connectorVersion", "coreVersion", "protocolVersion", "appliedConfigHash", "masked.fieldsReplaced", "masked.fingerprints", "truncated", "sections with their state"],
+      "fields": ["generatedAt", "extensionVersion", "connectorVersion", "coreVersion", "protocolVersion", "pipeVersion", "appliedConfigHash", "masked.fieldsReplaced", "masked.fingerprints", "truncated", "sections with their state"],
       "why": "The footer is what makes an exported file answerable. A pile of records cannot say which build produced it, whether anything was masked, or whether a section was missing rather than empty -- and diagnostics.get already reports those four facts, so the file that carries its output carries them too (protocol/commands/diagnostics.get.json#/result)."
     },
     "fingerprints": "diagnostics.get's masked.fingerprints pattern (^fp-[0-9a-f]{12}$) is what lets support say 'the UUID you sent is not the one on file' without either value appearing. It is in the export footer for the same reason it is in the response: without it, the only way to check a user's paste is to ask for the secret.",
