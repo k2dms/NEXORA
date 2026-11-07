@@ -198,14 +198,14 @@ single-answer. `packages/schema/README.md` explains the package and the rules it
 Seven of these files are *lists* — the repo's "data home" rule puts the enumeration in JSON and the argument in the
 architecture document: `protocol/data-ownership.json` (34), `migrations.json` (35), `observability.json` (36),
 `presentation.json` (37), `compatibility.json` (38), **`verification.json` (39)** and **`open-decisions.json` (40)**.
-The queue is `199` labelled lines over `44` documents partitioned into `77` live rows — the issued range is
-`VER-01…VER-88`, and `11` of those ids now sit in `verification.json#/retired` — `26` vocabulary
-sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `62` deferral
-sites over `16` documents partitioned into `39` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
-`ODEC-40`, `ODEC-33` and `ODEC-39`
+The queue is `198` labelled lines over `44` documents partitioned into `76` live rows — the issued range is
+`VER-01…VER-88`, and `12` of those ids now sit in `verification.json#/retired` — `26` vocabulary
+sentences and `24` live rows inherited by id from `docs/verification/live-matrix.md`. The register is `61` deferral
+sites over `16` documents partitioned into `38` entries — its issued range is `ODEC-01…ODEC-41`, and `ODEC-02`,
+`ODEC-40`, `ODEC-33`, `ODEC-39` and `ODEC-38`
 now sit in `open-decisions.json#/retired`, because the queue's rule that an id is issued once was extended to the
 register in the same sitting as the row that closed it — each naming who can answer it
-(`product` 14, `contract` 16, `adr` 5, `measurement` 2, `upstream` 2), three options — 37 of the 39,
+(`product` 14, `contract` 15, `adr` 5, `measurement` 2, `upstream` 2), three options — 37 of the 38,
 with `ODEC-35` the one entry that carries a fourth, recording the reading ADR-0004 rule 3 already excludes rather than
 leaving it unwritten — and the `VER`/`COMP` rows it
 blocks. Anchors are verbatim substrings, never line numbers; the harness re-reads `docs/**` on every run and fails if
@@ -583,6 +583,17 @@ were re-anchored with their claims re-read — the command doc grew sixteen line
 and doc 35's cite into doc 34 §12 was found shifted by the layout paragraph and re-aimed by the guard's own
 wants-the-claim check, which is the fifth pass earning its keep in the same sitting it arrived. `PROJECT-STATE.md`
 moves `-1 / 0 / -1`, and both subtractions are the same edit: the queue paragraph above caught up with the data,
+the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
+citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
+§4.39 moves the set a thirty-fourth time — **2310 / 599 / 1591**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of c39537c: doc 30 `0 / +1 / -1`, the pointer
+into the schema field the answer added arriving as the full path and the register's name leaving with the row that
+cited it, doc 40 `0 / 0 / -1`, the name its retired entry's argument no longer cites, and this file
+`0 / +1 / 0`, the pointer into the schema field the record itself names — a slice whose record is its own artefact
+carries its own address too. Eight line citations
+across six documents and one ADR were re-anchored with their claims re-read — doc 30's §4 grew a sentence where the
+rule landed — and two of them had to move past the claim to the line that names the citing document, which is the
+fifth pass's own rule and not this slice's preference.
 the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
 citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
 
@@ -2928,6 +2939,49 @@ the binary, and the compile and apply packages ok again under `NEXORA_XRAY_BIN`;
 
 ---
 
+---
+
+### 4.39 The ladder's budget is an episode's — `ODEC-38` answered by its own second option, and the crash loop that used to restart forever is bounded (2026-11-07)
+
+**What the decision is.** The register's second option is now the contract and the behaviour:
+`packages/schema/failure-policy.schema.json#/properties/coreDeath/properties/stabilityWindowSeconds` — default 300,
+floor 1, ceiling 86 400 — states how long a restarted Core must stay up before its next unexpected exit starts a new
+episode with a fresh attempt budget. A death inside the window continues the current episode, the ladder resumes at
+the attempt it stopped on, and a spent episode's next death re-publishes the block without spawning: permanent until
+the user acts — a `config.apply`, a `core.start`, or lifting the block per doc 30 §12. The hibernation reading the
+third option worried about is answered by the same field: a machine that slept past the window already has a fresh
+budget waiting, because the window measures the child's own life, not the wall clock since the last attempt.
+
+**What the supervisor enforces.** `watch` re-arms the budget only for a child that survived
+`Death.Stability`, hands `ladderRun` the attempts the episode already spent otherwise, and the spent-episode death
+re-publishes `core.blocked` instead of spawning — so the crash loop that re-armed itself every minute now spends one
+budget and stops. The two tests the answer gained measure both halves: `TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut`
+kills each recovered child inside the window and counts the spawns — three children for a two-attempt policy, then
+the verdict and silence — and `TestAStableCoreEarnsAFreshBudget` gives every child a life past the window and
+counts the re-arms. `Death` gained the field with a constructor refusal for attempts without a window, and the
+compiler's failure-policy mirror carries the field so an intent document the schema admits is not refused as an
+invented one.
+
+**The corpus around the answer.** The labelled row in doc 30 §12's table became a plain `Verified` and the
+register's name left it — that is `marker.counted` 199 → 198 and `citation.counted` 62 → 61 in one sentence — and
+doc 30 §4 states the rule where the paragraph that said nothing used to be. Eight line citations across docs 32, 33,
+34, 35, 36 and ADR-0005 were re-anchored with their claims re-read, two of them past the claim to the line that
+names the citing document, which is the claims pass's own standard. `ODEC-38` and `VER-79` retired with tombstones;
+the register is 38 entries over 61 sites, the queue 76 rows with twelve tombstones, and no new row was born: the
+field is data and code the queue already owned, not a gap it found.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1230 checks** — the schema gained a bounded field and
+the example carries it. `node tools/check-doc-evidence.mjs` → green; §4.4's final ledger paragraph has the set and
+the per-file deltas. `node tools/check-no-secrets.mjs` → **496 files**, unchanged — this slice adds no file. ADR
+shape, layout guards and the legacy backup check → green. `go -C connector test -count=1 ./...` → **thirteen `ok`
+lines**, the supervisor's suite now measuring the episode rule it enforces; `gofmt -l connector` empty,
+`go -C connector vet ./...` silent. What this slice does not claim: a run of the ladder against a real Core with a
+real crash loop — the fake agent is the child these tests observe, and the live rows that ask for the session are
+still `SKIPPED` — and no production wiring reads the field yet, which is the same undecided seam as before: the
+supervisor is still built only by tests, and `main.go` still registers nothing that needs it.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -3012,7 +3066,7 @@ the binary, and the compile and apply packages ok again under `NEXORA_XRAY_BIN`;
   the `select {}` child that Go's deadlock detector kills, which §4.20 measures and §4.19's tests never could see.
   §4.21 moves no `ok` line either — one more test function inside `internal/dispatch`, and the only change a
   client can see is a sentence.
-- `node tools/check-doc-evidence.mjs` → **green** (2311 `path:line`, 597 pointers, 1594 doc-and-script
+- `node tools/check-doc-evidence.mjs` → **green** (2310 `path:line`, 599 pointers, 1591 doc-and-script
   names, 68 harness assertion labels and, new with §4.31, 52 `Cited by` rows read by the claims pass — the fourth
   figure is new with §4.22 and no GitHub runner has printed either of the last two yet;
   `PLANNED_DOCS` empty; §4.4 has the same figures and the same provenance for each change in them. These are not
@@ -3073,10 +3127,12 @@ the binary, and the compile and apply packages ok again under `NEXORA_XRAY_BIN`;
 
 **Current queue, 2026-11-07 (supersedes historical sequencing below):** §4.36 supplies real Xray config and
 loopback routing probes, so a missing local Core binary is no longer a blocker; §4.37 exercises the complete
-compiled two-server VLESS path on loopback, with server selection proven by the source address the target saw; and
-§4.38 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
-compiled config keeps the stable name doc 27 §8 renames over. Next: the hash-subject decision (ODEC-36, which also
-opens the `config.apply` registration its `VER-88` gates), then host transport (ODEC-35). ODEC-37 is narrowed to
+compiled two-server VLESS path on loopback, with server selection proven by the source address the target saw; §4.38
+answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
+compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
+budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor. Next: the
+pipe half of the negotiation (ODEC-41, a field and two sentences), then the hash-subject decision (ODEC-36, which
+also opens the `config.apply` registration its `VER-88` gates), then host transport (ODEC-35). ODEC-37 is narrowed to
 residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.
@@ -3760,8 +3816,8 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 199 labelled lines over 44 documents, the queue is 77 rows with eleven tombstones, and the register is 39
-questions over 62 sites with four retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 198 labelled lines over 44 documents, the queue is 76 rows with twelve tombstones, and the register is 38
+questions over 61 sites with five retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a

@@ -53,7 +53,7 @@ no host and no pipe (`docs/PROJECT-STATE.md` §4.6) — so the shape is a decisi
 Cheaper: an options-page reload or a service-worker eviction stops being a connectivity event; the host
 binary can be reinstalled or replaced during an upgrade without dropping tunnels; the connector can hold a
 warm Core, a health history and a subscription cache that survive UI churn; and the failure planes stay
-distinct, which is what lets `packages/schema/failure-policy.schema.json:40` give `serviceTeardown` a bounded
+distinct, which is what lets `packages/schema/failure-policy.schema.json:70` give `serviceTeardown` a bounded
 grace window while `coreDeath` blocks immediately.
 
 Harder: two artifacts to build, pin, install and version; one more crash surface (the connector dying is now
@@ -92,7 +92,7 @@ reason this ADR exists: folding host duties into the connector "temporarily".
 - `omega-target-chromium-extension/src/coffee/omega_target_web.coffee:41-78` — VERIFIED — the retry ladder
   that exists because an in-browser counterpart goes away; the precedent for lifetime asymmetry, not for the
   mechanism.
-- `packages/schema/failure-policy.schema.json:40` — VERIFIED — `serviceTeardown` is described as "the
+- `packages/schema/failure-policy.schema.json:70` — VERIFIED — `serviceTeardown` is described as "the
   Connector process itself is gone (host shim disconnected…)", i.e. the contract already assumes two
   processes.
 - `packages/schema/protocol/commands/core.start.json:4` — VERIFIED — converge-to-running semantics that make

@@ -58,7 +58,7 @@ Each of these was a forward reference in another document. Each now has a sectio
 | `docs/architecture/21-system-context.md:134` | "the ownership table is `34-data-split.md`" — §8 of that document is deliberately compressed | §6, §7 |
 | `docs/architecture/22-component-contracts.md:348` | "removing the Connector leaves the profiles intact and degrades to NEXORA Lite" | §11 |
 | `docs/architecture/26-command-surface.md:230` | "the Connector never learns which tab is active" — where is the browser-plane data kept out of reach? | §10 |
-| `docs/architecture/30-failure-policy.md:325` | the grace deadline is "arithmetic on data the Connector already persists" — no second copy | §10, row 5 |
+| `docs/architecture/30-failure-policy.md:330` | the grace deadline is "arithmetic on data the Connector already persists" — no second copy | §10, row 5 |
 | `docs/architecture/31-security-model.md:367` | "`unlimitedStorage` … removal is a data-split consequence" | §9 |
 | `docs/architecture/32-secrets-keystore-masking.md:38` | "which storage key holds which byte" | §5–§7 |
 | `docs/architecture/24-options-envelope-compat.md:229` | the envelope's compatibility half points here for placement, not for shape | §6, §8 |
@@ -335,7 +335,7 @@ Forbidden, each with the mechanism that makes it a shape error rather than a rev
 5. **A second copy of observed state.** The grace deadline is arithmetic on `lastExit` plus the policy numbers
    (`docs/architecture/30-failure-policy.md` §11, `packages/schema/protocol/commands/core.status.json#/result/properties/lastExit`)
    — no envelope key, no migration, nothing to fall out of agreement. This row is the one
-   `docs/architecture/30-failure-policy.md:318` asked this document to own.
+   `docs/architecture/30-failure-policy.md:323` asked this document to own.
 6. **A secret in a log line, a `traceId`, or a diagnostics section** — sink masking with a redaction table built
    from live keystore contents (`docs/architecture/32-secrets-keystore-masking.md` §8), and
    `packages/schema/protocol/framing.json#/nonGoals` for the trace case.

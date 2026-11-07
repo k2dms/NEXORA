@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 199
+    "counted": 198
   },
   "states": {
     "values": ["no-code", "no-check", "no-run", "no-fixture", "needs-human"],
@@ -154,6 +154,12 @@
         "closed": "2026-11-06",
         "was": "two version floors the design said were independent and one number that said so",
         "artefact": "packages/schema/protocol/framing.json#/minPipeVersion, declared beside #/versionFloors as the second of two floors -- `protocol` over protocolVersion and minCompatibleProtocolVersion, negotiated in connector.hello, and `pipe` over frameFormatVersion and minPipeVersion, carried by the `v` field every frame already bears -- refused by the one code `VersionMismatch`, because a second code is breaking for a client that switches exhaustively (docs/architecture/25-native-messaging-protocol.md §7) and which floor failed is a message, not a name. The new harness assertion reads the shape rather than the values: four distinct numbers, each floor at or below the version it floors, the refusal code in the taxonomy. The question it answers is `ODEC-02`, decided by the contract addition its own first option named; the sentence that anchored it became a `Verified: YES` in docs/architecture/21-system-context.md §12. Declarative on purpose: `connector/internal/contract` now projects MinPipeVersion and its test refuses a floor above the version it floors, but nothing compares a frame's `v` to it yet, and docs/architecture/25-native-messaging-protocol.md §1 says that instead of leaving the number queued"
+      },
+      {
+        "id": "VER-79",
+        "closed": "2026-11-07",
+        "was": "the ladder spends its attempts per death, so a crash-looping Core is handed a fresh budget forever: no field bounded the deaths and none stated a stability window",
+        "artefact": "ODEC-38 answered by its own second option: `coreDeath.stabilityWindowSeconds` in `packages/schema/failure-policy.schema.json` (default 300, floor 1, ceiling 86 400) and the rule it states -- a child that survived the window died into a fresh budget, one that died inside it resumes the ladder at the attempt it stopped on, and a spent episode's next death re-publishes the block without spawning. `connector/internal/supervisor` enforces exactly that: `watch` re-arms only past the window and hands `ladderRun` the attempts already spent, and the two tests the answer gained measure the bounded crash loop and the stable re-arm. The labelled row it anchored became a plain `Verified` in doc 30 §12's table"
       },
       {
         "id": "VER-80",
@@ -935,15 +941,6 @@
       "closesBy": { "kind": "assertion", "ref": "golden configs compile byte-for-byte and configHash is the sha256 of the bytes the register names" },
       "at": [{ "doc": "docs/architecture/27-config-compilation-pipeline.md", "anchor": "Which byte string `configHash` covers" }],
       "why": "This row answers the §9 invariant 'Which byte string `configHash` covers — the handle-bearing document or the materialized bytes', split on purpose from `VER-28`: `VER-28` owns the labelled golden-fixtures line that carries the byte-determinism claim, and this row owns the pipeline's own closing statement that the hash is over 'the exact bytes written' while two byte strings exist by the time a config is on disk (`docs/architecture/27-config-compilation-pipeline.md` §3 item 6, `docs/architecture/22-component-contracts.md` §9, `docs/architecture/23-unified-server-model.md` §9). It has two halves a golden config alone cannot settle. The determinism half has a producer: stages 1 to 6 of `docs/architecture/27-config-compilation-pipeline.md` §2 exist in `connector/internal/compile`, `golden_test.go` compares four compiled configs byte-for-byte against `connector/testdata/config/`, and `emit_test.go` shows the order comes from sorting rather than from ranging a map. `VER-28` retains two cases: shape C's unresolved `headersRef` and fail-closed, whose block belongs in `chrome.proxy` rather than distinct Xray bytes. The four materialized configs were also accepted by Xray 24.11.11 through `connector/internal/apply/drive_test.go`, with an invalid-port negative control rejected; that acceptance establishes neither runtime routing outcomes nor closure of `ODEC-37`. The subject half is not a code problem at all: `config.apply` returns one `^[0-9a-f]{64}$` value with no description (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`), and nothing says whether it hashes the handle-bearing document or the materialized bytes, so a golden file can be byte-stable and still hash the wrong string. Which bytes the hash covers is `ODEC-36`, and `ODEC-36` gates this row: no assertion can name the byte string until the register says which one it is."
-    },
-    {
-      "id": "VER-79",
-      "subject": "the restart ladder spends its attempts per death, so a Core that dies again straight after a successful restart is handed a fresh budget forever: no document bounds consecutive deaths and none states a stability window after which the block is permanent",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": { "kind": "decision", "ref": "docs/architecture/40-open-decisions.md `ODEC-38`, read with `docs/architecture/30-failure-policy.md` §4" },
-      "at": [{ "doc": "docs/architecture/30-failure-policy.md", "anchor": "one death and one fresh budget" }],
-      "why": "`connector/internal/supervisor` re-arms the ladder on every observed unexpected exit, because doc 30 §4 counts attempts inside one death and says nothing about the deaths after the recovery. A test would need the rule before it could assert it: with the per-death reading written down, a crash-looping Core restarts every backoff cycle for as long as the Connector lives, the block is lifted and re-imposed each time, and `server.test`'s probes resume between the two. The corpus admits two other readings -- a total budget for the session, and a Core that stayed up for some window before it died starting a new one -- and they cannot be distinguished from `failure-policy.schema.json`, which has one `restartAttempts` integer and no denominator. The component the row is about is that denominator."
     },
 {
       "id": "VER-82",

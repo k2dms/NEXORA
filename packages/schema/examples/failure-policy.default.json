@@ -3,7 +3,12 @@
   "coreDeath": {
     "action": "block",
     "restartAttempts": 3,
-    "restartBackoffSeconds": [1, 5, 30],
+    "restartBackoffSeconds": [
+      1,
+      5,
+      30
+    ],
+    "stabilityWindowSeconds": 300,
     "notify": true
   },
   "serviceTeardown": {
@@ -19,8 +24,15 @@
   "block": {
     "scheme": "socks5",
     "host": "127.0.0.1",
-    "portRange": { "min": 20900, "max": 20999 },
+    "portRange": {
+      "min": 20900,
+      "max": 20999
+    },
     "assertClosed": true
   },
-  "forbiddenOutcomes": ["direct", "system", "clear-proxy-settings"]
+  "forbiddenOutcomes": [
+    "direct",
+    "system",
+    "clear-proxy-settings"
+  ]
 }

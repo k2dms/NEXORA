@@ -60,6 +60,12 @@ type Death struct {
 	Attempts int
 	Backoff  []time.Duration
 
+	// Stability is `coreDeath.stabilityWindowSeconds` (ODEC-38's field): how long a restarted Core must stay up
+	// before its next unexpected exit starts a new episode with a fresh attempt budget. A death inside the
+	// window continues the current episode, and when the episode's attempts are spent the block is permanent
+	// until the user acts. Required when Attempts > 0; a budget with no denominator is the bug this field closes.
+	Stability time.Duration
+
 	// Notify gates the ladder's noise and not the verdict, which is that field's own description in the schema
 	// and doc 30 §4's point that a terminal block is surfaced whatever it says.
 	Notify bool
@@ -241,6 +247,9 @@ func New(cfg Config) (*Supervisor, error) {
 	if cfg.Death.Attempts > 0 && len(cfg.Death.Backoff) == 0 {
 		return nil, errors.New("supervisor: attempts without a wait between them; restartBackoffSeconds is minItems 1 for that reason")
 	}
+	if cfg.Death.Attempts > 0 && cfg.Death.Stability <= 0 {
+		return nil, errors.New("supervisor: attempts without a stability window; coreDeath.stabilityWindowSeconds is what makes the budget an episode's and not a per-death renewal (ODEC-38)")
+	}
 	for _, w := range cfg.Death.Backoff {
 		if w < time.Second || w > time.Hour {
 			return nil, fmt.Errorf("supervisor: a backoff step of %s is outside restartBackoffSeconds' 1 to 3600 seconds", w)
@@ -402,14 +411,30 @@ func (s *Supervisor) watch(c *child) {
 	s.mu.Lock()
 	ladderFor := s.want != nil && s.live == nil
 	var hash string
+	var from int
 	if ladderFor {
 		hash = s.want.ConfigHash
+		// ODEC-38's window decides whether this death is a new episode or the current one continuing. A child
+		// that stayed up at least Stability died into a fresh budget; a child that died inside the window hands
+		// the ladder the attempts already spent, and an episode whose budget is gone gets the verdict a second
+		// time -- the block comes back and no attempt runs, because no user action has re-armed it.
+		if s.cfg.Death.Stability > 0 && s.cfg.Now().Sub(c.startedAt) >= s.cfg.Death.Stability {
+			s.attempts = 0
+		}
+		from = s.attempts
+		if from >= s.cfg.Death.Attempts {
+			ladderFor = false
+			s.blocked = true
+		}
 	}
 	s.mu.Unlock()
 	if !ladderFor {
-		return // stopped on request, or a newer child already owns the desired state.
+		if from >= s.cfg.Death.Attempts && s.cfg.Death.Notify {
+			s.publish(Event{Kind: KindBlocked, Hash: c.hash, Attempt: from})
+		}
+		return // stopped on request, a newer child owns the desired state, or the episode is spent.
 	}
-	go s.ladderRun(hash)
+	go s.ladderRun(hash, from)
 }
 
 // recordExit turns one Wait into the record and the event. It is separate from watch because Stop also waits on
@@ -455,12 +480,14 @@ func (s *Supervisor) exitOf(c *child, waitErr error) Exit {
 // ladderRun is doc 30 §4's bounded ladder: no jitter (that section says so explicitly), the policy's own
 // backoff list, and a worst case it tabulates as restartAttempts times core.start's deadline plus the backoff
 // sum. It is converge-to-desired-state, so an extra core.start during it is legal rather than a second spawn.
+// `from` is the attempts the current episode has already spent: ODEC-38's window hands the ladder a budget that
+// outlives one recovery, so a death inside the stability window resumes at the next attempt instead of re-arming.
 //
 // The ordering here is that section's headline decision, not an implementation detail: the block is declared
 // before the first retry, because with Core dead the port the browser points at is already closed so writing a
 // block changes no packet, while it does change an undeclared failure into a dated visible one that
 // connector.health can answer `blocked` for instead of `unknown`.
-func (s *Supervisor) ladderRun(hash string) {
+func (s *Supervisor) ladderRun(hash string, from int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	wait := make(chan struct{})
 	s.mu.Lock()
@@ -496,7 +523,7 @@ func (s *Supervisor) ladderRun(hash string) {
 		}
 	}()
 
-	for attempt = 1; attempt <= s.cfg.Death.Attempts; attempt++ {
+	for attempt = from + 1; attempt <= s.cfg.Death.Attempts; attempt++ {
 		d := s.cfg.Death.Backoff[attempt-1]
 		timer := time.NewTimer(d)
 		select {

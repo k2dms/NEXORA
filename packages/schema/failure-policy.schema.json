@@ -4,7 +4,13 @@
   "title": "NEXORA FailurePolicy",
   "description": "The three distinct failure planes (docs/architecture/30-failure-policy.md). Fail-closed is the default; the block mechanism is a FixedProfile aimed at a CLOSED loopback port, because '+direct' and chrome.proxy.settings.clear() both leak traffic. Schema enforces the one thing that must never be true: no connector-failure path may resolve to DIRECT or SYSTEM -- which is why coreDeath.action and serviceTeardown.then are single-value enums here, why the allOf at the bottom refuses a narrowed forbiddenOutcomes, and why failOpen survives only in $defs/ProfilePolicy under a required confirmToken.",
   "type": "object",
-  "required": ["version", "coreDeath", "serviceTeardown", "extensionLifecycle", "block"],
+  "required": [
+    "version",
+    "coreDeath",
+    "serviceTeardown",
+    "extensionLifecycle",
+    "block"
+  ],
   "additionalProperties": false,
   "properties": {
     "version": {
@@ -14,29 +20,60 @@
     "coreDeath": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["action"],
+      "required": [
+        "action"
+      ],
       "description": "The Xray process exited or stopped responding while the Connector is alive. Highest-severity plane: traffic is still being routed somewhere.",
       "properties": {
         "action": {
-          "enum": ["block"],
+          "enum": [
+            "block"
+          ],
           "default": "block",
           "description": "The global plane has exactly one resolution: block. ADR-0009 rule 2 forbids a global fail-open -- 'a product whose default is fail-open has no failure policy' -- so 'failOpen' lives only in #/$defs/ProfilePolicy, where the if/then there makes the user's confirmToken required. Spelled as a single-value enum rather than a const so that a rejecting validator reports the allowed set instead of a value mismatch."
         },
-        "restartAttempts": { "type": "integer", "minimum": 0, "maximum": 10, "default": 3 },
+        "restartAttempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
         "restartBackoffSeconds": {
           "type": "array",
           "minItems": 1,
           "maxItems": 10,
-          "items": { "type": "integer", "minimum": 1, "maximum": 3600 },
-          "default": [1, 5, 30]
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600
+          },
+          "default": [
+            1,
+            5,
+            30
+          ]
         },
-        "notify": { "type": "boolean", "default": true, "description": "Gates the restart-ladder noise, not the verdict. The terminal blocked state is surfaced whatever this says: ADR-0009 rule 7, and settings.proxy.notificationLevel cannot be 'silent' for a block (docs/architecture/30-failure-policy.md section 4)." }
+        "stabilityWindowSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "default": 300,
+          "description": "How long a restarted Core must stay up before its next unexpected exit starts a new episode with a fresh attempt budget. A death inside the window continues the current episode -- the ladder resumes from its next attempt, and when the episode's attempts are spent the block is permanent until the user acts: a config.apply, a core.start, or lifting the block (docs/architecture/30-failure-policy.md section 12). The field ODEC-38 asked for; without it a crash-looping Core is handed a fresh budget on every death and restarts forever."
+        },
+        "notify": {
+          "type": "boolean",
+          "default": true,
+          "description": "Gates the restart-ladder noise, not the verdict. The terminal blocked state is surfaced whatever this says: ADR-0009 rule 7, and settings.proxy.notificationLevel cannot be 'silent' for a block (docs/architecture/30-failure-policy.md section 4)."
+        }
       }
     },
     "serviceTeardown": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["graceSeconds", "then"],
+      "required": [
+        "graceSeconds",
+        "then"
+      ],
       "description": "The Connector process itself is gone (host shim disconnected, machine sleep, upgrade). Different from coreDeath because the Connector may come back and re-apply the same config.",
       "properties": {
         "graceSeconds": {
@@ -46,20 +83,48 @@
           "default": 60,
           "description": "Keep the current chrome.proxy setting while the Connector may come back. This is the only case where leaving the proxy in place is correct, and it is bounded by hardCapSeconds."
         },
-        "then": { "enum": ["block"], "default": "block", "description": "Not 'restore'. A Connector-triggered resolution that hands the browser back its pre-NEXORA setting ends at direct or system egress, which forbiddenOutcomes forbids; 'restore' therefore exists only under extensionLifecycle, where the trigger is the user removing the extension rather than a Connector failing. The field stays an enum of one because the alternative has to remain visible in the contract, not hidden in prose." },
-        "hardCapSeconds": { "type": "integer", "minimum": 1, "maximum": 86400, "default": 3600 }
+        "then": {
+          "enum": [
+            "block"
+          ],
+          "default": "block",
+          "description": "Not 'restore'. A Connector-triggered resolution that hands the browser back its pre-NEXORA setting ends at direct or system egress, which forbiddenOutcomes forbids; 'restore' therefore exists only under extensionLifecycle, where the trigger is the user removing the extension rather than a Connector failing. The field stays an enum of one because the alternative has to remain visible in the contract, not hidden in prose."
+        },
+        "hardCapSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "default": 3600
+        }
       }
     },
     "extensionLifecycle": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["onDisabled", "onUpdated", "onBrowserStart"],
+      "required": [
+        "onDisabled",
+        "onUpdated",
+        "onBrowserStart"
+      ],
       "description": "Events driven by the browser, not by the Connector. Must never depend on the Connector being reachable (docs/audit/06).",
       "properties": {
-        "onDisabled": { "enum": ["restore"], "default": "restore" },
-        "onUpdated": { "enum": ["restore"], "default": "restore" },
+        "onDisabled": {
+          "enum": [
+            "restore"
+          ],
+          "default": "restore"
+        },
+        "onUpdated": {
+          "enum": [
+            "restore"
+          ],
+          "default": "restore"
+        },
         "onBrowserStart": {
-          "enum": ["restore", "reapply"],
+          "enum": [
+            "restore",
+            "reapply"
+          ],
           "default": "reapply",
           "description": "'reapply' is today's startupCheck behaviour and must not regress (docs/audit/06)."
         }
@@ -68,21 +133,49 @@
     "block": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["scheme", "host", "portRange"],
+      "required": [
+        "scheme",
+        "host",
+        "portRange"
+      ],
       "description": "The fail-closed primitive: a chrome.proxy FixedProfile aimed at a port nothing listens on. Chosen over '+direct' and proxy.settings.clear() because both of those leak traffic instead of stopping it (ADR-0009).",
       "properties": {
-        "scheme": { "enum": ["http", "socks5"] },
-        "host": { "enum": ["127.0.0.1", "::1"] },
+        "scheme": {
+          "enum": [
+            "http",
+            "socks5"
+          ]
+        },
+        "host": {
+          "enum": [
+            "127.0.0.1",
+            "::1"
+          ]
+        },
         "portRange": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["min", "max"],
+          "required": [
+            "min",
+            "max"
+          ],
           "properties": {
-            "min": { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "max": { "type": "integer", "minimum": 1, "maximum": 65535 }
+            "min": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
           }
         },
-        "assertClosed": { "type": "boolean", "default": true }
+        "assertClosed": {
+          "type": "boolean",
+          "default": true
+        }
       }
     },
     "forbiddenOutcomes": {
@@ -90,23 +183,40 @@
       "description": "Machine-checkable statement of 'no silent proxy bypass'. scripts/verify.mjs asserts these never appear as a connector-failure resolution, and verification row LIVE-11 asserts it at runtime.",
       "minItems": 2,
       "uniqueItems": true,
-      "items": { "enum": ["direct", "system", "clear-proxy-settings"] },
-      "default": ["direct", "system", "clear-proxy-settings"]
+      "items": {
+        "enum": [
+          "direct",
+          "system",
+          "clear-proxy-settings"
+        ]
+      },
+      "default": [
+        "direct",
+        "system",
+        "clear-proxy-settings"
+      ]
     }
   },
   "$defs": {
     "ProfilePolicy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["coreDeath"],
+      "required": [
+        "coreDeath"
+      ],
       "properties": {
         "coreDeath": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["action"],
+          "required": [
+            "action"
+          ],
           "properties": {
             "action": {
-              "enum": ["block", "failOpen"],
+              "enum": [
+                "block",
+                "failOpen"
+              ],
               "default": "block",
               "description": "Per-profile override. 'failOpen' here does not weaken the global default for other profiles."
             },
@@ -123,14 +233,28 @@
           "if": {
             "properties": {
               "coreDeath": {
-                "required": ["action"],
-                "properties": { "action": { "const": "failOpen" } }
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "const": "failOpen"
+                  }
+                }
               }
             },
-            "required": ["coreDeath"]
+            "required": [
+              "coreDeath"
+            ]
           },
           "then": {
-            "properties": { "coreDeath": { "required": ["confirmToken"] } }
+            "properties": {
+              "coreDeath": {
+                "required": [
+                  "confirmToken"
+                ]
+              }
+            }
           }
         }
       ]
@@ -139,15 +263,33 @@
   "allOf": [
     {
       "description": "ADR-0009 rule 5 is a prohibition, not a preference. minItems alone would let a document name one forbidden outcome and permit the other two, so the set is pinned element by element: a policy that writes forbiddenOutcomes at all must forbid all three. Omitting the key stays legal, because the default is the full set -- which is why these are properties branches rather than required ones.",
-      "properties": { "forbiddenOutcomes": { "contains": { "const": "direct" } } }
+      "properties": {
+        "forbiddenOutcomes": {
+          "contains": {
+            "const": "direct"
+          }
+        }
+      }
     },
     {
       "description": "'system' is the legacy SystemProfile gesture: chrome.proxy.settings.clear() hands the decision to whatever the OS or an enterprise policy says (docs/audit/06-proxy-application.md section 4), which is the same leak wearing a management name.",
-      "properties": { "forbiddenOutcomes": { "contains": { "const": "system" } } }
+      "properties": {
+        "forbiddenOutcomes": {
+          "contains": {
+            "const": "system"
+          }
+        }
+      }
     },
     {
       "description": "clear() as an outcome is forbidden for the same reason. Note that extensionLifecycle.onDisabled = 'restore' is not the same act: there the user removed the extension, the browser plane is not responding to a Connector failure, and the prohibition in this array is scoped to connector-triggered resolutions.",
-      "properties": { "forbiddenOutcomes": { "contains": { "const": "clear-proxy-settings" } } }
+      "properties": {
+        "forbiddenOutcomes": {
+          "contains": {
+            "const": "clear-proxy-settings"
+          }
+        }
+      }
     }
   ]
 }

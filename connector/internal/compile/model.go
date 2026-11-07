@@ -260,7 +260,11 @@ type Failure struct {
 		Action                string `json:"action"`
 		RestartAttempts       int    `json:"restartAttempts"`
 		RestartBackoffSeconds []int  `json:"restartBackoffSeconds"`
-		Notify                bool   `json:"notify"`
+		// StabilityWindowSeconds is ODEC-38's field: the denominator the ladder's budget had been missing. The
+		// supervisor reads it as Death.Stability; this mirror carries it so an intent document the schema admits
+		// is not refused as an invented field.
+		StabilityWindowSeconds int  `json:"stabilityWindowSeconds"`
+		Notify                 bool `json:"notify"`
 	} `json:"coreDeath"`
 	ServiceTeardown struct {
 		GraceSeconds   int    `json:"graceSeconds"`

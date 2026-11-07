@@ -18,15 +18,17 @@ import (
 // to own a child process and ADR-0019 rule 4 keeps any real binary out of this repository. The modes are the
 // only behaviour a Core needs for these tests: run until asked to stop, or exit.
 const (
-	fakeMode    = "NEXORA_FAKE_CORE_MODE"
-	fakeMark    = "NEXORA_FAKE_CORE_MARK"
-	fakeRecord  = "NEXORA_FAKE_CORE_RECORD"
-	fakeConfig  = "NEXORA_FAKE_CORE_CONFIG"
-	modeWait    = "wait"
-	modeExit    = "exit"
-	modeOnce    = "once"
-	modeParent  = "parent"
-	defaultExit = 7
+	fakeMode      = "NEXORA_FAKE_CORE_MODE"
+	fakeMark      = "NEXORA_FAKE_CORE_MARK"
+	fakeRecord    = "NEXORA_FAKE_CORE_RECORD"
+	fakeConfig    = "NEXORA_FAKE_CORE_CONFIG"
+	fakeDuration  = "NEXORA_FAKE_CORE_DURATION"
+	modeWait      = "wait"
+	modeExit      = "exit"
+	modeExitAfter = "exit-after"
+	modeOnce      = "once"
+	modeParent    = "parent"
+	defaultExit   = 7
 )
 
 // TestFakeCore is not a test; it is the child. Reaching it without the mode set is a mistake, and skipping is
@@ -50,6 +52,14 @@ func TestFakeCore(t *testing.T) {
 	}
 	switch mode {
 	case modeExit:
+		os.Exit(defaultExit)
+	case modeExitAfter:
+		// A child that lives for the duration it was told and then dies on its own: the shape a stability
+		// window needs, because "stayed up long enough" is only observable with a child whose lifetime the
+		// test set in advance.
+		if d, err := time.ParseDuration(os.Getenv(fakeDuration)); err == nil && d > 0 {
+			time.Sleep(d)
+		}
 		os.Exit(defaultExit)
 	case modeOnce:
 		// The first child that finds the marker missing dies; the second one is the recovered Core, and it stays
@@ -152,6 +162,19 @@ func (r *recorder) count(kind string) int {
 	return n
 }
 
+func (r *recorder) last(t *testing.T, kind string) Event {
+	t.Helper()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i := len(r.events) - 1; i >= 0; i-- {
+		if r.events[i].Kind == kind {
+			return r.events[i]
+		}
+	}
+	t.Fatalf("no %s event was ever published", kind)
+	return Event{}
+}
+
 func (r *recorder) wait(t *testing.T, kind string, timeout time.Duration) Event {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
@@ -217,9 +240,10 @@ func TestNewRefusesToGuessItsSeams(t *testing.T) {
 		{"no state directory", Config{Launch: launch, Verify: anyVerify}, "no state directory"},
 		{"no command line", Config{Dir: dir, Verify: anyVerify}, "no Launch"},
 		{"no pre-exec proof", Config{Dir: dir, Launch: launch}, "no Verify"},
-		{"attempts outside the schema", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 11}}, "0 to 10"},
-		{"attempts with no wait", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 2}}, "minItems 1"},
-		{"a backoff below the schema's floor", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 1, Backoff: []time.Duration{time.Millisecond}}}, "1 to 3600"},
+		{"attempts outside the schema", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 11, Stability: time.Hour}}, "0 to 10"},
+		{"attempts with no wait", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 2, Stability: time.Hour}}, "minItems 1"},
+		{"a backoff below the schema's floor", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 1, Backoff: []time.Duration{time.Millisecond}, Stability: time.Hour}}, "1 to 3600"},
+		{"attempts with no stability window", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 2, Backoff: []time.Duration{time.Second}}}, "stability window"},
 	} {
 		if _, err := New(tc.cfg); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: want an error naming %q, got %v", tc.name, tc.want, err)
@@ -323,7 +347,7 @@ func TestUnexpectedExitIsRestartedByTheLadderAndRecoveryIsPublished(t *testing.T
 		Dir:    dir,
 		Launch: launch,
 		Verify: alwaysProves,
-		Death:  Death{Attempts: 2, Backoff: []time.Duration{time.Second, time.Second}, Notify: true},
+		Death:  Death{Attempts: 2, Backoff: []time.Duration{time.Second, time.Second}, Stability: time.Hour, Notify: true},
 		Events: ev.publish,
 	})
 	if err != nil {
@@ -386,7 +410,7 @@ func TestExhaustedLadderIsBlockedAndSurfacedWithNotifyOff(t *testing.T) {
 			}
 			return nil
 		},
-		Death:  Death{Attempts: 2, Backoff: []time.Duration{time.Second, time.Second}, Notify: false},
+		Death:  Death{Attempts: 2, Backoff: []time.Duration{time.Second, time.Second}, Stability: time.Hour, Notify: false},
 		Events: ev.publish,
 	})
 	if err != nil {
@@ -452,6 +476,163 @@ func TestZeroAttemptsBlocksImmediatelyWithNoRetry(t *testing.T) {
 	}
 	if st := s.Status(); !st.Blocked || st.Running {
 		t.Errorf("with no attempts allowed the block is the whole answer, got %+v", st)
+	}
+}
+
+// TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut is ODEC-38's answer as behaviour: a Core that
+// dies again before the stability window elapsed does not re-arm the ladder, so a crash loop spends one budget
+// and then sits in the permanent block until a user action, instead of restarting forever.
+func TestADeathInsideTheWindowContinuesTheEpisodeAndTheBudgetRunsOut(t *testing.T) {
+	spawns := 0
+	var mu sync.Mutex
+	launch := func(configPath string) *exec.Cmd {
+		mu.Lock()
+		spawns++
+		mu.Unlock()
+		cmd := fakeLaunch(modeOnce)(configPath)
+		return cmd
+	}
+	ev := new(recorder)
+	s, err := New(Config{
+		Dir:    t.TempDir(),
+		Launch: launch,
+		Verify: alwaysProves,
+		Death:  Death{Attempts: 2, Backoff: []time.Duration{time.Second, time.Second}, Stability: time.Hour, Notify: true},
+		Events: ev.publish,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer func() { _, _ = s.Stop(context.Background(), false) }()
+
+	if _, err := s.Start(context.Background(), StartParams{ConfigPath: "a.json", ConfigHash: hash("a")}); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	// child 1 dies at once (inside the window): the ladder takes attempt 1, whose child stays up. Killing that
+	// child from the outside is an unexpected death inside the window, so the ladder resumes at attempt 2; the
+	// same kill after attempt 2 finds the budget spent and the block permanent, with no third attempt ever made.
+	// killChild ends one unexpected death from the outside: it waits for a live child with a pid above every
+	// pid it has killed before, kills it, and waits for the supervisor to observe the death -- so the next
+	// call targets the next child rather than racing the one whose exit is still being recorded.
+	killed := map[int]bool{}
+	killChild := func() {
+		deadline := time.Now().Add(20 * time.Second)
+		for {
+			st := s.Status()
+			if st.Running && st.PID != 0 && !killed[st.PID] {
+				killed[st.PID] = true
+				proc, err := os.FindProcess(st.PID)
+				if err == nil {
+					_ = proc.Kill()
+				}
+				for {
+					if later := s.Status(); !later.Running || later.PID != st.PID {
+						return
+					}
+					if time.Now().After(deadline) {
+						t.Fatalf("the death of pid %d was never observed", st.PID)
+					}
+					time.Sleep(20 * time.Millisecond)
+				}
+			}
+			if time.Now().After(deadline) {
+				mu.Lock()
+				n := spawns
+				mu.Unlock()
+				t.Fatalf("no live child to kill after spawn #%d; status %+v", n, s.Status())
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+	waitCount := func(kind string, n int, timeout time.Duration) {
+		t.Helper()
+		deadline := time.Now().Add(timeout)
+		for time.Now().Before(deadline) {
+			if ev.count(kind) >= n {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		t.Fatalf("%s never reached %d events (have %d: %v)", kind, n, ev.count(kind), ev.kinds())
+	}
+	killChild() // in-window death of the Start child or of attempt 1's child
+	waitCount(KindRestart, 1, 20*time.Second)
+	killChild() // in-window death again
+	waitCount(KindRestart, 2, 20*time.Second)
+	killChild() // the budget is spent: this death must produce a verdict, not an attempt
+	waitCount(KindBlocked, 2, 10*time.Second)
+	blocked := ev.last(t, KindBlocked)
+	if blocked.Hash != hash("a") {
+		t.Errorf("the spent-episode verdict names %q", blocked.Hash)
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		mu.Lock()
+		n := spawns
+		mu.Unlock()
+		if n >= 4 {
+			t.Fatalf("spawn #%d happened after the episode's budget was spent; a crash loop must not restart forever", n)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if st := s.Status(); !st.Blocked || st.Running || st.Restarting {
+		t.Errorf("a spent episode left Status at %+v, want the permanent block", st)
+	}
+}
+
+// TestAStableCoreEarnsAFreshBudget is the other half of the same field: a child that stayed up past the window
+// died into a new episode, and the budget the policy allows is the episode's, not the session's.
+func TestAStableCoreEarnsAFreshBudget(t *testing.T) {
+	spawns := 0
+	var mu sync.Mutex
+	launch := func(configPath string) *exec.Cmd {
+		mu.Lock()
+		spawns++
+		mu.Unlock()
+		cmd := fakeLaunch(modeExitAfter)(configPath)
+		cmd.Env = append(cmd.Env, fakeDuration+"=700ms")
+		return cmd
+	}
+	ev := new(recorder)
+	s, err := New(Config{
+		Dir:    t.TempDir(),
+		Launch: launch,
+		Verify: alwaysProves,
+		Death:  Death{Attempts: 1, Backoff: []time.Duration{time.Second}, Stability: 300 * time.Millisecond, Notify: true},
+		Events: ev.publish,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer func() { _, _ = s.Stop(context.Background(), false) }()
+
+	if _, err := s.Start(context.Background(), StartParams{ConfigPath: "a.json", ConfigHash: hash("a")}); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	// Each child lives 700 ms -- past the 300 ms window -- and dies on its own, so every death re-arms the
+	// single attempt: three children in a row is the fresh budget made visible, where a per-session budget
+	// would have gone permanent after the first.
+	waitCount := func(kind string, n int, timeout time.Duration) {
+		t.Helper()
+		deadline := time.Now().Add(timeout)
+		for time.Now().Before(deadline) {
+			if ev.count(kind) >= n {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		t.Fatalf("%s never reached %d events (have %d: %v)", kind, n, ev.count(kind), ev.kinds())
+	}
+	waitCount(KindExited, 2, 15*time.Second)
+	waitCount(KindRestart, 2, 15*time.Second)
+	mu.Lock()
+	n := spawns
+	mu.Unlock()
+	if n != 3 {
+		t.Errorf("%d children were spawned, want one per episode across two stable deaths", n)
+	}
+	if st := s.Status(); st.Blocked {
+		t.Error("a death past the window produced a spent-episode verdict")
 	}
 }
 

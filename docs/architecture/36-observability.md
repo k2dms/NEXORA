@@ -77,7 +77,7 @@ Every row below was a forward reference found by grepping the tree for this file
 | `docs/architecture/26-command-surface.md:139` | "the catalogue parity between that schema and `docs/architecture/36-observability.md` is checked by `packages/schema/scripts/verify.mjs`" | §6, asserted as *"the observability catalogue is exactly the registered event set"* |
 | `docs/architecture/27-config-compilation-pipeline.md:155` | `config.apply` results are logged, so `source` must never be a raw condition | §6, `config.applied` |
 | `docs/architecture/28-routing-model.md:109` | rank 5 should be unreachable; "if it is reached, the diagnostics event says so" | §6, `routing.decision` |
-| `docs/architecture/30-failure-policy.md:262` | "which port is in force, and why, belongs in the `failure-policy` section" | §8's `inForceBlockPort` |
+| `docs/architecture/30-failure-policy.md:266` | "which port is in force, and why, belongs in the `failure-policy` section" | §8's `inForceBlockPort` |
 | `docs/architecture/32-secrets-keystore-masking.md:40` | "the log format and event catalogue" | §3, §5, §6 |
 | `docs/architecture/32-secrets-keystore-masking.md:555` | the contract list doc 32's Trace line hands here | §5, §8, §11 |
 | `docs/architecture/34-data-split.md:46` | where the log rests, and the legacy `+`-key behaviour that must not change | §5 (`browser-ring`), §10 |

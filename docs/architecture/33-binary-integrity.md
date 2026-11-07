@@ -56,7 +56,7 @@ green today.
 | `docs/architecture/23-unified-server-model.md:76` | what the *pinned Core* supports (REALITY over gRPC) | §4.3 |
 | `docs/architecture/27-config-compilation-pipeline.md:58` | the compiler's dependency on install state | §7, §11 |
 | `docs/architecture/30-failure-policy.md:66` | `contained: false` plus an integrity alarm | §15 |
-| `docs/architecture/30-failure-policy.md:377` | how Core is fetched and verified | §5, §6 |
+| `docs/architecture/30-failure-policy.md:382` | how Core is fetched and verified | §5, §6 |
 | `docs/architecture/31-security-model.md:26` | binary provenance | §3, §14 |
 | `docs/architecture/31-security-model.md:59` | the pin attestation as the Connector→Core trust boundary | §3, §6 |
 | `docs/architecture/31-security-model.md:402` | a Core vulnerability: pinned, verified, user-initiated | §8, §11, §16 |

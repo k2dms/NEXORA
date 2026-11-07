@@ -101,12 +101,17 @@ second spawn (`docs/architecture/26-command-surface.md` §2). No jitter in this 
 in `docs/architecture/29-subscriptions-and-servers.md` §7: jitter exists to spread a herd, and there is one
 Connector per machine.
 
-What this section does not say, and the code therefore cannot be blamed for not doing: `restartAttempts` is a
-budget *per death*. No document in this repository names a window a Core must stay up for the next exit to count
-as a new episode, and no count of consecutive deaths turns the block permanent. `connector/internal/supervisor`
-implements the per-death reading literally — every observed unexpected exit starts its own ladder with its own
-attempts — which means a Core that crash-loops once a minute restarts forever, and the block is lifted by each
-recovery and re-imposed by each death. §13 carries that as the queue's row and the register's question.
+What bounds the deaths is `coreDeath.stabilityWindowSeconds`
+(`packages/schema/failure-policy.schema.json#/properties/coreDeath/properties/stabilityWindowSeconds`, default 300,
+floor 1, ceiling 86 400): a Core that stayed up at least that long died into a *new episode*, and the ladder runs
+again from attempt one; a Core that died inside the window left the current episode running, the ladder resumes at
+its next attempt, and when the episode's `restartAttempts` are spent the block is permanent until the user acts — a
+`config.apply`, a `core.start`, or lifting the block per §12. The two readings answer two different questions and the
+field is the second one's: a hibernating machine that wakes with a Core that has been dead for hours still earned
+its fresh budget the moment it died past the window, while a Core that crash-loops once a minute spends one budget
+and then sits in the visible block. `connector/internal/supervisor` enforces exactly this: `watch` re-arms the
+budget only for a child that survived the window, hands the ladder the attempts already spent otherwise, and a
+spent episode's next death re-publishes the verdict without spawning.
 
 Visibility splits in two places, and the split is deliberate:
 
@@ -365,7 +370,7 @@ is the shape of the answer that must keep a block in force.
 | The failure scene in the fixtures ends in a block, not a direct profile | *the recorded failure scene blocks after Core exits*, *no frame of the failure scene resolves to a direct or system gesture* | — |
 | Inaction is fail-closed | not expressible as a schema rule; rests on §1 rule 2 and §10.3 | `LIVE-11`, `LIVE-13` |
 | A grace window cannot outlive its hard cap | prose + `graceSeconds`/`hardCapSeconds` bounds | `LIVE-13` |
-| A restarted Core that dies again is one death and one fresh budget | `connector/internal/supervisor` bounds one episode's attempts and names no bound on the episodes; §4 says what the code does, not what the product wants | `Verified: NO` — the bound is `docs/architecture/40-open-decisions.md` `ODEC-38` |
+| A death inside the stability window continues the episode; a death past it earns a fresh budget | `connector/internal/supervisor` re-arms the budget only for a child that survived `coreDeath.stabilityWindowSeconds`, resumes the ladder mid-episode otherwise, and a spent episode's next death re-publishes the block without spawning; the two supervisor tests measure both halves | Verified |
 | Health never says `ok` while blocked | `packages/schema/protocol/commands/connector.health.json#/result/properties/state` is a closed enum and its description says `blocked` is working-as-designed | `LIVE-04` |
 
 The first eight rows are the ones ADR-0009's Verification section said did not exist. They exist now, they run in
