@@ -27,10 +27,10 @@ concept of a blocked state anywhere in the inherited model.
    `packages/schema/connector-settings.schema.json:156` makes `failClosedDefault` a required key
    (`:153`) whose value is `const: "block"` — a settings document cannot spell any other default, and the
    section's own description at `:170` states the default is not overridable there by design.
-2. `failOpen` MUST exist only as a per-profile override (`packages/schema/failure-policy.schema.json:109`),
+2. `failOpen` MUST exist only as a per-profile override (`packages/schema/failure-policy.schema.json:312`),
    MUST NOT be reachable from the global settings document, and MUST carry a `confirmToken` proving an
    explicit user action. That implication is written as `if/then` inside the schema
-   (`packages/schema/failure-policy.schema.json:123` with the `then` at `:133`), so a validator in Go, in
+   (`packages/schema/failure-policy.schema.json:326` with the `then` at `:336`), so a validator in Go, in
    TypeScript or in a test rejects an unconfirmed fail-open identically. The global document can no longer
    express it at all: `packages/schema/failure-policy.schema.json#/properties/coreDeath/properties/action` is a
    single-value enum, which is the amendment `docs/architecture/30-failure-policy.md` §9 makes to close the gap
@@ -39,12 +39,12 @@ concept of a blocked state anywhere in the inherited model.
    per-profile state MUST be surfaced in the UI wherever the profile is listed or edited. A hidden fail-open
    is a silent bypass with a checkbox behind it.
 4. The blocking mechanism MUST be a FixedProfile aimed at a **closed** loopback port
-   (`packages/schema/failure-policy.schema.json:72`): the browser is told to use a local endpoint and the
+   (`packages/schema/failure-policy.schema.json:275`): the browser is told to use a local endpoint and the
    connection is refused. `+direct` and `chrome.proxy.settings.clear()` MUST NOT be used as fail-closed
    mechanisms, because both *route* traffic rather than stop it — that is not a degradation, it is a leak, and
    the audit's rejection of both is recorded in `docs/audit/06-proxy-application.md` §11.
 5. `direct`, `system` and `clear-proxy-settings` MUST be listed as forbidden outcomes for a
-   connector-triggered resolution (`packages/schema/failure-policy.schema.json:88`), and no failure path MAY
+   connector-triggered resolution (`packages/schema/failure-policy.schema.json:291`), and no failure path MAY
    resolve to them.
 6. The three failure planes MUST stay distinct, because their correct responses differ: `coreDeath` blocks
    (highest severity, traffic is still being routed), `serviceTeardown` MAY hold the current setting for a
@@ -94,9 +94,9 @@ UI toggle for fail-open without the confirmation token round trip.
 
 - `packages/schema/connector-settings.schema.json:153` and `packages/schema/connector-settings.schema.json:156`
   — VERIFIED — `failClosedDefault` is required and const-"block".
-- `packages/schema/failure-policy.schema.json:72` — VERIFIED — the closed-loopback FixedProfile is named as
+- `packages/schema/failure-policy.schema.json:275` — VERIFIED — the closed-loopback FixedProfile is named as
   the fail-closed primitive, with the leak argument inline; `:88` — VERIFIED — `forbiddenOutcomes`;
-  `:109`/`:133` — VERIFIED — per-profile `failOpen` and the required `confirmToken`.
+  `:109`/`:336` — VERIFIED — per-profile `failOpen` and the required `confirmToken`.
 - `packages/schema/examples/invalid/reasons.json:45` — VERIFIED — a fail-open without confirmation is a
   negative case the harness must reject.
 - `omega-pac/src/profiles.coffee:122` — VERIFIED — `+direct` → `pacResult()`;
@@ -124,7 +124,7 @@ Today: `npm --prefix packages/schema run verify` compiles `connector-settings.sc
 and `examples/invalid/failure-policy.narrow-forbidden.json` on the rules added by
 `docs/architecture/30-failure-policy.md` §15, and replays the `failure-block.jsonl` frames against the envelope.
 
-The claim that used to be false is now checked: `packages/schema/failure-policy.schema.json:90` said the verifier
+The claim that used to be false is now checked: `packages/schema/failure-policy.schema.json:293` said the verifier
 asserts `forbiddenOutcomes`, and `packages/schema/scripts/verify.mjs` had no such assertion. It has one now — a
 section that reads the resolution vocabulary out of the compiled schema and rejects any plane that can resolve to a
 forbidden outcome, together with the loopback-only, no-bypass-list, `assertClosed`-default and

@@ -1209,6 +1209,30 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
     `${portRange.min}-${portRange.max} vs allocation ${alloc.min}-${alloc.max}`
   );
 
+  // ODEC-19: the ladder's length equals the attempt count in data, so the disagreement cannot be authored.
+  {
+    const validate = ajv.getSchema('https://schema.nexora.local/failure-policy.schema.json');
+    const agree = structuredClone(policyExample);
+    agree.coreDeath.restartAttempts = 1;
+    agree.coreDeath.restartBackoffSeconds = [5];
+    check(validate(agree), 'coreDeath accepts a one-attempt ladder of one delay', JSON.stringify(validate.errors));
+    for (const [attempts, ladder, label] of [
+      [10, [1], 'the canonical ODEC-19 disagreement: ten attempts, one delay'],
+      [3, [1, 5], 'a short ladder: three attempts, two delays'],
+      [2, [1, 5, 30], 'an over-long ladder: two attempts, three delays'],
+    ]) {
+      const bad = structuredClone(policyExample);
+      bad.coreDeath.restartAttempts = attempts;
+      bad.coreDeath.restartBackoffSeconds = ladder;
+      check(
+        !validate(bad) && (validate.errors ?? []).some((e) =>
+          e.instancePath === '/coreDeath/restartBackoffSeconds' && (e.keyword === 'minItems' || e.keyword === 'maxItems')),
+        `coreDeath refuses ${label}`,
+        JSON.stringify(validate.errors),
+      );
+    }
+  }
+
   // The scene that proves the resolution order, read from the recorded frames rather than
   // restated in prose: exited first, blocked second, and nothing in between resolving to
   // a direct profile.

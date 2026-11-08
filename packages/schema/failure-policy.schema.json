@@ -51,7 +51,8 @@
             1,
             5,
             30
-          ]
+          ],
+          "description": "One delay per attempt: the array length must equal restartAttempts exactly (ODEC-19: the two fields agree in data, so the disagreement cannot be authored). Each step is 1 to 3600 seconds."
         },
         "stabilityWindowSeconds": {
           "type": "integer",
@@ -65,7 +66,209 @@
           "default": true,
           "description": "Gates the restart-ladder noise, not the verdict. The terminal blocked state is surfaced whatever this says: ADR-0009 rule 7, and settings.proxy.notificationLevel cannot be 'silent' for a block (docs/architecture/30-failure-policy.md section 4)."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 1
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 2
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 3
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 4
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 4,
+                "maxItems": 4
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 5
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 5,
+                "maxItems": 5
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 6
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 6,
+                "maxItems": 6
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 7
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 7,
+                "maxItems": 7
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 8
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 8,
+                "maxItems": 8
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 9
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 9,
+                "maxItems": 9
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "restartAttempts": {
+                "const": 10
+              }
+            },
+            "required": [
+              "restartAttempts"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restartBackoffSeconds": {
+                "minItems": 10,
+                "maxItems": 10
+              }
+            }
+          }
+        }
+      ]
     },
     "serviceTeardown": {
       "type": "object",

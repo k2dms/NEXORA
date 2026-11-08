@@ -244,8 +244,11 @@ func New(cfg Config) (*Supervisor, error) {
 	if len(cfg.Death.Backoff) > 10 {
 		return nil, fmt.Errorf("supervisor: %d backoff steps, outside restartBackoffSeconds' 1 to 10", len(cfg.Death.Backoff))
 	}
-	if cfg.Death.Attempts > 0 && len(cfg.Death.Backoff) == 0 {
-		return nil, errors.New("supervisor: attempts without a wait between them; restartBackoffSeconds is minItems 1 for that reason")
+	if cfg.Death.Attempts > 0 && len(cfg.Death.Backoff) != cfg.Death.Attempts {
+		// ODEC-19: the schema ties the ladder's length to the attempt count exactly, so the
+		// repeat-the-last / stop-early readings were never implementable — this mirror refuses a
+		// wiring that bypassed the schema the way a test double could.
+		return nil, fmt.Errorf("supervisor: restartAttempts is %d but restartBackoffSeconds holds %d steps; the schema's if/then makes the two agree in data (ODEC-19)", cfg.Death.Attempts, len(cfg.Death.Backoff))
 	}
 	if cfg.Death.Attempts > 0 && cfg.Death.Stability <= 0 {
 		return nil, errors.New("supervisor: attempts without a stability window; coreDeath.stabilityWindowSeconds is what makes the budget an episode's and not a per-death renewal (ODEC-38)")

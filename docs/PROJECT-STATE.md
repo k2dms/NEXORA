@@ -620,6 +620,16 @@ file `0 / +1 / 0`, the pointer into the ADR its own record names. The corpus is 
 the live rows are one shorter (`VER-77` left the queue with the decision that answered it).
 the `ODEC-37` clause it had been carrying described an option the entry no longer lists, and the ADR line
 citation and the document name went with it — a re-read that removes a stale address instead of renewing one.
+§4.44 moves the set a thirty-ninth time — **2309 / 606 / 1591**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of 7beff1c, read with the guard's own three
+patterns: doc 30 `0 / +1 / 0`, the one pointer being amendment 9's `failure-policy.schema.json#/properties/coreDeath/allOf`;
+doc 40 and ADR-0005/0006/0009 each `0 / 0 / 0`, because the tallies changed digits and the line cites were renumbered
+onto the same content — neither adds nor removes a citation; and this file `0 / +3 / 0`, the three pointers its record
+names (the allOf bound and the two retirement ledgers). The first figure does not move for the reason §4.26 gives:
+a contract bound and its Go mirror add pointers, not addresses inside code, and the seven blank targets the two grown
+files produced were re-anchored, not born. The name figure reads two lower than the commit before — the answered
+bullet and row stop citing the register's basename — while the pointer figure gains four, the bound and the ledgers.
+`VER-29` stays in the queue — it closes by `LIVE-03`, so the gate lifts without the row leaving.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -1581,7 +1591,7 @@ containment handle ends a process. Nothing in this slice says a word about wheth
 
 **`Launch` exists because argv is not this package's fact.** The corpus names the config file, its hash, and the moment
 it is handed over — and never the command line that delivers it. So the supervisor takes a function that builds the
-child and refuses to invent `xray run -c` (`connector/internal/supervisor/supervisor.go:327`), in the same way §4.18's
+child and refuses to invent `xray run -c` (`connector/internal/supervisor/supervisor.go:330`), in the same way §4.18's
 writer takes a directory rather than naming `%LOCALAPPDATA%`: an invention in a seam's place is a fact about a binary
 this host has never run. `Verify` is the same discipline pointed the other way — doc 33 §6's table row says the receipt
 comparison runs "every `core.start` / `core.restart`, before exec", so it is a function this package calls before every
@@ -1615,7 +1625,7 @@ attribute and `os/exec` exposes only the pid, so a dependency-free Connector can
 besides the handle list. The assignment therefore happens after the pid exists — a window — and doc 22 §4 now says so,
 names the closing of the window as ADR-0011's platform work, and does not pretend the invariant moved. What the code
 does about it is the part rule 5 can require today: `spawnLocked` creates the scope before the spawn
-(`connector/internal/supervisor/supervisor.go:343`), attaches after, and reports the answer — `contained` beside a note
+(`connector/internal/supervisor/supervisor.go:346`), attaches after, and reports the answer — `contained` beside a note
 in the platform's own words — and a scope that cannot be made is *not* a refused start, because `core.start`'s own gloss
 says `false` "is a reported condition, not a silent one". `TestStartReportsContainmentAsThePlatformAnswersIt`
 (`connector/internal/supervisor/supervisor_test.go:552`) fails if the flag and the note ever disagree, on any platform,
@@ -1626,14 +1636,14 @@ including the two that answer false.
 before any restart was attempted (`packages/schema/fixtures/protocol/failure-block.jsonl`, `seq` 1 to 4) — and only then
 the attempts. The first implementation had it backwards, and `TestUnexpectedExitIsRestartedByTheLadderAndRecoveryIsPublished`
 caught that by asserting the verdict arrives before the recovery does. `ladderRun`
-(`connector/internal/supervisor/supervisor.go:448`) now sets the blocked flag inside the same critical section that
+(`connector/internal/supervisor/supervisor.go:451`) now sets the blocked flag inside the same critical section that
 registers the episode and publishes it (`:461`) before waiting a millisecond, then makes up to `restartAttempts` spawns
 at the policy's own backoffs, and publishes the recovery (`:480`) *only when `notify` is on* — while exhaustion publishes
 nothing further, because the block has been in force since the death. Worst case is the section's arithmetic, 3 × 15 s +
 (1 + 5 + 30) s = 81 s, and no probe and no config rewrite happens inside it.
 
 **A gap the code found, registered rather than papered over.** Counting attempts per death is what the section says, and
-it is what `watch` does (`connector/internal/supervisor/supervisor.go:381`): every observed unexpected exit starts its
+it is what `watch` does (`connector/internal/supervisor/supervisor.go:384`): every observed unexpected exit starts its
 own ladder with its own budget. A Core that dies again straight after a successful restart is therefore handed the budget
 again, forever, with the block lifted and re-imposed each cycle and `server.test` answering normally in between — and no
 file in this corpus names a window that would make the second death a new episode, or a count that would make the block
@@ -1646,7 +1656,7 @@ because it makes the *attempts themselves* fail through the `Verify` seam rather
 properties and doc 34 §7 repeats them, so `State` had exactly those four and no fifth — including no containment answer —
 which is a fact about a process that is gone by the time the file is read. It has a fifth field now — `held`, doc 27 §4's reservation table, which `config.apply` writes after each rename and `Start` reads back from the record rather than from a construction-time copy — and the sentence that said "no fifth" was the record of what was true when it was written. One bug was hiding there: `Status.LastExit`
 was served from a supervisor field that `WriteState` never populated, so a reloaded record could not answer the question
-LIVE-13's restart half asks. `statusLocked` now reads `s.st.LastExit` (`connector/internal/supervisor/supervisor.go:263`)
+LIVE-13's restart half asks. `statusLocked` now reads `s.st.LastExit` (`connector/internal/supervisor/supervisor.go:266`)
 and `spawnLocked` carries it forward (`:360`), which is what makes `TestAppliedStateOutlivesTheSupervisorThatWroteIt` a
 demonstration of the row rather than of a process's memory. `WriteState` reuses §4.18's sequence — temp, write, `Sync`,
 close, `Chmod 0600`, rename, cleanup on failure — so this module has one atomic-replacement discipline to audit, and the
@@ -1775,7 +1785,7 @@ without the sentence.
 **`ErrIntegrity` had to be added to the supervisor, and it is a sentinel for a reason.** doc 33 §6's pre-exec proof is
 the verifier's own error, and reading `IntegrityMismatch` out of its *words* would be a string match on somebody else's
 message — the same failure §4.11 records a green check hiding. So the supervisor wraps it beside the cause
-(`connector/internal/supervisor/supervisor.go:343`, `%w: %w` around `:52`) and the surface matches the sentinel, which
+(`connector/internal/supervisor/supervisor.go:346`, `%w: %w` around `:52`) and the surface matches the sentinel, which
 keeps the verifier's reason available in the message and the taxonomy code out of anybody's prose.
 
 **`clip` keeps the tail, which is a decision with a consequence attached.** `maxApplyMessage` (`:438`) is the envelope
@@ -3135,6 +3145,32 @@ guards and the legacy backup check → green. `go -C connector test -count=1 ./.
 `gofmt -l connector` empty, `go -C connector vet ./...` silent. What this ADR does not claim: the
 `minPipeVersion` comparison at the framing layer (still `VER-18`'s declared residual), a running host on a real
 pipe (the live rows are `SKIPPED`), or the OS-peer-credentials hardening (a future layer, not identity).
+
+### 4.44 The ladder's length is the attempt count — `ODEC-19` answered by its third option (2026-11-08)
+
+**What the decision is.** `packages/schema/failure-policy.schema.json#/properties/coreDeath/allOf` gained ten
+`if/then` branches, one per `restartAttempts` value 1..10, each pinning `restartBackoffSeconds`' `minItems` and
+`maxItems` to that count exactly. The two fields now agree in data, so the disagreement the question asked about —
+ten attempts offered one delay — cannot be authored: a validator rejects it on `minItems`/`maxItems` before any
+runtime reads it. The repeat-the-last and stop-early readings are rejected by the same bound. `connector/internal/supervisor`
+mirrors the refusal (`len(Backoff) != Attempts`) for a wiring that bypassed the schema, and the two supervisor tests
+that kept the old "attempts without a wait" wording now read the agreement error and carry a ladder whose length
+passes the mirror so the stability-window check is what fires.
+
+**What closed.** `ODEC-19` retires in `packages/schema/open-decisions.json#/retired` — the register is 32 entries over
+55 sites, 13 pensions, `contract` at ten. `VER-29` does **not** close: it closes by live-row `LIVE-03`, not by a
+decision, so the gate is lifted but the live run is still owed and the queue stays 70 rows / 18 tombstones. Doc 30 §15
+gains amendment 9 and loses the ODEC-19 open-items bullet (one deferral site, 56 → 55); doc 40's tallies follow the
+data. The schema's +203 lines and the supervisor's +3 shifted line cites into them: seven blank targets repaired and
+five more re-read in ADR-0005/0006/0009 and this file, re-anchored onto the same content (schema +203, supervisor +3).
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1234 checks** (four new: one positive ladder, three
+negative disagreements). `node tools/check-doc-evidence.mjs` → green; §4.4's final ledger paragraph has the set and the
+per-file deltas. `node tools/check-no-secrets.mjs` → **497 files**, unchanged. ADR shape → **22 records**, layout guards
+and the legacy backup check → green. `go -C connector test -count=1 ./...` → thirteen `ok` lines, `gofmt -l connector`
+empty, `go -C connector vet ./...` silent. What this slice does not claim: a Core restarted on a real pipe (the live
+rows are `SKIPPED`, `VER-29`'s `LIVE-03` still owed), or a browser that authored the disagreement — the schema makes
+that document unrepresentable, which is the contract half the question asked for.
 
 ---
 

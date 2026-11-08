@@ -408,13 +408,13 @@ Amendments — each is a change to a contract written before the runtime shape e
    (§7).
 8. `docs/adr/0009-fail-closed-by-default.md` Evidence and Verification sections are updated: the gap it recorded is
    closed, and the `forbiddenOutcomes` assertion it said did not exist now does.
+9. `packages/schema/failure-policy.schema.json#/properties/coreDeath/allOf`: ten `if/then` branches tie
+   `restartBackoffSeconds`' length to `restartAttempts` exactly (ODEC-19, answered by its third option — the two
+   fields agree in data, so the disagreement cannot be authored). `connector/internal/supervisor` mirrors the
+   refusal for a wiring that bypassed the schema. The repeat-the-last and stop-early readings are rejected.
 
 Open items, carried to `docs/architecture/40-open-decisions.md`:
 
-- **Ladder length vs attempt count.** `restartAttempts` admits 10 while `restartBackoffSeconds` admits 1–10
-  entries; with `attempts: 10` and a one-entry ladder, whether the Connector repeats the last delay, stops early, or
-  refuses the document is undecided. The schema permits the disagreement on purpose, which makes it a real
-  question rather than a hypothetical.
 - **`contained: false` without an exit.** Core alive, unmanaged, and unsupervised is reported by two different
   mechanisms (health check and integrity event) and no plane owns it. §5 handles the episode; the *classification*
   is open.

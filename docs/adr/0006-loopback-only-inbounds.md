@@ -27,7 +27,7 @@ moment where it can be enforced — before the process exists.
 1. Every inbound the compiler produces MUST bind to a loopback address only: `127.0.0.1`, or `::1` where an
    IPv6-only host requires it. No other listen address is representable: the settings schema fixes the host
    with a `const` (`packages/schema/connector-settings.schema.json:83`), and the fail-closed block primitive
-   uses the same two values (`packages/schema/failure-policy.schema.json:75`).
+   uses the same two values (`packages/schema/failure-policy.schema.json:278`).
 2. The bind address MUST NOT be a user setting, MUST NOT be readable from a subscription, and MUST NOT be
    overridable by a command argument. A caller MAY choose the port within the bounded range, and MAY NOT
    choose the host.
@@ -85,7 +85,7 @@ Forbidden for this iteration and beyond: adding an `inboundHost` setting; a `0.0
 - `packages/schema/protocol/commands/core.start.json:43` — VERIFIED — `"listen": { "enum": ["127.0.0.1",
   "::1"] }`; `packages/schema/protocol/commands/core.start.json:72` — VERIFIED — the invariant naming
   `LIVE-03`.
-- `packages/schema/failure-policy.schema.json:75` — VERIFIED — the block primitive is loopback as well, so
+- `packages/schema/failure-policy.schema.json:278` — VERIFIED — the block primitive is loopback as well, so
   one address set covers both directions of the design.
 - `omega-pac/src/profiles.coffee:87` — VERIFIED — legacy emits `SCHEME host:port` from caller data with no
   address constraint; `omega-pac/src/profiles.coffee:269` — VERIFIED — the `127.0.0.1` in the profile model is

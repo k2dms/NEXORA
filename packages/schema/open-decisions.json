@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 56
+    "counted": 55
   },
   "notADeferral": [
     {
@@ -559,29 +559,6 @@
       ]
     },
     {
-      "id": "ODEC-19",
-      "question": "What happens when `restartAttempts` says 10 and `restartBackoffSeconds` offers one delay: repeat the last, stop early, or refuse the document?",
-      "decidedBy": "contract",
-      "blocks": {
-        "verification": [
-          "VER-29"
-        ],
-        "compatibility": []
-      },
-      "why": "The schema admits 10 attempts and a ladder of 1 to 10 entries, so the disagreement is constructible today and the schema permits it on purpose. Three readings are all defensible, which is precisely why the document must not silently pick one in the Connector: the difference is how long a user sits with no proxy.",
-      "options": [
-        "repeat the last entry for every remaining attempt -- the ladder is a shape, not a budget",
-        "stop when the ladder is exhausted and report the restart as abandoned, fail-closed",
-        "make the two fields agree in data: `minItems` equals the attempts, so the disagreement cannot be authored"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/30-failure-policy.md",
-          "anchor": "- **Ladder length vs attempt count.**"
-        }
-      ]
-    },
-    {
       "id": "ODEC-20",
       "question": "Who owns the state 'Core is alive, unmanaged and unsupervised' -- `contained: false` with no exit?",
       "decidedBy": "contract",
@@ -1098,6 +1075,16 @@
           "verification": [
             "VER-85"
           ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-19",
+        "decided": "2026-11-08",
+        "was": "what happens when restartAttempts says 10 and restartBackoffSeconds offers one delay: repeat the last, stop early, or refuse the document",
+        "artefact": "the third option its own entry listed, as a contract addition: packages/schema/failure-policy.schema.json#/properties/coreDeath/allOf ties the ladder length to the attempt count exactly with ten if/then branches, and connector/internal/supervisor mirrors the refusal; VER-29 stays open because it closes by LIVE-03, not by this decision -- the gate is lifted, the live run is still owed",
+        "freed": {
+          "verification": [],
           "compatibility": []
         }
       }

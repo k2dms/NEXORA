@@ -254,9 +254,9 @@ func TestNewRefusesToGuessItsSeams(t *testing.T) {
 		{"no command line", Config{Dir: dir, Verify: anyVerify}, "no Launch"},
 		{"no pre-exec proof", Config{Dir: dir, Launch: launch}, "no Verify"},
 		{"attempts outside the schema", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 11, Stability: time.Hour}}, "0 to 10"},
-		{"attempts with no wait", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 2, Stability: time.Hour}}, "minItems 1"},
+		{"attempts with no wait", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 2, Stability: time.Hour}}, "agree in data"},
 		{"a backoff below the schema's floor", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 1, Backoff: []time.Duration{time.Millisecond}, Stability: time.Hour}}, "1 to 3600"},
-		{"attempts with no stability window", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 2, Backoff: []time.Duration{time.Second}}}, "stability window"},
+		{"attempts with no stability window", Config{Dir: dir, Launch: launch, Verify: anyVerify, Death: Death{Attempts: 2, Backoff: []time.Duration{time.Second, time.Second}}}, "stability window"},
 	} {
 		if _, err := New(tc.cfg); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: want an error naming %q, got %v", tc.name, tc.want, err)
