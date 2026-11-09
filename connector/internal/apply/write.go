@@ -16,9 +16,8 @@ import (
 // keystore's — so Write takes it and does not guess it.
 const FileName = "config.json"
 
-// Applied is what one successful write knows afterwards. The two hashes are both reported because ODEC-36 is open:
-// whichever byte string `configHash` turns out to mean, the answer is already in this struct rather than chosen by
-// a writer that wanted a single field.
+// Applied is what one successful write knows afterwards. ODEC-36: configHash is the handle-bearing document's
+// digest (HandleHash); ValueHash is the materialized file's digest, reported alongside it.
 type Applied struct {
 	Path         string
 	Bytes        []byte

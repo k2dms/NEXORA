@@ -576,9 +576,6 @@ var codeMarkers = []struct {
 	{"no free port left in", "QuotaExceeded"},
 	// doc 23 §10's transport clause, which is what `UnsupportedCombination` means literally.
 	{"the schema admits that flow only over", "UnsupportedCombination"},
-	// A headersRef is a field the config needs and no decision says how to build; ODEC-03's first option is the
-	// reading of `UnsupportedCombination` that says "an intent that cannot be compiled without inventing a field".
-	{"ODEC-36 blocks", "UnsupportedCombination"},
 }
 
 // codeForApply is the classification table. Order matters: a keystore refusal already carries its code, and the

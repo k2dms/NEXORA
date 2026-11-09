@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -68,7 +69,7 @@ func TestWrittenFileHashesToWhatTheWriterReported(t *testing.T) {
 	}
 }
 
-func TestHashCoveredByODEC36IsReportedNotChosen(t *testing.T) {
+func TestBothHashesAreReported(t *testing.T) {
 	dir := t.TempDir()
 	got, err := Write(dir, serverDoc(), fakeStore{userIDRef: userID})
 	if err != nil {
@@ -78,7 +79,7 @@ func TestHashCoveredByODEC36IsReportedNotChosen(t *testing.T) {
 		t.Fatal("the handle-bearing and materialized byte strings hashed the same, so one of the two is not what it claims")
 	}
 	if got.HandleHash == "" || got.ValueHash == "" {
-		t.Fatal("Write reported only one of the two hashes ODEC-36 chooses between")
+		t.Fatal("Write reported only one of the two hashes")
 	}
 }
 
@@ -121,6 +122,41 @@ func TestAFailedApplyLeavesThePreviousConfigOnDisk(t *testing.T) {
 	}
 	if hash, err := AppliedHash(dir); err != nil || hash != firstHash {
 		t.Errorf("previousConfigHash after a failed apply = %q, %v, want %q unchanged", hash, err, firstHash)
+	}
+}
+
+func TestAMissingHeaderKeyLeavesThePreviousConfigOnDisk(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := Write(dir, serverDoc(), fakeStore{userIDRef: userID}); err != nil {
+		t.Fatalf("first Write: %v", err)
+	}
+	before, err := os.ReadFile(filepath.Join(dir, FileName))
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	hash, err := AppliedHash(dir)
+	if err != nil {
+		t.Fatalf("AppliedHash: %v", err)
+	}
+	if _, err := Write(dir, headerDoc("authorization"), fakeStore{headerRef: `{}`}); err == nil {
+		t.Fatal("a missing declared header key was written")
+	}
+	after, err := os.ReadFile(filepath.Join(dir, FileName))
+	if err != nil {
+		t.Fatalf("ReadFile after the failed write: %v", err)
+	}
+	if !bytes.Equal(after, before) {
+		t.Error("a missing header key changed the config Core reads")
+	}
+	if got, err := AppliedHash(dir); err != nil || got != hash {
+		t.Errorf("applied hash after the failed write = %q, %v, want %q unchanged", got, err, hash)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("ReadDir: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Errorf("the failed write left %d files behind", len(entries))
 	}
 }
 

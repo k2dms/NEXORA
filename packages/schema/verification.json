@@ -778,11 +778,11 @@
           "anchor": "fixtures. `Verified: NO — Phase 2` for a compiler that could violate i"
         }
       ],
-      "why": "The compiler now emits the shipped core-plane rules in authored order and explicit inbound-to-server fallbacks. Four goldens and local Xray config acceptance pin those bytes; loopback HTTP/UDP tests exercise the measured routing subset. Invert:true is reported whole because the pinned release ignores it. These checks do not lower legacy browser conditions or execute LIVE-04's browser session, cross-plane reporting and containment. ODEC-37 retains residual predicate semantics; ODEC-05 and ODEC-23 still gate resolver and geo-data behavior. The fourth anchor is doc 33's door-back prohibition: loopback inspection and fixtures exist, but the complete installed session remains unproved."
+      "why": "The compiler now emits the shipped core-plane rules in authored order and explicit inbound-to-server fallbacks. Five goldens and local Xray config acceptance pin those bytes; loopback HTTP/UDP tests exercise the measured routing subset. Invert:true is reported whole because the pinned release ignores it. These checks do not lower legacy browser conditions or execute LIVE-04's browser session, cross-plane reporting and containment. ODEC-37 retains residual predicate semantics; ODEC-05 and ODEC-23 still gate resolver and geo-data behavior. The fourth anchor is doc 33's door-back prohibition: loopback inspection and fixtures exist, but the complete installed session remains unproved."
     },
     {
       "id": "VER-28",
-      "subject": "golden compiled configs pin four of doc 27 §3's six fixtures; shape C's headersRef remains unresolved and fail-closed belongs in chrome.proxy rather than a distinct Xray config",
+      "subject": "golden compiled configs pin five of doc 27 §3's six fixtures; shape C's headersRef is materialized via headersKeys (ODEC-45) and fail-closed belongs in chrome.proxy rather than a distinct Xray config",
       "state": "no-code",
       "owner": "connector",
       "closesBy": {
@@ -796,7 +796,7 @@
         },
         {
           "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "`Verified: NO — deferred to Phase 2` (two of the six, for two reasons)"
+          "anchor": "`Verified: NO — deferred to Phase 2` (one of the six, for that reason)"
         },
         {
           "doc": "docs/architecture/27-config-compilation-pipeline.md",
@@ -811,7 +811,7 @@
           "anchor": "The three canonical configs compile byte-for-byte as shown"
         }
       ],
-      "why": "Tier 2 of ADR-0020. A diff in a golden file is a contract change; its reason belongs in the same diff. Four exist: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `multi-server-ordered` and `two-plane-core-rules` under `connector/testdata/config/`, compared byte-for-byte by `connector/internal/compile/golden_test.go`, which writes only with `-golden.update`. `connector/internal/apply/drive_test.go` recompiles all four, checks the snapshots, materializes with `apply.Write`, and drives Xray 24.11.11 `run -test -c`: all four written configs were accepted and the invalid-port negative control rejected. The corrected bytes use object-shaped policy.levels, VLESS vnext[].users[], explicit per-tag fallbacks after authored rules, referenced freedom/blackhole outbounds, array selectors and inbound-sibling sniffing. This is config acceptance, not runtime routing evidence, and `ODEC-37` remains open. The remaining two cases are shape C's unresolved `headersRef` materialization (`ODEC-36`) and the fail-closed variant, which has no distinct Xray bytes because docs/architecture/30-failure-policy.md §7 puts the block in `chrome.proxy`."
+      "why": "Tier 2 of ADR-0020. A diff in a golden file is a contract change; its reason belongs in the same diff. Five exist: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `shape-c-grpc-tls`, `multi-server-ordered` and `two-plane-core-rules` under `connector/testdata/config/`, compared byte-for-byte by `connector/internal/compile/golden_test.go`, which writes only with `-golden.update`. `connector/internal/apply/drive_test.go` recompiles all five, checks the snapshots, materializes with `apply.Write`, and drives Xray 24.11.11 `run -test -c`: all five written configs were accepted and the invalid-port negative control rejected. The corrected bytes use object-shaped policy.levels, VLESS vnext[].users[], explicit per-tag fallbacks after authored rules, referenced freedom/blackhole outbounds, array selectors and inbound-sibling sniffing. Shape C's headersRef is materialized via headersKeys (ODEC-45): the compiler emits a keyed handle map and apply fills exactly the declared keys from the store. This is config acceptance, not runtime routing evidence, and `ODEC-37` remains open. The remaining case is the fail-closed variant, which has no distinct Xray bytes because docs/architecture/30-failure-policy.md §7 puts the block in `chrome.proxy`."
     },
     {
       "id": "VER-29",

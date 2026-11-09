@@ -14,7 +14,8 @@
   "ws": {
     "path": "/vless-ws",
     "host": "lv1.example.net",
-    "headersRef": "keystore://server/e2b7c4a9/headers"
+    "headersRef": "keystore://server/e2b7c4a9/headers",
+    "headersKeys": ["Authorization"]
   },
   "tag": "srv-e2b7c4a9",
   "source": "import",

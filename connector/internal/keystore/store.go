@@ -199,9 +199,8 @@ func (s Secret) Text() (string, error) {
 	return string(s.Value), nil
 }
 
-// Headers decodes the object-shaped field into the map the registry says it is. Whether this map may reach a
-// compiled config is ODEC-36, which is open; storing and reading it is not in question (doc 32 §6: the ingest
-// door accepts a string or a 32-key map, and this is the map).
+// Headers decodes the object-shaped field into the map the registry says it is. ODEC-45: apply materializes this
+// map into the compiled config's headers block; storing and reading it is the ingest door's job (doc 32 §6).
 func (s Secret) Headers() (map[string]string, error) {
 	if !s.Ref.IsObject() {
 		return nil, &Error{Op: "headers", Ref: s.Ref.String(), Cause: ErrMalformedReference}

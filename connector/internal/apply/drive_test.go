@@ -58,6 +58,7 @@ func TestTheMaterializedGoldensAreConfigsThePinnedReleaseAccepts(t *testing.T) {
 	for _, name := range []string{
 		"shape-a-vision-tcp-tls.golden.json",
 		"shape-b-reality-xhttp.golden.json",
+		"shape-c-grpc-tls.golden.json",
 		"multi-server-ordered.golden.json",
 		"two-plane-core-rules.golden.json",
 	} {
@@ -76,6 +77,9 @@ func TestTheMaterializedGoldensAreConfigsThePinnedReleaseAccepts(t *testing.T) {
 			input.Servers = []compile.Server{vision}
 			if name == "shape-b-reality-xhttp.golden.json" {
 				input.Servers = []compile.Server{reality}
+			}
+			if name == "shape-c-grpc-tls.golden.json" {
+				input.Servers = []compile.Server{driveExample[compile.Server](t, root, "server.grpc-tls.json")}
 			}
 			if name == "multi-server-ordered.golden.json" {
 				profile = driveExample[compile.Profile](t, root, "profile.ordered.json")
@@ -101,6 +105,8 @@ func TestTheMaterializedGoldensAreConfigsThePinnedReleaseAccepts(t *testing.T) {
 			out, err := Write(t.TempDir(), compiled.Document, fakeStore{
 				"keystore://server/3f2a1c9e/user-id": driveSecret,
 				"keystore://server/8b1d4e70/user-id": driveSecret,
+				"keystore://server/c7e5a2d1/user-id": driveSecret,
+				headerRef:                            `{"authorization":"Bearer drive"}`,
 			})
 			if err != nil {
 				t.Fatalf("%s: materializing golden: %v", name, err)

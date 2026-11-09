@@ -9,13 +9,13 @@
 //     places a value may appear (`docs/architecture/22-component-contracts.md` §9), so this file walks for the
 //     grammar rather than for key names — a renamed field cannot smuggle a handle past the substitution;
 //  2. the document handed in is not the document written. compile.Emit runs twice over two documents and the
-//     handle-bearing hash keeps its own bytes, because ODEC-36 is an open question about which of the two
-//     `configHash` covers and this package is not the thing that gets to decide it silently.
+//     handle-bearing hash keeps its own bytes: ODEC-36 makes that document, not the materialized file, the configHash subject.
 package apply
 
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/k2dms/nexora/connector/internal/compile"
@@ -53,6 +53,9 @@ func substitute(v any, at string, r Resolver, depth int) (any, error) {
 	}
 	switch node := v.(type) {
 	case map[string]any:
+		if ref, ok := objectHandle(node); ok {
+			return resolveHeaders(node, ref, at, r)
+		}
 		out := make(map[string]any, len(node))
 		for key, child := range node {
 			replaced, err := substitute(child, at+"."+key, r, depth+1)
@@ -82,16 +85,14 @@ func substitute(v any, at string, r Resolver, depth int) (any, error) {
 	}
 }
 
-// resolve is where a handle stops being a handle. Each refusal keeps its own cause: a string the grammar rejects is
-// the store's error about the reference, a map-shaped field is ODEC-36, and a value that cannot be read is
-// `KeystoreUnavailable` — three codes doc 32 §11 sends to three different places, and none of them says "retry".
+// resolve is where a scalar handle stops being a handle. Object handles are resolved as keyed maps above.
 func resolve(ref, at string, r Resolver) (any, error) {
 	parsed, err := keystore.Parse(ref)
 	if err != nil {
 		return nil, fmt.Errorf("apply: %s holds %w", at, err)
 	}
 	if parsed.IsObject() {
-		return nil, fmt.Errorf("apply: %s holds %s, a reference to an object, and no decision in this repository says how a header map reaches the compiled bytes or the hashed ones; ODEC-36 blocks docs/architecture/23-unified-server-model.md §9's shape C until it does", at, parsed)
+		return nil, fmt.Errorf("apply: %s holds %s as a bare value; an object reference must appear as a keyed map whose values all name that handle", at, parsed)
 	}
 	secret, err := r.Resolve(ref)
 	if err != nil {
@@ -102,4 +103,49 @@ func resolve(ref, at string, r Resolver) (any, error) {
 		return nil, fmt.Errorf("apply: %s could not read %s as a string: %w", at, parsed, err)
 	}
 	return value, nil
+}
+
+func objectHandle(node map[string]any) (string, bool) {
+	var ref string
+	for _, child := range node {
+		value, ok := child.(string)
+		if !ok {
+			return "", false
+		}
+		if ref == "" {
+			parsed, err := keystore.Parse(value)
+			if err != nil || !parsed.IsObject() {
+				return "", false
+			}
+			ref = value
+		} else if value != ref {
+			return "", false
+		}
+	}
+	return ref, ref != ""
+}
+
+func resolveHeaders(node map[string]any, ref, at string, r Resolver) (map[string]any, error) {
+	secret, err := r.Resolve(ref)
+	if err != nil {
+		return nil, fmt.Errorf("apply: %s could not read %s: %w", at, ref, err)
+	}
+	stored, err := secret.Headers()
+	if err != nil {
+		return nil, fmt.Errorf("apply: %s could not read %s as a header map: %w", at, ref, err)
+	}
+	keys := make([]string, 0, len(node))
+	for key := range node {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	out := make(map[string]any, len(keys))
+	for _, key := range keys {
+		value, ok := stored[key]
+		if !ok {
+			return nil, fmt.Errorf("apply: %s names header %q that %s does not hold", at, key, ref)
+		}
+		out[key] = value
+	}
+	return out, nil
 }

@@ -16,7 +16,8 @@
     "serviceName": "kernel-video",
     "multiMode": true,
     "authority": "de1.example.net",
-    "headersRef": "keystore://server/c7e5a2d1/headers"
+    "headersRef": "keystore://server/c7e5a2d1/headers",
+    "headersKeys": ["authorization"]
   },
   "tag": "srv-c7e5a2d1",
   "source": "subscription",

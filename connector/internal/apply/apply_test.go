@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -99,21 +100,80 @@ func TestMaterializedEmitIsDeterministicAndCarriesNoHandle(t *testing.T) {
 	}
 }
 
-func TestMaterializeRefusesAnObjectHandle(t *testing.T) {
-	doc := compile.Document{"outbounds": []any{map[string]any{
-		"streamSettings": map[string]any{"wsSettings": map[string]any{"headers": headerRef}},
-	}}}
-	// The resolver holds a map for this reference, so the refusal below cannot be an unavailable store.
-	_, err := Materialize(doc, fakeStore{headerRef: `{"Authorization":"Bearer x"}`})
-	if err == nil {
-		t.Fatal("Materialize wrote a header map into the config; ODEC-36 is open and a writer is not a decision")
+func TestMaterializeFillsExactlyTheDeclaredHeaderKeys(t *testing.T) {
+	doc := headerDoc("authorization", "x-route")
+	out, err := Materialize(doc, fakeStore{headerRef: `{"authorization":"Bearer x","x-route":"blue","x-extra":"not declared"}`})
+	if err != nil {
+		t.Fatalf("Materialize: %v", err)
 	}
-	if !strings.Contains(err.Error(), "ODEC-36") {
-		t.Errorf("refusal names nothing useful: %v", err)
+	got := atHeaders(t, out)
+	want := map[string]any{"authorization": "Bearer x", "x-route": "blue"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("materialized headers = %v, want exactly %v", got, want)
+	}
+	if original := atHeaders(t, doc); original["authorization"] != headerRef || original["x-route"] != headerRef {
+		t.Errorf("the handle-bearing input was modified: %v", original)
+	}
+	data, err := compile.Emit(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), "keystore://") || strings.Contains(string(data), "not declared") {
+		t.Errorf("materialized bytes carry a handle or an undeclared value: %s", data)
+	}
+}
+
+func TestMaterializeRefusesAMissingHeaderKeyWithoutEchoingValues(t *testing.T) {
+	_, err := Materialize(headerDoc("authorization", "x-route"), fakeStore{headerRef: `{"authorization":"Bearer x"}`})
+	if err == nil {
+		t.Fatal("a missing declared header key materialized")
+	}
+	for _, want := range []string{"config.outbounds[0].streamSettings.wsSettings.headers", `"x-route"`, headerRef} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not name %q: %v", want, err)
+		}
 	}
 	if strings.Contains(err.Error(), "Bearer") {
 		t.Errorf("the refusal echoed a stored value: %v", err)
 	}
+}
+
+func TestMaterializeRefusesMalformedHeaderMaps(t *testing.T) {
+	for _, stored := range []string{`{"authorization":7}`, `["authorization"]`, `null`} {
+		t.Run(stored, func(t *testing.T) {
+			_, err := Materialize(headerDoc("authorization"), fakeStore{headerRef: stored})
+			if err == nil || !strings.Contains(err.Error(), "header map") {
+				t.Fatalf("stored value %s was not refused as a header map: %v", stored, err)
+			}
+		})
+	}
+}
+
+func TestMaterializeRefusesABareObjectHandle(t *testing.T) {
+	doc := compile.Document{"outbounds": []any{headerRef}}
+	_, err := Materialize(doc, fakeStore{headerRef: `{"authorization":"Bearer x"}`})
+	if err == nil || !strings.Contains(err.Error(), "keyed map") {
+		t.Fatalf("a bare object handle was accepted or refused without naming the keyed-map rule: %v", err)
+	}
+	if strings.Contains(err.Error(), "Bearer") {
+		t.Errorf("the refusal echoed a stored value: %v", err)
+	}
+}
+
+func headerDoc(keys ...string) compile.Document {
+	headers := make(map[string]any, len(keys))
+	for _, key := range keys {
+		headers[key] = headerRef
+	}
+	return compile.Document{"outbounds": []any{map[string]any{
+		"streamSettings": map[string]any{"wsSettings": map[string]any{"headers": headers}},
+	}}}
+}
+
+func atHeaders(t *testing.T, doc compile.Document) map[string]any {
+	t.Helper()
+	outbound := doc["outbounds"].([]any)[0].(map[string]any)
+	return outbound["streamSettings"].(map[string]any)["wsSettings"].(map[string]any)["headers"].(map[string]any)
 }
 
 func TestMaterializeKeepsTheStoresAnswerForABrokenReference(t *testing.T) {

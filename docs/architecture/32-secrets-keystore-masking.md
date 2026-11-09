@@ -311,7 +311,7 @@ The other half of the policy, and the half that protects the user from the engin
 | subscription content `sha256` | integrity | change detection; SEC-7 shows legacy already treats it as non-secret |
 | `url` (display form) | feed address | the query-dropped address is what the user recognises; the credential-bearing whole address lives at `urlRef` |
 
-This table is where `docs/architecture/27-config-compilation-pipeline.md:127` and
+This table is where `docs/architecture/27-config-compilation-pipeline.md:125` and
 `docs/architecture/31-security-model.md`'s masking hand-off land: an unrepresentable field is reported by name
 with its value intact, because the field that cannot be compiled is configuration, not a credential.
 

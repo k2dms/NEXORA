@@ -5,7 +5,7 @@
 //
 // Compile is pure: no filesystem, no keystore, no Core. That is what makes the golden files of §3 possible at all,
 // and it is why the two things the pipeline reads but cannot itself resolve — the secret behind a `userIdRef`, the
-// header map behind a `headersRef` — arrive as handles or refuse (see outbound).
+// header map behind a `headersRef` — arrive as handles (apply materializes them; ODEC-45).
 package compile
 
 import (

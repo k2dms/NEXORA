@@ -6,7 +6,7 @@ package compile
 
 import (
 	"fmt"
-	"strings"
+	"unicode/utf8"
 )
 
 // visionFlow is the only non-empty value `server.schema.json#/properties/flow` admits, and the one whose legality is
@@ -180,22 +180,30 @@ func transportBlock(s Server) (string, Document, error) {
 		if s.WS == nil {
 			return "", nil, fmt.Errorf("compile: server %s uses network ws and carries no ws block; `server.schema.json` requires it when network is ws", s.ID)
 		}
-		if err := checkHeaders(s, "ws"); err != nil {
+		headers, err := headersBlock(s.ID, "ws", s.WS.HeadersRef, s.WS.HeadersKeys)
+		if err != nil {
 			return "", nil, err
 		}
 		block := Document{}
 		put(block, "path", s.WS.Path)
 		put(block, "host", s.WS.Host)
+		if headers != nil {
+			block["headers"] = headers
+		}
 		return "wsSettings", block, nil
 	case "grpc":
 		if s.GRPC == nil {
 			return "", nil, fmt.Errorf("compile: server %s uses network grpc and carries no grpc block", s.ID)
 		}
-		if err := checkHeaders(s, "grpc"); err != nil {
+		headers, err := headersBlock(s.ID, "grpc", s.GRPC.HeadersRef, s.GRPC.HeadersKeys)
+		if err != nil {
 			return "", nil, err
 		}
 		block := Document{"serviceName": s.GRPC.ServiceName, "multiMode": s.GRPC.MultiMode}
 		put(block, "authority", s.GRPC.Authority)
+		if headers != nil {
+			block["headers"] = headers
+		}
 		return "grpcSettings", block, nil
 	case "xhttp":
 		if s.XHTTP == nil {
@@ -217,36 +225,31 @@ func transportBlock(s Server) (string, Document, error) {
 	}
 }
 
-// headersKeys is ODEC-45's answer: the server document names the keys the stored object holds, and the
-// materializer fills their values from the store. The compiler emits the key list alongside the handle,
-// because a key list the store cannot know in advance is a masking rule it cannot enforce.
-func checkHeaders(s Server, network string) error {
-	var ref, keys string
-	switch network {
-	case "grpc":
-		ref, keys = s.GRPC.HeadersRef, strings.Join(s.GRPC.HeadersKeys, ",")
-	default:
-		ref, keys = s.WS.HeadersRef, strings.Join(s.WS.HeadersKeys, ",")
+// ODEC-45: the model names the keys; the emitted map keeps handles until apply reads the stored object.
+func headersBlock(id, network, ref string, keys []string) (Document, error) {
+	if ref == "" && len(keys) == 0 {
+		return nil, nil
 	}
-	if ref == "" && keys == "" {
-		return nil
+	if ref != "" && len(keys) == 0 {
+		return nil, fmt.Errorf("compile: server %s (%s) carries a headersRef but no headersKeys; the materializer needs the key list (ODEC-45)", id, network)
 	}
-	if ref != "" && keys == "" {
-		return fmt.Errorf("server %s (%s) carries a headersRef but no headersKeys; the materializer needs the key list to fill the stored map and the masking layer needs it to enumerate (ODEC-45)", s.ID, network)
+	if ref == "" && len(keys) > 0 {
+		return nil, fmt.Errorf("compile: server %s (%s) carries headersKeys without a headersRef; the keys name a map the store does not hold", id, network)
 	}
-	if ref == "" && keys != "" {
-		return fmt.Errorf("server %s (%s) carries headersKeys without a headersRef; the keys name a map the store does not hold", s.ID, network)
+	if len(keys) > 32 {
+		return nil, fmt.Errorf("compile: server %s (%s) names %d headersKeys, past the schema's 32", id, network, len(keys))
 	}
-	return nil
-}
-
-func (s Server) refOf(network string) string {
-	switch network {
-	case "grpc":
-		return s.GRPC.HeadersRef
-	default:
-		return s.WS.HeadersRef
+	out := make(Document, len(keys))
+	for _, key := range keys {
+		if key == "" || utf8.RuneCountInString(key) > 128 {
+			return nil, fmt.Errorf("compile: server %s (%s) names a header key outside the schema's 1-128 characters", id, network)
+		}
+		if _, duplicate := out[key]; duplicate {
+			return nil, fmt.Errorf("compile: server %s (%s) names header key %q twice", id, network, key)
+		}
+		out[key] = ref
 	}
+	return out, nil
 }
 
 // put writes a string field only when the model states it, which is the rule the shapes support: every optional field

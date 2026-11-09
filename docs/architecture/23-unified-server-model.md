@@ -54,8 +54,8 @@ below is complete — an unlisted field is a schema error, not a tolerated extra
 | `flow` | enum | no | `""` | `""`, `xtls-rprx-vision` | XTLS Vision; illegal combinations rejected (§4) |
 | `tls` | `$defs/tlsSettings` | no | — | `serverName` required; `alpn`, `fingerprint`, `insecure` | present **iff** `security = tls` |
 | `reality` | `$defs/realitySettings` | no | — | `publicKey`, `serverName` required; `shortId`, `spiderX`, `fingerprint` | present **iff** `security = reality`; note the absence of `privateKey` (§5) |
-| `ws` | `$defs/wsSettings` | no | — | `path`, `host`, `headersRef` | required when `network = ws` |
-| `grpc` | `$defs/grpcSettings` | no | — | `serviceName` required; `multiMode`, `authority`, `headersRef` | required when `network = grpc` |
+| `ws` | `$defs/wsSettings` | no | — | `path`, `host`, `headersRef`, `headersKeys` | required when `network = ws` |
+| `grpc` | `$defs/grpcSettings` | no | — | `serviceName` required; `multiMode`, `authority`, `headersRef`, `headersKeys` | required when `network = grpc` |
 | `xhttp` | `$defs/xhttpSettings` | no | — | `mode`, `path` required; `host`, `extra` | required when `network = xhttp` |
 | `h2` | `$defs/h2Settings` | no | — | `path` required; `host` | required when `network = h2`, which also forces `security = tls` |
 | `tag` | `^srv-[0-9a-f]{8}$` | no | derived | `#/properties/tag` | the Xray outbound tag; §6 |
@@ -89,7 +89,7 @@ recorded in `packages/schema/examples/invalid/reasons.json`.
 | Secret | Lives | Reference field | In any config byte written to disk? |
 |---|---|---|---|
 | VLESS user id | keystore | `packages/schema/server.schema.json#/properties/userIdRef` | yes, in the generated Core config, in-memory only for Xray's own reader — see the file-permission note below |
-| gRPC / WS `:authorization` headers | keystore | `$defs/headersRef` — the two blocks that have the field; `xhttpSettings` and `h2Settings` have none | same |
+| gRPC / WS `authorization` headers | keystore | `$defs/headersRef` — the two blocks that have the field; `xhttpSettings` and `h2Settings` have none | same |
 | REALITY **private** key | never client-side | no field exists | not representable: `packages/schema/examples/invalid/server.reality-with-privatekey.json`. A client holding a server's private key is not a client |
 | Subscription `Authorization` | keystore | `packages/schema/subscription-source.schema.json#/properties/headersRef` | never leaves the extension; this is exactly the SEC-1 field that legacy replicated into a Gist via `transformValueKeys` (`omega-target/src/options.coffee:27`) |
 
@@ -160,10 +160,11 @@ These are illustrative here and **normative in `connector/testdata/config/*.gold
 `⟨secret⟩` fields are materialized by the Connector from the keystore at write time and appear in no extension
 transit.
 
-Two of the three are pinned by a golden file today — `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`
-and `shape-b-reality-xhttp.golden.json` hold the emitted bytes, compared byte-for-byte by
-`connector/internal/compile/golden_test.go` — and shape C is refused rather than pinned, because its `headersRef` is
-a handle for an *object* materialized by the key list in `headersKeys` (`ODEC-45`'s answer). Four byte mappings are now
+All three are pinned by golden files today — `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`,
+`shape-b-reality-xhttp.golden.json` and `shape-c-grpc-tls.golden.json` hold the emitted bytes, compared byte-for-byte by
+`connector/internal/compile/golden_test.go`. Shape C's `headersRef` is materialized by the key list in `headersKeys`
+(`ODEC-45`'s answer): the compiler emits a keyed handle map, and apply fills exactly the declared keys from the store.
+Four byte mappings are now
 implemented: every per-server inbound is SOCKS5; `direct` and `block` declare `freedom` and `blackhole` outbounds;
 `sniffing` is an inbound sibling with `protocols` renamed to `destOverride`; routing `network` and `protocol`
 remain arrays. The materialized goldens pass Xray 24.11.11's config test, not a remote-server handshake.
@@ -247,7 +248,7 @@ make a REALITY handshake failure undiagnosable. Their field-level masking rules 
                           "alpn": ["h3", "h2", "http/1.1"], "fingerprint": "firefox" },
         "grpcSettings": { "serviceName": "kernel-video", "multiMode": true,
                           "authority": "de1.example.net",
-                          "headers": { ":authorization": "⟨secret: headersRef⟩" } } } }
+                          "headers": { "authorization": "⟨secret: headersRef⟩" } } } }
   ],
   "routing": { "domainStrategy": "AsIs", "rules": [
     { "inboundTag": ["in-srv-c7e5a2d1"], "outboundTag": "srv-c7e5a2d1" }
@@ -269,7 +270,7 @@ one inbound with internal routing — is considered and rejected there, not here
 | Every field has a description | the undocumented-field coverage check in `packages/schema/scripts/verify.mjs` | **GREEN** |
 | `h2` implies `tls` | `allOf` clause 8 + `packages/schema/examples/invalid/server.h2-without-tls.json` | **GREEN** |
 | A subscription server names its subscription | `allOf` clause 9 | **GREEN** |
-| The three canonical configs compile byte-for-byte as shown | two of three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json` and `shape-b-reality-xhttp.golden.json`, compared by `connector/internal/compile/golden_test.go`; shape C is refused at its `headersRef` (`ODEC-45`) and `ODEC-37` tracks the remaining predicate semantics beyond the measured core-plane fixture | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
+| The three canonical configs compile byte-for-byte as shown | all three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`, `shape-b-reality-xhttp.golden.json` and `shape-c-grpc-tls.golden.json`, compared by `connector/internal/compile/golden_test.go`; `ODEC-37` tracks the remaining predicate semantics beyond the measured core-plane fixture | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
 | Tag collision across the server set is a compile error | `connector/internal/compile/resolve.go` refuses a second server whose derived tag is taken, naming both ids — `TestATagCollisionNamesBothServers` | Verified: NO — deferred to Phase 2 |
 | The generated config file is owner-only on disk | nothing | Verified: NO — LIVE-18 |
 | A non-VLESS server in a legacy subscription is reported, not dropped | nothing (parser does not exist) | Verified: NO — `LIVE-14` carries the import; `docs/architecture/39-verification-matrix.md` will own the row |

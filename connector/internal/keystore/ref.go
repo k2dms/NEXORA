@@ -64,8 +64,7 @@ func (r Ref) Shape() string {
 }
 
 // IsObject reports the one fact the compiler needs about a reference before it resolves it: whether the secret
-// behind it is a map. ODEC-36 is open precisely because no decision says how a map behind a handle reaches the
-// config; the store can hold one, and doc 32 §6 says the ingest door accepts both shapes.
+// behind it is a map. ODEC-45: the compiler emits the handle as a keyed map; apply materializes it from the store.
 func (r Ref) IsObject() bool { return r.Shape() == "object" }
 
 // blobName is the file this reference's protected value lives in. The separator is `_` because the shape's

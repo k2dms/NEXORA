@@ -41,7 +41,7 @@ The contract:
    iteration (Go map order is randomised by design — an unsorted encoder would produce a different hash on
    every call). The engine being replaced never sorted either: the PAC it ships is built by iterating the profile
    table in whatever order the object has (`omega-pac/src/pac_generator.coffee:32`), so byte-determinism is an
-   obligation NEXORA takes on, not one it inherits. Four golden files now check it; the remaining fixture obligations
+   obligation NEXORA takes on, not one it inherits. Five golden files now check it; the remaining fixture obligations
    below keep this contract's row in §9 open.
 2. **No clocks, no paths, no PIDs** in the config. `createdAt`/`updatedAt` are envelope bookkeeping
    (`docs/architecture/23-unified-server-model.md` §8) and MUST NOT reach the compiled bytes. The exclusion is
@@ -62,23 +62,22 @@ The contract:
 5. **Encoding is UTF-8 with LF**, and arrays keep input order where order is meaningful — `serverIds` ordering
    for `selection.mode: ordered` (`docs/architecture/23-unified-server-model.md` §8) is semantics, so it is
    *not* sorted even though object keys are.
-6. The hash is over the exact bytes written, lowercase hex sha256, matching the one pattern used everywhere
+6. The hash is over the handle-bearing document's bytes (ODEC-36), lowercase hex sha256, matching the one pattern used everywhere
    (`packages/schema/protocol/commands/config.apply.json#/result/properties/configHash`).
 
 **Golden fixtures** are the test: `connector/testdata/config/*.golden.json`, one per canonical shape — the
 three in `docs/architecture/23-unified-server-model.md` §9 plus one multi-server profile, one with core-plane
 rules, one fail-closed variant. A golden file is compared byte-for-byte, and `docs/architecture/39-verification-matrix.md`
-owns the rule that a change to a golden file requires a named reason in the same commit. Four of the six are
-pinned: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `multi-server-ordered` and `two-plane-core-rules`.
-`connector/internal/compile/golden_test.go` compiles the contract examples and compares all four byte-for-byte;
-it writes snapshots only with `-golden.update`. The remaining two cases have different reasons: shape C stops at
-its `headersRef`, whose object materialization is still undecided -- how a `keystore://` handle for an *object*
-reaches the compiled config is decided (ODEC-45): the server document gains `headersKeys`, the key list the stored object holds, and the materializer fills their values from the store; the
+owns the rule that a change to a golden file requires a named reason in the same commit. Five of the six are
+pinned: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `shape-c-grpc-tls`, `multi-server-ordered` and `two-plane-core-rules`.
+`connector/internal/compile/golden_test.go` compiles the contract examples and compares all five byte-for-byte;
+it writes snapshots only with `-golden.update`. Shape C's `headersRef` is materialized by the key list in `headersKeys`
+(ODEC-45): the compiler emits a keyed handle map, and apply fills exactly the declared keys from the store. The
 fail-closed variant has no bytes of
 its own because `docs/architecture/30-failure-policy.md` §7 puts the block in `chrome.proxy`, not in Xray.
-`Verified: NO — deferred to Phase 2` (two of the six, for two reasons).
+`Verified: NO — deferred to Phase 2` (one of the six, for that reason).
 
-All four materialized configs were also accepted by Xray 24.11.11 through `connector/internal/apply/drive_test.go`; §9 distinguishes this from runtime evidence.
+All five materialized configs were also accepted by Xray 24.11.11 through `connector/internal/apply/drive_test.go`; §9 distinguishes this from runtime evidence.
 
 ## 4. Port allocation
 
@@ -141,8 +140,8 @@ subscription into profiles. Silently allocating ports until the range is exhaust
 | Built-in rule targets | `connector/internal/compile/split.go` | referenced `direct` and `block` targets emit `freedom` and `blackhole` outbounds respectively, after server outbounds in fixed `direct`, `block` order; unreferenced built-ins are not emitted |
 | Routing selectors and priority | `connector/internal/compile/split.go`, `compile.go` | `network` and `protocol` retain array form; authored rules keep first-match priority ahead of last-priority `inboundTag: [in-srv-<8 hex>]` → `outboundTag: srv-<8 hex>` fallbacks for each selected tag. These explicitly pair otherwise-unmatched ports to their servers instead of relying on Xray's first outbound; the multi-server golden pins both pairings. Routing's `protocol` selector is separate from the strict sniffing allowlist |
 
-These are implemented, tested interim forms. `connector/internal/apply/drive_test.go` recompiles the four golden
-inputs, compares the snapshots, then calls `apply.Write` and Xray 24.11.11 `run -test -c`: all four written configs
+These are implemented, tested interim forms. `connector/internal/apply/drive_test.go` recompiles the five golden
+inputs, compares the snapshots, then calls `apply.Write` and Xray 24.11.11 `run -test -c`: all five written configs
 were accepted and the invalid-port control rejected. `connector/internal/compile/drive_test.go` separately checks loopback HTTP and SOCKS5 UDP; `ODEC-37` retains the unproven predicate semantics.
 
 ## 7. The unrepresentable report
@@ -192,11 +191,11 @@ is an apply that failed while a real Core was loading the previous config).
 | `domainStrategy` accepts only Xray's three values | `packages/schema/scripts/verify.mjs` "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" | **GREEN** |
 | `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256`; `connector/internal/compile/split.go` fills it and its bounds are tested, and `connector/cmd/nexora-connector/config_apply.go` carries what it fills into the command answer | **GREEN** for the shape; the *reporting behaviour* is Verified: NO — no session shows a browser reporting rather than dropping it |
 | Every `*Hash` field is one canonical lowercase sha256 pattern | the coverage check in `packages/schema/scripts/verify.mjs` "${name}.${part}.${field} uses the canonical sha256 pattern" | **GREEN** |
-| Compilation is byte-deterministic | the serializer and four goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
+| Compilation is byte-deterministic | the serializer and five goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
 | Non-loopback bind is impossible to emit | `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before stage 7 returns, and `compile_test.go` shows an `0.0.0.0` inbound cannot survive it | Verified: NO — deferred to Phase 2 |
 | Block port range and allocation range are disjoint | `connector/internal/compile/ports.go` refuses a range that overlaps the block range rather than drawing around it, and `model_test.go` checks the two shipped documents | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | `ports.go` refuses the whole set naming the count, so no partial document is ever emitted; whether `QuotaExceeded` is that count's code is `ODEC-03`'s question | Verified: NO — deferred to Phase 2 |
-| The core-rule and per-tag inbound spellings a golden must pin | §5–§6 record the implemented interim forms; `split_test.go` and `golden_test.go` pin their emitted bytes, and `connector/internal/apply/drive_test.go` measures acceptance of four materialized configs by Xray 24.11.11. Loopback HTTP/UDP tests additionally verify the measured routing subset; `invert: true` is reported whole because Core ignores it. `ODEC-37` retains the remaining predicate semantics | open decision, `docs/architecture/40-open-decisions.md` |
+| The core-rule and per-tag inbound spellings a golden must pin | §5–§6 record the implemented interim forms; `split_test.go` and `golden_test.go` pin their emitted bytes, and `connector/internal/apply/drive_test.go` measures acceptance of five materialized configs by Xray 24.11.11. Loopback HTTP/UDP tests additionally verify the measured routing subset; `invert: true` is reported whole because Core ignores it. `ODEC-37` retains the remaining predicate semantics | open decision, `docs/architecture/40-open-decisions.md` |
 | A failed apply leaves the previous config applied | `connector/internal/apply/write_test.go` writes a document whose secret is missing over a good config and re-reads the file, byte-for-byte, plus the hash the contract would report | Verified: NO — deferred to Phase 2 |
 | §2's seven stages and §8's write are reachable from one command frame | `connector/cmd/nexora-connector/config_apply.go` — compare-and-swap against the applied-state record, the intent documents the frame itself carries, compile, atomic write, port reservation into the applied-state record, stop-then-start — with `config_apply_test.go` showing a compiled file on disk, a child handed that path, and each refusal leaving everything after it untouched | Verified — the intent documents ride the frame, the directories are doc 34 §7's per-user layout, and `main.go` registers `config.apply` in the dispatcher; the runtime half of a real frame from an extension is the live rows, which are still `SKIPPED` |
 | `localDNS` semantics decided before Phase 2 ships | — | open decision, `docs/architecture/40-open-decisions.md` |

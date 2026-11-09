@@ -128,19 +128,63 @@ func TestShapeBCompilesAndKeepsTheEmptyFlow(t *testing.T) {
 	}
 }
 
-// doc 23 §9's shape C shows `"headers": {":authorization": "⟨secret: headersRef⟩"}` — an object at a position where
-// the model holds one `keystore://` string, whose key names the schema never lists. Refusing is the honest answer
-// until ODEC-45 says how an object handle is substituted.
-func TestShapeCIsRefusedAtTheHeadersRef(t *testing.T) {
+func TestShapeCCompilesWithAKeyedHeaderHandle(t *testing.T) {
 	server := example[Server](t, "server.grpc-tls.json")
 	profile := profileWith(t, "profile.ordered.json", server.ID)
-	_, err := Compile(shippedInput(t, []Server{server}, []Profile{profile}, nil))
-	if err == nil {
-		t.Fatal("shape C compiled; the header map behind headersRef has no emitted form yet")
+	result, err := Compile(shippedInput(t, []Server{server}, []Profile{profile}, nil))
+	if err != nil {
+		t.Fatalf("Compile(shape C): %v", err)
 	}
-	for _, want := range []string{"headersRef", "ODEC-45"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("the refusal does not name %q: %v", want, err)
+	want := `"grpcSettings":{"authority":"de1.example.net","headers":{"authorization":"keystore://server/c7e5a2d1/headers"},"multiMode":true,"serviceName":"kernel-video"}`
+	if !bytes.Contains(result.Bytes, []byte(want)) {
+		t.Errorf("shape C does not carry the keyed header handle\n got: %s\nwant it to contain: %s", result.Bytes, want)
+	}
+	if bytes.Contains(result.Bytes, []byte("headersKeys")) {
+		t.Errorf("headersKeys is model metadata, not an Xray field: %s", result.Bytes)
+	}
+	if result.Hash != Hash(result.Bytes) {
+		t.Error("shape C hash is not the handle-bearing document digest")
+	}
+}
+
+func TestWebSocketHeadersKeepTheirDeclaredCasing(t *testing.T) {
+	server := example[Server](t, "server.ws-tls.json")
+	profile := profileWith(t, "profile.ordered.json", server.ID)
+	result, err := Compile(shippedInput(t, []Server{server}, []Profile{profile}, nil))
+	if err != nil {
+		t.Fatalf("Compile(ws headers): %v", err)
+	}
+	want := `"headers":{"Authorization":"keystore://server/e2b7c4a9/headers"}`
+	if !bytes.Contains(result.Bytes, []byte(want)) {
+		t.Errorf("the declared header casing was not preserved\n got: %s\nwant it to contain: %s", result.Bytes, want)
+	}
+}
+
+func TestHeaderHandleAndKeysAreRequiredTogether(t *testing.T) {
+	for _, network := range []string{"ws", "grpc"} {
+		for _, missing := range []string{"ref", "keys"} {
+			t.Run(network+"_"+missing, func(t *testing.T) {
+				server := example[Server](t, "server.grpc-tls.json")
+				server.Network = network
+				ref, keys := "keystore://server/c7e5a2d1/headers", []string{"authorization"}
+				if missing == "ref" {
+					ref = ""
+				} else {
+					keys = nil
+				}
+				switch network {
+				case "ws":
+					server.GRPC = nil
+					server.WS = &WSBlock{Path: "/", HeadersRef: ref, HeadersKeys: keys}
+				case "grpc":
+					server.GRPC.HeadersRef, server.GRPC.HeadersKeys = ref, keys
+				}
+				profile := profileWith(t, "profile.ordered.json", server.ID)
+				_, err := Compile(shippedInput(t, []Server{server}, []Profile{profile}, nil))
+				if err == nil || !strings.Contains(err.Error(), "headers") {
+					t.Fatalf("unpaired headers ref/keys compiled: %v", err)
+				}
+			})
 		}
 	}
 }

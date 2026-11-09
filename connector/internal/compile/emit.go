@@ -4,7 +4,7 @@
 // different hashing rule. The other stages are resolve.go, split.go, ports.go, compile.go and validate.go.
 //
 // What is deliberately NOT in this package: the keystore read behind a `userIdRef` or `headersRef` (the compiler
-// emits the handle or refuses — see outbound.go's headersRef refusal and ODEC-36), the writer that renames the file
+// emits the handle; apply materializes it — ODEC-45), the writer that renames the file
 // into place (doc 27 §8), and the probe that ends stage 7, which needs a Core to run.
 //
 // The contract this file implements is doc 27 §3, in its order:
@@ -31,12 +31,9 @@ import (
 	"unicode/utf8"
 )
 
-// HashInputNote names the decision this package deliberately does not make.
-// docs/architecture/22-component-contracts.md §9 says every layer above the keystore carries a `keystore://<ref>`
-// handle, and docs/architecture/23-unified-server-model.md §9 marks those positions ⟨secret⟩. Which document stage 6
-// hashes — that handle-bearing one, or the materialized bytes actually written — is ODEC-36. Emit and Hash are
-// therefore two calls, so that whichever way the decision lands, the emitter is not the thing that decided.
-const HashInputNote = "ODEC-36: which bytes configHash covers is undecided"
+// HashInputNote records ODEC-36's answer: configHash is the handle-bearing document's digest, not the materialized
+// file's bytes. Emit and Hash are two calls so the emitter is not the thing that decided which bytes to hash.
+const HashInputNote = "ODEC-36: configHash covers the handle-bearing document"
 
 // maxDepth bounds the recursion. Xray's own shape (docs/architecture/23-unified-server-model.md §9) nests about five
 // levels deep, so the limit is not a schema rule — it is the guard against a cyclic document, which a Go map can hold

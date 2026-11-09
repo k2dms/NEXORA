@@ -1046,7 +1046,7 @@
         "id": "ODEC-45",
         "decided": "2026-11-07",
         "was": "how a keystore:// handle for an *object* reaches the compiled config -- the materializer resolving the handle into the key-value map the stored value holds, the compiler refusing object handles until a schema field names the map, or shape C losing headers entirely",
-        "artefact": "the second option its own entry listed: the server document gains  (server.schema.json#//headersKeys), the key list the stored object behind  holds, and the materializer fills their values from the store. The compiler now emits headers when both  and  are present, and refuses either without the other -- the masking layer enumerates from the model, not from the store. It frees 's shape-C half",
+        "artefact": "the second option its own entry listed: the server document gains headersKeys (server.schema.json#/$defs/wsSettings/properties/headersKeys and #/$defs/grpcSettings/properties/headersKeys), the key list the stored object behind headersRef holds, and the materializer fills their values from the store. The compiler now emits headers when both headersRef and headersKeys are present, and refuses either without the other -- the masking layer enumerates from the model, not from the store. It frees VER-28's shape-C half",
         "freed": {
           "verification": [
             "VER-28"

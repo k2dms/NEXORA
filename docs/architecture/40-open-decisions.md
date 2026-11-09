@@ -383,8 +383,8 @@ machine that slept past the window already has a fresh budget waiting. The id is
 schema declares and the code reads.
 
 `ODEC-37` began with four missing byte spellings. They now have emitted forms and a fourth golden:
-SOCKS5 inbounds, declared direct/block outbounds, inbound sniffing, and network/protocol arrays. Xray 24.11.11
-accepts the four materialized fixtures; loopback HTTP and actual SOCKS5 UDP exercise the routing rules with
+SOCKS5 inbounds, declared direct/block outbounds, inbound sniffing, and network/protocol arrays. At that measurement Xray 24.11.11
+accepted the four materialized fixtures; loopback HTTP and actual SOCKS5 UDP exercise the routing rules with
 positive and negative controls. The runtime probe also shows why acceptance is not enough: `invert:true` is
 ignored, and an unknown outbound falls back to the default. The compiler reports inverted rules whole and
 never emits unknown tags. The question is narrowed, not retired: remaining protocol predicates need their own
@@ -404,8 +404,9 @@ that kept the spans apart died with it. The cost its option named is stated besi
 an unchanged reference does not move this hash, and picking a rotation up is `core.restart`'s, the user's action.
 The log-destination half the entry had picked up along the way settled itself the same way: under the handles
 answer, the emitted document carries no path at all and the state directory stays runtime wiring. The headersRef
-half did not settle — how a `keystore://` handle for an *object* reaches the compiled config is decided (ODEC-45):
-answered by its own second option. The id is retired in `packages/schema/open-decisions.json#/retired`; it closes
+half settled with ODEC-45: how a `keystore://` handle for an *object* reaches the compiled config is
+answered by its own second option — the server document gains `headersKeys`, the compiler emits a keyed handle map,
+and apply fills exactly the declared keys from the store. The id is retired in `packages/schema/open-decisions.json#/retired`; it closes
 `VER-78`, and `VER-88`, the registration the entry had gated beside it, re-gates on `ODEC-44`.
 
 

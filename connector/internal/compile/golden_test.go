@@ -22,9 +22,7 @@ var updateGoldens = flag.Bool("golden.update", false, "rewrite the golden files 
 //   - one multi-server profile: pinnable, and it is the case where the allocator's output is visible — two inbounds,
 //     two outbounds, and the tags pairing them.
 //   - one with core-plane rules: sniffing and direct/block declarations; authored reports stay outside config bytes.
-//   - shape C (grpc): refused, not pinnable. `server.grpc-tls.json` carries a `headersRef`, and no decision says how a
-//     handle for an *object* is materialized — `TestShapeCIsRefusedAtTheHeadersRef` pins the refusal, and ODEC-36
-//     owns the answer.
+//   - shape C (grpc): pinnable with the header names from ODEC-45; every emitted header value remains a handle.
 //   - one fail-closed variant: no such file. docs/architecture/30-failure-policy.md §7 puts the fail-closed proxy in
 //     `chrome.proxy`, not in the Xray document, so a fail-closed profile compiles to the same bytes with a different
 //     `Block` carry-through, which the golden for shape A already shows.
@@ -35,6 +33,7 @@ func TestTheCompiledShapesMatchTheirGoldens(t *testing.T) {
 	}{
 		{"shape-a-vision-tcp-tls.golden.json", goldenShapeA},
 		{"shape-b-reality-xhttp.golden.json", goldenShapeB},
+		{"shape-c-grpc-tls.golden.json", goldenShapeC},
 		{"multi-server-ordered.golden.json", goldenMultiServer},
 		{"two-plane-core-rules.golden.json", goldenTwoPlaneCoreRules},
 	} {
@@ -92,6 +91,17 @@ func goldenShapeB(t *testing.T) []byte {
 	result, err := Compile(shippedInput(t, []Server{server}, []Profile{profile}, nil))
 	if err != nil {
 		t.Fatalf("Compile(shape B): %v", err)
+	}
+	return result.Bytes
+}
+
+func goldenShapeC(t *testing.T) []byte {
+	t.Helper()
+	server := example[Server](t, "server.grpc-tls.json")
+	profile := profileWith(t, "profile.ordered.json", server.ID)
+	result, err := Compile(shippedInput(t, []Server{server}, []Profile{profile}, nil))
+	if err != nil {
+		t.Fatalf("Compile(shape C): %v", err)
 	}
 	return result.Bytes
 }

@@ -6,8 +6,8 @@
 > falsified the original plan, the exact inventory of what exists on disk, and the precise next steps.
 > Written 2026-11-04. English because it is the repository language.
 
-Status as of 2026-11-07: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier.** The latest continuation is §4.36; older scope and inventory
+Status as of 2026-11-08: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
+supervisor, health prober and receipt verifier.** The latest continuation is §4.45; older scope and inventory
 paragraphs below are dated history, not a prohibition on implementation. §7 records the push authorization and ref.
 
 ---
@@ -630,6 +630,13 @@ a contract bound and its Go mirror add pointers, not addresses inside code, and 
 files produced were re-anchored, not born. The name figure reads two lower than the commit before — the answered
 bullet and row stop citing the register's basename — while the pointer figure gains four, the bound and the ledgers.
 `VER-29` stays in the queue — it closes by `LIVE-03`, so the gate lifts without the row leaving.
+§4.45 moves the set a fortieth time — **2309 / 609 / 1591**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of 7beff1c: every doc file `0 / 0 / 0` except
+this one `0 / +3 / 0`, the three pointers its record names (the two `headersKeys` schema fields and the retirement
+ledger). The path:line figure does not move: the seven blank targets the Go insertions produced were re-anchored
+onto the same content, and the doc edits changed digits and prose, not addresses. The name figure does not move:
+no document or script was added or removed from a citation. `VER-28` stays in the queue — `ODEC-37` retains
+residual predicate semantics — and `VER-29` stays for `LIVE-03`.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -1502,25 +1509,25 @@ second answer to a question `compile` already answers.
 above the keystore carries a handle and `docs/architecture/23-unified-server-model.md` §9 marks those positions
 ⟨secret⟩, but neither lists a field name — and a substitution keyed on `id` would ship a handle to Core the first time
 a field is renamed or a new credential position appears. So `substitute` recurses the whole document and asks one
-question of each string: does `keystore.Parse` accept it (`connector/internal/apply/apply.go:50`). Depth is bounded by
+question of each string: does `keystore.Parse` accept it (`connector/internal/apply/apply.go:90`). Depth is bounded by
 compile's own 32 (`:34`), because a document deeper than the emitter that wrote it is a cycle nobody should be hashing.
-The refusal keeps the path it failed at (`:88`), which is why a missing secret says `outbounds[0].settings.vnext[0]…`
+The refusal keeps the path it failed at (`:92`), which is why a missing secret says `outbounds[0].settings.vnext[0]…`
 and never says what it could not read.
 
 **Two documents, two hashes, and no decision taken in the middle of a writer.** ODEC-36 asks which byte string
 `configHash` covers — the handle-bearing document or the materialized file — and `compile.HashInputNote` exists so the
 emitter is not the thing that decided. `Write` therefore emits twice and reports both
-(`connector/internal/apply/write.go:103` and `connector/internal/apply/write.go:104`);
-`connector/internal/apply/write_test.go:71` asserts the two differ, because two equal hashes
+(`connector/internal/apply/write.go:102` and `connector/internal/apply/write.go:103`);
+`connector/internal/apply/write_test.go:72` asserts the two differ, because two equal hashes
 would mean one of them is not what it claims. The file on disk is re-read and re-hashed separately (`AppliedHash`,
-`:114`) so doc 25 §11's drift check compares a writer's claim against bytes that survived the rename. And "nothing was
+`:113`) so doc 25 §11's drift check compares a writer's claim against bytes that survived the rename. And "nothing was
 applied yet" is the empty string rather than a sentinel, because
 `packages/schema/protocol/commands/config.apply.json#/result/properties/previousConfigHash` already admits `^([0-9a-f]{64})?$`
 — a pattern the contract accepts beats a value invented to mean absence.
 
 **The rollback is now a test, and it is still only half the row.** `VER-29`'s sentence is "a failed `config.apply`
 leaves the previous config applied and reports `previousConfigHash`". The measurable half is
-`connector/internal/apply/write_test.go:85`: a document naming a secret the store does not have fails after the
+`connector/internal/apply/write_test.go:86`: a document naming a secret the store does not have fails after the
 handle-bearing emit and before a byte is written, the previous file comes back byte-identical, the directory holds one
 entry — no temp left behind — and the hash the caller would report has not moved. The half nothing in this repository
 can measure is the Core that was already signalled and the extension that believed the old hash. `VER-29` therefore
@@ -1538,11 +1545,11 @@ not buy is also now written down: there is no directory-level flush on Windows, 
 the metadata flush can lose the rename — and doc 32 §13's answer is that the file is re-derivable, so the recovery is a
 re-apply. doc 27 §8 carries that sentence.
 
-**What it refuses to invent.** An object-shaped handle is refused by name (`connector/internal/apply/apply.go:93`),
+**What it refuses to invent.** An object-shaped handle is refused by name (`connector/internal/apply/apply.go:94`),
 because ODEC-36 blocks shape C and a writer that guessed would make the decision a bug report later; the compiler's own
 refusal at `connector/internal/compile/outbound.go:229` stays, since `compile` still takes no store. And the corpus
 names four properties of this file — owner, lifetime, portability, verifiability — and never a path, so `Write` takes
-the directory from its caller and refuses an empty one (`connector/internal/apply/write.go:43`): naming
+the directory from its caller and refuses an empty one (`connector/internal/apply/write.go:42`): naming
 `%LOCALAPPDATA%\NEXORA\config` would be this slice inventing an ADR-shaped fact. That choice belongs to the slice that
 wires `config.apply`.
 
@@ -3172,6 +3179,40 @@ empty, `go -C connector vet ./...` silent. What this slice does not claim: a Cor
 rows are `SKIPPED`, `VER-29`'s `LIVE-03` still owed), or a browser that authored the disagreement — the schema makes
 that document unrepresentable, which is the contract half the question asked for.
 
+### 4.45 Shape C's headers are materialized — `ODEC-45` answered by its second option (2026-11-08)
+
+**What the decision is.** The compiler emits a keyed handle map for ws/grpc `headers`: each declared key in
+`headersKeys` (`packages/schema/server.schema.json#/$defs/wsSettings/properties/headersKeys` and
+`packages/schema/server.schema.json#/$defs/grpcSettings/properties/headersKeys`) maps to the `headersRef` handle.
+The materializer (`connector/internal/apply/apply.go`) detects the map where every value is the same object-shaped
+keystore reference, reads the stored map via `secret.Headers()`, and fills exactly the declared keys — sorted, no
+extras, no missing. The compiler refuses `headersRef` without `headersKeys` and vice versa; the masking layer
+enumerates from the model, not from the store. `ODEC-36` is answered in the same slice: `configHash` covers the
+handle-bearing document's bytes (`compile.HashInputNote`), not the materialized file.
+
+**What closed.** `ODEC-45` retires in `packages/schema/open-decisions.json#/retired` — the artefact text was repaired
+(missing identifiers restored). `VER-28` moves from four to five goldens: `shape-c-grpc-tls.golden.json` joins the
+set under `connector/testdata/config/`, compared byte-for-byte by `connector/internal/compile/golden_test.go`.
+`connector/internal/apply/drive_test.go` recompiles all five, materializes with `apply.Write`, and drives Xray
+24.11.11 `run -test -c`: all five accepted, the invalid-port control rejected. The remaining case is the fail-closed
+variant, which has no distinct Xray bytes because doc 30 §7 puts the block in `chrome.proxy`. `VER-28` does **not**
+close: `ODEC-37` retains residual predicate semantics. `VER-29` does **not** close: `LIVE-03` is still owed.
+
+**What was cleaned.** Stale `ODEC-36`/`ODEC-45` comments across seven Go files (`emit.go`, `compile.go`, `ref.go`,
+`store.go`, `ref_test.go`, `write.go`, `config_apply.go`) updated to state the answer, not the question. The
+`:authorization` spelling in doc 23 reconciled to `authorization` (lowercase, matching the emitted bytes). The
+`server.ws-tls.json` example gained `headersKeys` to pair its existing `headersRef`. A dead `codeMarkers` entry
+removed from `config_apply.go`. Seven blank-target citations re-anchored after line insertions in `apply.go`,
+`write.go` and `write_test.go` shifted the cited lines.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1234 checks**. `node tools/check-doc-evidence.mjs` →
+green; §4.4's final ledger paragraph has the set and the per-file deltas. `node tools/check-no-secrets.mjs` →
+**498 files**, unchanged. ADR shape → **22 records**, layout guards and the legacy backup check → green.
+`go -C connector test -count=1 ./...` → **fifteen `ok` lines**, `gofmt -l connector` empty, `go -C connector vet ./...`
+silent. Live Xray: all five materialized goldens accepted, invalid-port control rejected. What this slice does not
+claim: runtime routing evidence (config acceptance only), a browser frame for `VER-29`, or `ODEC-37`'s residual
+predicates.
+
 ---
 
 ## 5. Verification state to the letter
@@ -3323,7 +3364,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched. Next: the headersRef materialization (ODEC-45) and the remaining predicate semantics (ODEC-37), then the live rows. ODEC-35 is answered (ADR-0022).
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest). Next: the remaining predicate semantics (ODEC-37), then the live rows. ODEC-35 is answered (ADR-0022).
 residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.

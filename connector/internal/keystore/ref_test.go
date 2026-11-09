@@ -105,8 +105,8 @@ func TestFieldShapesComeFromTheRegistry(t *testing.T) {
 			t.Errorf("IsObject for %q = %v, want %v", tc.field, got, want)
 		}
 	}
-	// The one field whose value is a map is the reason ODEC-36 exists; if the registry ever records a second
-	// object-shaped field, the compile path's refusal needs re-reading, so this fails rather than adapts.
+	// The one field whose value is a map is what ODEC-45's headersKeys names; if the registry ever records a second
+	// object-shaped field, the compile path's pairing check needs re-reading, so this fails rather than adapts.
 	object := 0
 	for _, f := range contract.SecretFields {
 		if f.ValueShape == "object" {
@@ -114,7 +114,7 @@ func TestFieldShapesComeFromTheRegistry(t *testing.T) {
 		}
 	}
 	if object != 1 {
-		t.Errorf("the vocabulary records %d object-shaped fields, want the one `headers` ODEC-36 is about", object)
+		t.Errorf("the vocabulary records %d object-shaped fields, want the one `headers` ODEC-45 is about", object)
 	}
 }
 
