@@ -7,7 +7,7 @@
 > Written 2026-11-04. English because it is the repository language.
 
 Status as of 2026-11-08: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier.** The latest continuation is §4.45; older scope and inventory
+supervisor, health prober and receipt verifier.** The latest continuation is §4.46; older scope and inventory
 paragraphs below are dated history, not a prohibition on implementation. §7 records the push authorization and ref.
 
 ---
@@ -637,6 +637,13 @@ ledger). The path:line figure does not move: the seven blank targets the Go inse
 onto the same content, and the doc edits changed digits and prose, not addresses. The name figure does not move:
 no document or script was added or removed from a citation. `VER-28` stays in the queue — `ODEC-37` retains
 residual predicate semantics — and `VER-29` stays for `LIVE-03`.
+§4.46 moves the set a forty-first time — **2309 / 609 / 1591**, 68 labels, 52 `Cited by` rows — measured after
+this paragraph was written. Per file against a clean `git archive` of e994b37: every file `0 / 0 / 0`. The tls
+measurement added prose and a test name (`TestDriveXrayTLSProtocolPredicate`), neither of which the guard's three
+patterns count; the register `why`, doc 27, doc 39 and doc 40 edits changed digits and wording, not addresses, and this
+record names no new path:line, pointer or document. `ODEC-37` stays in the register — http and tls are measured,
+bittorrent, ws, quic, fakedns and the inversion lowering are still owed — so `VER-28` stays, and `VER-29` stays for
+`LIVE-03`.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -3213,6 +3220,32 @@ silent. Live Xray: all five materialized goldens accepted, invalid-port control 
 claim: runtime routing evidence (config acceptance only), a browser frame for `VER-29`, or `ODEC-37`'s residual
 predicates.
 
+### 4.46 The tls predicate matches only an SNI-bearing ClientHello — `ODEC-37` narrowed by measurement (2026-11-08)
+
+**What was measured.** `TestDriveXrayTLSProtocolPredicate` in `connector/internal/compile/drive_test.go` drives real
+Xray 24.11.11 on loopback with a `protocol:[tls]` rule and paired controls. The finding: Xray matches `protocol:[tls]`
+only when the TLS ClientHello carries an SNI. An IP-literal dial (`127.0.0.1`, no SNI) is not detected as tls and falls
+through to the catchall; supplying `ServerName` puts the SNI in the ClientHello and the predicate then routes. The six
+cases are the HTTPS positive control, SNI-present match→direct, sniff-off→block, SNI-present match→block, plain-HTTP
+nonmatch, and the no-SNI limitation — the last is the paired measurement of the gap, not a fixture workaround. The
+first run failed exactly the two SNI-dependent cases, which is how the requirement was found rather than assumed.
+`driveHTTP` was generalized to `driveHTTPTarget` with a TLS/SNI parameter; `driveHTTPS` is the new wrapper.
+
+**What it narrows.** `ODEC-37` stays in the register — http and tls are now measured, but bittorrent, ws, quic and
+fakedns still owe their paired fixtures, and inversion has no proven equivalent lowering. The register's `why` and
+doc 40's ODEC-37 paragraph record the SNI finding; doc 27 §6 and doc 39's compiler evidence continuation name the TLS
+measurement beside the existing twenty HTTP/UDP cases. No row, state, distribution or marker count moves: the question
+is narrowed, not retired.
+
+**Gates.** `npm --prefix packages/schema run verify` → **green, 1234 checks**. `node tools/check-doc-evidence.mjs` →
+green; §4.4's final ledger paragraph has the set and the per-file deltas. `node tools/check-no-secrets.mjs` →
+**499 files**, one more than §4.45's 498: the `shape-c-grpc-tls` golden joined `git ls-files` when ODEC-45 was
+committed (the guard walks the index, so the untracked fixture was invisible to §4.45's run). ADR shape → **22 records**,
+layout guards and the legacy backup check → green. `go -C connector test -count=1 ./...` under `NEXORA_XRAY_BIN` →
+**fifteen `ok` lines** including the six new TLS cases,
+`gofmt -l connector` empty, `go -C connector vet ./...` silent. What this slice does not claim: the four unmeasured
+protocol values, an inversion lowering, or remote TLS/REALITY handshakes — the evidence is loopback only.
+
 ---
 
 ## 5. Verification state to the letter
@@ -3364,8 +3397,8 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest). Next: the remaining predicate semantics (ODEC-37), then the live rows. ODEC-35 is answered (ADR-0022).
-residual predicate semantics, not missing byte spellings. Remote VLESS/REALITY, browser integration, trusted
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. Next: ODEC-37's remaining protocol predicates (bittorrent, ws, quic, fakedns) and the inversion question — residual predicate semantics, not missing byte spellings — then the live rows. ODEC-35 is answered (ADR-0022).
+Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.
 

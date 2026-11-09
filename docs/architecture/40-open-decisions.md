@@ -387,8 +387,11 @@ SOCKS5 inbounds, declared direct/block outbounds, inbound sniffing, and network/
 accepted the four materialized fixtures; loopback HTTP and actual SOCKS5 UDP exercise the routing rules with
 positive and negative controls. The runtime probe also shows why acceptance is not enough: `invert:true` is
 ignored, and an unknown outbound falls back to the default. The compiler reports inverted rules whole and
-never emits unknown tags. The question is narrowed, not retired: remaining protocol predicates need their own
-matching/nonmatching evidence, and inversion has no proven equivalent lowering. Its sites remain
+never emits unknown tags. The `tls` protocol predicate is now measured too: `TestDriveXrayTLSProtocolPredicate`
+shows Xray 24.11.11 matches `protocol:[tls]` only when the ClientHello carries an SNI — an IP-literal TLS
+connection without one is not detected — and the sniff-off and plain-HTTP controls confirm detection needs
+sniffing and is protocol-specific. The question is narrowed, not retired: bittorrent, ws, quic and fakedns
+still need their own matching/nonmatching evidence, and inversion has no proven equivalent lowering. Its sites remain
 `docs/architecture/23-unified-server-model.md` §9 and `docs/architecture/27-config-compilation-pipeline.md` §9.
 Shape C is materialized via the key list (ODEC-45's answer); fail-closed belongs in `chrome.proxy`, not a separate Core golden.
 

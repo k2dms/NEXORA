@@ -142,7 +142,7 @@ subscription into profiles. Silently allocating ports until the range is exhaust
 
 These are implemented, tested interim forms. `connector/internal/apply/drive_test.go` recompiles the five golden
 inputs, compares the snapshots, then calls `apply.Write` and Xray 24.11.11 `run -test -c`: all five written configs
-were accepted and the invalid-port control rejected. `connector/internal/compile/drive_test.go` separately checks loopback HTTP and SOCKS5 UDP; `ODEC-37` retains the unproven predicate semantics.
+were accepted and the invalid-port control rejected. `connector/internal/compile/drive_test.go` separately checks loopback HTTP, TLS and SOCKS5 UDP; the `tls` predicate matches only an SNI-bearing ClientHello; `ODEC-37` retains the remaining predicate semantics.
 
 ## 7. The unrepresentable report
 

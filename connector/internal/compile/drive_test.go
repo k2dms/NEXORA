@@ -3,6 +3,7 @@ package compile
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -97,6 +98,51 @@ func TestDriveXrayRouting(t *testing.T) {
 			if !tc.want {
 				driveHTTP(t, p, true)
 			}
+		})
+	}
+}
+
+// TestDriveXrayTLSProtocolPredicate measures ODEC-37's residual `protocol` semantics for the tls value, the
+// primary VLESS/REALITY transport. The http value is already measured by TestDriveXrayRouting; bittorrent, ws,
+// quic and fakedns remain owed. Each case pairs the predicate with the opposite default so a silently dropped
+// rule is observable. The measured fact: Xray 24.11.11 matches protocol:[tls] only when the ClientHello carries
+// an SNI — the no-SNI IP-literal case is the paired limitation, not a fixture workaround.
+func TestDriveXrayTLSProtocolPredicate(t *testing.T) {
+	bin := driveXrayBinary(t)
+	catchall := func(outbound string) CoreRule {
+		return CoreRule{IP: []string{"0.0.0.0/0"}, Outbound: outbound}
+	}
+	for _, tc := range []struct {
+		name  string
+		rules []CoreRule
+		sniff bool
+		https bool
+		sni   string
+		want  bool
+	}{
+		{name: "https_catchall_direct_reaches", rules: []CoreRule{catchall("direct")}, sniff: true, https: true, sni: "localhost", want: true},
+		{name: "tls_sni_sniff_on_direct", rules: []CoreRule{{Protocol: []string{"tls"}, Outbound: "direct"}, catchall("block")}, sniff: true, https: true, sni: "localhost", want: true},
+		{name: "tls_sni_sniff_off_block", rules: []CoreRule{{Protocol: []string{"tls"}, Outbound: "direct"}, catchall("block")}, sniff: false, https: true, sni: "localhost"},
+		{name: "tls_sni_sniff_on_block", rules: []CoreRule{{Protocol: []string{"tls"}, Outbound: "block"}, catchall("direct")}, sniff: true, https: true, sni: "localhost"},
+		{name: "http_does_not_match_tls_rule", rules: []CoreRule{{Protocol: []string{"tls"}, Outbound: "direct"}, catchall("block")}, sniff: true, https: false},
+		{name: "tls_no_sni_not_detected", rules: []CoreRule{{Protocol: []string{"tls"}, Outbound: "direct"}, catchall("block")}, sniff: true, https: true, sni: ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			policy := &RoutingPolicy{CorePlane: CorePlane{
+				DomainStrategy: "AsIs", Rules: tc.rules,
+				Sniffing: Sniffing{Enabled: &tc.sniff, Protocols: []string{"http", "tls"}},
+			}}
+			fallback := "direct"
+			if tc.want {
+				fallback = "block"
+			}
+			p := driveStartXray(t, bin, policy, fallback, "")
+			if tc.https {
+				driveHTTPS(t, p, tc.want, tc.sni)
+			} else {
+				driveHTTP(t, p, tc.want)
+			}
+			t.Logf("Xray 24.11.11 protocol:[tls] sniff=%t trafficTLS=%t sni=%q: target reached=%t", tc.sniff, tc.https, tc.sni, tc.want)
 		})
 	}
 }
@@ -254,6 +300,16 @@ func driveStartXray(t *testing.T, bin string, policy *RoutingPolicy, fallback, o
 
 func driveHTTP(t *testing.T, p *driveXray, want bool) {
 	t.Helper()
+	driveHTTPTarget(t, p, want, false, "")
+}
+
+func driveHTTPS(t *testing.T, p *driveXray, want bool, sni string) {
+	t.Helper()
+	driveHTTPTarget(t, p, want, true, sni)
+}
+
+func driveHTTPTarget(t *testing.T, p *driveXray, want bool, useTLS bool, sni string) {
+	t.Helper()
 	const body = "nexora loopback HTTP response"
 	var requests, connections atomic.Int32
 	arrived := make(chan struct{}, 1)
@@ -279,9 +335,18 @@ func driveHTTP(t *testing.T, p *driveXray, want bool) {
 	if server.Listener.Addr().(*net.TCPAddr).IP.String() != "127.0.0.1" {
 		t.Fatal("HTTP target must bind IPv4 loopback")
 	}
-	server.Start()
+	if useTLS {
+		server.StartTLS()
+	} else {
+		server.Start()
+	}
 	proxy := &url.URL{Scheme: "socks5", Host: p.addr}
 	transport := &http.Transport{Proxy: http.ProxyURL(proxy), DisableKeepAlives: true}
+	if useTLS {
+		// The httptest certificate is self-signed for loopback; skipping verification is the fixture, not a trust choice.
+		// An empty sni leaves the IP-literal dial without an SNI — the no-SNI half of the tls measurement.
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true, ServerName: sni}
+	}
 	defer transport.CloseIdleConnections()
 	client := &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
