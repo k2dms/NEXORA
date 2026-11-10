@@ -35,7 +35,7 @@ func newStateProber(t *testing.T, tweak ...func(*Config)) *stateProber {
 		Inbounds: func() []compile.Inbound {
 			return []compile.Inbound{{Listen: "127.0.0.1", Port: 1, Tag: inboundTag(stateServerID)}}
 		},
-		Egress:   Egress{URL: "http://127.0.0.1:9/checkip", IP: egressAddress},
+		Egress:   func() (string, error) { return "http://127.0.0.1:9/checkip", nil },
 		Failover: compile.Failover{Enabled: true, CooldownSeconds: 60, MaxConsecutiveFailures: 3, ProbeIntervalSeconds: 120},
 		Now:      func() time.Time { return sp.at },
 		Events:   func(e Event) { sp.events = append(sp.events, e) },

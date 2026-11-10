@@ -8,11 +8,13 @@
 // knobs: New refuses a prober that cannot answer "and did it actually leave?" for the same reason
 // internal/supervisor refuses one that cannot prove its binary.
 //
-// What the corpus does not state is where those two facts live. `packages/schema/protocol/commands/server.test.json`
-// asks for "the configured egress endpoint" in `#/args/properties/egressProbe` and compares against an expected
-// address in `#/result/properties/matchesExpectedEgress`, and no field of any file under `packages/schema/` names
-// either — `packages/schema/connector-settings.schema.json#/properties` has five keys and none of them is a probe
-// target. The constructor is where that gap is felt, and `ODEC-42` is where it is recorded.
+// What the corpus does not state is where those two facts live. `ODEC-42`, answered 2026-11-07, decides both halves:
+// the endpoint is `packages/schema/connector-settings.schema.json#/properties/core/properties/egressProbe/properties/endpoint`
+// and the expected address is the server's own `address` (`packages/schema/server.schema.json#/properties/address`),
+// resolved at probe time from the server being tested. The second half means this package carries no address claim
+// at all — `matchesExpectedEgress` compares what the endpoint answered with what the store says the server is — and
+// the first means the endpoint is read when a probe asks for one, since a settings document the Connector has not
+// been handed yet is the normal state of a fresh install rather than a broken wiring.
 //
 // Three more things belong to this package because §8's Out and `packages/schema/protocol/data-ownership.json`
 // `#/stores` give them no other writer: the consecutive-failure streak and cooldown of
@@ -98,21 +100,14 @@ func rank(layer string) int {
 // credentials by reference, transports, and a display name; none of that reaches a probe, because §8 invariant 5 is
 // that a probe never reveals a secret in its result or its logs and the narrowest possible read is what makes that
 // checkable rather than merely intended.
+//
+// `Host` is read twice: it is where the tcp and core-outbound layers point, and since ODEC-42 it is also the claim
+// an egress probe compares its answer against — the probe proves traffic through this server leaves from this
+// server's address, so the expectation is a measurement of the store rather than a number this wiring declares.
 type Server struct {
 	ID   string
 	Host string
 	Port int
-}
-
-// Egress is what an egress probe fetches through the tunnel and what the answer has to be.
-//
-// `URL` is origin-form over http or https; https is verified with the platform roots, because a probe that accepted
-// any certificate would be a man-in-the-middle test that always passes. `IP` is the public address the VPS presents
-// — the thing `matchesExpectedEgress` compares against and the only number in this package that is a *claim* rather
-// than a measurement.
-type Egress struct {
-	URL string
-	IP  string
 }
 
 // Inbound is one row of the Core's live inbound table, in the compiler's own shape. The port for a server is found
@@ -201,9 +196,11 @@ type Config struct {
 	// behind would report success against a stale inbound.
 	Inbounds func() []compile.Inbound
 
-	// Egress is the endpoint and the expected answer. Required; see the package doc for why the schema does not
-	// provide a place for it.
-	Egress Egress
+	// Egress reads the configured checkip endpoint when a probe asks for one, in the caller's own words when the
+	// settings document has not been applied yet. Required as a seam; an empty answer is not a refusal to build,
+	// because `config.apply` is what carries settings and a fresh install has to be able to answer a probe that
+	// names no egress fetch. See the package doc for where the URL lives.
+	Egress func() (string, error)
 
 	// Failover is the profile's policy — the streak length, the cooldown and the re-probe interval. It is
 	// `compile.Failover` rather than a copy of those three numbers, and that type's own comment has said it "belongs
@@ -242,25 +239,21 @@ type Config struct {
 // lets the ordinary case (four layers, one repeat, one dead VPS) answer in twenty seconds with every row named.
 const defaultLayerTimeout = 5 * time.Second
 
-// New builds the prober over its seams. A missing server lookup, a missing inbound table or an unset egress pair is
-// refused rather than defaulted, because each of the three would turn §8's first invariant into a report that cannot
-// mean anything.
+// New builds the prober over its seams. A missing server lookup, a missing inbound table or a missing endpoint
+// reader is refused rather than defaulted, because each of the three would turn §8's first invariant into a report
+// that cannot mean anything.
+//
+// The endpoint's *value* is not checked here, and that is the difference this package's whole egress story rests on:
+// a build-time check would refuse to start a Connector that has not been handed a settings document yet, which is
+// every Connector on the day it is installed and before the first `config.apply`.
 func New(cfg Config) (*Prober, error) {
 	switch {
 	case cfg.Server == nil:
 		return nil, errors.New("health: no server lookup; the probe is asked for by id and this package owns no store (doc 22 §8's In)")
 	case cfg.Inbounds == nil:
 		return nil, errors.New("health: no inbound table; doc 22 §8 gives the prober CoreSupervisor for exactly this fact")
-	case cfg.Egress.URL == "":
-		return nil, fmt.Errorf("health: no egress endpoint; `server.test`'s egressProbe asks for \"the configured egress endpoint\" and no schema field carries one — ODEC-42 is the register entry, not this call site")
-	case cfg.Egress.IP == "":
-		return nil, errors.New("health: no expected egress address, and `matchesExpectedEgress` would then compare against nothing while `not-proxied` would stay unreachable")
-	}
-	if _, err := parseTarget(cfg.Egress.URL); err != nil {
-		return nil, fmt.Errorf("health: the egress endpoint %q is not a fetchable http or https URL: %w", cfg.Egress.URL, err)
-	}
-	if ip := net.ParseIP(cfg.Egress.IP); ip == nil {
-		return nil, fmt.Errorf("health: the expected egress address %q is not an IP literal; `matchesExpectedEgress` compares literals, and a hostname there would be a second resolver question the prober cannot answer", cfg.Egress.IP)
+	case cfg.Egress == nil:
+		return nil, errors.New("health: no egress endpoint reader; ODEC-42 puts the URL in `settings.core.egressProbe.endpoint`, so the wiring that reads settings is what answers this and not a constant this package carries")
 	}
 	if cfg.Failover.MaxConsecutiveFailures < 0 || cfg.Failover.MaxConsecutiveFailures > 20 {
 		return nil, fmt.Errorf("health: maxConsecutiveFailures is %d, outside connector-profile.schema.json's 1 to 20", cfg.Failover.MaxConsecutiveFailures)
@@ -310,9 +303,10 @@ var (
 	// ErrCoreNotRunning is doc 30 §4's first rule and `packages/schema/fixtures/protocol/failure-block.jsonl`'s own
 	// message: with no live inbound for this server's tag, a probe would measure a port nobody owns.
 	ErrCoreNotRunning = errors.New("Core is not running an inbound for this server")
-	// ErrNoEgress is an `egressProbe` request this prober was not wired to answer. New refuses a prober built without
-	// an endpoint, so reaching this means the wiring changed after construction — which is the only way the code stays
-	// honest rather than dead.
+	// ErrNoEgress is an `egressProbe` request this prober has no endpoint to answer: no settings document has been
+	// applied since the Connector started, or the one that was applied names a URL this package cannot fetch. New
+	// refuses a prober with no way to read settings, so this is the configured-but-absent case rather than an
+	// unwired one.
 	ErrNoEgress = errors.New("no egress endpoint is configured")
 	// ErrBadProbe is a request that does not match `server.test#/args`: an unknown layer name, a duplicate, a
 	// repeat outside the 1 to 10 the command bounds. It is `HealthCheckFailed` rather than `Internal` for the same

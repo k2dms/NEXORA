@@ -4,18 +4,16 @@
 // internal/dispatch reads from the projection before a frame reaches this handler), and the closed field list the
 // command doc states.
 //
-// It is built and tested but not registered in `main.go` — the same status as `config.apply`, for the same two
-// reasons plus one of its own:
+// The two facts that kept this handler out of the build's inventory until now are each carried by a document the
+// Connector has, and not by a constant here:
 //
-//   - the frame names a server id, and resolving an id is a store read whose path and owner no document decides
-//     (doc 20 §3 keeps the read in the surface, and this build has no surface that owns servers; the intent
-//     documents an apply needs ride the frame since 2026-11-07, but a server id a probe resolves is a table
-//     the extension owns and no frame carries);
-//   - the egress probe needs the endpoint and the expected address, and no field of any file under
-//     `packages/schema/` carries either — ODEC-42 is the register entry, and internal/health's constructor refuses
-//     a prober built without them;
-//   - `main_test.go` asserts the build's inventory is exactly `connector.hello` and `connector.version`, which is
-//     the honest answer of a process that holds no server table and no egress wiring.
+//   - the frame names a server id and nothing else, and the server documents are the ones `config.apply` was
+//     handed — doc 20 §3 keeps the store read in the surface, and this file's surface is the same object that
+//     compiled them (see `inForce` in config_apply.go, and ADR-0010 for why the read is in memory);
+//   - the egress probe's endpoint is `connector-settings.schema.json#/properties/core/properties/egressProbe/
+//     properties/endpoint` and its expected address is the tested server's own `address` — ODEC-42, answered
+//     2026-11-07, whose runtime half is `newHealthSurface` below and whose compile-time half is the field internal/
+//     compile now mirrors.
 //
 // One reading this file states because the command doc cannot: `server.test#/errors` does not declare
 // `BadRequest` — only six of the nineteen commands do — so an args payload that violates the call contract is
@@ -31,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/k2dms/nexora/connector/internal/compile"
 	"github.com/k2dms/nexora/connector/internal/dispatch"
 	"github.com/k2dms/nexora/connector/internal/envelope"
 	"github.com/k2dms/nexora/connector/internal/health"
@@ -53,6 +52,31 @@ func newServerTest(p prober) (*serverTest, error) {
 		return nil, errors.New("server.test: no prober; a handler without one would have to invent an answer §8 reserves for a measurement")
 	}
 	return &serverTest{probes: p}, nil
+}
+
+// newHealthSurface builds the handler over the wiring the process already has: the applied intent for the server
+// table and the endpoint, and the Core process owner for the live inbound table. It takes the apply surface rather
+// than its pieces because the fact a probe needs is exactly the fact that surface put into Core — a prober aimed at
+// a different document would be measuring a config nobody applied.
+//
+// `Failover` is left at its zero value, which internal/health reads as "no failover policy configured". The policy
+// is a field of a profile document (`connector-profile.schema.json#/properties/failover`) and the prober's streak
+// bounds are build-time; carrying the selected profile's numbers is doc 30's reconciliation loop, which is the
+// poller that does not exist yet, not this command surface. What the zero value changes is the retained records
+// (`Mark`/`Due`), never a probe's rows: every layer still measures.
+func newHealthSurface(applied *configApply) (*serverTest, error) {
+	if applied == nil {
+		return nil, errors.New("server.test: no apply surface; the server id and the egress endpoint a probe reads are what config.apply learned from the frame, and no other path has them")
+	}
+	p, err := health.New(health.Config{
+		Server:   applied.serverFor,
+		Inbounds: func() []compile.Inbound { return healthInbounds(applied.core.Status()) },
+		Egress:   applied.egressEndpointFor,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("server.test: %w", err)
+	}
+	return newServerTest(p)
 }
 
 // probeArgs is the decoded form of `packages/schema/protocol/commands/server.test.json#/args`. egressProbe and

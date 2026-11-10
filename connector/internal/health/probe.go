@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -73,13 +74,20 @@ func (p *Prober) Probe(ctx context.Context, req Request) (*Answer, error) {
 		case LayerCoreOutbound:
 			rows = append(rows, row{layer: layer, attempts: p.repeat(ctx, repeat, func(c context.Context) Attempt { return p.coreOutbound(c, inbound, srv) })})
 		case LayerProxiedHTTP:
+			// The endpoint is read here rather than at construction: ODEC-42 put it in a settings document, and the
+			// document arrives with `config.apply`, which a probe may never have seen. A fetch layer with no endpoint
+			// to fetch is a refusal naming that, and not a `NetworkUnreachable` row about a target nobody named.
+			tgt, err := p.egressTarget()
+			if err != nil {
+				return nil, refuse(layer, req.ServerID, fmt.Errorf("%w: %v", ErrNoEgress, err))
+			}
 			// One fetch answers both this row and `egress-ip`: the request that carried the address is the request
 			// whose status is reported here, and repeating it twice would be two egress probes for one row of each.
 			if req.Egress {
-				egress = p.fetchEgress(ctx, inbound, repeat)
+				egress = p.fetchEgress(ctx, inbound, tgt, p.expectedAddresses(ctx, srv), repeat)
 				rows = append(rows, row{layer: layer, attempts: egress.http})
 			} else {
-				rows = append(rows, row{layer: layer, attempts: p.repeat(ctx, repeat, func(c context.Context) Attempt { return p.proxiedGet(c, inbound) })})
+				rows = append(rows, row{layer: layer, attempts: p.repeat(ctx, repeat, func(c context.Context) Attempt { return p.proxiedGet(c, inbound, tgt) })})
 			}
 		}
 		if rows[len(rows)-1].worst() != StatePass {
@@ -318,10 +326,44 @@ func (p *Prober) coreOutbound(ctx context.Context, inbound compileInbound, srv S
 
 // proxiedGet is the fourth layer without the egress comparison: a request that leaves through the tunnel and gets a
 // 2xx back. It is the standalone answer for a caller that asked for `proxied-http` without `egressProbe`.
-func (p *Prober) proxiedGet(ctx context.Context, inbound compileInbound) Attempt {
+func (p *Prober) proxiedGet(ctx context.Context, inbound compileInbound, tgt *target) Attempt {
 	start := time.Now()
-	status, _, err := p.fetchThrough(ctx, inbound)
-	return p.httpAttempt(start, status, err)
+	status, _, err := p.fetchThrough(ctx, inbound, tgt)
+	return p.httpAttempt(start, tgt, status, err)
+}
+
+// egressTarget is the endpoint ODEC-42 placed in settings, read and parsed at the moment a layer needs to fetch.
+func (p *Prober) egressTarget() (*target, error) {
+	raw, err := p.cfg.Egress()
+	if err != nil {
+		return nil, err
+	}
+	if raw == "" {
+		return nil, errors.New("no settings document has been applied, so `core.egressProbe.endpoint` has no value")
+	}
+	return parseTarget(raw)
+}
+
+// expectedAddresses is the claim an egress probe compares itself against: the server's own address, taken as the
+// store wrote it when it is a literal and as the resolver answers it today when it is a name. No claim at all is not
+// a failed comparison — the probe has no opinion, which `matchesExpectedEgress` carries as null.
+func (p *Prober) expectedAddresses(ctx context.Context, srv Server) []string {
+	if ip := net.ParseIP(srv.Host); ip != nil {
+		return []string{ip.String()}
+	}
+	addrs, err := p.cfg.LookupHost(ctx, srv.Host)
+	if err != nil {
+		return nil
+	}
+	out := make([]string, 0, len(addrs))
+	for _, a := range addrs {
+		// A resolver that answers with names rather than addresses gives the comparison nothing, and guessing which
+		// answer is the VPS's would be this package making the claim it exists to check.
+		if ip := net.ParseIP(a); ip != nil {
+			out = append(out, ip.String())
+		}
+	}
+	return out
 }
 
 // egressOutcome is one egress probe's two rows plus the two facts the answer carries.
@@ -329,25 +371,26 @@ type egressOutcome struct {
 	http    []Attempt
 	address []Attempt
 	ip      string
-	// observed is whether an address was read at all; matchesExpectedEgress is null until it is.
+	// observed is whether an address can be judged at all — one read, and a claim to read it against;
+	// matchesExpectedEgress is null until it is.
 	observed bool
 	matched  bool
-	// mismatched is the leak: an address was read, and it is not the one the wiring claims.
+	// mismatched is the leak: an address was read, the server's claim is known, and they disagree.
 	mismatched bool
 }
 
 // fetchEgress asks the endpoint through the tunnel up to `repeat` times. Each fetch contributes one row of each kind
 // — its status and the address read out of its body — so a repeat of 3 gives the latency spread of three fetches and
 // three chances to read an address, rather than a second measurement of something already measured.
-func (p *Prober) fetchEgress(ctx context.Context, inbound compileInbound, repeat int) *egressOutcome {
+func (p *Prober) fetchEgress(ctx context.Context, inbound compileInbound, tgt *target, want []string, repeat int) *egressOutcome {
 	out := &egressOutcome{}
 	for i := 0; i < repeat; i++ {
 		attemptCtx, cancel := context.WithTimeout(ctx, p.cfg.LayerTimeout)
 		start := time.Now()
-		status, body, err := p.fetchThrough(attemptCtx, inbound)
+		status, body, err := p.fetchThrough(attemptCtx, inbound, tgt)
 		cancel()
 		rtt := time.Since(start)
-		fetch := p.httpAttempt(start, status, err)
+		fetch := p.httpAttempt(start, tgt, status, err)
 		out.http = append(out.http, fetch)
 
 		switch {
@@ -366,13 +409,17 @@ func (p *Prober) fetchEgress(ctx context.Context, inbound compileInbound, repeat
 			continue
 		}
 		out.ip = ip
-		out.observed = true
-		out.matched = ip == p.cfg.Egress.IP
-		out.mismatched = !out.matched
-		address := Attempt{State: StatePass, RTT: rtt, Detail: clip("the address behind the tunnel is the expected one")}
-		if out.mismatched {
+		out.matched = slices.Contains(want, ip)
+		out.mismatched = len(want) > 0 && !out.matched
+		out.observed = len(want) > 0
+		address := Attempt{State: StatePass, RTT: rtt, Detail: clip("the address behind the tunnel is the address this server claims")}
+		switch {
+		case !out.observed:
+			address.State = StateSkipped
+			address.Detail = clip("the server's address does not resolve, so there is no claim to compare the egress answer against")
+		case out.mismatched:
 			address.State = StateFail
-			address.Detail = clip(fmt.Sprintf("egress was %s, expected %s", ip, p.cfg.Egress.IP))
+			address.Detail = clip(fmt.Sprintf("egress was %s, expected %s", ip, strings.Join(want, " or ")))
 			// A leak is a complete answer, not a partial one: repeating it cannot turn it into a match, and the
 			// command's rate budget belongs to the user who is about to read this.
 			out.address = append(out.address, address)
@@ -389,14 +436,13 @@ func (p *Prober) fetchEgress(ctx context.Context, inbound compileInbound, repeat
 // httpAttempt turns one fetch into a row. A failure to reach the endpoint at all is `NetworkUnreachable` *with the
 // target named*, which is doc 22 §8's mode-of-failure row refusing to let a dead checker be reported as a dead
 // server; a non-2xx is the same class of fact about the checker.
-func (p *Prober) httpAttempt(start time.Time, status int, err error) Attempt {
+func (p *Prober) httpAttempt(start time.Time, tgt *target, status int, err error) Attempt {
 	if err != nil {
-		a := attemptOf(start, err, "NetworkUnreachable", "the egress endpoint "+p.cfg.Egress.URL+" did not answer through the tunnel")
-		return a
+		return attemptOf(start, err, "NetworkUnreachable", "the egress endpoint "+tgt.raw+" did not answer through the tunnel")
 	}
 	rtt := time.Since(start)
 	if status < 200 || status > 299 {
-		return Attempt{State: StateFail, RTT: rtt, Code: "NetworkUnreachable", Detail: clip(fmt.Sprintf("%s answered %d", p.cfg.Egress.URL, status))}
+		return Attempt{State: StateFail, RTT: rtt, Code: "NetworkUnreachable", Detail: clip(fmt.Sprintf("%s answered %d", tgt.raw, status))}
 	}
 	return Attempt{State: StatePass, RTT: rtt}
 }
@@ -404,12 +450,8 @@ func (p *Prober) httpAttempt(start time.Time, status int, err error) Attempt {
 // fetchThrough opens the egress endpoint through the server's inbound and performs the request. http.ReadResponse
 // rather than http.Client because the connection is already a tunnel the Core agreed to open: a Client would resolve
 // and dial the name again, which is the exact measurement this layer exists to avoid making.
-func (p *Prober) fetchThrough(ctx context.Context, inbound compileInbound) (int, string, error) {
-	target, err := parseTarget(p.cfg.Egress.URL)
-	if err != nil {
-		return 0, "", err
-	}
-	conn, err := p.socksConnect(ctx, inbound, target.host, target.port)
+func (p *Prober) fetchThrough(ctx context.Context, inbound compileInbound, tgt *target) (int, string, error) {
+	conn, err := p.socksConnect(ctx, inbound, tgt.host, tgt.port)
 	if err != nil {
 		return 0, "", err
 	}
@@ -417,8 +459,8 @@ func (p *Prober) fetchThrough(ctx context.Context, inbound compileInbound) (int,
 	if err := deadline(conn, ctx); err != nil {
 		return 0, "", err
 	}
-	if target.tls {
-		tconn := tls.Client(conn, &tls.Config{ServerName: target.host})
+	if tgt.tls {
+		tconn := tls.Client(conn, &tls.Config{ServerName: tgt.host})
 		if err := tconn.HandshakeContext(ctx); err != nil {
 			return 0, "", err
 		}
@@ -426,11 +468,11 @@ func (p *Prober) fetchThrough(ctx context.Context, inbound compileInbound) (int,
 	}
 	req := &http.Request{
 		Method:     http.MethodGet,
-		URL:        target.parsed,
+		URL:        tgt.parsed,
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
-		Host:       target.authority,
+		Host:       tgt.authority,
 		Close:      true,
 		Header:     http.Header{"User-Agent": []string{"nexora-connector/health"}},
 	}
@@ -503,6 +545,7 @@ func parseTarget(raw string) (*target, error) {
 		return nil, fmt.Errorf("port %q is not a number", port)
 	}
 	return &target{
+		raw:       raw,
 		host:      u.Hostname(),
 		port:      n,
 		authority: u.Host,
@@ -512,6 +555,7 @@ func parseTarget(raw string) (*target, error) {
 }
 
 type target struct {
+	raw       string // as settings carried it, which is what a failure row names
 	host      string
 	port      int
 	authority string

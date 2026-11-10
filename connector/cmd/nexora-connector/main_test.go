@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -595,9 +596,11 @@ func TestThisBuildRegistersOnlyTheMethodsItCanAnswer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Four names, each because the fact its result requires is data this process holds: the negotiation's own, the
+	// two version strings, the intent a `config.apply` frame carries, and the servers that apply put in force.
 	got := s.d.Methods()
-	if len(got) != 3 || got[0] != "config.apply" || got[1] != "connector.hello" || got[2] != "connector.version" {
-		t.Errorf("this build registers %v, want exactly config.apply, connector.hello and connector.version", got)
+	if want := []string{"config.apply", "connector.hello", "connector.version", "server.test"}; !slices.Equal(got, want) {
+		t.Errorf("this build registers %v, want exactly %v", got, want)
 	}
 	for _, name := range got {
 		if _, published := contract.LookupMethod(name); !published {

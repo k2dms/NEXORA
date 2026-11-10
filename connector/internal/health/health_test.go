@@ -16,13 +16,12 @@ import (
 	"github.com/k2dms/nexora/connector/internal/compile"
 )
 
-// validConfig is the smallest wiring New accepts. The endpoint is loopback because nothing here sends a request; the
-// address is a TEST-NET-3 literal for the reason probe_test.go gives.
+// validConfig is the smallest wiring New accepts. The endpoint is loopback because nothing here sends a request.
 func validConfig() Config {
 	return Config{
 		Server:   func(context.Context, string) (Server, error) { return Server{}, nil },
 		Inbounds: func() []compile.Inbound { return nil },
-		Egress:   Egress{URL: "http://127.0.0.1:9/checkip", IP: egressAddress},
+		Egress:   func() (string, error) { return "http://127.0.0.1:9/checkip", nil },
 	}
 }
 
@@ -43,29 +42,9 @@ func TestNewRefusesTheWiringThisPackageIsForbiddenToInvent(t *testing.T) {
 			wantIn: []string{"no inbound table", "CoreSupervisor"},
 		},
 		{
-			name:   "no egress endpoint",
-			tweak:  func(c *Config) { c.Egress.URL = "" },
-			wantIn: []string{"no egress endpoint", "ODEC-42"},
-		},
-		{
-			name:   "no expected egress address",
-			tweak:  func(c *Config) { c.Egress.IP = "" },
-			wantIn: []string{"no expected egress address", "matchesExpectedEgress"},
-		},
-		{
-			name:   "endpoint that is not a fetchable URL",
-			tweak:  func(c *Config) { c.Egress.URL = "ftp://api.ipify.org" },
-			wantIn: []string{"not a fetchable http or https URL"},
-		},
-		{
-			name:   "endpoint with no host",
-			tweak:  func(c *Config) { c.Egress.URL = "http://" },
-			wantIn: []string{"not a fetchable http or https URL"},
-		},
-		{
-			name:   "expected address named as a hostname",
-			tweak:  func(c *Config) { c.Egress.IP = "api.ipify.org" },
-			wantIn: []string{"not an IP literal"},
+			name:   "no egress endpoint reader",
+			tweak:  func(c *Config) { c.Egress = nil },
+			wantIn: []string{"no egress endpoint reader", "ODEC-42"},
 		},
 		{
 			// connector-profile.schema.json#/properties/failover bounds 1 to 20; the schema's own floor is not

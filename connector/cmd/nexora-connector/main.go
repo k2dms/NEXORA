@@ -1,12 +1,12 @@
 // Package main is nexora-connector — the process that owns the front door. It reads one Native Messaging stream,
 // hands every frame to internal/dispatch, and answers it with internal/hello.
 //
-// What it registers is what an unwired build can honestly say, which is `docs/PROJECT-STATE.md` §4.9's inventory:
-// the negotiation, and the version strings beside it. `connector.version` is here because both fields its result
-// requires are data this process holds — its own release and `contract.ProtocolVersion` — and its args carry nothing
-// the answer depends on. Every other published method is a fact about Xray Core, the keystore, an applied config or
-// an event pump this build does not have, so it stays unregistered and internal/dispatch refuses it with the code the
-// contract gives rather than this build guessing an answer.
+// What it registers is what a build can answer without inventing a fact: `docs/PROJECT-STATE.md` §4.9's inventory of
+// the negotiation and the version strings beside it, plus the two paths that join the components — `config.apply`,
+// which compiles the intent the frame carries and hands the file to Core, and `server.test`, which probes the
+// servers that apply put in force. Every other published method is a fact about an event pump, a settings store the
+// Connector does not own (ADR-0010) or a diagnostics section nothing has written, so it stays unregistered and
+// internal/dispatch refuses it with the code the contract gives rather than this build guessing an answer.
 package main
 
 import (
@@ -191,6 +191,11 @@ func newService(cfg config) (*service, error) {
 		return nil, fmt.Errorf("the config.apply surface could not be built: %w", err)
 	}
 	handlers["config.apply"] = ca.Handle
+	st, err := newHealthSurface(ca)
+	if err != nil {
+		return nil, fmt.Errorf("the server.test surface could not be built: %w", err)
+	}
+	handlers["server.test"] = st.Handle
 	d, err := dispatch.New(dispatch.Config{Handlers: handlers})
 	if err != nil {
 		return nil, err

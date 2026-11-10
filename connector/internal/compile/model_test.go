@@ -23,6 +23,28 @@ func TestDecodeRefusesAFieldTheSchemaDoesNotDeclare(t *testing.T) {
 	}
 }
 
+// The other side of the same rule: a name the schema DOES declare has to be in the mirror, or the strict decoder
+// refuses the very payload the contract allows. `core.egressProbe.endpoint` is ODEC-42's home for the checkip URL, so
+// a settings document that carries it is the document `server.test` reads its endpoint from — and the expected answer
+// is not a field of it, because the decision put that claim in the server document's own address.
+func TestTheSettingsMirrorCarriesTheEgressProbeEndpoint(t *testing.T) {
+	with, err := Decode[Settings]([]byte(`{"core":{"egressProbe":{"endpoint":"https://ipinfo.io/ip"}}}`))
+	if err != nil {
+		t.Fatalf("settings carrying the field the schema declares: %v", err)
+	}
+	if with.Core.EgressProbe == nil || with.Core.EgressProbe.Endpoint != "https://ipinfo.io/ip" {
+		t.Errorf("core.egressProbe decoded as %+v", with.Core.EgressProbe)
+	}
+	if body, err := Decode[Settings]([]byte(`{"core":{"egressProbe":null}}`)); err != nil {
+		t.Fatalf("the schema's own default of null: %v", err)
+	} else if body.Core.EgressProbe != nil {
+		t.Errorf("a null egress probe decoded as %+v, want absent: no endpoint is not the empty endpoint", *body.Core.EgressProbe)
+	}
+	if _, err := Decode[Settings]([]byte(`{"core":{"egressProbe":{"expectedAddress":"203.0.113.7"}}}`)); err == nil {
+		t.Error("an egress probe carrying an expected address decoded; the schema declares only `endpoint`")
+	}
+}
+
 // The three canonical servers differ in exactly the fields the compiler has to tell apart: `flow` present with a
 // value, `flow` present and empty, and `flow` absent. A plain string would collapse the last two.
 func TestTheFlowFieldKeepsAbsentAndEmptyApart(t *testing.T) {

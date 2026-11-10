@@ -27,12 +27,14 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/k2dms/nexora/connector/internal/apply"
 	"github.com/k2dms/nexora/connector/internal/compile"
 	"github.com/k2dms/nexora/connector/internal/dispatch"
 	"github.com/k2dms/nexora/connector/internal/envelope"
+	"github.com/k2dms/nexora/connector/internal/health"
 	"github.com/k2dms/nexora/connector/internal/keystore"
 	"github.com/k2dms/nexora/connector/internal/supervisor"
 )
@@ -100,6 +102,10 @@ type configApply struct {
 	resolver apply.Resolver
 	core     coreProcess
 	cfg      applyConfig
+
+	// force is what the last applied intent put into Core. It lives here rather than in a store of its own because
+	// `config.apply` is the only path that learns what is in force, and ADR-0010 forbids writing that down.
+	force inForce
 }
 
 func newConfigApply(cfg applyConfig, record stateRecord, resolver apply.Resolver, core coreProcess) (*configApply, error) {
@@ -116,6 +122,57 @@ func newConfigApply(cfg applyConfig, record stateRecord, resolver apply.Resolver
 		return nil, errors.New("config.apply: no Core process owner; restartPolicy auto has nothing to restart")
 	}
 	return &configApply{record: record, resolver: resolver, core: core, cfg: cfg}, nil
+}
+
+// inForce is what this surface has actually put into Core since the process started: the server documents of the
+// last applied intent and the egress endpoint beside them.
+//
+// Memory and not a store, because ADR-0010 forbids the Connector from keeping a copy of user intent — and read by
+// `server.test`, whose frame names a server id and nothing else. The prober cannot invent the address an egress
+// probe is supposed to match (ODEC-42 puts that claim in the server document), so the honest connector-side read is
+// the intent this command was handed, which is the same document that produced the inbounds the probe is about to
+// hit. Before the first apply the table is empty, and the answer is the refusal that says so.
+type inForce struct {
+	mu       sync.RWMutex
+	servers  map[string]compile.Server
+	endpoint string
+}
+
+// serverFor is health.Config.Server's seam: id to the two facts a probe needs, from the applied intent.
+func (a *configApply) serverFor(_ context.Context, id string) (health.Server, error) {
+	a.force.mu.RLock()
+	defer a.force.mu.RUnlock()
+	s, ok := a.force.servers[id]
+	if !ok {
+		return health.Server{}, errors.New("no config.apply has carried a server document with this id since the Connector started, and the Connector keeps no copy of intent (ADR-0010)")
+	}
+	return health.Server{ID: s.ID, Host: s.Address, Port: s.Port}, nil
+}
+
+// egressEndpointFor is health.Config.Egress's seam. The empty string is the honest answer to "nothing has been
+// applied yet": internal/health turns it into the refusal that names the missing settings document, at the probe that
+// asks for a fetch and not at build time.
+func (a *configApply) egressEndpointFor() (string, error) {
+	a.force.mu.RLock()
+	defer a.force.mu.RUnlock()
+	return a.force.endpoint, nil
+}
+
+// noteInForce records the intent that is now in force. Only a real apply reaches this: a dryRun has put nothing
+// anywhere, and a probe of a preview would be a measurement of a config Core never loaded.
+func (a *configApply) noteInForce(intent *Intent) {
+	endpoint := ""
+	if intent.Settings.Core.EgressProbe != nil {
+		endpoint = intent.Settings.Core.EgressProbe.Endpoint
+	}
+	servers := make(map[string]compile.Server, len(intent.Servers))
+	for _, s := range intent.Servers {
+		servers[s.ID] = s
+	}
+	a.force.mu.Lock()
+	defer a.force.mu.Unlock()
+	a.force.servers = servers
+	a.force.endpoint = endpoint
 }
 
 // reApplyID is the UUID floor both referenced schemas state: `connector-profile.schema.json#/properties/id` for
@@ -455,6 +512,9 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 	if refusal != nil {
 		return nil, refusal
 	}
+	// The intent is in force now: the file is renamed, the table is stored, and Core has been told. This is the
+	// only place the snapshot moves, which is why `server.test` can name a server id and get a real answer.
+	a.noteInForce(&args.intent)
 	return a.answer(res, hash, recorded.AppliedHash, false, restarted, hash == recorded.AppliedHash), nil
 }
 
@@ -516,6 +576,21 @@ func supervisorInbounds(list []compile.Inbound) []supervisor.Inbound {
 	out := make([]supervisor.Inbound, len(list))
 	for i, in := range list {
 		out[i] = supervisor.Inbound{Listen: in.Listen, Port: in.Port, Tag: in.Tag}
+	}
+	return out
+}
+
+// healthInbounds is that mapping read the other way: the supervisor's live table in the compiler's shape, which is
+// the shape internal/health finds the port for a server tag in. The two types carry the same three fields for the
+// same reason — the compiler derives the table and the process owner reports it — so this is a shape change and not
+// a place where a fact can be lost.
+func healthInbounds(st supervisor.Status) []compile.Inbound {
+	if len(st.Inbounds) == 0 {
+		return nil
+	}
+	out := make([]compile.Inbound, len(st.Inbounds))
+	for i, in := range st.Inbounds {
+		out[i] = compile.Inbound{Listen: in.Listen, Port: in.Port, Tag: in.Tag}
 	}
 	return out
 }

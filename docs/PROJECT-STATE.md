@@ -7,8 +7,9 @@
 > Written 2026-11-04. English because it is the repository language.
 
 Status as of 2026-11-10: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier.** The latest continuation is §4.49; older scope and inventory
-paragraphs below are dated history, not a prohibition on implementation. §7 records the push authorization and ref.
+supervisor, health prober and receipt verifier, and `server.test` is dispatched.** The latest continuation is §4.50;
+older scope and inventory paragraphs below are dated history, not a prohibition on implementation. §7 records the push
+authorization and ref.
 
 ---
 
@@ -659,6 +660,15 @@ and `envelope.schema.json` locations named in doc 25 §2 and §13, doc 39's `VER
 doc 32's two cites of doc 25 were re-anchored for the lines §2's rewrite pushed down and count as before. `VER-89`
 joins the queue for the answer shape a below-floor frame owes, `ODEC-37` keeps the two measurements §4.48 named, and
 `VER-28` and the live rows stay as they were.
+§4.50 moves two figures — **2323 / 619 / 1591**, 68 labels, 52 `Cited by` rows — measured after this paragraph was
+written, read against df3f8ff's own blobs, which count **2311 / 615 / 1591** — the two files this slice edited are the
+only citation-bearing files in it. It is the first
+slice in several whose first figure moves up rather than holding: per file this one is `+12 / +2 / 0`, the twelve
+addresses inside the Connector's own code that its record names and the two schema fields ODEC-42 answers through, and
+doc 22 is `0 / +2 / 0`, those same two fields spelled in full in the §8 Status line. The four cites this pass repaired
+moved digits onto the content they already pointed at and count as before. `VER-84` had already left the queue on
+2026-11-07 with the decision that answered ODEC-42, so no counter in the verification ledger moves here and the
+labelled-row tallies are §4.49's.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -1763,9 +1773,10 @@ the `cmd` line moved from hundredths of a second to 0.265 s, because two of the 
 compare-and-swap, then the intent, then the compile, then the file, then the reservation table, then the process —
 "compare-and-swap first … a refusal at any of those points has touched nothing after it" is doc 27 §8's atomicity rule
 restated as a sequence rather than as a rename, and `Handle` keeps the shape of that sentence.
-`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:671`) is the one that makes it
-observable: after the Busy it asserts the intent source was never asked (`asks != 0 || records != 0`), Core was never
-touched (`starts != 0 || stops != 0`) and no config file exists — three negative assertions against the packages behind
+`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:672`) is the one that makes it
+observable: after the Busy it asserts the applied-state record was read once and never written
+(`reads != 1 || writes != 0`), Core was never touched (`starts != 0 || stops != 0`) and no config file exists — three
+negative assertions against the packages behind
 the surface, not against a mock's call log. The same shape recurs in `TestDryRunTouchesNothing` (`:624`) and in
 `TestRestartPolicyNeverLeavesTheProcessAlone` (`:695`), whose last assertion is the subtle one: with
 `restartPolicy: never` the file *is* applied, and the applied-state record stays empty (`:715`) because that record is
@@ -1776,7 +1787,7 @@ could make the next apply believe a config is in force that nothing loads.
 (`packages/schema/protocol/commands/config.apply.json#/args/properties/expectedAppliedHash`) is a pattern
 `^([0-9a-f]{64})?$` over a type that admits absence, so an empty value is not "I believe nothing is applied" — it is no
 belief at all. `Handle` therefore compares only when the caller stated something
-(`connector/cmd/nexora-connector/config_apply.go:302`), and the reason is not tidiness: were an unstated belief read as
+(`connector/cmd/nexora-connector/config_apply.go:460`), and the reason is not tidiness: were an unstated belief read as
 a claim about an empty record, every second apply from the same tab would have to call `core.status` first just to be
 allowed to speak, and doc 26 §2.1's CAS would have become a lock. `docs/architecture/26-command-surface.md` §2.1 now
 says that out loud beside the rule it qualifies, because the code and the sentence had to move together or the next
@@ -1841,7 +1852,7 @@ command surface that stops a running Core cannot be tested that way, which is th
 becomes this slice's bug: a test of *ordering* is the first test of *still being alive*.
 
 **Three assertions had to move before the reconciliation test meant anything.** (1) The launch closure picks a record
-slot by spawn count and clamps it (`connector/cmd/nexora-connector/config_apply_test.go:496-507`), because the ladder is
+slot by spawn count and clamps it (`connector/cmd/nexora-connector/config_apply_test.go:530-534`), because the ladder is
 entitled to spawn a third child and a closure that indexed by call count would have handed the third one the second
 record — a proof of a handover that never happened. (2) The test waits for the *first* child's record before issuing the
 second apply (`:530`, 20 s): the second apply ends that process, so a child that had not finished booting would leave no
@@ -1870,7 +1881,7 @@ stale addresses were not in a document citing a document, they were in the recor
 
 **Queue arithmetic, stated so the next slice can check it.** 79 rows → 80: `VER-32` moves `no-code` → `no-run` (the
 envelope→Xray compiler now has an answer for ADR-0013's promise — `Unrepresentable`
-(`connector/cmd/nexora-connector/config_apply.go:381`) carries the compile's report into the result, proven at
+(`connector/cmd/nexora-connector/config_apply.go:568`) carries the compile's report into the result, proven at
 `connector/cmd/nexora-connector/config_apply_test.go:1079` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
 and `connector.version` only, `connector/cmd/nexora-connector/main.go:79-80`, and `intentSource` has no production
@@ -3354,8 +3365,56 @@ the branch stays unreachable in this build, which is the whole content of the ne
 
 ---
 
-## 5. Verification state to the letter
+### 4.50 `server.test` is registered, and what it probes is the intent `config.apply` was handed — `ODEC-42`'s runtime half (2026-11-10)
 
+**Found.** Three sentences in the Connector were false at the same time. `server.test`'s own header said the server id
+and the egress endpoint "are carried by no schema field", while ODEC-42's answer had long since put them in
+`packages/schema/connector-settings.schema.json#/properties/core/properties/egressProbe/properties/endpoint` and
+`packages/schema/server.schema.json#/properties/address` — and because no Go mirror of the first existed,
+`compile.Decode` refused a settings document that carried the field the decision invented, with
+`connector/internal/compile/model.go:264` as the type that was missing. `internal/health` still compared an egress
+answer against an address the wiring handed it as a constant, so the claim lived in code rather than in the server
+document ODEC-42 names. And the handler was never registered: the allowlist publishes nineteen commands, this build
+answered three of them, and the frame an extension sends to test its own server was met with `UnknownMethod` by a
+process that already carried a working prober in its tree.
+
+**Fixed.** The mirror (`connector/internal/compile/model.go:239`), then the two reads. The prober's endpoint seam is
+now late-bound — `connector/internal/health/health.go:203` — and read at the moment a layer asks
+(`connector/internal/health/probe.go:336`), and the expected address comes out of the resolved server document and is
+resolved then, not at build time (`connector/internal/health/probe.go:350`). The last missing fact — which server a
+frame's `serverId` names — is answered without a store: `config.apply` records the intent it just put into Core in an
+in-memory table (`connector/cmd/nexora-connector/config_apply.go:135`, written only from
+`connector/cmd/nexora-connector/config_apply.go:517`, after the rename and the reconcile, because ADR-0010 forbids
+keeping a copy of intent and a dryRun puts nothing anywhere). `newHealthSurface`
+(`connector/cmd/nexora-connector/health_probe.go:67`) joins that table and that endpoint to the supervisor's live
+inbound table, read through `healthInbounds` (`connector/cmd/nexora-connector/config_apply.go:587`) rather than a
+second copy of the ports, and `connector/cmd/nexora-connector/main.go:198` registers the handler. A probe of a
+server nothing has applied is a refusal naming the absence, and a fetch probe before the first settings document is
+the same: neither is a constructor error, because both are facts about the world the Connector is allowed to learn
+only from a frame.
+
+**Verified.** Three wiring tests drive the registered surface with the real prober rather than the stub this file used
+until now — `connector/cmd/nexora-connector/health_probe_test.go:208` shows the same frame move from refusal to a
+green `dns` + `tcp` answer against a real loopback socket once an apply has happened, and that a re-apply of a moved
+server changes what `serverFor` returns; the other two drive the endpoint.
+`connector/cmd/nexora-connector/config_apply_test.go:224` is the fake Core
+learning to keep the inbound table it was handed, which is what makes the refusal-then-measurement pair writable at
+all. The whole Connector suite passes with `-count=1` (`internal/health` 42 tests, the egress layers over a loopback
+SOCKS5 core), `gofmt -l` and `go vet` clean; schema verification, no-secrets, layout and ADR guards green. doc 22 §8's
+Status line, which had been mangled into a sentence describing no code, now names what exists. Nothing here was
+measured against a remote server or a browser: the pass is a loopback Core's answer.
+
+**Uncovered by the same pass, and deferred as its own slice.** doc 40's §6 table still lists 36 rows for a register of
+32 objects — `ODEC-35`, `ODEC-36`, `ODEC-42` and `ODEC-43` sit in the open table after retiring — and the sentence
+under it claims "the 40 rows above are the same 40 objects". §5's "seven that decide the shape of the product" keeps
+two of them, and §4's list names one more. `verify.mjs` only requires doc 40 to *name* every live id, so none of that
+drift fails a run; a sweep has to move the rows, the two counts, and the §4/§5 prose together. The same shape of drift
+sits in this file's own old §4.2x records, which cite `:624`-style bare line numbers into files that have grown: the
+guard cannot see them, because a cite without a path token is not a cite it reads.
+
+---
+
+## 5. Verification state to the letter
 
 - `cd omega-build && npm run deps && npm run dev && npx grunt && npx grunt release` → **exit 0** for the whole chain (Ladder A).
   Re-run end to end on 2026-11-05 by probe-4 — same four steps, same order, all exit 0, and its `npm run deps`
@@ -3503,7 +3562,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. Next: QUIC's positive traffic case and a live FakeDNS match with an engine — both expensive fixtures — then the server.test registration slice, which needs a connector-owned way to resolve a server id and will replace the stale ODEC-42 comment in that handler, then the live rows. ODEC-35 is answered (ADR-0022).
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. Next: the doc-40 register sweep §4.50 measured and deliberately did not start — four retired rows still in the open table, the count sentence under it, and the two §5 entries that retired while the heading still says seven — then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022).
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.

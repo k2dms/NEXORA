@@ -8,9 +8,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"strings"
 	"testing"
 
+	"github.com/k2dms/nexora/connector/internal/compile"
+	"github.com/k2dms/nexora/connector/internal/dispatch"
 	"github.com/k2dms/nexora/connector/internal/envelope"
 	"github.com/k2dms/nexora/connector/internal/health"
 )
@@ -179,5 +182,166 @@ func TestHandleAnswersAProberRefusalWithTheCommandShape(t *testing.T) {
 func TestANewServerTestWithoutAProberIsRefused(t *testing.T) {
 	if _, err := newServerTest(nil); err == nil {
 		t.Fatal("a handler without a prober was built; it would have to invent the answer §8 reserves for a measurement")
+	}
+}
+
+// The three tests below drive the registration half: `newHealthSurface` over a real `config.apply`, with the real
+// prober rather than the stub the rest of this file uses. What they check is that every fact a probe needs arrives
+// from the document that put it in force — ODEC-42's runtime half, and the reason this method could not be
+// registered before the endpoint had a home in settings.
+
+// loopbackServer points the shipped vision server at a socket this test binary holds open, so a `tcp` layer that
+// passes is a measurement rather than a hope, and the address the egress comparison reads is one the test knows.
+func loopbackServer(t *testing.T, h *harness) int {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listening: %v", err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
+	port := ln.Addr().(*net.TCPAddr).Port
+	h.intent.Servers[0].Address = "127.0.0.1"
+	h.intent.Servers[0].Port = port
+	return port
+}
+
+func TestTheProbeSurfaceMeasuresTheServerConfigApplyPutInForce(t *testing.T) {
+	h := newHarness(t, baseIntent(t), testProtector{})
+	loopbackServer(t, h)
+
+	st, err := newHealthSurface(h.surface)
+	if err != nil {
+		t.Fatalf("newHealthSurface: %v", err)
+	}
+	frame := func(args string) (any, *dispatch.Refusal) {
+		return st.Handle(context.Background(), requestFrame(t, args))
+	}
+	probe := `{"serverId":"` + probeServerID + `","layers":["dns","tcp"]}`
+
+	// Before the first apply there is no server table to read, and the Connector is not allowed to have one
+	// (ADR-0010), so the honest answer is the refusal that names the read it could not make. The words to look for
+	// are the seam's own and not `ErrNoServer`'s: `clip` keeps the tail of a message over the envelope's bound, and
+	// the sentinel is the first clause of a two-clause sentence.
+	_, refusal := frame(probe)
+	if refusal == nil || refusal.Code != "HealthCheckFailed" {
+		t.Fatalf("a probe of an id no apply carried was answered %v, want the HealthCheckFailed refusal", refusal)
+	}
+	if !strings.Contains(refusal.Message, "config.apply has carried a server document") {
+		t.Errorf("refusal %q does not name where the server read comes from", refusal.Message)
+	}
+
+	// A dryRun compiles and reports and puts nothing anywhere, so it must not move the table either.
+	if _, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"],"dryRun":true}`); ref != nil {
+		t.Fatalf("the preview refused: %s — %s", ref.Code, ref.Message)
+	}
+	if _, err := h.surface.serverFor(context.Background(), probeServerID); err == nil ||
+		!strings.Contains(err.Error(), "ADR-0010") {
+		t.Errorf("a preview made the server readable: %v", err)
+	}
+
+	// The real apply hands the same surface both halves it was missing: the document behind the id and, through the
+	// process owner, the inbound the probe is allowed to be performed against.
+	if _, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`); ref != nil {
+		t.Fatalf("the apply refused: %s — %s", ref.Code, ref.Message)
+	}
+	srv, err := h.surface.serverFor(context.Background(), probeServerID)
+	if err != nil {
+		t.Fatalf("serverFor after the apply: %v", err)
+	}
+	if srv.Host != "127.0.0.1" || srv.Port == 0 || srv.ID != probeServerID {
+		t.Errorf("the probe would measure %+v, not the document that was applied", srv)
+	}
+
+	ans, refusal := frame(probe)
+	if refusal != nil {
+		t.Fatalf("a probe of an applied server was refused: %s — %s", refusal.Code, refusal.Message)
+	}
+	answer := ans.(*health.Answer)
+	if answer.Overall != health.OverallPass {
+		t.Errorf("overall = %s with layers %+v, want a pass measured against the socket this test holds", answer.Overall, answer.Layers)
+	}
+
+	// And the table follows the config: the same id resolving to the document the *latest* apply carried is what
+	// makes a probe a measurement of the in-force server rather than of one the user replaced.
+	h.intent.Servers[0].Address = "192.0.2.10"
+	h.intent.Servers[0].Port = 443
+	if _, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`); ref != nil {
+		t.Fatalf("the second apply refused: %s — %s", ref.Code, ref.Message)
+	}
+	srv, err = h.surface.serverFor(context.Background(), probeServerID)
+	if err != nil {
+		t.Fatalf("serverFor after the second apply: %v", err)
+	}
+	if srv.Host != "192.0.2.10" || srv.Port != 443 {
+		t.Errorf("the probe would measure %+v, which is the replaced document", srv)
+	}
+}
+
+func TestAnAppliedIntentWithoutAnEgressEndpointRefusesOnlyAFetchProbe(t *testing.T) {
+	h := newHarness(t, baseIntent(t), testProtector{})
+	loopbackServer(t, h)
+	// `settings.default.json`'s core block names no egressProbe, which is the state of an install that has never
+	// been told where to ask for its public address.
+	st, err := newHealthSurface(h.surface)
+	if err != nil {
+		t.Fatalf("newHealthSurface: %v", err)
+	}
+	if _, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`); ref != nil {
+		t.Fatalf("the apply refused: %s — %s", ref.Code, ref.Message)
+	}
+
+	_, refusal := st.Handle(context.Background(), requestFrame(t,
+		`{"serverId":"`+probeServerID+`","layers":["tcp"],"egressProbe":true}`))
+	if refusal == nil || refusal.Code != "HealthCheckFailed" ||
+		!strings.Contains(refusal.Message, health.ErrNoEgress.Error()) {
+		t.Fatalf("a fetch with no endpoint answered %v, want the HealthCheckFailed refusal that names the missing endpoint", refusal)
+	}
+
+	// The absence bounds the fetch and nothing else: the layers that ask no question of an endpoint still answer.
+	ans, refusal := st.Handle(context.Background(), requestFrame(t,
+		`{"serverId":"`+probeServerID+`","layers":["dns","tcp"]}`))
+	if refusal != nil {
+		t.Fatalf("a non-fetch probe was refused because no endpoint is configured: %s — %s", refusal.Code, refusal.Message)
+	}
+	if ans.(*health.Answer).Overall != health.OverallPass {
+		t.Errorf("overall = %s, want pass", ans.(*health.Answer).Overall)
+	}
+}
+
+func TestTheEgressEndpointTheAppliedSettingsCarryIsReadAtProbeTime(t *testing.T) {
+	h := newHarness(t, baseIntent(t), testProtector{})
+	loopbackServer(t, h)
+	st, err := newHealthSurface(h.surface)
+	if err != nil {
+		t.Fatalf("newHealthSurface: %v", err)
+	}
+	// Built before any settings existed, and reused after they arrive: the endpoint is a late-bound read, so a
+	// Connector installed and then configured can probe without a restart.
+	egress := `{"serverId":"` + probeServerID + `","layers":["tcp"],"egressProbe":true}`
+	if _, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`); ref != nil {
+		t.Fatalf("the first apply refused: %s — %s", ref.Code, ref.Message)
+	}
+	_, refusal := st.Handle(context.Background(), requestFrame(t, egress))
+	if refusal == nil {
+		t.Fatal("an egress probe was answered with no endpoint applied")
+	}
+
+	h.intent.Settings.Core.EgressProbe = &compile.EgressProbe{Endpoint: "http://127.0.0.1:9/checkip"}
+	if _, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`); ref != nil {
+		t.Fatalf("the second apply refused: %s — %s", ref.Code, ref.Message)
+	}
+	// Port 9 is discard: nothing here speaks SOCKS5, so the fetch cannot succeed and the egress row cannot be a
+	// pass. What changed is that the answer is now a measurement of a target the settings named instead of a
+	// refusal about a target nobody did.
+	ans, refusal := st.Handle(context.Background(), requestFrame(t, egress))
+	if refusal != nil {
+		t.Fatalf("with an endpoint applied the same frame was refused: %s — %s", refusal.Code, refusal.Message)
+	}
+	answer := ans.(*health.Answer)
+	if answer.Overall == health.OverallPass {
+		t.Error("a fetch through an inbound nothing speaks on reported a pass")
+	}
+	if answer.EgressIP != nil {
+		t.Errorf("egressIp = %q from a fetch that never completed", *answer.EgressIP)
 	}
 }

@@ -218,6 +218,10 @@ func (c *fakeCore) Start(_ context.Context, p supervisor.StartParams) (*supervis
 	c.status.Running = true
 	c.status.Hash = p.ConfigHash
 	c.status.PID = 4000 + len(c.starts)
+	// The live inbound table, the way `statusLocked` reports it: what the caller handed the process, and only while
+	// it is running. `server.test` reads this seam for the port to probe, so a fake that dropped it would make the
+	// prober's `CoreNotRunning` rule untestable from this package.
+	c.status.Inbounds = p.Inbounds
 	out := c.status
 	return &out, nil
 }
@@ -230,6 +234,7 @@ func (c *fakeCore) Stop(_ context.Context, _ bool) (*supervisor.StopResult, erro
 		return nil, c.stopErr
 	}
 	c.status.Running = false
+	c.status.Inbounds = nil
 	return &supervisor.StopResult{WasRunning: true, TerminatedBy: supervisor.TerminatedByRequest}, nil
 }
 

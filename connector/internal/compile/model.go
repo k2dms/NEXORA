@@ -225,15 +225,18 @@ type Report struct {
 	Reason string `json:"reason"`
 }
 
-// Settings mirrors `packages/schema/connector-settings.schema.json`: only the halves the pipeline reads — `ports`
-// for allocation, `telemetry.logLevel` for the Core log, and `core.installRoot` for the one field §3.3 says must
-// never reach the bytes.
+// Settings mirrors `packages/schema/connector-settings.schema.json`: only the halves anything downstream reads —
+// `ports` for allocation, `telemetry.logLevel` for the Core log, `core.installRoot` for the one field §3.3 says must
+// never reach the bytes, and `core.egressProbe` for the endpoint the HealthProber fetches. The last two are carried
+// without reaching the compiled bytes at all: they are read from the settings that were applied, not from what they
+// compile to.
 type Settings struct {
 	SchemaVersion int `json:"schemaVersion"`
 	Core          struct {
-		AutoStart      bool    `json:"autoStart"`
-		InstallChannel string  `json:"installChannel"`
-		InstallRoot    *string `json:"installRoot"`
+		AutoStart      bool         `json:"autoStart"`
+		InstallChannel string       `json:"installChannel"`
+		InstallRoot    *string      `json:"installRoot"`
+		EgressProbe    *EgressProbe `json:"egressProbe"`
 	} `json:"core"`
 	Ports struct {
 		Range struct {
@@ -252,6 +255,14 @@ type Settings struct {
 		FailClosedDefault string `json:"failClosedDefault"`
 		NotificationLevel string `json:"notificationLevel"`
 	} `json:"proxy"`
+}
+
+// EgressProbe mirrors `connector-settings.schema.json#/properties/core/properties/egressProbe`: the one machine-wide
+// checkip URL ODEC-42 chose as the egress probe's endpoint. The expected answer is deliberately not a field here —
+// the decision puts it in the server document's own `address`, read at probe time, and a copy in settings would be a
+// second claim the probe could disagree with.
+type EgressProbe struct {
+	Endpoint string `json:"endpoint"`
 }
 
 // Failure mirrors `packages/schema/failure-policy.schema.json`. The `block` object is stage 4's named input, and the

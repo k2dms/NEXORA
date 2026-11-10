@@ -20,8 +20,9 @@ import (
 	"github.com/k2dms/nexora/connector/internal/compile"
 )
 
-// egressAddress is TEST-NET-3 (`RFC 5737`), the documentation range: an address that cannot be a real peer's, in a
-// test whose whole subject is whether an address is the expected one.
+// egressAddress is TEST-NET-3 (`RFC 5737`), the documentation range: since ODEC-42 the expected address is the
+// server's own, so this is the value that is *not* the harness server's — someone else's traffic, in a test whose
+// subject is whether an address is the expected one.
 const egressAddress = "203.0.113.7"
 
 // fakeCore is the stand-in for the one thing this package may not assume: a socks inbound that opens the outbound the
@@ -187,8 +188,11 @@ func newHarness(t *testing.T) *harness {
 		}
 	}()
 
+	// The endpoint echoes the address behind it, which for a probe that reached this origin through the harness's
+	// own loopback tunnel is the harness server's address: the matched case, because ODEC-42 compares the answer with
+	// the server record rather than with a number the wiring declares.
 	h.origin = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "%s\n", egressAddress)
+		fmt.Fprintf(w, "%s\n", h.server().Host)
 	}))
 	t.Cleanup(h.origin.Close)
 	return h
@@ -214,7 +218,7 @@ func (h *harness) prober(tweak ...func(*Config)) *Prober {
 			return h.server(), nil
 		},
 		Inbounds:     h.inbounds,
-		Egress:       Egress{URL: h.origin.URL + "/checkip", IP: egressAddress},
+		Egress:       func() (string, error) { return h.origin.URL + "/checkip", nil },
 		Failover:     compile.Failover{Enabled: true, CooldownSeconds: 60, MaxConsecutiveFailures: 3, ProbeIntervalSeconds: 120},
 		LayerTimeout: 2 * time.Second,
 		Now:          h.clock.Now,
@@ -271,11 +275,11 @@ func TestEveryLayerPassingIsTheOnlyAnswerThatMeansTheTunnelWorks(t *testing.T) {
 			t.Errorf("%s is %q (%s %s), want pass", m.Layer, m.State, m.Code, m.Detail)
 		}
 	}
-	if a.EgressIP == nil || *a.EgressIP != egressAddress {
+	if a.EgressIP == nil || *a.EgressIP != h.server().Host {
 		t.Errorf("egressIp is %v, want the address the endpoint returned", a.EgressIP)
 	}
 	if a.MatchesExpectedEgress == nil || !*a.MatchesExpectedEgress {
-		t.Error("matchesExpectedEgress must be true when the observed address is the expected one")
+		t.Error("matchesExpectedEgress must be true when the observed address is the one the server's own record carries")
 	}
 	if a.TestedAt == "" {
 		t.Error("testedAt is required by the result schema and empty")
@@ -366,7 +370,7 @@ func TestAnUnexpectedEgressAddressIsALeakAndNotAPartial(t *testing.T) {
 	h.origin = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "203.0.113.99\n") // someone else's address: the traffic left this machine unproxied
 	}))
-	p := h.prober(func(cfg *Config) { cfg.Egress = Egress{URL: h.origin.URL + "/checkip", IP: egressAddress} })
+	p := h.prober()
 	a, err := p.Probe(context.Background(), egressRequest(LayerDNS, LayerTCP, LayerCoreOutbound, LayerProxiedHTTP))
 	if err != nil {
 		t.Fatalf("Probe: %v", err)
@@ -385,11 +389,141 @@ func TestAnUnexpectedEgressAddressIsALeakAndNotAPartial(t *testing.T) {
 	}
 }
 
+// The runtime half of ODEC-42, in four tests: the claim an egress probe compares itself against is the server
+// record's own address read at probe time, a name there is resolved at probe time, an unresolvable name is the
+// absence of a claim rather than a leak, and the endpoint is read when the probe runs because the settings document
+// that carries it arrives with `config.apply` and not with the process.
+func TestTheExpectedAddressIsTheServersOwnAndNotAWiringConstant(t *testing.T) {
+	h := newHarness(t)
+	p := h.prober(func(cfg *Config) {
+		cfg.Server = func(context.Context, string) (Server, error) {
+			s := h.server()
+			// The record now claims a different machine while the endpoint still echoes this one. A wiring-time
+			// expectation would have gone on reporting a match, which is the failure this row exists to prevent.
+			s.Host = egressAddress
+			return s, nil
+		}
+	})
+	a, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP))
+	if err != nil {
+		t.Fatalf("Probe: %v", err)
+	}
+	if a.Overall != OverallNotProxied {
+		t.Errorf("overall is %q, want not-proxied: every layer answered and the address is not the server's", a.Overall)
+	}
+	if a.MatchesExpectedEgress == nil || *a.MatchesExpectedEgress {
+		t.Error("matchesExpectedEgress still says true against a server record that claims another address")
+	}
+	ip := rowOf(t, a, LayerEgressIP)
+	if ip.State != StateFail || !strings.Contains(ip.Detail, egressAddress) {
+		t.Errorf("egress-ip is %q (%s), want a fail naming the address the server claims", ip.State, ip.Detail)
+	}
+}
+
+func TestAServerAddressThatIsANameIsResolvedForTheComparison(t *testing.T) {
+	h := newHarness(t)
+	p := h.prober(func(cfg *Config) {
+		cfg.Server = func(context.Context, string) (Server, error) {
+			s := h.server()
+			s.Host = "vps.example"
+			return s, nil
+		}
+		cfg.LookupHost = func(_ context.Context, host string) ([]string, error) {
+			if host != "vps.example" {
+				return nil, fmt.Errorf("unexpected resolver question: %s", host)
+			}
+			return []string{"127.0.0.1"}, nil
+		}
+	})
+	a, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP))
+	if err != nil {
+		t.Fatalf("Probe: %v", err)
+	}
+	if a.MatchesExpectedEgress == nil || !*a.MatchesExpectedEgress {
+		t.Errorf("matchesExpectedEgress is %v, want true: the name resolved to the address behind the tunnel", a.MatchesExpectedEgress)
+	}
+}
+
+func TestAnUnresolvableServerAddressIsNoOpinionAndNotALeak(t *testing.T) {
+	h := newHarness(t)
+	p := h.prober(func(cfg *Config) {
+		cfg.Server = func(context.Context, string) (Server, error) {
+			s := h.server()
+			s.Host = "vps.example"
+			return s, nil
+		}
+		cfg.LookupHost = func(_ context.Context, host string) ([]string, error) {
+			return nil, fmt.Errorf("no such host: %s", host)
+		}
+	})
+	a, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP))
+	if err != nil {
+		t.Fatalf("Probe: %v", err)
+	}
+	if a.EgressIP == nil {
+		t.Error("the endpoint answered with an address and the answer dropped it: a missing claim is not a missing measurement")
+	}
+	if a.MatchesExpectedEgress != nil {
+		t.Errorf("matchesExpectedEgress is %v, want absent: nothing resolves to compare against, so the probe has no opinion", *a.MatchesExpectedEgress)
+	}
+	eg := rowOf(t, a, LayerEgressIP)
+	if eg.State != StateSkipped {
+		t.Errorf("egress-ip is %q (%s), want skipped and not a fail: the claim is unknown, the egress is not someone else's", eg.State, eg.Detail)
+	}
+	if got := rowOf(t, a, LayerProxiedHTTP).State; got != StatePass {
+		t.Errorf("proxied-http is %q, want pass: the fetch worked, which is all that row reports", got)
+	}
+	if a.Overall != OverallPartial {
+		t.Errorf("overall is %q, want partial: an unmeasured row cannot be credited as a green mark", a.Overall)
+	}
+}
+
+func TestTheEgressEndpointIsReadWhenTheProbeRuns(t *testing.T) {
+	h := newHarness(t)
+	var endpoint string
+	p := h.prober(func(cfg *Config) {
+		cfg.Egress = func() (string, error) {
+			if endpoint == "" {
+				return "", errors.New("no settings document has been applied")
+			}
+			return endpoint, nil
+		}
+	})
+
+	// Nothing has been applied, so a probe that asks for a fetch is the refusal that says so — and a probe that asks
+	// for none is answered, which is the difference between refusing a wiring and reporting a missing document.
+	_, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP))
+	var he *Error
+	if !errors.As(err, &he) || !errors.Is(err, ErrNoEgress) {
+		t.Fatalf("the fetch layer without an endpoint gave %v, want a refusal that unwraps to ErrNoEgress", err)
+	}
+	if he.Code() != "HealthCheckFailed" {
+		t.Errorf("the missing endpoint answers %q, want HealthCheckFailed", he.Code())
+	}
+	if _, err := p.Probe(context.Background(), request(LayerTCP)); err != nil {
+		t.Fatalf("a probe that fetches nothing was refused for want of an endpoint: %v", err)
+	}
+
+	endpoint = h.origin.URL + "/checkip"
+	a, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP))
+	if err != nil {
+		t.Fatalf("the same prober refused the endpoint that appeared after its first apply: %v", err)
+	}
+	if a.MatchesExpectedEgress == nil || !*a.MatchesExpectedEgress {
+		t.Error("a late endpoint that matches the server's address is still reported as no opinion")
+	}
+
+	endpoint = "ftp://api.ipify.org"
+	if _, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP)); !errors.Is(err, ErrNoEgress) {
+		t.Errorf("an endpoint that cannot be fetched gave %v, want ErrNoEgress", err)
+	}
+}
+
 func TestADeadEgressEndpointBlamesTheEndpointAndNotTheServer(t *testing.T) {
 	h := newHarness(t)
 	url := h.origin.URL
 	h.origin.Close()
-	p := h.prober(func(cfg *Config) { cfg.Egress = Egress{URL: url + "/checkip", IP: egressAddress} })
+	p := h.prober()
 	a, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP))
 	if err != nil {
 		t.Fatalf("Probe: %v", err)
@@ -485,7 +619,7 @@ func TestTheEndpointBodyIsNeverQuotedInAnAnswer(t *testing.T) {
 	h.origin = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "token=do-not-log-this\n")
 	}))
-	p := h.prober(func(cfg *Config) { cfg.Egress = Egress{URL: h.origin.URL + "/checkip", IP: egressAddress} })
+	p := h.prober()
 	a, err := p.Probe(context.Background(), egressRequest(LayerProxiedHTTP))
 	if err != nil {
 		t.Fatalf("Probe: %v", err)
