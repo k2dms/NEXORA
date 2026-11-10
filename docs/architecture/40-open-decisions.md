@@ -134,13 +134,14 @@ incompetence. Every entry here resisted that, and the reasons are of six kinds.
    a finished feature" — tells us what we may not say, not what to say. Picking one silently would make the screen
    the architecture's opinion rather than the product's.
 3. **The answer crosses a boundary, so it is not a field edit.** `ODEC-08` (a Shadowsocks-heavy feed), `ODEC-17`
-   (encrypting the pre-migration snapshot), `ODEC-27` (Linux and macOS provenance), `ODEC-35` (what actually crosses
-   the second pipe) and `ODEC-15` each change what a component is
-   *for*. `docs/adr/0001-adr-practice.md` makes that an
-   ADR, and an ADR needs the argument that a Phase-1 document cannot supply on the strength of a schema. A sixth that
-   reads like this one — `ODEC-33`, who owns subscriptions — left the register on 2026-11-07 for exactly this reason:
-   the answer was a boundary, so it became `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`
-   rather than a field, and it became that by elimination rather than by preference.
+   (encrypting the pre-migration snapshot), `ODEC-27` (Linux and macOS provenance) and `ODEC-15` each change what a
+   component is *for*. `docs/adr/0001-adr-practice.md` makes that an
+   ADR, and an ADR needs the argument that a Phase-1 document cannot supply on the strength of a schema. Two more that
+   read like these left the register on 2026-11-07 for exactly this reason: `ODEC-33`, who owns subscriptions, became
+   `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, and `ODEC-35`, what crosses the second pipe,
+   became `docs/adr/0022-hop-2-identity-is-which-pipe.md`. Neither became that by preference — the subscription answer
+   was reached by elimination, and the hop-2 answer by a promise ADR-0005 rule 2 had already made and the corpus had
+   already refused three escape routes out of.
 4. **The answer depends on an artefact that does not exist yet.** `ODEC-03` (which error code means "cannot be
    compiled") has its call sites now — `connector/internal/compile/validate.go` refuses a bind, and
    `connector/cmd/nexora-connector/config_apply.go` classifies every pipeline refusal before it answers — and the
@@ -173,9 +174,13 @@ makes this a register rather than a list of worries.
 
 ---
 
-## 5. The seven that decide the shape of the product
+## 5. The five that decide the shape of the product
 
-Most entries are one field wide. Seven of them would move the product if answered the other way.
+Most entries are one field wide. Five of them would move the product if answered the other way. Two that used to be on
+this list are not, because answering them meant writing an ADR rather than choosing an option: `ODEC-33` left with
+`docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` and `ODEC-35` with
+`docs/adr/0022-hop-2-identity-is-which-pipe.md`, both on 2026-11-07 — which is the prediction this section was written
+to test, and the reason their blocks are no longer here rather than a paragraph about a question nobody owes any more.
 
 **`ODEC-01` — who owns the single Connector.** Adoption is described
 (`docs/architecture/21-system-context.md` §11's launch model: a lock file with `{pid, pipeVersion, startedAt,
@@ -215,36 +220,6 @@ this document for it, which is the corpus saying the same uncomfortable thing fi
 secrets do not sync is true of NEXORA's own fields and false of the one it inherited. Every option admits a loss —
 a device that never runs the migration, a second device that must re-enter a token, or an exception that stays
 documented. That is why it is `adr` and not a field.
-
-**`ODEC-33` — who owns subscriptions.** `docs/architecture/29-subscriptions-and-servers.md` §2 concludes that
-`subscription.refresh` results are single-frame because a feed body never crosses the pipe toward the extension. The
-conclusion was sound and its premise was the open question: if the extension is ever to hold a subscription — chunked
-or otherwise — then the frame contract, the §11 invariant that no feed body enters the browser, and the data split in
-`docs/architecture/34-data-split.md` all move together. It was answered by accident for a whole phase because nobody
-wrote the question down. It is written down now, in `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`,
-and the interesting part is how: nothing chose between its three options. Two were refused by data already shipped —
-`packages/schema/observability.json#/events/7/payload` is closed at four count fields, so `subscription.updated` cannot
-carry a Server, and `packages/schema/protocol/envelope.schema.json#/properties/chunk` names `profile.import` as its only
-sender — and the third contradicted an invariant the corpus states as fact. What survived was what
-`packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already
-demands. The register's first closure by elimination, and the pattern `ODEC-34` was written to describe.
-
-**`ODEC-35` — what crosses the second hop.** ADR-0005 rule 2 (`docs/adr/0005-two-process-connector.md:30-32`) promises
-a local pipe between the two processes whose message schema is versioned separately and carries its own version field,
-and no file in `packages/schema` defines it — `packages/schema/protocol/framing.json` scopes itself, in its own
-`#/description`, to "the extension-to-host pipe". `docs/architecture/25-native-messaging-protocol.md` §2 closes the
-last escape: the same envelope crosses hop 2 verbatim,
-`packages/schema/protocol/envelope.schema.json#/additionalProperties` is `false` over fourteen properties none of which
-is a sender, and ADR-0004 rule 3 forbids a payload field from *becoming* identity even if the object were opened — yet
-the connector's dispatch takes an `Identity` on every call. Three transport shapes survive, and they disagree about
-where identity lives, so the answer moves ADR-0005's boundary and the reasoning ADR-0004 rests on: a new file in
-`docs/adr/`, which is what `adr` costs. Chosen in Phase 1 it would have been a transport for a process nobody has
-built, picked in the one document §8 forbids from picking anything. **That last clause went stale inside this
-iteration, and the staleness is the entry's urgency.** `connector/cmd/nexora-connector` exists, serves the recorded
-handshake, and takes its `Identity` from two flags an operator types, printing on stderr that the flags are a stand-in
-for the answer this entry still owes (`docs/PROJECT-STATE.md` §4.13). So the question is no longer which transport is
-architecturally nicer: it is which one a running process moves onto, and a wrong answer is now a migration rather than
-a paragraph.
 
 ---
 
@@ -286,17 +261,19 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-31` | the real envelope sizes without `unlimitedStorage` | `measurement` | `VER-74`, `COMP-14` |
 | `ODEC-32` | whether mirrored legacy profile keys are name-derived or minted | `contract` | `VER-33` |
 | `ODEC-34` | where a chunk slice carries its bytes, and which byte string its `contentHash` names | `contract` | `VER-76` |
-| `ODEC-35` | how the sender identity crosses hop 2, and what the local pipe's message schema is | `adr` | `VER-77` |
-| `ODEC-36` | which byte string `configHash` covers — the handle-bearing document or the materialized bytes | `contract` | `VER-78`, `VER-88` |
-| `ODEC-37` | residual core-routing predicate semantics after measuring the four byte spellings; inversion and protocol-specific matches | `upstream` | `VER-28`, `VER-78` |
-| `ODEC-42` | which artefact carries the egress probe's endpoint and the expected public address it must answer — a settings field, a per-server field, or a probe document of its own | `contract` | `VER-84` |
-| `ODEC-43` | which code answers a request whose args violate the call contract, for the thirteen of nineteen commands that declare no `BadRequest` | `contract` | `VER-85` |
+| `ODEC-37` | residual core-routing predicate semantics after measuring the four byte spellings; inversion and protocol-specific matches | `upstream` | `VER-28` |
 
 Each entry in the data also carries the options (§4's argument in three lines each), the reason it is open, and the
-sites that deferred to it; the 40 rows above are the same 40 objects, not a summary of them.
+sites that deferred to it; the 32 rows above are the same 32 objects, not a summary of them.
 
-One entry is not above, and never will be again. `ODEC-02` — what the two version floors are, and what each refuses
-to speak — was answered on 2026-11-06 by its own first option, a field in `packages/schema/protocol/framing.json`,
+Nothing above is answered, and nothing answered is above. Thirteen ids have left this table since the register was
+born, each in the same commit as the artefact that closed it, and each with a row in
+`packages/schema/open-decisions.json#/retired` saying what the question was and what answered it. The paragraphs below
+are not those rows restated: they keep the *argument* for the retirements whose answer was more than a field edit,
+which is the half a tombstone cannot hold.
+
+The first was `ODEC-02` — what the two version floors are, and what each refuses
+to speak. It was answered on 2026-11-06 by its own first option, a field in `packages/schema/protocol/framing.json`,
 and it left this file rather than acquiring a `decided` column, for the reason rule 1 forbids answering here: a
 status field is a status field you will. Its id is retired in
 `packages/schema/open-decisions.json#/retired`, which now exists because an answered entry is cited by the
@@ -324,17 +301,23 @@ says so — a decision here still cannot make that true, and the labelled row in
 with the runtime half left where the fifth open item holds it.
 
 `ODEC-42` (where the egress probe's endpoint and its expected answer live) and `ODEC-43` (which code answers a
-malformed request to a command that declares no `BadRequest`) are the two newest, and both were found by writing
-code rather than by reading the contract — the shape §1 calls the register working. `ODEC-42` is the gap the
-HealthProber's constructor is where it bites: `server.test`'s `egressProbe` fetches "the configured egress endpoint"
-and `matchesExpectedEgress` compares against an expected address, and no field under `packages/schema/` names
-either, so `connector/internal/health` refuses to build without both and the component is tested and unregistrable
-until the contract says where they live. `ODEC-43` is the gap every command surface eventually meets: only six of
-nineteen command docs declare `BadRequest`, so the thirteen others answer a malformed payload with an analogy —
-`connector.hello` answers `HandshakeFailed`, `server.test` answers `HealthCheckFailed` — and both analogies are
-recorded at their sites while the rule that would justify either is still this entry's to write. Both are
-`contract`: each surviving answer is a field, an array or a rule sentence in `packages/schema`, and neither needs a
-browser, a store or a person.
+malformed request to a command that declares no `BadRequest`) were the two questions this repository raised by writing
+code rather than by reading the contract — the shape §1 calls the register working — and both retired on 2026-11-07.
+`ODEC-42` is answered by its own first option, split by nature:
+`packages/schema/connector-settings.schema.json#/properties/core/properties/egressProbe/properties/endpoint` carries
+the one machine-wide checkip URL, because the service is a property of the network the machine sits on rather than of
+the VPS being tested, and the expected public address is the tested server's own
+`packages/schema/server.schema.json#/properties/address`, resolved at probe time. The runtime half came afterwards:
+the settings mirror existed in no Go type, so `compile.Decode` refused a settings document carrying the field, and
+`server.test` was never registered — both are closed by the registration `docs/architecture/22-component-contracts.md`
+§8's Status line now describes, which is where the reads are late bound instead of compiled in. `ODEC-43` is answered
+by the status quo, which is what its first option asked for: six of
+nineteen command docs declare `BadRequest`, so the thirteen others answer a malformed payload with the closest declared
+meaning chosen per command and recorded at the site — `connector.hello` answers `HandshakeFailed`, `server.test`
+answers `HealthCheckFailed` — and the corpus states the taxonomy's gap rather than hiding it. Option two would have
+been a breaking change to nineteen docs and every client, option three an amendment to each command's `errors` array;
+neither was worth paying for a rule nothing was violating. Both freed their gates in the same commit: `VER-84`'s
+endpoint half and `VER-85`.
 
 `ODEC-40` (which artefact records the format an `auto` parse resolved to) is answered, and it was the first question
 this repository raised by reading its own shipped contract — no code was written, and no code failed. It left this file
@@ -471,7 +454,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 | an entry must block something | `no register entry asks a question that blocks nothing, so an open question is work owed and not a worry noted` |
 | this document names every entry and every vocabulary word | `the open-decisions document names every registered question and every word of the who-can-decide vocabulary` |
 | this document is not a source of deferred claims | `the register document is a list of questions, not a source of deferred verification claims of its own` |
-| this document's own tallies are the data's | `doc 40 reads aloud the register tallies the data has, and this check reads them out of the document` |
+| this document's own tallies and its §6 table are the data's | `doc 40 reads aloud the register tallies the data has, and this check reads them out of the document` |
 
 ---
 

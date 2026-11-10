@@ -4053,6 +4053,32 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       if (!odec.decidedBy.values.includes(kind)) gaps.push(`§3's table names ${kind}, the vocabulary does not`);
       else if (Number(n) !== byKind(kind)) gaps.push(`§3's table says ${n} ${kind} questions; the data says ${byKind(kind)}`);
     }
+    // §6's table is the register read aloud, and nothing compared it with the data: four ids sat in that "open"
+    // table after retiring, and one row still gated a queue row that had left with its own question. Membership,
+    // kind and gates are all data the table copies, so all three are read back out of it here.
+    const sec6 = text.split(/^## 6\. /m)[1]?.split(/^## 7\./m)[0] ?? '';
+    const tableRows = sec6
+      .split('\n')
+      .filter((l) => /^\|\s*`ODEC-\d\d`\s*\|/.test(l))
+      .map((l) => l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim()));
+    if (tableRows.length !== odec.register.length) {
+      gaps.push(`§6's table lists ${tableRows.length} rows; the register has ${odec.register.length} live questions`);
+    }
+    const bare = (s) => s.replace(/`/g, '').trim();
+    const tableIds = tableRows.map((r) => bare(r[0]));
+    for (const [cellId, , cellKind, cellGates] of tableRows) {
+      const id = bare(cellId);
+      const entry = odec.register.find((e) => e.id === id);
+      if (!entry) {
+        gaps.push(`§6's table lists ${id}, which is retired in #/retired`);
+        continue;
+      }
+      if (bare(cellKind) !== entry.decidedBy) gaps.push(`§6's table says ${id} is ${bare(cellKind)}; the data says ${entry.decidedBy}`);
+      const listed = cellGates.split(',').map(bare).filter(Boolean).sort().join(' ');
+      const gatesData = [...entry.blocks.verification, ...entry.blocks.compatibility].sort().join(' ');
+      if (listed !== gatesData) gaps.push(`§6's table gates ${id} with [${listed}]; the data says [${gatesData}]`);
+    }
+    for (const id of oIds) if (!tableIds.includes(id)) gaps.push(`${id} is live in the register and absent from §6's table`);
     const siteDocs = new Set([...deferralSites.keys()].map((k) => k.slice(0, k.lastIndexOf(':'))));
     const gatedBy = (m) => odec.register.filter((e) => e.blocks.verification.length + e.blocks.compatibility.length === m).length;
     const readTally = (label, re, expected) => {

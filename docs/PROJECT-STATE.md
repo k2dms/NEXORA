@@ -7,7 +7,7 @@
 > Written 2026-11-04. English because it is the repository language.
 
 Status as of 2026-11-10: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier, and `server.test` is dispatched.** The latest continuation is §4.50;
+supervisor, health prober and receipt verifier, and `server.test` is dispatched.** The latest continuation is §4.51;
 older scope and inventory paragraphs below are dated history, not a prohibition on implementation. §7 records the push
 authorization and ref.
 
@@ -669,6 +669,15 @@ doc 22 is `0 / +2 / 0`, those same two fields spelled in full in the §8 Status 
 moved digits onto the content they already pointed at and count as before. `VER-84` had already left the queue on
 2026-11-07 with the decision that answered ODEC-42, so no counter in the verification ledger moves here and the
 labelled-row tallies are §4.49's.
+§4.51 moves the first two figures down by one — **2322 / 618 / 1591**, 68 labels, 52 `Cited by`
+rows — measured after this paragraph was written, against the tree §4.50 published (fa2a031, reading
+**2323 / 619 / 1591**). Per file against that commit's blobs: doc 40 `-1 / -1 / -1`, the ADR-0005 line cite, one
+pointer and one document name the two retired §5 blocks carried and the sentence that replaced them does not, and this
+file `0 / 0 / +1`, the harness path its own record cites. No code citation moved: the sweep touched
+doc 40, its harness in `packages/schema/scripts/verify.mjs`, and this ledger. `VER-84` and `VER-85` had retired with
+their questions, so the gates column shrinking is the table catching up with the data rather than a row closing, and
+the run still reports 1234 checks because the new comparisons joined the labelled check that already read this
+document's sentences instead of adding one.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -3414,6 +3423,37 @@ guard cannot see them, because a cite without a path token is not a cite it read
 
 ---
 
+### 4.51 The register's own table is compared with the register — what §4.50 measured and deferred (2026-11-10)
+
+**Found.** doc 40 §6 is the register read aloud, and nothing in the run compared the reading with the data. It printed
+36 rows for 32 live objects: `ODEC-35`, `ODEC-36`, `ODEC-42` and `ODEC-43` retired on 2026-11-07 and stayed in the
+table that introduces itself as the open questions, and the sentence under it claimed "the 40 rows above are the same
+40 objects" — a number that had never been the table's size, only the ids ever issued. The same column carried one
+more lie: `ODEC-37`'s gates still named `VER-78`, a queue row that had retired with `ODEC-36`'s answer. Outside the
+table, §5 was titled for "the seven that decide the shape of the product" while two of those seven had left by becoming
+ADRs, §4's boundary list still named `ODEC-35` as a question, and §6's lead said "One entry is not above, and never
+will be again" about the first retirement while thirteen had happened. `verify.mjs` asks doc 40 to *name* every live id
+and reads four prose tallies out of it, so every one of these passed: a stale table still names the live ids, and the
+gates column was never among the tallies.
+
+**Fixed.** The table holds exactly the register's 32 rows, the sentence reads 32/32, `ODEC-37` gates `VER-28` alone,
+§5 is "the five" with one sentence saying which two left and to which ADR, §4's boundary list carries the live four
+and the two that became ADR-0021 and ADR-0022, and the `ODEC-42`/`ODEC-43` paragraph is retirement prose now —
+including the runtime half §4.50 shipped, because an entry's answer is not finished when the field is named. Then the
+rot got a referee rather than an argument: the run that already reads doc 40's tallies reads its §6 table too — row
+membership, the `decidedBy` column and the gates cell, each compared with `packages/schema/open-decisions.json` — and
+§9's row for that label now says what it covers. It was folded into the existing labelled check instead of adding one,
+so the run's own count did not move and no other document had to re-time a number.
+
+**Verified.** Four mutations measured the new assertions firing: a retired id printed in
+the table, a live id deleted from it, a kind changed, a gate cell shortened — all four appeared in one failure line,
+and the restored file runs green at 1234 checks. doc evidence reads 2322 / 618 / 1591, 68 labels and 52 `Cited by`
+rows: the two deleted §5 blocks carried one path:line, one pointer and one document name more than the prose that
+replaced them, and this record's one harness path pays for the last. No-secrets covered 499 files; layout and ADR
+guards green. No Go file changed in this slice, so the Connector suite is the one §4.50 published.
+
+---
+
 ## 5. Verification state to the letter
 
 - `cd omega-build && npm run deps && npm run dev && npx grunt && npx grunt release` → **exit 0** for the whole chain (Ladder A).
@@ -3562,7 +3602,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. Next: the doc-40 register sweep §4.50 measured and deliberately did not start — four retired rows still in the open table, the count sentence under it, and the two §5 entries that retired while the heading still says seven — then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022).
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. §4.51 closes what §4.50 measured and deferred: the register's own §6 table is now compared with the data — membership, kind and gates — and the four retired rows, the stale count sentence, the `VER-78` gate and the two retired §5 entries are gone. Next: `connector/cmd/nexora-host`, the hop-2 shim ADR-0022 made writable and nothing else blocks — one pipe name per sender, identity being which pipe the host opened, and the same envelope crossing verbatim under the pipe floor; it is the last piece between a browser and a Connector that answers, and `packages/protocol`'s TypeScript codec is its other half. Then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022).
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.
