@@ -326,10 +326,19 @@ func versionResponder(version string) dispatch.Handler {
 	}
 }
 
-// buildVersion is the version Go stamps into a binary built at a tagged module version. A local build reports
-// "(devel)", which is not a product version, so --connector-version is how the operator names the release this
-// process answers for instead of the process inventing one; internal/hello checks the shape either way.
+// releaseVersion is the product version the release passes in:
+// `go build -ldflags "-X main.releaseVersion=0.1.0" ./cmd/nexora-connector`. It exists because the host starts this
+// process with no arguments of its own (ADR-0022 rule 1), so the binary has to know what it answers for; a build
+// from a checkout leaves it empty and the process refuses to start rather than invent a version — Go reports
+// "(devel)" for a main module whatever tags exist, so nothing stamps it here by itself.
+var releaseVersion string
+
+// buildVersion is the version this binary was released with, or the empty string when it was not. --connector-version
+// is the operator's way of naming the release the same way; internal/hello checks the shape either way.
 func buildVersion() string {
+	if releaseVersion != "" {
+		return strings.TrimPrefix(releaseVersion, "v")
+	}
 	bi, ok := debug.ReadBuildInfo()
 	if !ok {
 		return ""

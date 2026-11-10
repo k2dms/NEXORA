@@ -7,7 +7,8 @@
 > Written 2026-11-04. English because it is the repository language.
 
 Status as of 2026-11-10: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier, and `server.test` is dispatched.** The latest continuation is §4.51;
+supervisor, health prober and receipt verifier, `server.test` is dispatched, the hop-2 shim is written, and
+`packages/protocol` frames the same crossing in TypeScript.** The latest continuation is §4.53;
 older scope and inventory paragraphs below are dated history, not a prohibition on implementation. §7 records the push
 authorization and ref.
 
@@ -678,7 +679,7 @@ doc 40, its harness in `packages/schema/scripts/verify.mjs`, and this ledger. `V
 their questions, so the gates column shrinking is the table catching up with the data rather than a row closing, and
 the run still reports 1234 checks because the new comparisons joined the labelled check that already read this
 document's sentences instead of adding one.
-§4.52 moves the second figure up by three and the third by one — **2322 / 621 / 1592**, 68 labels, 52 `Cited by`
+§4.52 moves the second figure up by four and the third by one — **2322 / 622 / 1592**, 68 labels, 52 `Cited by`
 rows — measured after this paragraph was written, against a clean `git worktree` of b6743bf, whose own run says
 **2322 / 618 / 1591**. Per file: doc 25 `0 / +1 / 0` — §2's new hop-1 paragraph cites
 `packages/schema/protocol/framing.json#/senderPolicy/identity/resolvedFrom` in full; this file `0 / +3 / 0`, that same
@@ -692,6 +693,22 @@ five in doc 33, one each in docs 34 and 35, one in `packages/schema/open-decisio
 doc 32) and one into `connector/cmd/nexora-connector/main.go`, whose comment block grew a line. No `VER-NN` row closes
 here: doc 22 §2 rule 3's `Verified` marker narrowed to the closure it still means, `VER-12` and `VER-14` keep their rows
 because the lock file and the outer job are still `ODEC-01`'s and LIVE-13's, and the queue is the 71 rows §4.51 left.
+§4.53 moves all three figures — **2329 / 625 / 1603**, 68 labels, 52 `Cited by` rows — measured after this paragraph
+was written, against a clean `git worktree` of 383ebb9, whose own run says **2322 / 622 / 1592**. Per file, measured by
+copying each changed document onto that worktree in turn: docs/README.md `0 / 0 / +1`, its new `packages/protocol` row
+naming the schema harness path; doc 20 `0 / 0 / +2`, §1's future-path sentence naming `docs/PROJECT-STATE.md` and §3's
+row now pointing at §4.53; and this file `+7 / +3 / +8` — seven line citations onto the generator's substitution table,
+the codec's refuse-before-write and broken-pipe lines, the harness's Go-list comparison, the mirror test's byte
+compare, doc 20's §3 row and `connector/cmd/nexora-connector`'s `releaseVersion`; three pointers into
+`packages/schema/protocol/framing.json`; and eight document names, three of them `tools/check-doc-evidence.mjs` —
+twice in the record and once in this count. The two `nexora-connector` files this slice edits move no citations of their
+own: the `releaseVersion` block is a comment and a variable, and its comment is cited from here rather than from a
+document. **This paragraph also corrects §4.52's headline**, which read
+621 / "up by three" where b6743bf's run (618) and this worktree's (622) both say four; §4.52's own per-file breakdown
+already summed to four, so the sentence and its arithmetic disagreed and only the arithmetic was right. No `VER-NN`
+row closes or opens here: the codec's agreement is a test in each language plus one fixture between them, which is
+what `VER-14`'s pipe-fidelity half already claimed for the Go side, and `VER-12`, `VER-14` and the live rows keep their
+rows because the lock file, the installer and the outer job are still unwritten.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -3514,6 +3531,67 @@ two lines and doc 25 twelve; the §6 figures are measured after this paragraph w
 
 ---
 
+### 4.53 `packages/protocol` is written — the TypeScript half of the crossing, mirrored by the Go codec (2026-11-10)
+
+**Found.** §4.52 put a Go process on the port and left nothing in this repository able to open it. The framing contract
+is data (`packages/schema/protocol/framing.json`), the codec that honours it was Go, and the extension side had only
+scratch scripts that hand-assembled a length prefix. doc 20 §3's row for the directory said PLANNED and listed the
+four things it owes — codec, generated types, dispatch skeleton, and the one thing it must never hold, its own method
+list (`docs/architecture/20-target-repository-layout.md:57`). Two readings turned out to be stale rather than true:
+`tools/check-doc-evidence.mjs` still pre-registered `packages/protocol/` as a future path, so a citation into real
+files there was excused rather than checked, and the same file's `FUTURE_PREFIX` comment carried the pre-§4.52 claim
+that the shim did not exist.
+
+**Written.** Seven files. `packages/protocol/package.json` makes it its own npm root, private, zero dependencies,
+`type: module`, with `gen` and `verify` scripts and two exports — `./frames` and `./contract`. `scripts/gen.mjs`
+projects `framing.json`, `envelope.schema.json`, `error-taxonomy.json` and `command-allowlist.json` into
+`src/contract.ts` (192 lines, committed, carrying the same "Code generated … DO NOT EDIT" header
+`connector/internal/contract/contract_gen.go` carries, so the drift convention is one convention and not a new one);
+the two places where the JSON's closed sets become TypeScript names are a table in that generator
+(`packages/protocol/scripts/gen.mjs:31`) rather than a second list, and a branch it was not told about throws.
+`src/frames.ts` is the codec: four unsigned little-endian bytes of the payload length, excluding the prefix itself
+(`packages/schema/protocol/framing.json#/encoding/lengthPrefix`), the directional ceiling checked before any byte is
+written (`packages/protocol/src/frames.ts:37`, which is `packages/schema/protocol/framing.json#/limits/extensionToHostBytes/enforcement`
+spoken as code), a decoder that refuses an array or a bare value because a frame is one object
+(`packages/schema/protocol/framing.json#/encoding/payload/oneFrameOneObject`), and a pipe that once broken stays
+broken instead of decoding what follows the refusal (`packages/protocol/src/frames.ts:73`). `scripts/verify.mjs` runs
+14 labelled checks, among them the byte-compare against a fresh generation, every frame of the six protocol fixtures
+round-tripped in both directions, byte-at-a-time streaming, exact-at-limit in both directions, and the parity of the
+two projections — it reads the Go file's own lists (`packages/protocol/scripts/verify.mjs:194`) and requires the same
+19 methods and 23 codes. `testdata/framed.jsonl` is 112 frames this codec actually wrote (97 632 bytes: file, frame,
+direction, payload length, prefix hex, payload base64), and `connector/internal/frames/protocol_mirror_test.go:68`
+reads that fixture and requires the Go codec to reproduce those bytes and return those payloads — agreement measured,
+not asserted twice. `docs/README.md` gained the package's row, including what it is not.
+
+**Not written, on purpose.** No browser code: this package frames the bytes, it does not call `chrome.runtime`
+`connectNative`, and the MV3 worker that would own that call is still the extension's queue row. No type-checking
+build — the harness runs the `.ts` files as Node 24 strips their types, there is no `tsc` anywhere in this repo, so
+the package is executable-and-compared, not compiled. No npm workspaces root: like the other five npm roots here it
+installs on its own, and it needs nothing. No installer, no manifest registration, no lock file and no adoption; the
+`chrome.runtime.Port` peer-credential layer of ADR-0022 rule 3 stays optional and unwritten.
+
+**Verified.** The projection and the contract data agree byte-for-byte, the codec's frames and the Go codec's frames
+are the same bytes over 112 real payloads, and the two method/code lists agree across the language boundary — three
+separate harness results, `node packages/protocol/scripts/verify.mjs` (14 checks),
+`node packages/schema/scripts/verify.mjs` (1234 checks, unchanged) and `go test ./internal/frames` ("112 frames
+written and read byte-for-byte as the TypeScript codec framed them"). Then the crossing itself, run by hand: the
+TypeScript codec wrote frames into a real `nexora-host`, which spawned a real `nexora-connector`, and six answers came
+back through the same decoder — `connector.hello` ok, `connector.version` ok, `core.status` `Internal` (no Core
+binary configured in that run), `core.snooze` `UnknownMethod`, a stale second hello `VersionMismatch`, and
+`connector.health` `HandshakeFailed` after it. Four of the six are refusals, which is the point: the codec carried a
+non-method, a wrong protocol version and an out-of-order request across two processes and each was answered from the
+dispatch table rather than by the transport. That run also exposed a fact no document recorded: `go build` of this
+connector never stamps its own version — `debug.ReadBuildInfo().Main.Version` is "(devel)" for a main module whatever
+tags exist, measured with a local `connector/v0.0.0` tag that changed nothing — so an unstamped binary refuses to
+start and the live crossing was impossible until `releaseVersion`
+(`connector/cmd/nexora-connector/main.go:334`) let the build pass it in with `-ldflags -X`. The tag is gone; the
+ldflags line is the release recipe now, and `--connector-version` remains the operator's way to name the release a
+hand-built process answers for. `tools/check-doc-evidence.mjs`'s `FUTURE_PREFIX` lost `packages/protocol/` and doc 20
+§1's future-path sentence lost it too, so citations into this package are checked from here on; the §6 figures are
+measured after this paragraph was written.
+
+---
+
 ## 5. Verification state to the letter
 
 - `cd omega-build && npm run deps && npm run dev && npx grunt && npx grunt release` → **exit 0** for the whole chain (Ladder A).
@@ -3553,8 +3631,9 @@ two lines and doc 25 twelve; the §6 figures are measured after this paragraph w
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **501** files — 499 at §4.51's
-  commit plus the two `connector/cmd/nexora-host` files §4.52 stages, because the guard walks `git ls-files` and so
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **508** files — 499 at §4.51's
+  commit, the two `connector/cmd/nexora-host` files §4.52 stages and the seven `packages/protocol` files §4.53
+  stages, because the guard walks `git ls-files` and so
   counts a file
   when it is staged, not when it is thought of. It carries sixteen `nexora-secret-allow` annotations now: the eight
   documented constants in `connector/internal/compile/resolve_test.go` that §4.16 lists, §4.17's three in
@@ -3562,8 +3641,12 @@ two lines and doc 25 twelve; the §6 figures are measured after this paragraph w
   in `config_apply_test.go` — the synthetic credential value, profile id and server id in its constant block and the second
   server's id in its fixture — because Go's test convention puts a `_test.go` beside the package it tests and therefore
   outside every path the guard exempts.
-- `npm --prefix packages/schema run verify` → **green** (1230 checks: §4.36 adds seven sniffing checks; §4.29 adds
+- `npm --prefix packages/schema run verify` → **green** (1234 checks: §4.36 adds seven sniffing checks; §4.29 adds
   the assertion that reads doc 40's own tallies; §4.28 adds version-floor shape and label freshness checks; see §4.4).
+- `npm --prefix packages/protocol run verify` → **green** (14 checks: the generated projection against a fresh
+  generation, all 112 protocol fixture frames round-tripped in both directions through the TypeScript codec, the
+  prefix shape, both directional ceilings exact and over, empty and truncated payloads, the broken pipe staying
+  broken, one-frame-one-object, and the method and code lists compared with the Go projection's own text).
 - `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → **exit 0**, all on
   2026-11-05 on this host with Go 1.27.3 (§4.6), and in the `connector` job of `.github/workflows/verify.yml`, which
   is enabled for `ubuntu-latest` and `windows-latest` on Go 1.24. Since §4.7, §4.8 and §4.9 the same invocation printed
@@ -3664,7 +3747,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. §4.51 closes what §4.50 measured and deferred: the register's own §6 table is now compared with the data — membership, kind and gates — and the four retired rows, the stale count sentence, the `VER-78` gate and the two retired §5 entries are gone. Next: `packages/protocol`, the TypeScript frame codec that is the other half of the same crossing — the host and the Connector speak it in Go and `omega-build` has no native-messaging client at all, so until that package exists a browser cannot open the port §4.52's binary is waiting on; beside it the installer that registers the manifest and writes the allowlist, because a shim no browser starts is a tested binary and nothing more. Then the half of ADR-0022 rule 1 `ODEC-01` still owns — the lock file, adoption, and the framing contract's close-the-oldest row, which are `VER-12` and the live half of `VER-14`. Then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022), and `connector/cmd/nexora-host` — the hop-2 shim it made writable: one pipe instance per sender, identity being which pipe the host opened, and the same envelope crossing verbatim under the pipe floor — is written by §4.52.
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. §4.51 closes what §4.50 measured and deferred: the register's own §6 table is now compared with the data — membership, kind and gates — and the four retired rows, the stale count sentence, the `VER-78` gate and the two retired §5 entries are gone. §4.52 writes `connector/cmd/nexora-host`, the hop-2 shim ADR-0022 made writable, and §4.53 writes the other half of that crossing: `packages/protocol` is the TypeScript frame codec, its types a projection of the same contract data the Go host is generated from, its 112 framed fixtures re-read byte-for-byte by a Go test, and the six answers it got back from a real host spawning a real Connector are in its record — including the finding that `go build` never stamps this module's own version, which is why the release now passes it in. Next: the extension-side client — `chrome.runtime.connectNative` in the MV3 worker, one in-flight request per id, and the reconnect the framing contract's `reconnect` block already describes — because `omega-build` still has no native-messaging client at all, so the port §4.52's binary waits on now has a codec and still has no caller; beside it the installer that registers the manifest and writes the allowlist, because a shim no browser starts is a tested binary and nothing more. Then the half of ADR-0022 rule 1 `ODEC-01` still owns — the lock file, adoption, and the framing contract's close-the-oldest row, which are `VER-12` and the live half of `VER-14`. Then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022), and `connector/cmd/nexora-host` — the hop-2 shim it made writable: one pipe instance per sender, identity being which pipe the host opened, and the same envelope crossing verbatim under the pipe floor — is written by §4.52.
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.

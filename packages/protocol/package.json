@@ -1,0 +1,15 @@
+{
+  "name": "@nexora/protocol",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript projection of packages/schema/protocol for both sides of the pipe: the frame codec, the generated envelope/error types, and the dispatch-table skeleton the Go host is tested against. Holds no method list of its own.",
+  "exports": {
+    "./frames": "./src/frames.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "scripts": {
+    "gen": "node scripts/gen.mjs",
+    "verify": "node scripts/verify.mjs"
+  }
+}
