@@ -568,7 +568,7 @@ after authored policy rules. All per-tag inbounds are SOCKS5; enabled sniffing i
 `protocols` mapped to `destOverride`. Schema and compiler restrict sniffing to `http`, `tls`, `quic`, `fakedns` and
 refuse `routeOnly: false`. Twenty loopback HTTP/UDP cases now exercise the measured routing subset; ignored
 `invert: true` is reported whole. `TestDriveXrayTLSProtocolPredicate` further measures the `tls` predicate: Xray 24.11.11
-matches `protocol:[tls]` only when the ClientHello carries an SNI, with sniff-off and plain-HTTP nonmatching controls.
+matches `protocol:[tls]` only when the ClientHello carries an SNI, with sniff-off and plain-HTTP nonmatching controls. `TestDriveXrayBitTorrentAndWebSocketPredicates` adds fourteen paired cases: the TCP BitTorrent handshake is detected; plaintext WebSocket Upgrade matches `http`, not `ws`. The compiler reports any `ws` rule whole, including mixed protocol arrays, without changing server WebSocket transport. QUIC/FakeDNS and inversion lowering remain unproved.
 This narrows rather than retires `ODEC-37`. Shape C's `headersRef` is now materialized via `headersKeys` (ODEC-45); `VER-28` retains only the fail-closed case owned by
 `chrome.proxy`; `VER-78` closed on 2026-11-07 by the ODEC-36 answer; the goldens' byte-stability half has its producer. No row, state, distribution or marker count
 changes; doc 27 §3's existing anchor changes from two remaining cases to one in `verification.json` with the prose.

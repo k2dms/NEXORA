@@ -6,8 +6,8 @@
 > falsified the original plan, the exact inventory of what exists on disk, and the precise next steps.
 > Written 2026-11-04. English because it is the repository language.
 
-Status as of 2026-11-08: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier.** The latest continuation is §4.46; older scope and inventory
+Status as of 2026-11-10: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
+supervisor, health prober and receipt verifier.** The latest continuation is §4.47; older scope and inventory
 paragraphs below are dated history, not a prohibition on implementation. §7 records the push authorization and ref.
 
 ---
@@ -644,6 +644,9 @@ patterns count; the register `why`, doc 27, doc 39 and doc 40 edits changed digi
 record names no new path:line, pointer or document. `ODEC-37` stays in the register — http and tls are measured,
 bittorrent, ws, quic, fakedns and the inversion lowering are still owed — so `VER-28` stays, and `VER-29` stays for
 `LIVE-03`.
+§4.47 keeps the set unchanged — **2309 / 609 / 1591**, 68 labels, 52 `Cited by` rows. Against HEAD fcd07b9's
+clean blobs read with `git show`, this file and docs 27, 28, 39 and 40 each changed `0 / 0 / 0` under the guard's
+three patterns. The added test names and protocol findings add no counted citations; ODEC-37 and VER-28 remain open.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -3246,6 +3249,30 @@ layout guards and the legacy backup check → green. `go -C connector test -coun
 `gofmt -l connector` empty, `go -C connector vet ./...` silent. What this slice does not claim: the four unmeasured
 protocol values, an inversion lowering, or remote TLS/REALITY handshakes — the evidence is loopback only.
 
+### 4.47 BitTorrent detection and the nonmatching WebSocket predicate (2026-11-10)
+
+**Measured.** `TestDriveXrayBitTorrentAndWebSocketPredicates` adds fourteen loopback cases on Xray 24.11.11.
+A TCP BitTorrent handshake matches `bittorrent` with sniffing enabled; sniff-off, ordinary HTTP and a corrupted
+signature provide controls. Plaintext WebSocket Upgrade matches `http`, never `ws` in these fixtures. Direct/block
+rules use opposite catchalls and defaults; the TCP responder checks exact request/response bytes and counts
+connections, and a timeout is not accepted as proof of blocking. The positive WebSocket case returns a valid 101
+Upgrade response. This measures initial classification, not torrent transfers, UDP/uTP, encrypted BitTorrent or
+WebSocket frames. Upstream v24.11.11 at `0df2446f824dd657717d29ef99b8b47cf50b2364` confirms the distinction:
+its HTTP sniffer returns `http1`, and the router uses prefix matching, so `http` matches it but `ws` does not.
+
+**Fixed.** `Split` now reports every rule containing `ws` whole, including mixed protocol arrays, rather than
+emitting a rule that silently misses or broadening it to ordinary HTTP. Three regression cases first failed on the
+missing report and now check rule order, unused outbound omission, unchanged authored input and private-hostname
+redaction. `TestWebSocketPredicateReportTravelsInTheApplyAnswer` checks the typed and wire answers and the written
+config. The live test injects `ws` only as an upstream negative control, alongside the existing invert control.
+Server WebSocket transport is unchanged. Docs 27, 28, 39 and 40 and the ODEC-37 register record the restriction.
+
+**Verified.** Compiler tests passed three consecutive runs with `NEXORA_XRAY_BIN`; the full Connector suite with
+real Xray passed, followed by the added command-answer test and compiler tests. `go vet ./...` and `gofmt -l` were
+clean. Schema verification passed 1234 checks; doc evidence remained 2309 / 609 / 1591, 68 labels and 52 cited-by
+rows; no-secrets checked 499 files. ODEC-37 and VER-28 remain open: QUIC/FakeDNS and equivalent inversion lowering
+are not proved. Browser reporting, remote REALITY and trusted installation were not exercised by this slice.
+
 ---
 
 ## 5. Verification state to the letter
@@ -3397,7 +3424,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. Next: ODEC-37's remaining protocol predicates (bittorrent, ws, quic, fakedns) and the inversion question — residual predicate semantics, not missing byte spellings — then the live rows. ODEC-35 is answered (ADR-0022).
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. Next: ODEC-37's QUIC/FakeDNS measurements and the inversion question, then the live rows. ODEC-35 is answered (ADR-0022).
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.

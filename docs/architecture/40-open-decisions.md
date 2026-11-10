@@ -390,8 +390,8 @@ ignored, and an unknown outbound falls back to the default. The compiler reports
 never emits unknown tags. The `tls` protocol predicate is now measured too: `TestDriveXrayTLSProtocolPredicate`
 shows Xray 24.11.11 matches `protocol:[tls]` only when the ClientHello carries an SNI — an IP-literal TLS
 connection without one is not detected — and the sniff-off and plain-HTTP controls confirm detection needs
-sniffing and is protocol-specific. The question is narrowed, not retired: bittorrent, ws, quic and fakedns
-still need their own matching/nonmatching evidence, and inversion has no proven equivalent lowering. Its sites remain
+sniffing and is protocol-specific. `TestDriveXrayBitTorrentAndWebSocketPredicates` adds fourteen cases: BitTorrent's TCP handshake matches with sniffing enabled, while plaintext WebSocket Upgrade matches `http`, not `ws`; sniff-off, malformed-signature and unrelated-protocol controls distinguish the results. The compiler reports a rule containing `ws` whole, including mixed protocol arrays, rather than broadening it to ordinary HTTP. Server WebSocket transport is unaffected.
+The question is narrowed, not retired: quic and fakedns still need their own matching/nonmatching evidence, and inversion has no proven equivalent lowering. Its sites remain
 `docs/architecture/23-unified-server-model.md` §9 and `docs/architecture/27-config-compilation-pipeline.md` §9.
 Shape C is materialized via the key list (ODEC-45's answer); fail-closed belongs in `chrome.proxy`, not a separate Core golden.
 

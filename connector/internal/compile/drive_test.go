@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -102,11 +103,7 @@ func TestDriveXrayRouting(t *testing.T) {
 	}
 }
 
-// TestDriveXrayTLSProtocolPredicate measures ODEC-37's residual `protocol` semantics for the tls value, the
-// primary VLESS/REALITY transport. The http value is already measured by TestDriveXrayRouting; bittorrent, ws,
-// quic and fakedns remain owed. Each case pairs the predicate with the opposite default so a silently dropped
-// rule is observable. The measured fact: Xray 24.11.11 matches protocol:[tls] only when the ClientHello carries
-// an SNI — the no-SNI IP-literal case is the paired limitation, not a fixture workaround.
+// Opposite catchalls expose missing matches, including TLS without the SNI required by Xray's sniffer.
 func TestDriveXrayTLSProtocolPredicate(t *testing.T) {
 	bin := driveXrayBinary(t)
 	catchall := func(outbound string) CoreRule {
@@ -145,6 +142,154 @@ func TestDriveXrayTLSProtocolPredicate(t *testing.T) {
 			t.Logf("Xray 24.11.11 protocol:[tls] sniff=%t trafficTLS=%t sni=%q: target reached=%t", tc.sniff, tc.https, tc.sni, tc.want)
 		})
 	}
+}
+
+func TestDriveXrayBitTorrentAndWebSocketPredicates(t *testing.T) {
+	bin := driveXrayBinary(t)
+	bittorrent := append([]byte("\x13BitTorrent protocol"), make([]byte, 48)...)
+	malformed := bytes.Clone(bittorrent)
+	malformed[1] = 'X'
+	httpRequest := []byte("GET /drive HTTP/1.1\r\nHost: localhost\r\n\r\n")
+	httpResponse := []byte("HTTP/1.1 204 No Content\r\n\r\n")
+	wsRequest := []byte("GET /drive HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n")
+	wsResponse := []byte("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n")
+	for _, tc := range []struct {
+		name     string
+		request  []byte
+		response []byte
+		protocol string
+		outbound string
+		sniff    bool
+		want     bool
+	}{
+		{"bt_catchall_direct", bittorrent, bittorrent, "", "direct", true, true},
+		{"bt_sniff_on_direct", bittorrent, bittorrent, "bittorrent", "direct", true, true},
+		{"bt_sniff_on_block", bittorrent, bittorrent, "bittorrent", "block", true, false},
+		{"bt_sniff_off_block", bittorrent, bittorrent, "bittorrent", "direct", false, false},
+		{"bt_sniff_off_direct", bittorrent, bittorrent, "bittorrent", "block", false, true},
+		{"http_not_bittorrent", httpRequest, httpResponse, "bittorrent", "direct", true, false},
+		{"bt_bad_signature_not_detected", malformed, malformed, "bittorrent", "direct", true, false},
+		{"ws_catchall_direct", wsRequest, wsResponse, "", "direct", true, true},
+		{"ws_not_detected_direct_rule", wsRequest, wsResponse, "ws", "direct", true, false},
+		{"ws_not_detected_block_rule", wsRequest, wsResponse, "ws", "block", true, true},
+		{"ws_matches_http_direct", wsRequest, wsResponse, "http", "direct", true, true},
+		{"ws_matches_http_block", wsRequest, wsResponse, "http", "block", true, false},
+		{"ws_http_sniff_off_block", wsRequest, wsResponse, "http", "direct", false, false},
+		{"plain_http_not_ws", httpRequest, httpResponse, "ws", "direct", true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opposite := "direct"
+			if tc.outbound == "direct" {
+				opposite = "block"
+			}
+			rule := CoreRule{Protocol: []string{tc.protocol}, Outbound: tc.outbound}
+			if tc.protocol == "" {
+				rule = CoreRule{IP: []string{"0.0.0.0/0"}, Outbound: tc.outbound}
+			}
+			policy := &RoutingPolicy{CorePlane: CorePlane{
+				DomainStrategy: "AsIs",
+				Rules:          []CoreRule{rule, {IP: []string{"0.0.0.0/0"}, Outbound: opposite}},
+				Sniffing:       Sniffing{Enabled: &tc.sniff, Protocols: []string{"http", "tls"}},
+			}}
+			fallback := "direct"
+			if tc.want {
+				fallback = "block"
+			}
+			p := driveStartXray(t, bin, policy, fallback, "")
+			driveTCPExchange(t, p, tc.request, tc.response, tc.want)
+		})
+	}
+}
+
+func driveTCPExchange(t *testing.T, p *driveXray, request, response []byte, want bool) {
+	t.Helper()
+	target, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var arrivals atomic.Int32
+	served := make(chan error, 1)
+	go func() {
+		conn, err := target.Accept()
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				err = nil
+			}
+			served <- err
+			return
+		}
+		defer conn.Close()
+		arrivals.Add(1)
+		if err := conn.SetDeadline(time.Now().Add(3 * time.Second)); err != nil {
+			served <- err
+			return
+		}
+		got := make([]byte, len(request))
+		if _, err := io.ReadFull(conn, got); err != nil || !bytes.Equal(got, request) {
+			served <- fmt.Errorf("target request=%x, want=%x: %v", got, request, err)
+			return
+		}
+		_, err = io.Copy(conn, bytes.NewReader(response))
+		served <- err
+	}()
+	t.Cleanup(func() {
+		target.Close()
+		if err := <-served; err != nil {
+			t.Errorf("TCP responder: %v", err)
+		}
+		if !want && arrivals.Load() != 0 {
+			t.Errorf("blocked TCP target saw %d connections", arrivals.Load())
+		}
+	})
+	conn, err := net.DialTimeout("tcp4", p.addr, 3*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if err := conn.SetDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.Write([]byte{5, 1, 0}); err != nil {
+		t.Fatal(err)
+	}
+	var method [2]byte
+	if _, err := io.ReadFull(conn, method[:]); err != nil || method != [2]byte{5, 0} {
+		t.Fatalf("SOCKS5 no-auth greeting: %x, %v", method, err)
+	}
+	connect := []byte{5, 1, 0, 1, 127, 0, 0, 1, 0, 0}
+	binary.BigEndian.PutUint16(connect[8:], uint16(target.Addr().(*net.TCPAddr).Port))
+	if _, err := conn.Write(connect); err != nil {
+		t.Fatal(err)
+	}
+	var reply [10]byte
+	if _, err := io.ReadFull(conn, reply[:]); err != nil || !bytes.Equal(reply[:4], []byte{5, 0, 0, 1}) {
+		t.Fatalf("SOCKS5 CONNECT IPv4 reply: %x, %v", reply, err)
+	}
+	p.alive(t)
+	if _, err := io.Copy(conn, bytes.NewReader(request)); err != nil {
+		t.Fatalf("write tunneled payload: %v", err)
+	}
+	got := make([]byte, len(response))
+	_, err = io.ReadFull(conn, got)
+	if want {
+		if err != nil || !bytes.Equal(got, response) || arrivals.Load() != 1 {
+			t.Fatalf("TCP response=%x, arrivals=%d, error=%v", got, arrivals.Load(), err)
+		}
+	} else {
+		var timeout net.Error
+		if err == nil || (errors.As(err, &timeout) && timeout.Timeout()) {
+			t.Fatalf("want explicit connection failure, not delivery or timeout: %v", err)
+		}
+		select {
+		case <-time.After(150 * time.Millisecond):
+		case <-p.done:
+			p.alive(t)
+		}
+		if arrivals.Load() != 0 {
+			t.Fatal("blocked payload connected to target")
+		}
+	}
+	p.alive(t)
 }
 
 func driveXrayBinary(t *testing.T) string {
@@ -188,15 +333,21 @@ func driveStartXray(t *testing.T, bin string, policy *RoutingPolicy, fallback, o
 	probePolicy.CorePlane.Rules = append([]CoreRule(nil), policy.CorePlane.Rules...)
 	for i := range probePolicy.CorePlane.Rules {
 		probePolicy.CorePlane.Rules[i].Invert = nil
+		if contains(probePolicy.CorePlane.Rules[i].Protocol, "ws") {
+			probePolicy.CorePlane.Rules[i].Protocol = []string{"http"}
+		}
 	}
 	routing, err := Split(&probePolicy, nil)
 	if err != nil || len(routing.Unrepresentable) != 0 {
 		t.Fatalf("Split: routing=%+v, error=%v", routing, err)
 	}
-	// Inject only for the upstream negative control; the compiler reports invert:true rather than emitting it.
+	// Inject unsupported predicates only for upstream controls; Compile reports them instead of emitting them.
 	for i, rule := range policy.CorePlane.Rules {
 		if rule.Invert != nil {
 			routing.Rules[i]["invert"] = *rule.Invert
+		}
+		if contains(rule.Protocol, "ws") {
+			routing.Rules[i]["protocol"] = rule.Protocol
 		}
 	}
 	var reserved net.Listener

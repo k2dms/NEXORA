@@ -1202,3 +1202,31 @@ func waitForFile(t *testing.T, path string, timeout time.Duration) []byte {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+func TestWebSocketPredicateReportTravelsInTheApplyAnswer(t *testing.T) {
+	h := harnessWith(t, func(t *testing.T, in *Intent) {
+		policy := example[compile.RoutingPolicy](t, "routing.minimal.json")
+		policy.CorePlane.Rules = []compile.CoreRule{
+			{Domain: []string{"private.example"}, Protocol: []string{"http", "ws"}, Outbound: "block"},
+			{Network: []string{"tcp"}, Outbound: "direct"},
+		}
+		in.Routing = &policy
+	})
+	answer, raw, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
+	if ref != nil || !answer.Applied {
+		t.Fatalf("apply with reported ws predicate: answer=%+v refusal=%+v", answer, ref)
+	}
+	if len(answer.Unrepresentable) != 1 || answer.Unrepresentable[0].Source != "corePlane rule #0" ||
+		!strings.Contains(answer.Unrepresentable[0].Reason, "ws") {
+		t.Fatalf("missing ws report: %+v", answer.Unrepresentable)
+	}
+	entries, ok := raw["unrepresentable"].([]any)
+	if !ok || len(entries) != 1 {
+		t.Fatalf("wire answer lost ws report: %+v", raw["unrepresentable"])
+	}
+	loaded := string(h.appliedConfig(t))
+	if strings.Contains(loaded, "private.example") || strings.Contains(loaded, `"blackhole"`) ||
+		!strings.Contains(loaded, `"freedom"`) {
+		t.Fatalf("reported rule leaked into config or adjacent rule disappeared: %s", loaded)
+	}
+}

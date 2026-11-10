@@ -906,7 +906,7 @@
     },
     {
       "id": "ODEC-37",
-      "question": "Which remaining core-routing predicates can Xray 24.11.11 actually honor, especially invert and protocol values beyond the loopback-tested HTTP match, after the inbound, built-in, sniffing and array spellings have been measured?",
+      "question": "Which remaining core-routing predicates can Xray 24.11.11 actually honor, especially invert, quic and fakedns beyond the loopback-tested HTTP, TLS, BitTorrent and WebSocket Upgrade cases, after the inbound, built-in, sniffing and array spellings have been measured?",
       "decidedBy": "upstream",
       "blocks": {
         "verification": [
@@ -914,9 +914,9 @@
         ],
         "compatibility": []
       },
-      "why": "The original four byte positions are implemented and measured: SOCKS5 per tag, declared freedom/direct and blackhole/block, inbound-level sniffing with destOverride, and array-valued network/protocol. connector/internal/apply/drive_test.go checks five materialized goldens with Xray 24.11.11; connector/internal/compile/drive_test.go checks real loopback HTTP, TLS and SOCKS5 UDP, including paired controls. The runtime checks found that an undeclared outbound falls back to the default and invert:true is silently ignored. The compiler therefore declares every referenced builtin, pairs every inbound with its server after policy rules, and reports an inverted rule whole rather than emitting a changed match. The tls protocol predicate is now measured: TestDriveXrayTLSProtocolPredicate shows Xray 24.11.11 matches protocol:[tls] only when the ClientHello carries an SNI, and an IP-literal TLS connection without one is not detected. This entry remains open for the residual predicate semantics: bittorrent, ws, quic and fakedns are not yet measured, and a config-test acceptance cannot prove that an inverted predicate has an equivalent lowering.",
+      "why": "The original four byte positions are implemented and measured: SOCKS5 per tag, declared freedom/direct and blackhole/block, inbound-level sniffing with destOverride, and array-valued network/protocol. connector/internal/apply/drive_test.go checks five materialized goldens with Xray 24.11.11; connector/internal/compile/drive_test.go checks real loopback HTTP, TLS and SOCKS5 UDP, including paired controls. The runtime checks found that an undeclared outbound falls back to the default and invert:true is silently ignored. The compiler therefore declares every referenced builtin, pairs every inbound with its server after policy rules, and reports an inverted rule whole rather than emitting a changed match. The tls protocol predicate is now measured: TestDriveXrayTLSProtocolPredicate shows Xray 24.11.11 matches protocol:[tls] only when the ClientHello carries an SNI, and an IP-literal TLS connection without one is not detected. TestDriveXrayBitTorrentAndWebSocketPredicates adds fourteen paired cases: the TCP BitTorrent handshake matches with sniffing enabled; plaintext WebSocket Upgrade matches http, not ws. The compiler reports any rule containing ws whole, including mixed arrays, rather than broadening it to ordinary HTTP or emitting only part of its predicate. This does not restrict server WebSocket transport. This entry remains open for quic and fakedns measurements and an equivalent inversion lowering; BitTorrent UDP/uTP and encrypted variants are not certified by the TCP handshake fixture.",
       "options": [
-        "keep invert:true explicitly unrepresentable and establish each remaining protocol predicate with paired runtime fixtures before expanding the supported set",
+        "keep invert:true and rules containing ws explicitly unrepresentable and establish each remaining protocol predicate with paired runtime fixtures before expanding the supported set",
         "derive an equivalent lowering from the pinned upstream implementation and prove both matching and nonmatching traffic preserve the authored predicate"
       ],
       "at": [

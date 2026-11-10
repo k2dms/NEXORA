@@ -70,6 +70,13 @@ func Split(policy *RoutingPolicy, tags []string) (*Routing, error) {
 			})
 			continue
 		}
+		if contains(rule.Protocol, "ws") {
+			out.Unrepresentable = append(out.Unrepresentable, Report{
+				Source: fmt.Sprintf("corePlane rule #%d", i),
+				Reason: "Xray 24.11.11 has no ws sniffing result; plaintext WebSocket Upgrade matches http, whose predicate also includes ordinary HTTP",
+			})
+			continue
+		}
 		if !strings.HasPrefix(rule.Outbound, "srv-") {
 			builtins[rule.Outbound] = true
 		}

@@ -272,6 +272,37 @@ func TestAnInvertedRuleIsReportedWholeWithoutDeclaringItsOutbound(t *testing.T) 
 	}
 }
 
+func TestWebSocketRuleIsReportedWhole(t *testing.T) {
+	for _, protocols := range [][]string{{"ws"}, {"http", "ws"}, {"ws", "tls"}} {
+		t.Run(strings.Join(protocols, "_"), func(t *testing.T) {
+			policy := policyWith(
+				CoreRule{Port: "80", Outbound: "direct"},
+				CoreRule{Domain: []string{"private.example"}, Protocol: protocols, Outbound: "block"},
+				CoreRule{Port: "443", Outbound: "srv-3f2a1c9e"},
+			)
+			before := fmt.Sprint(protocols)
+			got, err := Split(policy, oneTag)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(got.Unrepresentable) != 1 || got.Unrepresentable[0].Source != "corePlane rule #1" ||
+				!strings.Contains(got.Unrepresentable[0].Reason, "ws") {
+				t.Fatalf("missing positional ws report: %+v", got.Unrepresentable)
+			}
+			if strings.Contains(fmt.Sprint(got.Unrepresentable), "private.example") {
+				t.Error("report leaked the rule's destination")
+			}
+			if len(got.Rules) != 2 || got.Rules[0]["port"] != "80" || got.Rules[1]["port"] != "443" ||
+				fmt.Sprint(got.BuiltIns) != "[direct]" {
+				t.Fatalf("ws rule was emitted or adjacent rules changed: %+v", got)
+			}
+			if fmt.Sprint(policy.CorePlane.Rules[1].Protocol) != before {
+				t.Fatal("authored protocol list was mutated")
+			}
+		})
+	}
+}
+
 func TestSniffingRejectsUnsupportedValues(t *testing.T) {
 	for _, protocol := range []string{"mp4", "mkv", "ps", "www"} {
 		policy := policyWith()
