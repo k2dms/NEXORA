@@ -101,7 +101,8 @@ func TestInvalidExamplesFromTheSchemaRoot(t *testing.T) {
 
 // TestThePipeFloorComparisonCompilesAndRuns pins that the v-to-MinPipeVersion comparison is live in Parse, even
 // though MinPipeVersion=1 means the existing 1..255 bound subsumes it -- the proof that it fires is the test for
-// the day a real floor above 1 is shipped (VER-18's tombstone states the residual).
+// the day a real floor above 1 is shipped (docs/architecture/25-native-messaging-protocol.md §13's floor row states
+// the residual: such a frame ends the stream today instead of answering VersionMismatch).
 func TestThePipeFloorComparisonCompilesAndRuns(t *testing.T) {
 	// v=1 is exactly MinPipeVersion: accepted.
 	f, err := Parse([]byte(`{"v":1,"id":"req-00000001","type":"request","method":"connector.hello","sentAt":"2026-11-04T10:00:00Z"}`))

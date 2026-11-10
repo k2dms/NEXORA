@@ -7,7 +7,7 @@
 > Written 2026-11-04. English because it is the repository language.
 
 Status as of 2026-11-10: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier.** The latest continuation is §4.48; older scope and inventory
+supervisor, health prober and receipt verifier.** The latest continuation is §4.49; older scope and inventory
 paragraphs below are dated history, not a prohibition on implementation. §7 records the push authorization and ref.
 
 ---
@@ -652,6 +652,13 @@ after this paragraph was written, against a clean `git worktree` of b5a9dd8. The
 this file each changed `0 / 0 / 0`: the inversion and fakedns answers are prose, a test name and compiler branches,
 and no citation was born, moved or removed. `ODEC-37` stays in the register — QUIC's positive traffic case and a live
 FakeDNS match are still owed — so `VER-28` stays, and `VER-29` stays for `LIVE-03`.
+§4.49 moves two figures — **2311 / 615 / 1591**, 68 labels, 52 `Cited by` rows — measured after this paragraph was
+written, against a clean `git worktree` of f1a173e, whose own run says **2309 / 609 / 1591**. The two path:line cites
+are the envelope branch and the peer's stream-end read in §4.49's record, and the six pointers are the `framing.json`
+and `envelope.schema.json` locations named in doc 25 §2 and §13, doc 39's `VER-18` and `VER-89` rows and that record;
+doc 32's two cites of doc 25 were re-anchored for the lines §2's rewrite pushed down and count as before. `VER-89`
+joins the queue for the answer shape a below-floor frame owes, `ODEC-37` keeps the two measurements §4.48 named, and
+`VER-28` and the live rows stay as they were.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -3310,6 +3317,43 @@ carries a FakeDNS engine.
 
 ---
 
+### 4.49 The pipe floor is compared, and the comparison cannot fire — `VER-89` registers the answer a below-floor frame still owes (2026-11-10)
+
+**Found.** Three places said no code compares a frame's `v` to `packages/schema/protocol/framing.json#/minPipeVersion`:
+doc 25 §2, doc 39's `VER-18` retirement row, and the tombstone that row's closing wrote into the queue's own data --
+which is also what the Go test's comment pointed at. All three were written before `connector/internal/envelope` grew
+the branch — `connector/internal/envelope/envelope.go:148` refuses a frame whose `v` is under
+`contract.MinPipeVersion` and names `VersionMismatch` in its text. Reading the branch in place turned the stale claim
+into a smaller real one: it cannot be reached. The line above it refuses anything outside 1..255, and
+`packages/schema/protocol/envelope.schema.json#/properties/v/minimum` is the same 1 the floor carries, so a frame that
+is below the floor is malformed before it is old — which is what `TestThePipeFloorComparisonCompilesAndRuns` measures
+when it shows `v=0` refused "by the bound, not by the floor".
+
+**Fixed.** The residual is registered rather than argued. doc 25 §13 gained the floor row — the invariant
+`framing.json` names, the code that compares, and why it sleeps — and §2 now says what the code does instead of what
+it lacks; doc 39's `VER-18` row points at `VER-89` instead of at a sentence that stopped being true, the tombstone that
+sentence sits in is re-timed to the day it wrote, and the Go test's comment now reads §13's floor row rather than that
+tombstone. doc 32's two
+cites of doc 25 moved to the lines their content now occupies. The new row is `no-code`, owned by `connector`, closing
+by an assertion: a frame below the floor answered `VersionMismatch` in reply to its own `id`, the shape
+`#/versionFloors/tooOld` declares for both floors. That assertion is not writable today, because the frame ends the
+stream instead — `connector/internal/peer/peer.go:167` turns a parse error into a returned error and answers nothing —
+and it becomes writable the day the floor rises above 1, which is the day a second framing exists. The queue's
+arithmetic moved with the row: 71 rows and 193 claims, with §4 and §5 reading 52 `no-code`, `connector` 38 and
+`assertion` 17, which `verify.mjs` now compares against the data rather than against numbers typed beside them.
+
+**Uncovered by the same pass.** doc 39 §5's partition sentence had drifted to `rows (146) … = 196` and `145 of these
+claims come from 36 documents` while every run stayed green — those two numbers are not among the counts the harness
+reads out of the document. They now carry the measured 143 row anchors, 38 documents and 193 claims.
+
+**Verified.** `node tools/check-doc-evidence.mjs` is green at 2311 / 615 / 1591, 68 labels and 52 `Cited by` rows,
+against a clean `git worktree` of f1a173e measuring 2309 / 609 before this slice; `npm --prefix packages/schema run
+verify` passes 1234 checks; no-secrets covered 499 files and the layout and ADR guards are green; `internal/envelope`,
+`internal/peer` and `internal/contract` pass with `gofmt -l` clean. No Core, browser, or floor above 1 was involved —
+the branch stays unreachable in this build, which is the whole content of the new row.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -3459,7 +3503,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. Next: QUIC's positive traffic case and a live FakeDNS match with an engine — both expensive fixtures — then the server.test registration slice, which needs a connector-owned way to resolve a server id and will replace the stale ODEC-42 comment in that handler, then the live rows. ODEC-35 is answered (ADR-0022).
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. Next: QUIC's positive traffic case and a live FakeDNS match with an engine — both expensive fixtures — then the server.test registration slice, which needs a connector-owned way to resolve a server id and will replace the stale ODEC-42 comment in that handler, then the live rows. ODEC-35 is answered (ADR-0022).
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.

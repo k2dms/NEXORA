@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 192
+    "counted": 193
   },
   "states": {
     "values": [
@@ -256,7 +256,7 @@
         "id": "VER-18",
         "closed": "2026-11-06",
         "was": "two version floors the design said were independent and one number that said so",
-        "artefact": "packages/schema/protocol/framing.json#/minPipeVersion, declared beside #/versionFloors as the second of two floors -- `protocol` over protocolVersion and minCompatibleProtocolVersion, negotiated in connector.hello, and `pipe` over frameFormatVersion and minPipeVersion, carried by the `v` field every frame already bears -- refused by the one code `VersionMismatch`, because a second code is breaking for a client that switches exhaustively (docs/architecture/25-native-messaging-protocol.md §7) and which floor failed is a message, not a name. The new harness assertion reads the shape rather than the values: four distinct numbers, each floor at or below the version it floors, the refusal code in the taxonomy. The question it answers is `ODEC-02`, decided by the contract addition its own first option named; the sentence that anchored it became a `Verified: YES` in docs/architecture/21-system-context.md §12. Declarative on purpose: `connector/internal/contract` now projects MinPipeVersion and its test refuses a floor above the version it floors, but nothing compares a frame's `v` to it yet, and docs/architecture/25-native-messaging-protocol.md §1 says that instead of leaving the number queued"
+        "artefact": "packages/schema/protocol/framing.json#/minPipeVersion, declared beside #/versionFloors as the second of two floors -- `protocol` over protocolVersion and minCompatibleProtocolVersion, negotiated in connector.hello, and `pipe` over frameFormatVersion and minPipeVersion, carried by the `v` field every frame already bears -- refused by the one code `VersionMismatch`, because a second code is breaking for a client that switches exhaustively (docs/architecture/25-native-messaging-protocol.md §7) and which floor failed is a message, not a name. The new harness assertion reads the shape rather than the values: four distinct numbers, each floor at or below the version it floors, the refusal code in the taxonomy. The question it answers is `ODEC-02`, decided by the contract addition its own first option named; the sentence that anchored it became a `Verified: YES` in docs/architecture/21-system-context.md §12. Declarative on purpose: `connector/internal/contract` now projects MinPipeVersion and its test refuses a floor above the version it floors, but nothing compared a frame's `v` to it on the day this row closed, and docs/architecture/25-native-messaging-protocol.md §1 says that instead of leaving the number queued. The comparison exists in `connector/internal/envelope` now and cannot fire while the envelope schema's own lower bound equals the floor; that residual is `VER-89`"
       },
       {
         "id": "VER-82",
@@ -1798,6 +1798,23 @@
         }
       ],
       "why": "The check is green where it has run: the package's own tests, and a drive over the real release asset that hashes the binary in tens of milliseconds and refuses a one-byte tamper. Where the claim needs it nothing runs: no registered command reaches the spawn path, and the receipt's writer is the installer VER-42 waits for, whose signature half is pinned open twice (ODEC-22, ODEC-25)."
+    },
+    {
+      "id": "VER-89",
+      "subject": "a frame whose `v` is below the pipe floor ends the stream instead of the `VersionMismatch` answer `packages/schema/protocol/framing.json#/versionFloors/tooOld` asks for, and the comparison that would give it cannot fire while the envelope's own lower bound equals the floor",
+      "state": "no-code",
+      "owner": "connector",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "a frame below the pipe floor is answered VersionMismatch in reply to its own id"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/25-native-messaging-protocol.md",
+          "anchor": "A frame whose `v` is below the pipe floor is refused before dispatch"
+        }
+      ],
+      "why": "`connector/internal/envelope/envelope.go:148` compares `v` to `contract.MinPipeVersion` and names `VersionMismatch` in the refusal text, and `TestThePipeFloorComparisonCompilesAndRuns` shows the branch is live code. It is also unreachable: the line above it refuses anything outside 1..255, and `packages/schema/protocol/envelope.schema.json#/properties/v/minimum` is the same 1 the floor carries, so no frame can be below the floor without first being malformed -- which `connector/internal/peer/peer.go:167` turns into a stream end, not an answer in reply to the frame's own `id`. `framing.json` declares two floors over one code and the pipe half of that answer is what no build can give until the floor rises above 1, which is the day a second framing exists. This is the residual that `VER-18`'s retirement left behind once its `nothing compares a frame's v yet` stopped being true."
     }
   ]
 }
