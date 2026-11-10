@@ -190,7 +190,7 @@
     },
     {
       "id": "ODEC-06",
-      "question": "Is 64 inbounds the ceiling, and when a subscription has 200 servers -- refuse, split, or compile a subset?",
+      "question": "Is 64 inbounds the ceiling, and when a subscription has more Servers than the system carries -- 200 inbounds, or a refresh result above one frame -- refuse, split, or compile a subset?",
       "decidedBy": "product",
       "blocks": {
         "verification": [
@@ -199,11 +199,12 @@
         ],
         "compatibility": []
       },
-      "why": "`routing-policy.schema.json` bounds the inbound list at `maxItems: 64`, and a profile with 200 servers exceeds it. The stated behaviour is a refusal that names the count and a UI ask to split; whether that number is a product limit or an implementation accident is undecided, and silently allocating ports until the range is exhausted is already ruled out.",
+      "why": "`routing-policy.schema.json` bounds the inbound list at `maxItems: 64`, and a profile with 200 servers exceeds it. The stated behaviour is a refusal that names the count and a UI ask to split; whether that number is a product limit or an implementation accident is undecided, and silently allocating ports until the range is exhausted is already ruled out. Since 2026-11-10 the same entry decides a second thing, because the frame caps it never referred to turned out to be wrong: `docs/architecture/25-native-messaging-protocol.md` §2.1 records what the three browser families document, `packages/schema/protocol/framing.json#/limits/hostToExtensionBytes` is 1 MiB, and 4 096 of this repository's own Server documents compact to 1.75-2.59 MiB -- so `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`'s single-frame clause now rests on an arithmetic this entry decides, not on a ceiling that was simply large.",
       "options": [
         "keep 64, refuse with `QuotaExceeded` naming the count, and make splitting profiles the documented answer",
         "raise the ceiling to a measured bound (Xray's own limit and the port range), and refuse only above that",
-        "compile a subset per active profile: inbounds exist only for servers a reachable rule can select"
+        "compile a subset per active profile: inbounds exist only for servers a reachable rule can select",
+        "lower `maxServers` to what one host-to-extension frame carries -- 1 600 to 2 300 of the corpus's own Server documents -- so every refresh result is single-frame by construction and the largest feeds are refused rather than reassembled"
       ],
       "at": [
         {
@@ -216,7 +217,7 @@
         },
         {
           "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md",
-          "anchor": "`ODEC-06`) ever raises"
+          "anchor": "`ODEC-06`: lower the bound"
         }
       ]
     },
@@ -889,7 +890,7 @@
       },
       "why": "doc 25 §5 is complete about slice metadata and silent about the slice body, and the silence is not a gap in the prose -- it is a gap in `packages/schema`. `protocol/envelope.schema.json#/properties/chunk` allows four fields and no others, and `protocol/commands/profile.import.json#/args/properties/profiles/items` is a `$ref` to the profile schema, so a byte fragment cannot be sent through the only two list fields that exist. The recorded group in `fixtures/protocol/import-chunked.jsonl` then carries the whole document in its last slice and empty arrays in the others, all three declaring `encoding: \"base64\"`. Choosing an answer is one contract addition plus its examples; refusing to choose leaves `connector/internal/chunk` unwritable and, worse, leaves `#/oversizedPayloads/mechanism/atomicity` asserting the hash of a byte string nobody has defined -- which is exactly the reassembly bug ADR-0008's replay discipline exists to prevent.",
       "options": [
-        "announcement model -- excluded by the data, recorded so the exclusion is not re-litigated: only the final slice carries the document, which leaves that frame over the 1 MiB sender cap §4 states and `framing.json#/oversizedPayloads/mechanism/cap` counting bytes nobody reassembled",
+        "announcement model: only the final slice carries the document and the earlier ones announce it -- live again since 2026-11-10, because the corrected `framing.json#/limits/extensionToHostBytes` is 64 MiB and doc 25 §5 had excluded this reading on the 1 MiB figure it no longer carries",
         "fragment model: a new `args.payload` string of base64 per slice, `contentHash` over the concatenation of the decoded bytes -- what doc 25 §5's rules 2, 5 and 6 already assume, and the only reading that actually bounds a frame",
         "subset model: each slice carries a valid subset of `profiles` and `servers`, `contentHash` over the canonical serialization of the union -- keeps every frame individually schema-valid, but makes `encoding: \"base64\"` meaningless on a frame of JSON objects, leaves the enum's other member (`json`) as the natural fit, and requires a canonical byte form this repository has never defined"
       ],

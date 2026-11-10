@@ -86,7 +86,7 @@ func TestTheTypeScriptCodecFramesTheSamePayloads(t *testing.T) {
 	t.Logf("%d frames written and read byte-for-byte as the TypeScript codec framed them", seen)
 }
 
-// mirrorLimit is the ceiling the direction's own contract number gives: 1 MiB out of the extension, 1 GiB into it.
+// mirrorLimit is the ceiling the direction's own contract number gives: 64 MiB out of the extension, 1 MiB into it.
 func mirrorLimit(t *testing.T, direction string) int {
 	t.Helper()
 	switch direction {

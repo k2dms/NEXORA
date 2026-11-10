@@ -13,10 +13,16 @@ import (
 	"go/format"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
+
+// hostNameShape is the native-messaging host name rule both browser families accept: lowercase alphanumerics
+// and underscores in dot-separated groups, so no leading, trailing or doubled dot. The generator refuses a
+// contract name outside it because the failure it prevents is an install no browser can resolve.
+var hostNameShape = regexp.MustCompile(`^[a-z0-9_]+(\.[a-z0-9_]+)*$`)
 
 const header = `// Code generated from packages/schema/protocol and the envelope-key registry by internal/contractgen. DO NOT EDIT.
 //
@@ -55,6 +61,10 @@ type framingDoc struct {
 		JitterPercent  int   `json:"jitterPercent"`
 	} `json:"reconnect"`
 	SenderPolicy struct {
+		Identity struct {
+			HostName      string `json:"hostName"`
+			AllowlistFile string `json:"allowlistFile"`
+		} `json:"identity"`
 		PrivilegedMethods struct {
 			Names []string `json:"names"`
 		} `json:"privilegedMethods"`
@@ -259,10 +269,24 @@ func Source(repoRoot string) ([]byte, error) {
 	if !codes["Busy"] {
 		return nil, fmt.Errorf("the taxonomy has no Busy code, which every rate limit answers with")
 	}
-	if fr.Limits.EffectiveCrossBrowserBytes.Value > fr.Limits.ExtensionToHostBytes.Value ||
-		fr.Limits.ExtensionToHostBytes.Value > fr.Limits.HostToExtensionBytes.Value {
-		return nil, fmt.Errorf("byte limits are out of order: effective %d > extension-to-host %d > host-to-extension %d",
-			fr.Limits.EffectiveCrossBrowserBytes.Value, fr.Limits.ExtensionToHostBytes.Value, fr.Limits.HostToExtensionBytes.Value)
+	// The directional caps are the platforms' numbers, and the binding direction is host-to-extension: all three
+	// browser families cap what the host writes back at 1 MB, while only Chrome caps what the extension writes, at
+	// 64 MiB (docs/architecture/25-native-messaging-protocol.md §2.1). So the effective ceiling is the smallest of
+	// the three and the cross-browser design must live under it in both directions.
+	if fr.Limits.EffectiveCrossBrowserBytes.Value > fr.Limits.HostToExtensionBytes.Value ||
+		fr.Limits.HostToExtensionBytes.Value > fr.Limits.ExtensionToHostBytes.Value {
+		return nil, fmt.Errorf("byte limits are out of order, want effective %d <= host-to-extension %d <= extension-to-host %d",
+			fr.Limits.EffectiveCrossBrowserBytes.Value, fr.Limits.HostToExtensionBytes.Value, fr.Limits.ExtensionToHostBytes.Value)
+	}
+
+	// The two senderPolicy.identity strings the installer and the host both read. They are checked here rather
+	// than at run time because a name no browser accepts is a broken install discovered by a user, and the
+	// shape rule is the platforms': lowercase alphanumerics, underscores and dots, no empty or doubled dot.
+	if !hostNameShape.MatchString(fr.SenderPolicy.Identity.HostName) {
+		return nil, fmt.Errorf("senderPolicy.identity.hostName %q is not a name the browser families accept (lowercase alphanumerics, underscores and dots, no leading, trailing or doubled dot)", fr.SenderPolicy.Identity.HostName)
+	}
+	if filepath.IsAbs(fr.SenderPolicy.Identity.AllowlistFile) || strings.Contains(fr.SenderPolicy.Identity.AllowlistFile, "..") {
+		return nil, fmt.Errorf("senderPolicy.identity.allowlistFile %q must be a relative path under the per-user root", fr.SenderPolicy.Identity.AllowlistFile)
 	}
 
 	// The secret-reference vocabulary in four files, re-joined here. docs/architecture/32 §5 makes it one
@@ -404,6 +428,8 @@ func Source(repoRoot string) ([]byte, error) {
 		{"PortsPerSenderMaxConcurrent", strconv.Itoa(fr.SenderPolicy.PortsPerSender.MaxConcurrent)},
 		{"RefusalWindowSeconds", strconv.Itoa(fr.SenderPolicy.Refusals.AmplificationGuard.WindowSeconds)},
 		{"RefusalsPerWindowMax", strconv.Itoa(fr.SenderPolicy.Refusals.AmplificationGuard.MaxRefusals)},
+		{"HostName", quote(fr.SenderPolicy.Identity.HostName)},
+		{"HostAllowlistFile", quote(fr.SenderPolicy.Identity.AllowlistFile)},
 	} {
 		fmt.Fprintf(&b, "\t%s = %s\n", c.name, c.value)
 	}

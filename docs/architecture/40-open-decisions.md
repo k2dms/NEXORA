@@ -191,12 +191,22 @@ keeps returning — whose policy governs when a second profile arrives, are not.
 config. Until it is chosen, no test can tell a correct adopt from a correct refusal, which is exactly why `VER-12`
 and `VER-14` cannot be written.
 
-**`ODEC-06` — the 64-inbound ceiling.** `docs/architecture/27-config-compilation-pipeline.md` §5 states the
+**`ODEC-06` — the 64-inbound ceiling, and now the frame that carries a feed.** `docs/architecture/27-config-compilation-pipeline.md` §5 states the
 consequence plainly: 200 servers need 200 inbounds, the schema says `maxItems: 64`, so the compiler refuses and
 `profile.import` answers `QuotaExceeded` naming the count. What nobody has chosen is whether 64 is the number, or
 merely the number in today's document. Option three — compile inbounds only for servers a reachable rule can select —
 is the technically interesting one and the one that makes a user's subscription behave differently depending on their
 routing, which is a `product` cost, not a memory saving.
+
+The same entry has carried a second question since 2026-11-10, and it arrived with a correction rather than as a new
+one: `docs/architecture/25-native-messaging-protocol.md` §2.1 put the two frame caps back the way the browsers
+document them, which makes the host-to-extension direction 1 MiB, and the Server documents this repository ships
+compact at 448–664 B, so a `subscription.refresh` at `maxServers` is 1.75–2.59 MiB — over a frame. Option four is the
+lazy one and the only one that keeps `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`'s
+single-frame clause true without a second `chunk` sender: lower `maxServers` to what one frame carries, and refuse the
+largest feeds in the same voice this entry already uses for 64 inbounds. Whether a 4 096-node feed is a thing users
+have is exactly the product question option one and option four share, so the ceiling is one decision in two places,
+not two decisions.
 
 **`ODEC-08` — the legacy feed.** `packages/schema/server.schema.json#/properties/protocol` is `const "vless"`, so a
 Shadowsocks-heavy feed is lossy *by construction* and `docs/architecture/23-unified-server-model.md` §7 says so out
@@ -234,7 +244,7 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-03` | which error code means "this intent cannot be compiled" | `contract` | `VER-16`, `VER-20` |
 | `ODEC-04` | how the block port range and the inbound allocation range stay disjoint across two files | `contract` | `VER-20` |
 | `ODEC-05` | what `localDNS` means, and whether `IPIfNonMatch` is the right default | `product` | `VER-27`, `VER-75` |
-| `ODEC-06` | whether 64 inbounds is the ceiling, and what a 200-server feed gets | `product` | `VER-68`, `VER-73` |
+| `ODEC-06` | whether 64 inbounds is the ceiling, and what a feed bigger than one frame gets | `product` | `VER-68`, `VER-73` |
 | `ODEC-07` | whether the Connector may fetch a feed through another proxy, including a loopback one | `product` | `VER-59`, `VER-65` |
 | `ODEC-08` | what a legacy Shadowsocks/Trojan/WireGuard feed becomes | `adr` | `VER-69`, `VER-71` |
 | `ODEC-09` | whether `password` joins the sync strip set | `product` | `VER-22`, `VER-74`, `COMP-18` |

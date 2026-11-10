@@ -136,8 +136,12 @@ func TestTransportNumbersAreTheOnesTheDocumentPrints(t *testing.T) {
 	if MinPipeVersion > FrameFormatVersion || MinCompatibleProtocolVersion > ProtocolVersion {
 		t.Error("a floor above the version it floors refuses every build that ships it")
 	}
-	if !(EffectiveCrossBrowserBytes <= ExtensionToHostBytes && ExtensionToHostBytes <= HostToExtensionBytes) {
-		t.Errorf("limits out of order: %d %d %d", EffectiveCrossBrowserBytes, ExtensionToHostBytes, HostToExtensionBytes)
+	if !(EffectiveCrossBrowserBytes <= HostToExtensionBytes && HostToExtensionBytes <= ExtensionToHostBytes) {
+		t.Errorf("limits out of order: %d %d %d", EffectiveCrossBrowserBytes, HostToExtensionBytes, ExtensionToHostBytes)
+	}
+	if ExtensionToHostBytes != 67108864 || HostToExtensionBytes != 1048576 {
+		t.Errorf("the caps are not the browsers': extension-to-host %d want 64 MiB, host-to-extension %d want 1 MiB",
+			ExtensionToHostBytes, HostToExtensionBytes)
 	}
 	if HeartbeatSeconds != 25 || MissedHeartbeatsBeforeDisconnect != 3 {
 		t.Errorf("liveness is %ds with %d misses, want 25s with 3", HeartbeatSeconds, MissedHeartbeatsBeforeDisconnect)

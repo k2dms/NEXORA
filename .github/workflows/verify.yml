@@ -69,6 +69,19 @@ jobs:
         working-directory: packages/schema
         run: npm run verify
 
+      # ADR-0018 rule 2 again: the protocol root installs and runs alone, like the other five. Its harness
+      # byte-compares the generated projection against a fresh generation, replays every protocol fixture through the
+      # TypeScript codec in both directions, and compares the method and code lists with the Go projection's own
+      # text -- the two halves of one crossing cannot drift apart unnoticed with this step running (docs/PROJECT-STATE.md §4.53).
+      # The harness imports the .ts sources directly, which needs Node's own type stripping: unflagged from 22.18.
+      - name: Install the protocol root
+        working-directory: packages/protocol
+        run: npm install --no-audit --no-fund
+
+      - name: Frame codec, generated projection and parity with the Go lists (packages/protocol)
+        working-directory: packages/protocol
+        run: npm run verify
+
       # The last of these modes is the one the resolution checks cannot see: a `| Cited by |` row whose cited
       # line is real, non-blank and about something else. Of the 52 rows in the six tables that carry a line
       # cite outside docs/adr/, 21 had drifted that way by 2026-11-07, all of them green; docs/PROJECT-STATE.md

@@ -71,9 +71,9 @@ spawn-or-adopt of the Connector, byte pump between the two pipes.
 **Out** — frames on the local pipe to the Connector, verbatim (no translation, no re-serialization of payloads).
 
 **Invariants**
-1. It rejects a frame larger than `packages/schema/protocol/framing.json#/limits/extensionToHostBytes`
-   **before** writing, not after reading — the enforcement field says so, and a receiver-side truncation is a
-   silent corruption.
+1. It refuses, before writing, a frame larger than `packages/schema/protocol/framing.json#/limits/hostToExtensionBytes`
+   — the direction it sends — and reads nothing above `#/limits/extensionToHostBytes`; both enforcement fields say
+   so, and a receiver-side truncation is a silent corruption.
 2. A sender not on the allowlist produces exactly one frame back: `UnauthorizedExtension`, and no state
    mutation (ADR-0004 rule 6).
 3. It holds no domain knowledge: `connector/cmd/nexora-host` MUST NOT import the config compiler, the keystore

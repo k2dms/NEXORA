@@ -104,8 +104,8 @@ const (
 	MinCompatibleProtocolVersion     = 1
 	FrameFormatVersion               = 1
 	MinPipeVersion                   = 1
-	ExtensionToHostBytes             = 1048576
-	HostToExtensionBytes             = 1073741824
+	ExtensionToHostBytes             = 67108864
+	HostToExtensionBytes             = 1048576
 	EffectiveCrossBrowserBytes       = 1048576
 	MaxConcurrentRequests            = 64
 	MaxInFlightBytes                 = 8388608
@@ -115,6 +115,8 @@ const (
 	PortsPerSenderMaxConcurrent      = 2
 	RefusalWindowSeconds             = 10
 	RefusalsPerWindowMax             = 10
+	HostName                         = "com.nexora.connector"
+	HostAllowlistFile                = "host/allowlist.json"
 )
 
 var backoffSeconds = []int{

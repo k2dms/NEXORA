@@ -20,7 +20,7 @@ export class FrameFailure extends Error {
   }
 }
 
-// The direction decides the number, and the numbers are not symmetric: 1 MiB out of the extension against 1 GiB
+// The direction decides the number, and the numbers are not symmetric: 64 MiB out of the extension against 1 MiB
 // into it, so a codec that reads and writes the same ceiling is wrong on both halves of the contract.
 export function limitFor(direction: Direction): number {
   return direction === 'extension-to-host' ? extensionToHostBytes : hostToExtensionBytes;

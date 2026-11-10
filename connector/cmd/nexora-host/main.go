@@ -167,8 +167,8 @@ func firstOrigin(args []string) string {
 	return ""
 }
 
-// loadAllowlist reads the host's own startup configuration on disk — a JSON array of sender ids, the one shape
-// `framing.json#/senderPolicy/identity/allowlistSource` describes without naming. A file that cannot be read or
+// loadAllowlist reads the host's own startup configuration on disk — a JSON array of sender ids, the shape and
+// the address `framing.json#/senderPolicy/identity/allowlistFile` names. A file that cannot be read or
 // parsed is an empty allowlist, never a permissive default: the unknown sender ADR-0004 rule 6 refuses is the
 // same unknown whether the installer never wrote the file or the caller is not in it. The reason goes out on
 // notes, because a broken install has to be legible rather than silent.
@@ -379,22 +379,22 @@ func exeSuffix() string {
 	return ""
 }
 
-// defaultAllowlistPath is the host's own startup configuration under the per-user root. No document names the file
-// — `framing.json#/senderPolicy/identity/allowlistSource` names only who writes it, the installer — so the path
-// here is this process's choice and doc 33's installer has to agree with it, which is the kind of agreement the
-// unwritten installer is recorded as owing.
+// defaultAllowlistPath is the host's own startup configuration: the file
+// `framing.json#/senderPolicy/identity/allowlistFile` names, under the per-user root doc 34 §7's tree puts
+// keystore, config, state and core. The address arrives by projection rather than as a literal here, because the
+// installer that writes it and this process that reads it must not each invent it.
 func defaultAllowlistPath() string {
 	root, err := nexoraRoot()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(root, "host", "allowlist.json")
+	return filepath.Join(root, filepath.FromSlash(contract.HostAllowlistFile))
 }
 
 func main() {
 	fs := flag.NewFlagSet("nexora-host", flag.ExitOnError)
 	connectorBin := fs.String("connector", defaultConnectorBin(), "the nexora-connector binary this host opens a pipe for")
-	allowlistPath := fs.String("allowlist", defaultAllowlistPath(), "the host's startup allowlist: a JSON array of sender ids the installer wrote (framing.json#/senderPolicy/identity/allowlistSource)")
+	allowlistPath := fs.String("allowlist", defaultAllowlistPath(), "the host's startup allowlist: a JSON array of sender ids the installer wrote (framing.json#/senderPolicy/identity/allowlistFile)")
 	senderOrigin := fs.String("sender-origin", "", "developer affordance: the sender to serve when no browser started this process. Production never reads it — ADR-0004 rule 3 wants the browser's argv, and a hand-typed id is the caller choosing its own authorization")
 	_ = fs.Parse(os.Args[1:])
 

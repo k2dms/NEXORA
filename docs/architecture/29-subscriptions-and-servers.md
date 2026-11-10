@@ -53,9 +53,9 @@ transfer instead of scheduling it.
 
 **Consequence for the frame contract.** The feed body never crosses the pipe in the extension-to-host direction, so
 chunking is not a subscription concern: `protocol/envelope.schema.json#/properties/chunk` serves `profile.import`,
-whose args do exceed 1 MiB. The reverse direction is capped at 1 GiB
-(`packages/schema/protocol/framing.json#/limits/hostToExtensionBytes`), and 4 096 Servers are far below it, so
-`subscription.refresh` results are single-frame. Until `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` this was the premise the paragraph drew its conclusion from; now it is a clause of that record, and so is the direction the Servers travel in: the parsed list reaches the extension in this result frame and in no event, because `packages/schema/observability.json#/events/7/payload` is closed at four count fields.
+whose args clear that direction's 64 MiB only for a very large backup. What binds a subscription is the other side:
+`packages/schema/protocol/framing.json#/limits/hostToExtensionBytes` is 1 MiB, and the corpus's own Server documents
+serialize compactly at 448–664 B apiece, so 4 096 of them are 1.75–2.59 MiB — more than one frame carries. Until `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md` this was the premise the paragraph drew its conclusion from; that record's clause 3 now rests on an arithmetic it did not know, and so does the direction the Servers travel in: the parsed list reaches the extension in this result frame and in no event, because `packages/schema/observability.json#/events/7/payload` is closed at four count fields.
 
 ## 3. The guards, and where each one runs
 

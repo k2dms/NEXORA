@@ -11,8 +11,8 @@ export const prefixBytes = 4 as const;
 export const prefixByteOrder = "little-endian" as const;
 export const prefixIsUnsigned = true as const;
 
-export const extensionToHostBytes = 1048576 as const;
-export const hostToExtensionBytes = 1073741824 as const;
+export const extensionToHostBytes = 67108864 as const;
+export const hostToExtensionBytes = 1048576 as const;
 export const effectiveCrossBrowserBytes = 1048576 as const;
 export const maxConcurrentRequests = 64 as const;
 export const maxInFlightBytes = 8388608 as const;

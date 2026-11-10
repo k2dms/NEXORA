@@ -634,7 +634,7 @@
       "command": "config.apply",
       "payload": "intent documents: profiles, servers, routing, settings -- references, never values",
       "carriesSecretValues": false,
-      "bound": "1 MiB per frame (packages/schema/protocol/framing.json limits.extensionToHostBytes)",
+      "bound": "64 MiB per frame (packages/schema/protocol/framing.json limits.extensionToHostBytes)",
       "onOverflow": "chunked-envelope, reassembled and hash-checked before anything is replaced",
       "check": "LIVE-05 through LIVE-09; the chunk rules are asserted over framing.json"
     },

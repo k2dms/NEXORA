@@ -92,7 +92,7 @@ because each is where a naive design breaks:
 
 | Movement | Direction | Bound | If it does not fit |
 |---|---|---|---|
-| `intent-down` | browser → connector | 1 MiB per frame (`packages/schema/protocol/framing.json#/limits/extensionToHostBytes`) | chunked envelope, reassembled and hash-checked before anything is replaced (`#/oversizedPayloads`) |
+| `intent-down` | browser → connector | 64 MiB per frame (`packages/schema/protocol/framing.json#/limits/extensionToHostBytes`) | chunked envelope, reassembled and hash-checked before anything is replaced (`#/oversizedPayloads`) |
 | `feed-fetch` | network → connector | `limits.maxBytes`, default 2 MiB, ceiling 8 MiB | the refresh fails and the last good set stays applied — `docs/architecture/29-subscriptions-and-servers.md` §9 |
 | `sync-out` | browser → network | the remote's own quota | the legacy answer is to mark profiles `syncOptions: 'disabled'` (`omega-target/src/options_sync.coffee:157-170`); NEXORA's answer is durable status, not silent exclusion |
 
@@ -292,9 +292,10 @@ Where size actually binds today, in the browser plane:
   marked `syncOptions: 'disabled'` (`omega-target/src/options_sync.coffee:157-170`), and because `_setOptions`
   handed over the same object reference, the in-memory copy gains the flag without a local persist
   (`docs/audit/04-data-model-and-options-envelope.md` §7 defect 3);
-- the frame limit binds the pipe, not the disk: 1 MiB per message
-  (`packages/schema/protocol/framing.json#/limits/extensionToHostBytes`), with chunking as the declared answer for
-  an import that exceeds it, and staging as its durable half (`packages/schema/import-staging.schema.json`).
+- the frame limit binds the pipe, not the disk: 64 MiB per message toward the Connector and 1 MiB back
+  (`packages/schema/protocol/framing.json#/limits/extensionToHostBytes` and `#/limits/hostToExtensionBytes`),
+  with chunking as the declared answer for an import that exceeds it, and staging as its durable half
+  (`packages/schema/import-staging.schema.json`).
 
 Where size binds in the Connector plane: the feed body at `maxBytes`, the config at one file per hash, history and
 diagnostics at ring bounds, disk at `retainedPreviousVersions`.

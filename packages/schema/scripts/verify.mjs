@@ -244,19 +244,19 @@ const taxonomy = dataDocs['protocol/error-taxonomy.json'];
 const framing = await readJson(join(PKG, 'protocol', 'framing.json'));
 {
   check(
-    framing.limits.extensionToHostBytes.value === 1048576,
-    'extension-to-host frame limit is 1 MB',
-    `found ${framing.limits.extensionToHostBytes.value}`,
+    framing.limits.extensionToHostBytes.value === 67108864,
+    'extension-to-host frame limit is 64 MiB',
+    'Chrome documents 64 MiB in this direction while Firefox and Edge document 4 GB, so Chrome is the binding claim (docs/architecture/25 §2.1)',
   );
   check(
-    framing.limits.effectiveCrossBrowserBytes.value <= framing.limits.extensionToHostBytes.value,
+    framing.limits.effectiveCrossBrowserBytes.value <= framing.limits.hostToExtensionBytes.value,
     'the effective cross-browser limit is not larger than the smallest documented cap',
-    'Firefox historically caps at 1 MB',
+    'every browser family caps what the host writes back at 1 MB, so that is the number a design may rely on',
   );
   check(
-    framing.limits.hostToExtensionBytes.value >= framing.limits.extensionToHostBytes.value,
-    'host-to-extension cap is at least the reverse direction',
-    'a smaller reverse cap would break large config snapshots',
+    framing.limits.hostToExtensionBytes.value === 1048576,
+    'host-to-extension cap is the binding 1 MB',
+    'the corpus held the two directions swapped, in the pre-Chrome-44 pair, until 2026-11-10 -- docs/PROJECT-STATE.md §4.54',
   );
   check(
     framing.oversizedPayloads.decision === 'chunked-envelope',

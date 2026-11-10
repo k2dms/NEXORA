@@ -23,14 +23,14 @@
   },
   "limits": {
     "extensionToHostBytes": {
-      "value": 1048576,
-      "reason": "Chrome's documented cap on a message sent to the host.",
+      "value": 67108864,
+      "reason": "What a browser lets an extension write into the port. Chrome documents 64 MiB and Firefox documents 4 GB, so Chrome is the binding number; the value is the binary reading of it (docs/architecture/25-native-messaging-protocol.md §2.1).",
       "enforcement": "sender must reject before write, not the receiver after read"
     },
     "hostToExtensionBytes": {
-      "value": 1073741824,
-      "reason": "Chrome allows 1 GB host-to-extension; Firefox historically caps at 1 MB, so anything larger must be chunked for cross-browser parity (docs/architecture/25).",
-      "enforcement": "receiver must treat a frame larger than the effective limit as a transport error and reconnect, not truncate"
+      "value": 1048576,
+      "reason": "What a browser lets the host write back. Chrome, Firefox and Edge all state 1 MB for this direction, so it is a ceiling and not a preference: anything larger must be chunked (#/oversizedPayloads), and a design that needs more than 1 MB out of the host runs in none of the three (docs/architecture/25-native-messaging-protocol.md §2.1). The corpus once held the two directions swapped -- 1 MiB out of the extension, 1 GiB back into it -- and neither figure is what those three pages state for the direction it was attached to.",
+      "enforcement": "the host refuses an oversized write before a byte reaches the pipe; the browser tears the port down rather than truncating, so a receiver-side check is already too late"
     },
     "effectiveCrossBrowserBytes": { "value": 1048576 },
     "maxConcurrentRequests": { "value": 64 },
@@ -88,6 +88,10 @@
         "the peer process command line"
       ],
       "allowlistSource": "the host's own startup configuration on disk, written by the Connector installer",
+      "hostName": "com.nexora.connector",
+      "hostNameRule": "the string the extension passes to runtime.connectNative and the name the browser resolves to the registration the installer wrote, so it is a fact two implementations must agree on rather than one implementation's constant: the installer writes it as the manifest's name and the extension types it into the API call, and the manifest file is named after it. Both families accept the same shape -- lowercase alphanumerics, underscores and dots, no leading, trailing or doubled dot -- and this one satisfies it. docs/architecture/25-native-messaging-protocol.md §2.1 records what each browser does with it.",
+      "allowlistFile": "host/allowlist.json",
+      "allowlistFileRule": "relative to the per-user NEXORA root docs/architecture/34-data-split.md §7's tree names, beside keystore, config, state and core. Until this field existed the path was a constant inside connector/cmd/nexora-host with no document naming it; a writer and a reader of one file must not each invent its address, so it is data now and the installer writes where the host reads. The file is a JSON array of sender origins, read once at startup; a missing or unparseable file is an empty allowlist, never a permissive default.",
       "allowlistNeverIn": "browser storage: -nexora.settings is written through the code path rule 6 exists to constrain, so letting the caller configure its own authorization is not a control",
       "unknownSender": "answer UnauthorizedExtension and do not touch state (ADR-0004 rule 6)"
     },

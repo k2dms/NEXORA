@@ -14,6 +14,14 @@ that the Connector keeps subscriptions whole. `docs/architecture/40-open-decisio
 carried `VER-61` as the queue's `needs-human` row: a boundary that cannot be asserted against an undecided
 answer.
 
+**Corrected 2026-11-10, and the correction is arithmetic, not taste.** The 1 GiB figure above is what this record
+believed, and the platforms say otherwise: Chrome, Firefox and Edge each cap what a native host writes back at
+1 MB, and the 64 MiB belongs to the other direction (`docs/architecture/25-native-messaging-protocol.md` §2.1,
+measured in `docs/PROJECT-STATE.md` §4.54). Clause 3's single-frame sentence therefore holds only up to what 1 MiB
+carries — the corpus's own Server documents compact at 448–664 B, so a refresh near `maxServers` is about 2 MiB and
+does not fit. What this record decides is unchanged: the Servers travel in the result, and never in an event. What
+it assumed — that the result always fits one frame — is the half of `ODEC-06` the ceiling question now carries.
+
 What the sitting that tried to answer it found is that the two alternatives were never open. They are excluded
 by data this repository already carries and already checks, and the exclusion is not a matter of taste:
 
@@ -47,12 +55,13 @@ resting on a premise, and to take `VER-61` out of a queue that cannot close a `n
    `subscription.refresh`'s `refreshed[].servers`. A subscription event MUST NOT carry a Server, a Server name,
    an address or any other field a payload of that shape would need; `subscription.updated` stays a counts-only
    notification, and the pull that follows it is the command in clause 2.
-3. `subscription.refresh` results stay single-frame. 4 096 Servers are far below
-   `packages/schema/protocol/framing.json#/limits/hostToExtensionBytes`, and the same ceiling is what
-   `packages/schema/subscription-source.schema.json#/properties/limits/properties/maxServers` refuses above.
-   A second sender for `chunk` MUST NOT be introduced to serve subscriptions; if the ceiling question
-   (`docs/architecture/40-open-decisions.md` `ODEC-06`) ever raises `maxServers` past what one frame carries,
-   that supersedes this record rather than amending it.
+3. `subscription.refresh` results stay single-frame within one frame's worth of Servers. The ceiling is
+   `packages/schema/protocol/framing.json#/limits/hostToExtensionBytes`, now 1 048 576 B, and the same ceiling is
+   what `packages/schema/subscription-source.schema.json#/properties/limits/properties/maxServers` refuses above
+   — an arithmetic this record got wrong when it was written, and the question it leaves open is
+   `docs/architecture/40-open-decisions.md` `ODEC-06`: lower the bound, or let a large result cross in pieces.
+   A second sender for `chunk` MUST NOT be introduced to serve subscriptions while that question stands; whichever
+   way it is answered supersedes this clause rather than amending it.
 4. The extension persists what the result returns into the source documents it owns, and the one field the
    Connector may correct in them is the resolved `refreshed[].format` (ADR-0010's split, with the exception
    `docs/architecture/34-data-split.md` §6 states and `packages/schema/protocol/data-ownership.json`'s
@@ -102,7 +111,8 @@ process through any bounded command.
   `$ref` `server.schema.json`.
 - `packages/schema/protocol/envelope.schema.json#/properties/chunk/description` — `profile.import` is the only
   sender, and a subscription body never crosses the extension-to-host boundary.
-- `packages/schema/protocol/framing.json#/limits/hostToExtensionBytes/value` — 1 073 741 824; and
+- `packages/schema/protocol/framing.json#/limits/hostToExtensionBytes/value` — 1 048 576, and
+  `packages/schema/protocol/framing.json#/limits/extensionToHostBytes/value` — 67 108 864; and
   `packages/schema/subscription-source.schema.json#/properties/limits/properties/maxServers/maximum` — 4096,
   the arithmetic §2's single-frame sentence rests on.
 - `packages/schema/protocol/data-ownership.json` — the `nexora-subscriptions` entry: plane `browser`, class

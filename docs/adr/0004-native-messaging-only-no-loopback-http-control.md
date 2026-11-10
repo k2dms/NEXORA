@@ -103,9 +103,9 @@ the connector transport.
 Today, rule 5 is checked: `npm --prefix packages/schema run verify` compiles `protocol/framing.json`,
 asserts its numeric limits and its `oversizedPayloads.decision`, and replays the 109 fixture frames in
 `packages/schema/fixtures/protocol/` against `protocol/envelope.schema.json`
-(`packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 1 MB",
+(`packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 64 MiB",
 "the effective cross-browser limit is not larger than the smallest documented cap",
-"host-to-extension cap is at least the reverse direction" and
+"host-to-extension cap is the binding 1 MB" and
 "oversized payloads are chunked, not handed off out-of-band"). Rule 3's error code is checked against
 the taxonomy at `packages/schema/scripts/verify.mjs` "every taxonomy entry is a code/layer/meaning object".
 

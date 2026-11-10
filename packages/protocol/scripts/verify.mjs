@@ -145,15 +145,15 @@ check('a frame over the extension-to-host ceiling is refused before any byte is 
     } finally {
       assertEqual(written, null, 'bytes came out of a refused write');
     }
-  }, '1 MiB + 1 out of the extension');
-  expectFailure('too-large', () => createFrameDecoder(extensionToHostBytes).push(Uint8Array.from([1, 0, 0x10, 0x00, 0x7b])), 'a peer declaring a frame over the ceiling');
+  }, '64 MiB + 1 out of the extension');
+  expectFailure('too-large', () => createFrameDecoder(extensionToHostBytes).push(Uint8Array.from([1, 0, 0, 4, 0x7b])), 'a peer declaring a frame over the ceiling');
 });
 
-check('the same payload one byte under the ceiling is legal, and the host-to-extension ceiling is a gigabyte', () => {
+check('the same payload one byte under the ceiling is legal, and the other direction is the 1 MB the browsers state', () => {
   const atLimit = new Uint8Array(extensionToHostBytes).fill(0x20);
   assertEqual(encodeFrame(atLimit, 'extension-to-host').byteLength, extensionToHostBytes + prefixBytes, 'a payload exactly at the ceiling writes');
-  assertEqual(limitFor('host-to-extension'), hostToExtensionBytes, 'the receiving ceiling is Chrome 1 GB, not the 1 MB the sender has');
-  assertEqual(limitFor('extension-to-host'), extensionToHostBytes, 'the sending ceiling is the documented 1 MiB');
+  assertEqual(limitFor('host-to-extension'), hostToExtensionBytes, 'the ceiling back into the browser is the 1 MB every family documents');
+  assertEqual(limitFor('extension-to-host'), extensionToHostBytes, 'the ceiling out of the browser is Chrome 64 MiB, the smallest claim in that direction');
 });
 
 check('an empty payload is not a frame, in either direction', () => {

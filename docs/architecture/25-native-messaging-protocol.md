@@ -89,6 +89,38 @@ anything it cannot read as one of those shapes as no sender at all, which is the
 the argv cannot prove is who spawned this process: ADR-0022 rule 3's peer credentials are the layer that would, and
 they are not wired.
 
+### 2.1 What the registration is, and what each browser caps
+
+The host's name is contract data, not one process's constant:
+`packages/schema/protocol/framing.json#/senderPolicy/identity/hostName` carries `com.nexora.connector` and
+`#/senderPolicy/identity/hostNameRule` states the shape both families accept — lowercase alphanumerics, underscores
+and dots, no leading, trailing or doubled dot. The extension types that string into `runtime.connectNative`, the
+installer writes the registration under it, and the manifest file is named after it, so a rename is one data change
+with three places that must move together — which is why no place may hold it as a private constant.
+
+Where the registration lives is per family and per OS, and that matrix is the installer's whole job:
+
+| Family | Windows | macOS | Linux |
+|---|---|---|---|
+| Chrome | key `HKCU\SOFTWARE\Google\Chrome\NativeMessagingHosts\<name>`, whose default value is the manifest path | `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/<name>.json` | `~/.config/google-chrome/NativeMessagingHosts/<name>.json` |
+| Edge | key `HKCU\SOFTWARE\Microsoft\Edge\NativeMessagingHosts\<name>`; Edge also reads Chromium's key and then Chrome's | `~/Library/Application Support/Microsoft Edge/NativeMessagingHosts/<name>.json` (insider and beta channels keep their own directories) | `~/.config/microsoft-edge/NativeMessagingHosts/<name>.json` |
+| Firefox | key `HKCU\SOFTWARE\Mozilla\NativeMessagingHosts\<name>` | `~/Library/Application Support/Mozilla/NativeMessagingHosts/<name>.json` | `~/.mozilla/native-messaging-hosts/<name>.json` |
+
+One JSON object is what those keys and files point at: `name`, `description`, `path` to the host binary,
+`type: "stdio"`, and the allow list under `allowed_origins` for the Chromium family or `allowed_extensions` for
+Firefox. Nothing else is registered — no service, no LaunchAgent, no startup item
+(`docs/architecture/33-binary-integrity.md` §14) — and the allowlist the host itself reads is a separate file whose
+address is `#/senderPolicy/identity/allowlistFile`, because a writer and a reader of one file must not each invent
+its path.
+
+**The two byte caps are platform facts, not NEXORA's.** Chrome documents 64 MiB for what an extension may write into
+the port and 1 MB for what the host may write back; Firefox gives the same 1 MB from the application and 4 GB toward
+it, and Edge states that same pair. `#/limits` therefore carries 67108864 and 1048576, the binding number in each
+direction being the smallest claim among the three. Until 2026-11-10 the data and §4 held 1 MiB out of the extension
+and 1 GiB back into it, and neither figure is what those three pages state for the direction it was attached to, so the
+host was written to refuse requests the browser would deliver and to emit answers the browser tears the port down for.
+`docs/PROJECT-STATE.md` §4.54 records the measurement and the files it moved.
+
 ## 3. Framing
 
 | Property | Value | Source |
@@ -106,15 +138,15 @@ little-endian bytes are not).
 
 | Limit | Value | Enforced by | Why this side |
 |---|---|---|---|
-| extension → host | 1 MiB (`1048576`) | **sender, before write** | `#/limits/extensionToHostBytes/enforcement` — Chrome rejects the write; a receiver-side check would mean we already lost the frame |
-| host → extension | 1 GiB | receiver treats an oversized frame as a transport error and reconnects, never truncates | `#/limits/hostToExtensionBytes` |
-| effective cross-browser | 1 MiB | both | Firefox's historical cap is the binding constraint, so a design that only works at 1 GiB is a Chromium-only design |
+| extension → host | 64 MiB (`67108864`) | **sender, before write** | `#/limits/extensionToHostBytes/enforcement` — Chrome rejects the write; a receiver-side check would mean we already lost the frame |
+| host → extension | 1 MiB (`1048576`) | **sender, before write** | `#/limits/hostToExtensionBytes/enforcement` — the cap all three families state, so anything larger is §5's problem, not the port's |
+| effective cross-browser | 1 MiB | both | the smallest of the four documented caps, which is the host-to-extension one: a design that only works above it is a Chromium-only design |
 | concurrent requests | 64 | sender stops issuing | `#/limits/maxConcurrentRequests`, `#/ordering/backpressure` |
 | in-flight bytes | 8 MiB | sender | `#/limits/maxInFlightBytes` — the concurrency cap alone does not bound memory when frames are large |
 
 `Verified: NO — deferred to Phase 2` for enforcement itself; the *values* are asserted today by the framing
 sanity block in `packages/schema/scripts/verify.mjs`, including the ordering property that
-`effectiveCrossBrowserBytes ≤ extensionToHostBytes ≤ hostToExtensionBytes`.
+`effectiveCrossBrowserBytes ≤ hostToExtensionBytes ≤ extensionToHostBytes`.
 
 ## 5. Oversized payloads: chunked envelope, and no `chunkId`
 
@@ -159,13 +191,13 @@ schema), so a byte fragment cannot be put in them and still validate. The record
 them. `packages/schema/fixtures/protocol/import-chunked.jsonl` sends `chunkCount: 3` whose first two slices carry
 `args.profiles: []`, no `args.servers` at all, and `encoding: "base64"` — a string encoding of bytes no field
 holds — while the third carries the entire document as structured `profiles` and `servers`, and all three repeat
-one whole-document `args.contentHash`. That is consistent with three shapes of exchange, and the data removes one
-of them: (a) the earlier slices are announcements and only the last frame travels, except that
-`packages/schema/protocol/framing.json#/oversizedPayloads/mechanism/cap` counts "total reassembled bytes" and
-`packages/schema/protocol/envelope.schema.json#/properties/chunk/description` says the field appears "when a
-payload exceeds the 1 MB extension-to-host frame limit" — under (a) the frame that must carry the whole document
-exceeds §4's sender cap and cannot be written at all, so this reading is excluded, and what the corpus does not
-say is which of the two survivors replaces it. (b) each slice carries a fragment of the serialized document and
+one whole-document `args.contentHash`. That is consistent with three shapes of exchange, and the data used to remove
+one of them: (a) the earlier slices are announcements and only the last frame travels. That exclusion rested on
+`packages/schema/protocol/framing.json#/oversizedPayloads/mechanism/cap` counting "total reassembled bytes" beside
+`packages/schema/protocol/envelope.schema.json#/properties/chunk/description` speaking of a payload that exceeds the
+frame limit — and on the 1 MB figure §4 once carried for this direction. With the direction corrected to 64 MiB
+(§2.1) the whole-document final frame is writable, so (a) is not excluded by the cap and the question is three
+readings wide rather than two. (b) each slice carries a fragment of the serialized document and
 `contentHash` hashes the concatenation of the decoded bytes — what rules 2, 5 and 6 above assume, and the one
 reading with no field to write a fragment into. (c) each slice carries a valid *subset* of the profile and server
 arrays and `contentHash` hashes the canonical serialization of the union — every frame then stays individually
@@ -328,7 +360,7 @@ and no bidirectional streaming RPC semantics.
 
 | Invariant | Enforcing check today | State |
 |---|---|---|
-| Frame limits are the documented ones and ordered | framing sanity block, `packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 1 MB", "the effective cross-browser limit is not larger than the smallest documented cap" and "host-to-extension cap is at least the reverse direction" | **GREEN** |
+| Frame limits are the documented ones and ordered | framing sanity block, `packages/schema/scripts/verify.mjs` "extension-to-host frame limit is 64 MiB", "the effective cross-browser limit is not larger than the smallest documented cap" and "host-to-extension cap is the binding 1 MB" | **GREEN** |
 | Envelope `required` is exactly `v,id,type,sentAt` | `#/required` + ajv compile of every fixture frame | **GREEN** |
 | `request`/`response`/`event` field discipline | `#/allOf` + the two must-reject envelope examples | **GREEN** |
 | The sender identity crosses hop 2 by a named mechanism, and hop 2 has a contract of its own | the sender is which pipe the host opened, injected at spawn; the pipe carries the same envelope, guarded by `pipeVersion` | Verified as data — ADR-0022 states the boundary; the runtime half is the live rows, still `SKIPPED` |
@@ -343,7 +375,7 @@ and no bidirectional streaming RPC semantics.
 | Probes answered exactly once | "probe is answered exactly once" over the fixtures | **GREEN** |
 | Replays byte-identical after clock-strip | "idempotent replay returns the same result" (5 pairs today) | **GREEN** |
 | Every fixture frame validates against the envelope | the replay loop; it prints the frame count on every run | **GREEN** |
-| Sender-side rejection before write | nothing | Verified: NO — deferred to Phase 2 (the client must refuse a >1 MiB write before the port) |
+| Sender-side rejection before write | nothing | Verified: NO — deferred to Phase 2 (the client must refuse a >64 MiB write before the port, and the real crossing must show the browser accepting one up to its own cap) |
 | Heartbeat / missed-heartbeat behaviour | nothing | Verified: NO — deferred to Phase 2 (a liveness test drives the 25 s heartbeat and the three-miss deadline) |
 | Late-answer discard by `id` | nothing | Verified: NO — deferred to Phase 2 (a request-table test drops an answer whose `id` is no longer in flight) |
 | Jittered reconnect actually jitters | nothing | Verified: NO — LIVE-13 |

@@ -108,12 +108,13 @@ func TestEmptyPayloadIsNeverAFrame(t *testing.T) {
 }
 
 // TestContractLimitsAreTheOrderTheDocumentClaims guards the projection the codec is pointed at: the effective
-// cross-browser cap is the binding one, and it is never above the direction limits around it.
+// cross-browser cap is the binding one, and the direction that binds it is host-to-extension, because that is the
+// cap every browser family states.
 func TestContractLimitsAreTheOrderTheDocumentClaims(t *testing.T) {
-	if !(contract.EffectiveCrossBrowserBytes <= contract.ExtensionToHostBytes &&
-		contract.ExtensionToHostBytes <= contract.HostToExtensionBytes) {
+	if !(contract.EffectiveCrossBrowserBytes <= contract.HostToExtensionBytes &&
+		contract.HostToExtensionBytes <= contract.ExtensionToHostBytes) {
 		t.Fatalf("limits are out of order: %d <= %d <= %d is what framing.json declares",
-			contract.EffectiveCrossBrowserBytes, contract.ExtensionToHostBytes, contract.HostToExtensionBytes)
+			contract.EffectiveCrossBrowserBytes, contract.HostToExtensionBytes, contract.ExtensionToHostBytes)
 	}
 	var buf bytes.Buffer
 	if err := Write(&buf, bytes.Repeat([]byte("z"), contract.EffectiveCrossBrowserBytes), contract.EffectiveCrossBrowserBytes); err != nil {

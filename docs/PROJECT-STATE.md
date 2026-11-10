@@ -184,7 +184,7 @@ Both are needed for the build to run at all (§1.3). Reverting either restores t
 `failure-policy`, `events`, `pins`, `connector-settings`, `import-staging`, `envelope-backup`
 (+ `protocol/envelope.schema.json`, `protocol/commands.schema.json`).
 4 protocol data documents: `protocol/error-taxonomy.json` (≥20 codes, each with `retryable`),
-`protocol/framing.json` (1 MB extension→host, larger host→extension, `oversizedPayloads.decision = "chunked-envelope"`),
+`protocol/framing.json` (1 MiB host→extension, 64 MiB extension→host, `oversizedPayloads.decision = "chunked-envelope"`),
 `protocol/compatibility-rules.json` (capability names), `protocol/command-allowlist.json` (**exactly 19 methods**,
 only `connector.hello` is `availableBeforeHello`).
 19 command documents `protocol/commands/*.json`, each validated by `commands.schema.json` and cross-checked for
@@ -709,6 +709,17 @@ already summed to four, so the sentence and its arithmetic disagreed and only th
 row closes or opens here: the codec's agreement is a test in each language plus one fixture between them, which is
 what `VER-14`'s pipe-fidelity half already claimed for the Go side, and `VER-12`, `VER-14` and the live rows keep their
 rows because the lock file, the installer and the outer job are still unwritten.
+§4.54 moves all three figures — **2338 / 629 / 1612**, 68 labels, 52 `Cited by` rows — measured after this paragraph
+was written, against a clean worktree of c53b23e whose own run says **2329 / 625 / 1603**. Per file, counted by the
+forms each document carries: this file +9 line citations — the ten this record names plus the two §4.4 re-aims, less
+the harness line the guard takes as a label instead, less the pair §4.4 addressed before this slice moved those lines —
++2 pointers and +3 document names; ADR-0021 +1
+pointer and +2 names, the framing value its corrected clause reads and the two records it now points at; doc 25 +1 pointer and +2 names, §2.1's host name, the
+binary-integrity row its no-service rule cites and this ledger; doc 40 +2 names, ODEC-06's widened row and the ADR its
+fourth option reads. The other six documents this slice edits move nothing: docs 21, 22, 29, 32 and 34 and ADR-0004
+changed digits, harness labels and the line numbers of citations that already existed, and the guard counts a form
+rather than the address it resolves to. No `VER-NN` row closes or opens here and the register keeps its 55 deferral
+sites, because the correction widened an entry that already owned a site instead of issuing a new id.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -1094,13 +1105,13 @@ exactly the problem: a green block over the part that was specified made the par
 | `packages/schema/protocol/framing.json#/oversizedPayloads/mechanism` | `ordering`, `atomicity`, `cap` — all three written as if a group contributes bytes | the byte string those three are written against |
 
 **The reading the data does remove.** "The earlier slices are announcements and only the last frame carries the
-document" is what the fixtures literally show, and it cannot be the contract: `#/properties/chunk/description` in the
-envelope appears "when a payload exceeds the 1 MB extension-to-host frame limit", and under that reading the frame that
-must carry the whole document exceeds §4's sender cap and would be refused by §4.7's own peer before it reached a
-writer. So one of the three is decided and two survive — the fragment model (`contentHash` over the concatenation of
-decoded bytes, needing a field that does not exist) and the subset model (each slice a valid subset, `contentHash` over
-the canonical serialization of a union, needing a canonical form that does not exist). The two disagree about which
-byte string `chunk.contentHash` names, and both the gap rule and validate-then-apply are written against that string.
+document" is what the fixtures literally show, and on the caps this corpus then held it could not be the contract: the
+envelope's `#/properties/chunk/description` appeared "when a payload exceeds the 1 MB extension-to-host frame limit", so
+the frame carrying the whole document broke §4's sender cap and §4.7's own peer refused it before a writer. That
+refutation was the swapped pair §4.54 corrected on 2026-11-10: the extension-to-host ceiling is 64 MiB, the reading is
+live again and `ODEC-34` now lists it as an option. Two models survive: the fragment model (`contentHash` over the
+concatenation of decoded bytes) and the subset model (`contentHash` over a canonical serialization of a union). Neither
+field exists, and the two name different byte strings — which is what the gap rule and validate-then-apply both read.
 
 **What this slice therefore is.** Not the package, and not a guess at the field. It is the gap put where the corpus keeps
 gaps, so that it cannot be inherited silently by Phase 2: a row in §13 of `docs/architecture/25-native-messaging-protocol.md`
@@ -1184,8 +1195,8 @@ this repository will reproduce.
 
 **What exists now.** A Connector that runs. `connector/cmd/nexora-connector` opens one Native Messaging stream on
 stdin and stdout — a ~15-line `duplex` joins the two descriptors because nothing else does it and `internal/peer` takes
-one `io.ReadWriteCloser` — puts `internal/peer`'s host-side limits on it (`peer.ToExtension()`: reads capped at the
-extension's 1 MiB, writes at the host's 1 GiB), and hands every frame that arrives to `internal/dispatch` with
+one `io.ReadWriteCloser` — puts `internal/peer`'s host-side limits on it (`peer.ToExtension()`: reads at the extension's
+64 MiB, writes at the host's 1 MiB), and hands every frame that arrives to `internal/dispatch` with
 `internal/hello` behind it. Two transports, one function: the length-prefixed mode is the contract's, and `--jsonl` —
 one frame per line, one answer per line, exit at EOF — exists because a human at a shell cannot type four length bytes,
 and shares `service.respond` rather than reimplementing it, so the affordance cannot drift from the transport.
@@ -1460,11 +1471,11 @@ rule 6, turned into three test names.
 **The grammar is projected, so it cannot be copied twice.** doc 32 §5 says the reference vocabulary is data, and
 `packages/schema/envelope-keys.schema.json:143` is the line holding it: scheme, floor and shape as three `const`s, read
 by ajv, read by `packages/schema/scripts/verify.mjs`, and now read by the Go generator into
-`connector/internal/contract/contract_gen.go:140`. `connector/internal/contractgen/contractgen.go:284` is where the
+`connector/internal/contract/contract_gen.go:140`. `connector/internal/contractgen/contractgen.go:308` is where the
 projection refuses instead of copies: both floors must be built on the scheme they are anchored to, the entity and field
 lists must agree with the registry's own, the identifier segment of the shape must be the ingest document's pattern
 byte-for-byte (`packages/schema/protocol/commands/profile.import.json:85`), and
-`connector/internal/contractgen/contractgen.go:305` will not emit a vocabulary with more — or fewer — than one
+`connector/internal/contractgen/contractgen.go:329` will not emit a vocabulary with more — or fewer — than one
 object-shaped field, because `headers` is the one ODEC-36 is about. One artefact, three readers, a build that stops when
 they drift: §4.16's golden rule applied to a grammar rather than a fixture. The other half of that claim is a test, not
 a generator: `connector/internal/keystore/vocabulary_test.go:108` walks every JSON file under `packages/schema/`,
@@ -2635,7 +2646,8 @@ description says so in as many words. The raw-body read is refused by
 the same document states as behaviour rather than as a wish. What survives is what
 `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already
 demands: `servers` rides in the result of the command the extension itself calls, capped at the 4 096 the source schema
-bounds and carried by a 1 GiB frame limit that 4 096 documents cannot approach. Nobody chose; the remainder chose.
+bounds and carried by the 1 GiB frame limit this file then believed: §4.54 measured that direction at 1 MiB, so the
+remainder no longer fits one frame and the ceiling question is `ODEC-06`'s again. Nobody chose; the remainder chose.
 
 **The artefact.** `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, 126 lines, the six sections of
 ADR-0001 in order, `Status: Accepted`, and the first record in `docs/adr/` written after the Phase-1 iteration — which
@@ -3590,6 +3602,78 @@ hand-built process answers for. `tools/check-doc-evidence.mjs`'s `FUTURE_PREFIX`
 §1's future-path sentence lost it too, so citations into this package are checked from here on; the §6 figures are
 measured after this paragraph was written.
 
+### 4.54 The two byte caps were attached to the wrong directions — three browser pages say so (2026-11-10)
+
+**Found.** `packages/schema/protocol/framing.json#/limits` held `extensionToHostBytes: 1048576` and
+`hostToExtensionBytes: 1073741824`, doc 25 §4's table printed the same pair in the same order, the comment at
+`packages/protocol/src/frames.ts:23` read "1 MiB out of the extension against 1 GiB into it", both generated
+projections carried both numbers (`connector/internal/contract/contract_gen.go:107`), and nothing that could have
+noticed pinned a value: `connector/internal/contract/contract_test.go` and `connector/internal/frames/frames_test.go`
+both asserted the ordering `effective ≤ extension-to-host ≤ host-to-extension`, which the swapped pair satisfies, and
+`connector/internal/frames/protocol_mirror_test.go:89` said the wrong pair out loud, in the comment above the switch
+that reads the two constants. Three pages read on 2026-11-10:
+Chrome states "the maximum size of a single message from the native messaging host is 1 MB" and "the maximum size of
+the message sent to the native messaging host is 64 MiB"; MDN's WebExtensions page states 1 MB from the application
+and 4 GB toward it, and its own Python example comments "the browser rejects messages that exceed 1 MB"; Edge states
+1 MB from the host and 4 GB toward it. So the chain is `effectiveCrossBrowserBytes ≤ hostToExtensionBytes ≤
+extensionToHostBytes`, the binding claim out of the extension is Chrome's 64 MiB rather than the 4 GB the other two
+document, and neither number the data held is what any of the three pages states for the direction it was attached to.
+
+**What it does to a running process, which is why it is not a documentation matter.** The Connector's own endpoint is
+`connector/internal/peer/peer.go:80`: `ToExtension()` takes `WriteLimit: contract.HostToExtensionBytes`, so with the
+pair swapped it was licensed to write a gigabyte into a port whose browser kills above a megabyte — the bytes go out,
+the port closes, and the user sees a disconnect rather than an error. One line below it is the read limit:
+`ReadLimit: contract.ExtensionToHostBytes` was 1 MiB, so a 2 MiB `profile.import` — legal under every one of those
+pages — became a transport error before dispatch ever saw it. `nexora-host`'s two pump legs
+(`connector/cmd/nexora-host/main.go:274` and `:277`) name their limits by direction, so both legs were wrong in the
+same two ways and neither needed editing once the data was right. That is the shape of the defect: it lived only in
+the numbers, and every consumer reached them by name.
+
+**Moved.** Data first: `#/limits` now carries 67108864 and 1048576, each `reason` names the page its number came
+from, and the host-to-extension `enforcement` puts the refusal on the sender rather than the receiver, because a
+receiver-side check is a dead port. The generator's invariant is inverted beside it
+(`connector/internal/contractgen/contractgen.go:276`), both projections regenerated, and the checks that had been
+blind to the swap now pin the values: `connector/internal/contract/contract_test.go:142` requires exactly 67108864 and
+1048576, the schema harness's check labelled "extension-to-host frame limit is 64 MiB" in
+`packages/schema/scripts/verify.mjs` requires the first and that block's third check requires the
+second, and the protocol harness's over-ceiling fixture had to be rewritten (`packages/protocol/scripts/verify.mjs:149`,
+the declared length is now `01 00 00 04`) because the frame it called oversized — 1 MiB + 1 out of the extension — is
+legal now.
+
+**Measured, because the correction moves an argument two documents were leaning on.** The five valid `server` examples
+in `packages/schema/examples/` serialize compactly at 448, 460, 531, 563 and 664 bytes, so the 4 096-server bound
+`packages/schema/subscription-source.schema.json#/properties/limits` allows is 1 835 008 to 2 719 744 bytes = 1.75 to
+2.59 MiB — more than one host-to-extension frame carries, where the corpus believed one frame held all of them. One
+frame holds 1 579 of the largest and 2 340 of the smallest. `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`
+clause 3 said a refresh result stays single-frame; it now says what can be meant (single-frame within one frame's
+worth of Servers) and leaves the rest to `ODEC-06`, which gained a fourth option — lower `maxServers` to what one frame
+carries — and keeps its 55 deferral sites because an existing entry widened rather than a new id being issued. The
+other leaning argument is §4.11's: the reading "only the last chunk carries the document" was excluded there by a 1 MiB
+sender cap and survives the corrected 64 MiB one, so doc 25 §5 now calls `ODEC-34` three readings wide rather than two,
+and §4.11's paragraph is marked as what the caps then said rather than rewritten.
+
+**Bundled: the installer's data half.** The same tree carries `#/senderPolicy/identity/hostName` =
+`com.nexora.connector`, `#/senderPolicy/identity/allowlistFile` = `host/allowlist.json`, the two `…Rule` fields beside
+them and the generator's name-shape check beside the ordering invariant, so the manifest name, the string the extension
+types into `connectNative` and the file the host reads have one home instead of three opinions.
+`connector/cmd/nexora-host/main.go:391` now takes its allowlist path from that projection rather than from a constant
+inside itself, doc 25 §2.1 records the per-family and per-OS registration matrix, the manifest keys and the caps for
+the installer to write against, and `.github/workflows/verify.yml` gained the two `packages/protocol` steps §4.53's
+harness needs in order to run on a runner rather than only on this host. The installer binary — manifest, registry
+key, allowlist write, uninstall — is still unwritten; that is task #68's remaining half.
+
+**Kept as it was.** `effectiveCrossBrowserBytes` stays 1 048 576, now equal to the host-to-extension cap — which is
+what "the number a cross-browser design may rely on" means once all three families state that direction — and the
+generator's invariant holds by equality rather than strict inequality. `oversizedPayloads.decision` stays
+`chunked-envelope`, `maxConcurrentRequests` stays 64, and no chunking rule in doc 25 §5 moved.
+
+**Checked.** `go -C connector build ./... && go -C connector vet ./... && go -C connector test ./...` → exit 0, with
+no `ok` line moved because no package was added; `npm --prefix packages/schema run verify` → 1234 checks, the same
+count §4.53 left, because the framing block grew no check and changed three; `npm --prefix packages/protocol run
+verify` → 14 checks; `node tools/check-doc-evidence.mjs` and its `--claims` pass → green, after three stale harness
+labels in `docs/adr/0004` and doc 21 and two `contractgen.go` line cites drifted by this slice's own edits;
+`node tools/check-adr-shape.mjs` → 22 records; `node tools/check-layout-guards.mjs` → green.
+
 ---
 
 ## 5. Verification state to the letter
@@ -3747,7 +3831,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. §4.51 closes what §4.50 measured and deferred: the register's own §6 table is now compared with the data — membership, kind and gates — and the four retired rows, the stale count sentence, the `VER-78` gate and the two retired §5 entries are gone. §4.52 writes `connector/cmd/nexora-host`, the hop-2 shim ADR-0022 made writable, and §4.53 writes the other half of that crossing: `packages/protocol` is the TypeScript frame codec, its types a projection of the same contract data the Go host is generated from, its 112 framed fixtures re-read byte-for-byte by a Go test, and the six answers it got back from a real host spawning a real Connector are in its record — including the finding that `go build` never stamps this module's own version, which is why the release now passes it in. Next: the extension-side client — `chrome.runtime.connectNative` in the MV3 worker, one in-flight request per id, and the reconnect the framing contract's `reconnect` block already describes — because `omega-build` still has no native-messaging client at all, so the port §4.52's binary waits on now has a codec and still has no caller; beside it the installer that registers the manifest and writes the allowlist, because a shim no browser starts is a tested binary and nothing more. Then the half of ADR-0022 rule 1 `ODEC-01` still owns — the lock file, adoption, and the framing contract's close-the-oldest row, which are `VER-12` and the live half of `VER-14`. Then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022), and `connector/cmd/nexora-host` — the hop-2 shim it made writable: one pipe instance per sender, identity being which pipe the host opened, and the same envelope crossing verbatim under the pipe floor — is written by §4.52.
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. §4.51 closes what §4.50 measured and deferred: the register's own §6 table is now compared with the data — membership, kind and gates — and the four retired rows, the stale count sentence, the `VER-78` gate and the two retired §5 entries are gone. §4.52 writes `connector/cmd/nexora-host`, the hop-2 shim ADR-0022 made writable, and §4.53 writes the other half of that crossing: `packages/protocol` is the TypeScript frame codec, its types a projection of the same contract data the Go host is generated from, its 112 framed fixtures re-read byte-for-byte by a Go test, and the six answers it got back from a real host spawning a real Connector are in its record — including the finding that `go build` never stamps this module's own version, which is why the release now passes it in. §4.54 corrects the two byte caps to the directions the three browser families document them in — 1 MiB out of the host, 64 MiB into it — measures what that ceiling does to a 4 096-server refresh result, reopens the chunk-body reading that a swapped cap had excluded, and bundles the installer's data half with it. Next: the extension-side client — `chrome.runtime.connectNative` in the MV3 worker, one in-flight request per id, and the reconnect the framing contract's `reconnect` block already describes — because `omega-build` still has no native-messaging client at all, so the port §4.52's binary waits on now has a codec and still has no caller; beside it the installer that registers the manifest and writes the allowlist, because a shim no browser starts is a tested binary and nothing more. Then the half of ADR-0022 rule 1 `ODEC-01` still owns — the lock file, adoption, and the framing contract's close-the-oldest row, which are `VER-12` and the live half of `VER-14`. Then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022), and `connector/cmd/nexora-host` — the hop-2 shim it made writable: one pipe instance per sender, identity being which pipe the host opened, and the same envelope crossing verbatim under the pipe floor — is written by §4.52.
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.
