@@ -153,7 +153,10 @@ incompetence. Every entry here resisted that, and the reasons are of six kinds.
    `docs/architecture/30-failure-policy.md` rests on. `ODEC-37` asks the same kind of question of the other process:
    the four formerly missing spellings are implemented, but the pinned binary silently ignores `invert` and
    config acceptance does not establish every protocol predicate. The remaining answer needs paired runtime
-   evidence, not another successful parse. Both are `upstream`, and the only honest closing artefact is a measured residual plus a sentence the user
+   evidence, not another successful parse: inversion and `fakedns` have since been answered without one — the rule
+   language has no negation to lower, and this compiler emits no FakeDNS engine for the fakedns sniffer to sit
+   beside, so both are reported whole — leaving QUIC's positive traffic case and a live FakeDNS match as what is
+   still owed. Both are `upstream`, and the only honest closing artefact is a measured residual plus a sentence the user
    can read: an invention here would be a byte string some other project is free to stop accepting.
 6. **The answer was hidden by a check that passes.** `ODEC-34` asks where a chunk's bytes ride. Nothing in
    `packages/schema` says, and `packages/schema/scripts/verify.mjs` prints a green chunk block anyway, because every
@@ -391,7 +394,7 @@ never emits unknown tags. The `tls` protocol predicate is now measured too: `Tes
 shows Xray 24.11.11 matches `protocol:[tls]` only when the ClientHello carries an SNI — an IP-literal TLS
 connection without one is not detected — and the sniff-off and plain-HTTP controls confirm detection needs
 sniffing and is protocol-specific. `TestDriveXrayBitTorrentAndWebSocketPredicates` adds fourteen cases: BitTorrent's TCP handshake matches with sniffing enabled, while plaintext WebSocket Upgrade matches `http`, not `ws`; sniff-off, malformed-signature and unrelated-protocol controls distinguish the results. The compiler reports a rule containing `ws` whole, including mixed protocol arrays, rather than broadening it to ordinary HTTP. Server WebSocket transport is unaffected.
-The question is narrowed, not retired: quic and fakedns still need their own matching/nonmatching evidence, and inversion has no proven equivalent lowering. Its sites remain
+The question is narrowed, not retired. Inversion is now answered from the pinned implementation instead of a fixture: Xray 24.11.11's rule parser accepts eleven condition keys with no negation among them, drops an unknown key while decoding, and ANDs every condition it builds, so there is no equivalent lowering to derive — and the one complement the language can spell is a port range, because the `port` string splits on commas (`NOT 8000-9000` becomes `"0-7999,9001-65535"` in one rule) while a domain or CIDR complement has no such spelling. `fakedns` moved the same way, from a reason the compiler emits: Xray appends its sniffer only when a FakeDNS engine is registered and this pipeline emits no `fakedns` section, so `TestFakednsRuleIsReportedWhole` reports such a rule whole rather than shipping a predicate that can only miss the config it was handed. What remains is evidence, not a decision: QUIC's positive case needs a decryptable Initial packet, and a live fakedns match needs an engine plus a fake-IP allocation round-trip. Its sites remain
 `docs/architecture/23-unified-server-model.md` §9 and `docs/architecture/27-config-compilation-pipeline.md` §9.
 Shape C is materialized via the key list (ODEC-45's answer); fail-closed belongs in `chrome.proxy`, not a separate Core golden.
 

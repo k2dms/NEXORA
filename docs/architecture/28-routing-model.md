@@ -112,7 +112,13 @@ The rank-4/5 ordering is the practical consequence of §2: a core rule can only 
 already made, never reverse it. A core rule that *would* reverse it — e.g. "traffic to 1.2.3.4 must never use
 srv-abcd1234" — is expressible in the model (`invert: true`, `#/$defs/coreRule/properties/invert`) but cannot
 be passed through: Xray 24.11.11 ignores that field. The compiler reports the entire inverted rule as
-unrepresentable; it does not emit the opposite match. A rule containing `protocol: [ws]`, including a mixed protocol array, is likewise reported whole: Xray classifies plaintext WebSocket Upgrade as HTTP, so replacing `ws` with `http` would broaden the match to ordinary HTTP. This restriction is on routing predicates, not the server's WebSocket transport.
+unrepresentable; it does not emit the opposite match. The reason is now stated from the pinned implementation
+rather than a fixture: Xray 24.11.11's rule parser accepts eleven condition keys and no negation among them, drops
+an unknown key while decoding, and ANDs every condition it builds — so there is no equivalent lowering to derive,
+and only a port-only inversion has a complement the language can spell, because the `port` string splits on commas
+into ranges (`NOT 8000-9000` becomes `"port": "0-7999,9001-65535"` in one rule); a domain or CIDR complement has no
+such spelling. A rule containing `protocol: [ws]`, including a mixed protocol array, is likewise reported whole: Xray classifies plaintext WebSocket Upgrade as HTTP, so replacing `ws` with `http` would broaden the match to ordinary HTTP. This restriction is on routing predicates, not the server's WebSocket transport.
+A rule containing `protocol: [fakedns]` is reported whole for a reason inside this compiler's own output: Xray adds the fakedns sniffer only when a FakeDNS engine is registered, and the compilation pipeline emits no `fakedns` section, so that predicate could only ever miss the config it is handed.
 Cross-plane contradiction reporting in the browser is still separate work, not something that Core's config parser certifies.
 
 ## 8. What the compiler may and may not do

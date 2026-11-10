@@ -7,7 +7,7 @@
 > Written 2026-11-04. English because it is the repository language.
 
 Status as of 2026-11-10: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier.** The latest continuation is §4.47; older scope and inventory
+supervisor, health prober and receipt verifier.** The latest continuation is §4.48; older scope and inventory
 paragraphs below are dated history, not a prohibition on implementation. §7 records the push authorization and ref.
 
 ---
@@ -647,6 +647,11 @@ bittorrent, ws, quic, fakedns and the inversion lowering are still owed — so `
 §4.47 keeps the set unchanged — **2309 / 609 / 1591**, 68 labels, 52 `Cited by` rows. Against HEAD fcd07b9's
 clean blobs read with `git show`, this file and docs 27, 28, 39 and 40 each changed `0 / 0 / 0` under the guard's
 three patterns. The added test names and protocol findings add no counted citations; ODEC-37 and VER-28 remain open.
+§4.48 keeps the set unchanged a forty-second time — **2309 / 609 / 1591**, 68 labels, 52 `Cited by` rows — measured
+after this paragraph was written, against a clean `git worktree` of b5a9dd8. The four doc files, the register and
+this file each changed `0 / 0 / 0`: the inversion and fakedns answers are prose, a test name and compiler branches,
+and no citation was born, moved or removed. `ODEC-37` stays in the register — QUIC's positive traffic case and a live
+FakeDNS match are still owed — so `VER-28` stays, and `VER-29` stays for `LIVE-03`.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -3275,6 +3280,36 @@ are not proved. Browser reporting, remote REALITY and trusted installation were 
 
 ---
 
+### 4.48 Inversion has no negation to lower and fakedns has no engine to match — `ODEC-37` narrowed twice without a new fixture (2026-11-10)
+
+**Answered.** The inversion half of `ODEC-37` is settled by reading the pinned implementation rather than by
+traffic. Upstream v24.11.11 at `0df2446f824dd657717d29ef99b8b47cf50b2364` decodes a routing rule into eleven
+condition keys — `domain`, `domains`, `ip`, `port`, `network`, `source`, `sourcePort`, `user`, `inboundTag`,
+`protocol`, `attrs` — and no negation among them; an unknown key is dropped by the standard decoder, which is what
+the earlier live case already measured. Every condition the rule builds is ANDed, so there is no NOT to emit and no
+equivalent lowering to derive. The one complement the language *can* spell is a port set, because the `port` string
+is split on commas into ranges: `NOT 8000-9000` becomes `"port": "0-7999,9001-65535"` inside a single rule. A domain
+or CIDR complement has no such spelling, which is why the compiler keeps reporting an inverted rule whole.
+
+**Fixed.** `fakedns` moved from owed evidence to an answered refusal, for a reason inside this compiler's own output:
+upstream appends the fakedns metadata sniffer only when a FakeDNS engine feature is registered, and the compilation
+pipeline emits no `fakedns` section and no `dns` section, so a `protocol: [fakedns]` predicate could only ever miss
+the config it is handed — the same silent-miss class `ODEC-37` just closed for `ws`. `Split` now reports any rule
+containing `fakedns`, including mixed arrays, whole with its position and without its destination; the two cases
+first failed against the missing report. The remaining `ODEC-37` evidence is measurement, not a decision: QUIC's
+positive case needs a decryptable Initial packet, and a live fakedns match needs an engine plus a fake-IP allocation
+round-trip. Docs 27, 28, 39 and 40 and the register record both halves; the schema keeps `quic` and `fakedns` in the
+authored vocabularies, because an author may name the intent and the compiler must say what it could not honour.
+
+**Verified.** `TestFakednsRuleIsReportedWhole` plus the compiler suite pass; the whole Connector suite passed with
+the real Xray binary present for the gated tests (`internal/supervisor` 11.6 s), `gofmt -l` and `go vet` clean.
+Schema verification passed 1234 checks; doc evidence remained 2309 / 609 / 1591, 68 labels and 52 `Cited by` rows
+against a clean worktree of b5a9dd8; no-secrets checked 499 files. `ODEC-37` and `VER-28` stay open for the two
+measurements named above. Nothing here was exercised against a remote server, a browser, or a Core config that
+carries a FakeDNS engine.
+
+---
+
 ## 5. Verification state to the letter
 
 
@@ -3424,7 +3459,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. Next: ODEC-37's QUIC/FakeDNS measurements and the inversion question, then the live rows. ODEC-35 is answered (ADR-0022).
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. Next: QUIC's positive traffic case and a live FakeDNS match with an engine — both expensive fixtures — then the server.test registration slice, which needs a connector-owned way to resolve a server id and will replace the stale ODEC-42 comment in that handler, then the live rows. ODEC-35 is answered (ADR-0022).
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.

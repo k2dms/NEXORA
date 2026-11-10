@@ -303,6 +303,34 @@ func TestWebSocketRuleIsReportedWhole(t *testing.T) {
 	}
 }
 
+// TestFakednsRuleIsReportedWhole is the same silent-miss class as the ws case, from the other side: Xray adds the
+// fakedns metadata sniffer only when a FakeDNS engine is registered, and this compiler emits no `fakedns` section,
+// so the predicate can never match the config it writes.
+func TestFakednsRuleIsReportedWhole(t *testing.T) {
+	for _, protocols := range [][]string{{"fakedns"}, {"http", "fakedns"}} {
+		t.Run(strings.Join(protocols, "_"), func(t *testing.T) {
+			policy := policyWith(
+				CoreRule{Port: "53", Outbound: "direct"},
+				CoreRule{Domain: []string{"private.example"}, Protocol: protocols, Outbound: "block"},
+			)
+			got, err := Split(policy, oneTag)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(got.Unrepresentable) != 1 || got.Unrepresentable[0].Source != "corePlane rule #1" ||
+				!strings.Contains(got.Unrepresentable[0].Reason, "fakedns") {
+				t.Fatalf("missing positional fakedns report: %+v", got.Unrepresentable)
+			}
+			if strings.Contains(fmt.Sprint(got.Unrepresentable), "private.example") {
+				t.Error("report leaked the rule's destination")
+			}
+			if len(got.Rules) != 1 || got.Rules[0]["port"] != "53" || fmt.Sprint(got.BuiltIns) != "[direct]" {
+				t.Fatalf("fakedns rule was emitted or the adjacent rule changed: %+v", got)
+			}
+		})
+	}
+}
+
 func TestSniffingRejectsUnsupportedValues(t *testing.T) {
 	for _, protocol := range []string{"mp4", "mkv", "ps", "www"} {
 		policy := policyWith()

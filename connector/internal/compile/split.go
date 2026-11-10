@@ -77,6 +77,13 @@ func Split(policy *RoutingPolicy, tags []string) (*Routing, error) {
 			})
 			continue
 		}
+		if contains(rule.Protocol, "fakedns") {
+			out.Unrepresentable = append(out.Unrepresentable, Report{
+				Source: fmt.Sprintf("corePlane rule #%d", i),
+				Reason: "Xray 24.11.11 adds the fakedns sniffer only when a FakeDNS engine exists, and this compiler emits no fakedns section; the predicate cannot match this config",
+			})
+			continue
+		}
 		if !strings.HasPrefix(rule.Outbound, "srv-") {
 			builtins[rule.Outbound] = true
 		}
