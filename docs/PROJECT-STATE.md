@@ -678,6 +678,20 @@ doc 40, its harness in `packages/schema/scripts/verify.mjs`, and this ledger. `V
 their questions, so the gates column shrinking is the table catching up with the data rather than a row closing, and
 the run still reports 1234 checks because the new comparisons joined the labelled check that already read this
 document's sentences instead of adding one.
+§4.52 moves the second figure up by three and the third by one — **2322 / 621 / 1592**, 68 labels, 52 `Cited by`
+rows — measured after this paragraph was written, against a clean `git worktree` of b6743bf, whose own run says
+**2322 / 618 / 1591**. Per file: doc 25 `0 / +1 / 0` — §2's new hop-1 paragraph cites
+`packages/schema/protocol/framing.json#/senderPolicy/identity/resolvedFrom` in full; this file `0 / +3 / 0`, that same
+pointer named twice beside §4.52's record and the record's own
+`packages/schema/protocol/framing.json#/senderPolicy/identity/allowlistSource`; docs/README.md `0 / 0 / +1`, its
+rewritten `connector/cmd/nexora-host` row naming ADR-0004 by path where the row it replaced named it by number. The
+first
+figure holds because fifteen citations were *renumbered*, not added or removed: doc 22 grew two lines and doc 25 twelve
+under a paragraph, and everything that addressed either by line moved with them — twelve into doc 22 (four in doc 32,
+five in doc 33, one each in docs 34 and 35, one in `packages/schema/open-decisions.json`), two into doc 25 (both in
+doc 32) and one into `connector/cmd/nexora-connector/main.go`, whose comment block grew a line. No `VER-NN` row closes
+here: doc 22 §2 rule 3's `Verified` marker narrowed to the closure it still means, `VER-12` and `VER-14` keep their rows
+because the lock file and the outer job are still `ODEC-01`'s and LIVE-13's, and the queue is the 71 rows §4.51 left.
 
 **The harness caught eight real contract defects while the fixtures were being written.** This is the
 evidence that it is load-bearing rather than decorative, and the pattern to watch for again:
@@ -3397,7 +3411,7 @@ in-memory table (`connector/cmd/nexora-connector/config_apply.go:135`, written o
 keeping a copy of intent and a dryRun puts nothing anywhere). `newHealthSurface`
 (`connector/cmd/nexora-connector/health_probe.go:67`) joins that table and that endpoint to the supervisor's live
 inbound table, read through `healthInbounds` (`connector/cmd/nexora-connector/config_apply.go:587`) rather than a
-second copy of the ports, and `connector/cmd/nexora-connector/main.go:198` registers the handler. A probe of a
+second copy of the ports, and `connector/cmd/nexora-connector/main.go:199` registers the handler. A probe of a
 server nothing has applied is a refusal naming the absence, and a fetch probe before the first settings document is
 the same: neither is a constructor error, because both are facts about the world the Connector is allowed to learn
 only from a frame.
@@ -3454,6 +3468,52 @@ guards green. No Go file changed in this slice, so the Connector suite is the on
 
 ---
 
+### 4.52 `connector/cmd/nexora-host` is written — the hop-2 shim ADR-0022 made writable (2026-11-10)
+
+**Found.** §6's last item between a browser and a Connector that answers was writable, and the tree said in six places
+that it was not. `connector/cmd/nexora-connector`'s startup line called `--sender-id` a "demo affordance" whose
+transport "is undecided (`ODEC-35`)" — a question ADR-0022 answered on 2026-11-07 and the retired register already
+carries — and the same id survived in that file's `config` comment, its empty-id error and its flag help; `VER-14`'s
+`why` still read "`cmd/nexora-host`, unwritten, `ODEC-35`", doc 21 §12 still said "nothing (no host exists yet)", and
+docs/README.md's row for the directory still described the decision that stopped it. What the decision does *not*
+unlock stayed stopped: `ODEC-01` owns the lock file and the adopt-or-refuse answer, so `VER-12` and the live half of
+`VER-14` remain, and the writable shim is the one-port half of ADR-0022 rule 1.
+
+**Written.** Two files, `connector/cmd/nexora-host/main.go` and its test, and the four jobs doc 22 §2 lists.
+The sender is resolved from the argv the browser started this process with — the measured shapes, now recorded in
+doc 25 §2: Chrome and the Chromium family pass the caller's origin, plus `--parent-window` on Windows, and Firefox
+passes the manifest path and then the add-on id. `--sender-origin` exists for a developer running the binary by hand
+and the browser's argv outranks it, because ADR-0004 rule 3 will not accept an id the caller chose. Nothing readable
+is no sender, and no sender is the refuse path rather than a guess. The allowlist is the host's own on-disk startup
+configuration (`packages/schema/protocol/framing.json#/senderPolicy/identity/allowlistSource`, a JSON array of ids; no document names the path
+and the comment says so — the installer owns it), and a file that cannot be read or parsed is an *empty* allowlist,
+never a permissive default. An unallowlisted sender gets exactly one `UnauthorizedExtension` per frame with no
+Connector spawned and no state touched, and the only thing read out of its payload is the id it must reply to —
+naming the method would be interpretation, and doc 22 §2 gives that half to the Connector. Past ten refusals in ten
+seconds the port closes instead of answering. An admitted sender is spawned once with the resolved id injected and
+then pumped: two legs, the directional limits from the framing contract, the payload bytes verbatim in both
+directions, `CloseWrite` on the child's stdin when the browser's leg ends so it answers the last frame and sees EOF
+at a boundary, and the reap only after both legs stop reading.
+
+**Not written, on purpose.** No lock file and no adoption, since that is `ODEC-01`'s; no installer and no manifest
+registration; no job object, so the containment chain above Core is still unheld (`VER-14`'s LIVE-13 half); no OS
+peer credentials, which ADR-0022 rule 3 leaves optional and doc 25 §2 now names as the layer that would prove who
+spawned this process; and no `packages/protocol` TypeScript codec — this is the Go half of the crossing, and the
+extension-side half is still that package's own queue row.
+
+**Verified.** Nine test functions in the new package, and the suite prints fourteen `ok` lines where §4.35 printed
+thirteen. One of the nine is an import-graph assertion over this package's own declarations — doc 22 §2 rule 3's
+forbidden four named by path — and one runs the pipe as a real second process through `spawn` and the OS pipe, so the
+verbatim claim is measured across a process boundary rather than across a buffer. The refusals, the guard, the
+fail-closed allowlist, the oversized frame that never reaches hop 2 and the argv shapes (seven of them, both families
+and the shapes that must not resolve) are each a test. Then the six stale readings: the connector's comment, error,
+startup line and flag help now cite ADR-0022 rule 1 and its test asserts that, `VER-14`'s `why` names the host as
+written-and-holding-no-job, doc 21 §12's three rows say what is and is not held, and doc 22 §2 rule 3's
+`Verified` marker narrowed to the closure it actually still means. Fifteen line citations renumbered because doc 22 grew
+two lines and doc 25 twelve; the §6 figures are measured after this paragraph was written.
+
+---
+
 ## 5. Verification state to the letter
 
 - `cd omega-build && npm run deps && npm run dev && npx grunt && npx grunt release` → **exit 0** for the whole chain (Ladder A).
@@ -3493,8 +3553,9 @@ guards green. No Go file changed in this slice, so the Connector suite is the on
   on the `TZ=` prefix, `omega-target` because `grunt` ships no `bin` and `grunt-cli` is a dependency of the hub only,
   so its `node_modules/.bin` has no `grunt` shim. The working invocation, here and in CI, is the hub's `grunt-cli`
   with `TZ` exported.
-- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **478** files — §4.19's 476 plus
-  the two `connector/cmd/nexora-connector` files §4.20 stages, because the guard walks `git ls-files` and so counts a file
+- `node tools/check-no-secrets.mjs --selftest` → 13/13 green. Its plain run enumerates **501** files — 499 at §4.51's
+  commit plus the two `connector/cmd/nexora-host` files §4.52 stages, because the guard walks `git ls-files` and so
+  counts a file
   when it is staged, not when it is thought of. It carries sixteen `nexora-secret-allow` annotations now: the eight
   documented constants in `connector/internal/compile/resolve_test.go` that §4.16 lists, §4.17's three in
   `keystore_test.go` and `ref_test.go` twice, §4.18's one in `connector/internal/apply/apply_test.go:17`, and §4.20's four
@@ -3513,7 +3574,8 @@ guards green. No Go file changed in this slice, so the Connector suite is the on
   `github.com/k2dms/nexora/connector/internal/apply` and §4.19 eleven with
   `github.com/k2dms/nexora/connector/internal/supervisor`, §4.34 twelve with
   `github.com/k2dms/nexora/connector/internal/health` and §4.35 thirteen with
-  `github.com/k2dms/nexora/connector/internal/receipt`; `gofmt -l connector` still
+  `github.com/k2dms/nexora/connector/internal/receipt`; §4.52 fourteen with
+  `github.com/k2dms/nexora/connector/cmd/nexora-host`; `gofmt -l connector` still
   prints nothing. No `VER-NN` row moves on any of the increments up to §4.16: §4.6's "Not yet"
   list is the list of what those rows ask about, §4.7 gives the reason `VER-49` keeps its row now that two of the three
   clauses its closer names have a test, §4.8 names the three rows its own tests touch and why all three close by a live
@@ -3602,7 +3664,7 @@ compiled two-server VLESS path on loopback, with server selection proven by the 
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the
 compiled config keeps the stable name doc 27 §8 renames over; and §4.39 answers ODEC-38 — the restart ladder's
 budget is an episode's, bounded by `coreDeath.stabilityWindowSeconds` and enforced by the supervisor; §4.42 answers ODEC-44 and registers `config.apply` in `main.go` — the per-user layout
-is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. §4.51 closes what §4.50 measured and deferred: the register's own §6 table is now compared with the data — membership, kind and gates — and the four retired rows, the stale count sentence, the `VER-78` gate and the two retired §5 entries are gone. Next: `connector/cmd/nexora-host`, the hop-2 shim ADR-0022 made writable and nothing else blocks — one pipe name per sender, identity being which pipe the host opened, and the same envelope crossing verbatim under the pipe floor; it is the last piece between a browser and a Connector that answers, and `packages/protocol`'s TypeScript codec is its other half. Then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022).
+is built, the keystore opened, and the method dispatched; and §4.45 answers ODEC-45 — shape C's headersRef is materialized via headersKeys, five goldens pinned, ODEC-36 answered (configHash is the handle-bearing digest); and §4.46 measures the tls protocol predicate — it matches only an SNI-bearing ClientHello. §4.47 measures the BitTorrent TCP handshake and WebSocket Upgrade, and reports rules containing ws whole because Xray classifies the Upgrade as HTTP. §4.48 answers ODEC-37's inversion half from the pinned rule language, which has no negation and can complement only ports, and reports rules containing fakedns whole because this compiler emits no FakeDNS engine for that sniffer to sit beside. §4.49 finds the corpus's `nothing compares a frame's v` overtaken by the branch in `connector/internal/envelope`, measures that the branch is unreachable while the envelope's own lower bound equals the floor, and registers the answer a below-floor frame still owes as `VER-89`. §4.50 registers `server.test`: the prober now reads the server table and the egress endpoint out of the intent `config.apply` was handed, the expected address out of the server document itself, and the ports out of the supervisor's live table — which is ODEC-42's runtime half, and the mirror that let a settings document carry its `core.egressProbe` at all. §4.51 closes what §4.50 measured and deferred: the register's own §6 table is now compared with the data — membership, kind and gates — and the four retired rows, the stale count sentence, the `VER-78` gate and the two retired §5 entries are gone. Next: `packages/protocol`, the TypeScript frame codec that is the other half of the same crossing — the host and the Connector speak it in Go and `omega-build` has no native-messaging client at all, so until that package exists a browser cannot open the port §4.52's binary is waiting on; beside it the installer that registers the manifest and writes the allowlist, because a shim no browser starts is a tested binary and nothing more. Then the half of ADR-0022 rule 1 `ODEC-01` still owns — the lock file, adoption, and the framing contract's close-the-oldest row, which are `VER-12` and the live half of `VER-14`. Then QUIC's positive traffic case and a live FakeDNS match with an engine, both expensive fixtures, then the live rows. ODEC-35 is answered (ADR-0022), and `connector/cmd/nexora-host` — the hop-2 shim it made writable: one pipe instance per sender, identity being which pipe the host opened, and the same envelope crossing verbatim under the pipe floor — is written by §4.52.
 Remote VLESS/REALITY, browser integration, trusted
 installation and parent-death containment are not proved by the loopback tests. The user authorizes continued
 implementation and publication under §7.

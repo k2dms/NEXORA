@@ -77,7 +77,9 @@ spawn-or-adopt of the Connector, byte pump between the two pipes.
 2. A sender not on the allowlist produces exactly one frame back: `UnauthorizedExtension`, and no state
    mutation (ADR-0004 rule 6).
 3. It holds no domain knowledge: `connector/cmd/nexora-host` MUST NOT import the config compiler, the keystore
-   or the command handlers. Testable as an import-graph assertion; `Verified: NO — deferred to Phase 2`.
+   or the command handlers. Testable as an import-graph assertion; `Verified: NO — deferred to Phase 2` for the
+   closure beyond the package's own import list: `connector/cmd/nexora-host/main_test.go` reads that list and fails
+   on a domain edge, so the direct import is measured, while nothing runs `go list -deps` over the built process.
 4. It is replaceable by an extension update while the Connector keeps running — hence the pipe is versioned
    separately from the browser protocol (`docs/architecture/21-system-context.md` §6).
 5. Its pinnable identity is the manifest it writes (`docs/architecture/33-binary-integrity.md`), not a build

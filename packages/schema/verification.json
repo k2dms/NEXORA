@@ -490,7 +490,7 @@
           "anchor": "The Connector runs in the interactive user's session and never as a service/agent"
         }
       ],
-      "why": "On Windows a bare child outlives its parent, so containment must be *requested* (Job Objects); an installer that registers a service turns a per-user proxy into a machine-wide one. `connector/internal/supervisor` now requests it, reports the answer, and ends its own child by closing the job in a test that runs on this host -- which is why the row is `no-run` and not closed: the parent it kills is the test process, not the host (`cmd/nexora-host`, unwritten, `ODEC-35`), and the session that kills a real parent is LIVE-13."
+      "why": "On Windows a bare child outlives its parent, so containment must be *requested* (Job Objects); an installer that registers a service turns a per-user proxy into a machine-wide one. `connector/internal/supervisor` now requests it, reports the answer, and ends its own child by closing the job in a test that runs on this host -- which is why the row is `no-run` and not closed: the parent it kills is the test process, not the host (`connector/cmd/nexora-host` is written and is the process that would hold the outer job, but it spawns with `os/exec` and requests no job object), and the session that kills a real parent is LIVE-13."
     },
     {
       "id": "VER-15",

@@ -51,8 +51,8 @@ green today.
 | `docs/adr/0004-native-messaging-only-no-loopback-http-control.md:54` | install and uninstall as "a real design subject" | §5, §7, §14 |
 | `docs/architecture/21-system-context.md:154` | no bundled binary in the archive | §3, §4 |
 | `docs/architecture/21-system-context.md:155` | "no silent self-update of Core or connector" | §8, §11 |
-| `docs/architecture/22-component-contracts.md:83` | the host's pinnable identity being the manifest it writes | §3, §14 |
-| `docs/architecture/22-component-contracts.md:150` | an unbootable Core (bad binary, AV quarantine) routed here | §12, §13 |
+| `docs/architecture/22-component-contracts.md:85` | the host's pinnable identity being the manifest it writes | §3, §14 |
+| `docs/architecture/22-component-contracts.md:152` | an unbootable Core (bad binary, AV quarantine) routed here | §12, §13 |
 | `docs/architecture/23-unified-server-model.md:76` | what the *pinned Core* supports (REALITY over gRPC) | §4.3 |
 | `docs/architecture/27-config-compilation-pipeline.md:58` | the compiler's dependency on install state | §7, §11 |
 | `docs/architecture/30-failure-policy.md:66` | `contained: false` plus an integrity alarm | §15 |
@@ -71,7 +71,7 @@ weakness.
 | # | Link | What it guarantees | Mechanism | What breaks it |
 |---|---|---|---|---|
 | 1 | The extension | the code asking for a proxy is the code that was reviewed | browser-store signing and update review (no NEXORA control) | a side-loaded build; a dev build pointed at a production Connector |
-| 2 | The Native Messaging host + its manifest | which local process may receive the user's commands | the manifest is the pinnable identity (`docs/architecture/22-component-contracts.md:83`); the installer writes it under the user's ACL; the browser enforces the sender id | anything that can rewrite the manifest path or the binary it names — see §14 |
+| 2 | The Native Messaging host + its manifest | which local process may receive the user's commands | the manifest is the pinnable identity (`docs/architecture/22-component-contracts.md:85`); the installer writes it under the user's ACL; the browser enforces the sender id | anything that can rewrite the manifest path or the binary it names — see §14 |
 | 3 | The pin document | which bytes are permitted, from where, under which key | `packages/schema/pins.schema.json`, shipped inside the Connector's own build | a Connector build with placeholder pins (§4.4), or link 2 |
 | 4 | The asset | the file on disk is the pinned file | minisign against `upstream.signaturePubkey`, then `sha256`, then exact `sizeBytes`, then the URL host | an attacker who controls both the asset and the list — which is why `verifySignature` is `const true` |
 
@@ -359,7 +359,7 @@ observation is in data rather than in a support ticket
   which is the *correct* outcome: `IntegrityMismatch`, Core does not start, the proxy decision fails closed per
   `docs/architecture/30-failure-policy.md`. The wrong outcome — which an implementation that treats a missing file
   as "just start again" produces — is traffic going direct.
-- `docs/architecture/22-component-contracts.md:143-144` routes "an unbootable Core (bad binary, AV quarantine)"
+- `docs/architecture/22-component-contracts.md:145-146` routes "an unbootable Core (bad binary, AV quarantine)"
   here; the answer is that both are the same observable state at the point of use, and the *diagnosis* is what
   differs — which is why `diagnostics.get` carries a `versions` section and `connector.version` reports
   `pinsVersion` plus `coreVersion` (`packages/schema/connector-settings.schema.json#/properties/telemetry`
@@ -380,7 +380,7 @@ Connector verifying itself — is circular. `buildId` in `connector.version`
 (`packages/schema/protocol/commands/connector.version.json#/result/properties`) exists so that a support exchange
 can establish which build is running, which is *detection*, not *proof*.
 
-**The manifest is the pinnable object.** `docs/architecture/22-component-contracts.md:83` states it, and the
+**The manifest is the pinnable object.** `docs/architecture/22-component-contracts.md:85` states it, and the
 consequence is that the install/uninstall story is a story about a registration under the user's ACL: the installer
 writes the Native Messaging host manifest naming the binary path and the extension id it may talk to; uninstall
 removes the registration and leaves the download cache and the keystore to be handled explicitly — the keystore

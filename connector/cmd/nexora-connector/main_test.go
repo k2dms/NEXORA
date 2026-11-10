@@ -574,14 +574,14 @@ func TestCoreLaunchResolvesFromTheReceipt(t *testing.T) {
 	}
 }
 
-func TestTheStartupLineNamesTheIdentityInjectionAsAnAffordance(t *testing.T) {
+func TestTheStartupLineNamesTheIdentityInjectionAsTheDecisionsOwnMechanism(t *testing.T) {
 	var out, notes bytes.Buffer
 	in := requestLine(t, "req-affordance", "connector.hello", recordedHelloArgs) + "\n"
 	if err := run(jsonlConfig(t, true), bufferPipe(t, in, &out), &notes); err != nil {
 		t.Fatal(err)
 	}
 	line := strings.TrimSpace(notes.String())
-	for _, want := range []string{"--sender-id", "--allowlisted", "ODEC-35"} {
+	for _, want := range []string{"--sender-id", "--allowlisted", "ADR-0022"} {
 		if !strings.Contains(line, want) {
 			t.Errorf("the startup line %q does not name %s", line, want)
 		}

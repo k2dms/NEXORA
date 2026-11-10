@@ -35,10 +35,11 @@ import (
 	"github.com/k2dms/nexora/connector/internal/supervisor"
 )
 
-// config is what this process is told and cannot measure for itself: the host's platform-resolved answer injected by
-// an operator, how far that sender is trusted, which release this binary is, and which transport the caller wants.
-// The transport that would carry the resolved id in production is not in the contract — see ODEC-35 — and
-// `framing.json#/senderPolicy/identity/notIdentity` rules out the *peer's* command line, which is not this one.
+// config is what this process is told and cannot measure for itself: the sender id the host resolved on hop 1, how
+// far that sender is trusted, which release this binary is, and which transport the caller wants. ADR-0022 rule 1
+// makes the first two the decision's own mechanism rather than a testing convenience: the host opens one pipe per
+// sender, so the id it injects when it spawns this process for that pipe is the same fact as "which pipe the frame
+// arrived on". `framing.json#/senderPolicy/identity/notIdentity` rules out the *peer's* command line, which is not this one.
 type config struct {
 	senderID    string
 	allowlisted bool
@@ -290,12 +291,12 @@ func run(cfg config, pipe io.ReadWriteCloser, notes io.Writer) error {
 	// Nothing here may default to a permissive caller: the identity is the platform's answer, and a build that
 	// guessed it would be the fallthrough ADR-0004 rule 3 forbids. --allowlisted therefore defaults false.
 	if cfg.senderID == "" {
-		return errors.New("no --sender-id: this process serves no frame whose sender the host has not resolved, and the transport that would carry that answer is not in the contract (ODEC-35)")
+		return errors.New("no --sender-id: this process serves no frame whose sender the host has not resolved, and ADR-0022 rule 1 makes that resolution the host's spawn-time injection rather than anything readable off the pipe")
 	}
 	if cfg.version == "" {
 		return errors.New("no --connector-version, and this binary's build info carries no version: connector.hello answers a product version it actually has")
 	}
-	fmt.Fprint(notes, "nexora-connector: demo affordance — --sender-id and --allowlisted inject the answer the host's platform will resolve in production; the transport that carries it is undecided (ODEC-35)\n")
+	fmt.Fprint(notes, "nexora-connector: --sender-id and --allowlisted are ADR-0022 rule 1's spawn-time injection — the host names the sender it resolved for the pipe it opened; run by hand you are supplying that answer yourself\n")
 
 	s, err := newService(cfg)
 	if err != nil {
@@ -342,7 +343,7 @@ func buildVersion() string {
 
 func main() {
 	fs := flag.NewFlagSet("nexora-connector", flag.ExitOnError)
-	senderID := fs.String("sender-id", "", "the sender id the host's platform resolved for this port, injected by the operator; see ODEC-35")
+	senderID := fs.String("sender-id", "", "the sender id the host resolved on hop 1, injected by the process that opened this pipe (ADR-0022 rule 1); an operator running this binary by hand passes the answer themselves")
 	allowlisted := fs.Bool("allowlisted", false, "whether that id is in the host's on-disk allowlist; false refuses every frame, so it is the default")
 	jsonl := fs.Bool("jsonl", false, "one frame per stdin line and one response per stdout line; a shell affordance, not the contract's transport")
 	version := fs.String("connector-version", buildVersion(), "product version connector.hello and connector.version answer with")

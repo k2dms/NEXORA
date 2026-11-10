@@ -77,6 +77,18 @@ the way `packages/schema/protocol/framing.json#/oversizedPayloads/alternativesRe
 refuses. (a), (b) and (c) survive and disagree about where identity lives, so nothing can drive the front door as a
 real process until one is chosen. Answered 2026-11-07 by ADR-0022: one pipe instance per sender, the same envelope on both hops guarded by the pipe floor, no second protocol and no sender field.
 
+**Hop 1's half of that answer is measured, not decided.**
+`packages/schema/protocol/framing.json#/senderPolicy/identity/resolvedFrom` names "the Native Messaging manifest
+registration the OS hands the host when the port opens", and what hands it over is the argv the browser spawns this
+process with, per family: Chrome and the Chromium family pass the caller's origin (`chrome-extension://<id>`) as the
+first argument — plus `--parent-window=<handle>` beside it on Windows — and Firefox passes the path of the app
+manifest it launched us from, then the add-on id from `browser_specific_settings`. The extension chooses neither,
+because it cannot start the host at all, and the argument is this process's own command line, not the *peer's* that
+`#/senderPolicy/identity/notIdentity` excludes. `connector/cmd/nexora-host` resolves the sender that way and treats
+anything it cannot read as one of those shapes as no sender at all, which is the refuse path rather than a guess. What
+the argv cannot prove is who spawned this process: ADR-0022 rule 3's peer credentials are the layer that would, and
+they are not wired.
+
 ## 3. Framing
 
 | Property | Value | Source |
