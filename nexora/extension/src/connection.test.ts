@@ -1,13 +1,28 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { Connection, createSelection, siteURL, type Environment, type ProxyValue, type RuntimeRecord, type Selection } from './connection.ts';
-import type { ServerForm } from './model.ts';
+import { Connection, createSelection, createSubscription, siteURL, type Environment, type ProxyValue, type RuntimeRecord, type Selection } from './connection.ts';
+import type { SavedServer, SavedSubscription, ServerForm, SubscriptionResult } from './model.ts';
 
 const form = (): ServerForm => ({ displayName: 'Test', address: '127.0.0.1', port: 443, userId: crypto.randomUUID(), serverName: 'localhost', publicKey: 'A'.repeat(43), shortId: '', flow: true });
+
+function subscriptionServers(id: string, count = 3): SavedServer[] {
+  return Array.from({ length: count }, (_, index) => {
+    const server = createSelection({ ...form(), displayName: `Сервер ${index + 1}`, address: `tcp${index + 1}.example.test` }).selection.server;
+    return { ...server, source: 'subscription', subscriptionId: id };
+  });
+}
+
+const subscriptionURL = 'https://feed.example.test/private-path-secret?token=query-secret#fragment-secret';
 
 function fixture() {
   const events: string[] = [];
   let selection: Selection | null = null;
+  let subscription: SavedSubscription | null = null;
+  let servers: SavedServer[] = [];
+  let refreshResponse: (source: SavedSubscription) => SubscriptionResult | Promise<SubscriptionResult> = (source) => {
+    const list = subscriptionServers(source.id);
+    return { refreshed: [{ subscriptionId: source.id, format: 'vless-base64', sha256: 'b'.repeat(64), serverCount: list.length, servers: list }], unchanged: [], failed: [], skipped: [] };
+  };
   let record: RuntimeRecord | null = null;
   const previous: ProxyValue = { mode: 'pac_script', pacScript: { data: 'function FindProxyForURL(){return "DIRECT";}', mandatory: true } };
   let proxy = previous;
@@ -27,11 +42,16 @@ function fixture() {
           let code: string | null = null;
           switch (frame.method) {
             case 'connector.hello': result = { protocolVersion: 1, minCompatibleProtocolVersion: 1, capabilities: ['chunked.import', 'keystore.ref', 'multi.server'] }; break;
-            case 'profile.import': result = { imported: { profileIds: [], serverIds: [] }, rejected: [], secretsExtracted: 1 }; break;
+            case 'profile.import':
+              if (denied) { code = denied; break; }
+              result = { imported: { profileIds: [], serverIds: [] }, rejected: [], secretsExtracted: 1 }; break;
+            case 'subscription.refresh':
+              void Promise.resolve(refreshResponse(frame.args.sources[0])).then((result) => listener({ type: 'response', inReplyTo: frame.id, ok: true, result }));
+              return;
             case 'config.apply':
               if (denied) { code = denied; break; }
               running = true;
-              result = { applied: true, configHash: 'a'.repeat(64), inboundPorts: [{ listen: '127.0.0.1', port: 20100, tag: 'in-srv-' + selection!.server.id.replaceAll('-', '').slice(0, 8) }] };
+              result = { applied: true, configHash: 'a'.repeat(64), inboundPorts: [{ listen: '127.0.0.1', port: 20100, tag: 'in-srv-' + frame.args.intent.servers[0].id.replaceAll('-', '').slice(0, 8) }] };
               break;
             case 'core.status': result = { running, configHash: 'a'.repeat(64), coreVersion: '24.11.11' }; break;
             case 'core.stop':
@@ -44,6 +64,15 @@ function fixture() {
     },
     async load() { return selection; },
     async save(value) { events.push('save-public'); selection = structuredClone(value); },
+    async loadSubscription() { return structuredClone(subscription); },
+    async loadServers(ids) { return structuredClone(servers.filter((server) => ids.includes(server.id))); },
+    async saveSubscription(source, list, selected) {
+      assert.notEqual(source.format, 'auto');
+      events.push('save-subscription-public');
+      subscription = structuredClone(source);
+      servers = structuredClone(list);
+      selection = structuredClone(selected);
+    },
     async readRuntime() { return record; },
     async writeRuntime(value) { record = value && structuredClone(value); },
     async getProxy() { return { value: proxy, levelOfControl: 'controllable_by_this_extension' }; },
@@ -52,7 +81,12 @@ function fixture() {
     async openSite() { events.push('open-site'); },
   };
   const connection = new Connection(env);
-  return { connection, env, events, messages, previous, proxy: () => proxy, stored: () => selection, record: () => record, deny: (code: string | null) => { denied = code; }, kill: () => { running = false; } };
+  return {
+    connection, env, events, messages, previous, proxy: () => proxy, stored: () => selection, record: () => record,
+    subscription: () => subscription, servers: () => servers,
+    refreshWith: (response: typeof refreshResponse) => { refreshResponse = response; },
+    deny: (code: string | null) => { denied = code; }, kill: () => { running = false; },
+  };
 }
 
 test('manual input becomes public intent, never a persisted UUID', () => {
@@ -61,6 +95,8 @@ test('manual input becomes public intent, never a persisted UUID', () => {
   assert.equal(userId, f.userId);
   assert.ok(!JSON.stringify(selection).includes(f.userId));
   assert.match(selection.server.userIdRef, /^keystore:\/\/server\/[0-9a-f-]{36}\/user-id$/);
+  assert.equal(createSelection({ ...f, shortId: '0011223344556677' }).selection.server.reality?.shortId, '0011223344556677');
+  assert.throws(() => createSelection({ ...f, shortId: '001122334455667788' }));
   for (const field of ['port', 'publicKey', 'shortId', 'userId', 'serverName'] as const) {
     assert.throws(() => createSelection({ ...f, [field]: field === 'port' ? 0 : '<bad>' }));
   }
@@ -174,4 +210,386 @@ test('failed session cleanup after restoration never records an active tunnel', 
 test('open-site refuses non-HTTPS, credentials and malformed input', () => {
   for (const url of ['http://localhost/', 'javascript:alert(1)', 'file:///etc/passwd', 'https://user:pass@localhost/', 'invalid']) assert.throws(() => siteURL({ url }));
   assert.equal(siteURL({ url: 'https://localhost' }), 'https://localhost/');
+});
+
+test('subscription URL is transient; public source contains only the origin', () => {
+  const { source, url } = createSubscription({ url: subscriptionURL });
+  assert.equal(url, subscriptionURL);
+  assert.equal(source.displayName, 'feed.example.test');
+  assert.equal(source.url, 'https://feed.example.test/');
+  assert.equal(source.urlRef, `keystore://subscription/${source.id}/url`);
+  assert.equal(source.format, 'auto');
+  assert.deepEqual(source.limits, { maxBytes: 2097152, maxRedirects: 3, timeoutMs: 20000, maxServers: 512 });
+  assert.deepEqual(source.schedule, { intervalSeconds: 3600 });
+  assert.deepEqual(source.status, { consecutiveFailures: 0 });
+  assert.deepEqual(source.serverIds, []);
+  assert.equal(source.keepLastGood, true);
+  for (const secret of ['private-path-secret', 'query-secret', 'fragment-secret']) assert.ok(!JSON.stringify(source).includes(secret));
+  for (const url of ['http://feed.example.test/', 'https://user:password@feed.example.test/', 'bad']) assert.throws(() => createSubscription({ url }));
+});
+
+test('subscribe, explicitly select, connect only the chosen server, open HTTPS and disconnect', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const view = await f.connection.action('subscribe', { url: subscriptionURL });
+  assert.equal(view.phase, 'disconnected');
+  assert.equal(view.pending, false);
+  assert.equal(view.servers.length, 3);
+  assert.equal(view.server?.id, view.servers[0]!.id);
+  assert.equal(view.subscription?.temporary, false);
+  assert.equal(view.subscription?.serverCount, 3);
+  assert.ok(!f.events.includes('config.apply'));
+  const imported = f.messages.find((message) => message.method === 'profile.import')!.args;
+  assert.deepEqual(imported.profiles, []);
+  assert.equal(imported.subscriptions[0].format, 'auto');
+  assert.deepEqual(imported.credentials, [{ entity: 'subscription', entityId: view.subscription!.id, field: 'url', value: subscriptionURL }]);
+  const refresh = f.messages.find((message) => message.method === 'subscription.refresh')!.args;
+  assert.equal(refresh.sources[0].url, 'https://feed.example.test/');
+  assert.equal(refresh.force, true);
+  assert.ok(f.events.indexOf('profile.import') < f.events.indexOf('subscription.refresh'));
+  assert.ok(f.events.indexOf('subscription.refresh') < f.events.indexOf('save-subscription-public'));
+  assert.equal(f.subscription()?.format, 'vless-base64');
+  assert.deepEqual(f.subscription()?.serverIds, view.servers.map((server) => server.id));
+  assert.equal(f.subscription()?.status.lastSha256, 'b'.repeat(64));
+  assert.equal(f.subscription()?.status.serverCount, 3);
+  assert.ok(f.subscription()?.status.lastSuccessAt);
+  const chosen = view.servers[2]!;
+  assert.equal((await f.connection.action('select', { serverId: chosen.id })).server?.id, chosen.id);
+  assert.deepEqual(f.stored()?.profile.serverIds, [chosen.id]);
+  assert.equal(f.stored()?.profile.defaultServerId, chosen.id);
+  assert.ok(!f.events.includes('config.apply'));
+  assert.equal((await f.connection.action('connect')).phase, 'connected');
+  const intent = f.messages.find((message) => message.method === 'config.apply')!.args.intent;
+  assert.deepEqual(intent.servers, [chosen]);
+  assert.deepEqual(intent.profiles[0].serverIds, [chosen.id]);
+  assert.equal(intent.profiles[0].failover.enabled, false);
+  for (const secret of ['private-path-secret', 'query-secret', 'fragment-secret']) {
+    assert.ok(!JSON.stringify([view, f.connection.snapshot(), f.subscription(), f.servers(), f.stored(), intent, refresh]).includes(secret));
+  }
+  assert.equal((await f.connection.action('open-site', { url: 'https://example.test/' })).error, null);
+  assert.ok(f.events.includes('open-site'));
+  assert.equal((await f.connection.action('disconnect')).phase, 'disconnected');
+  assert.deepEqual(f.proxy(), f.previous);
+});
+
+test('HTTP 404 refresh and partial refresh preserve last-good list and selection byte for byte', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  await f.connection.action('select', { serverId: added.servers[1]!.id });
+  const stored = JSON.stringify(f.stored());
+  const servers = JSON.stringify(f.servers());
+  const oldStatus = structuredClone(f.subscription()!.status);
+  for (const [code, partial] of [['AuthFailed', false], ['SchemaMismatch', true]] as const) {
+    f.refreshWith((source) => ({ refreshed: [], unchanged: [], failed: [{
+      subscriptionId: source.id, code, retryable: false, consecutiveFailures: source.status.consecutiveFailures + 1,
+      nextAttemptAt: '2030-01-01T00:00:00Z', ...(partial ? { partialServers: subscriptionServers(source.id, 2) } : {}),
+    }], skipped: [] }));
+    const view = await f.connection.action('refresh');
+    assert.equal(JSON.stringify(f.stored()), stored);
+    assert.equal(JSON.stringify(f.servers()), servers);
+    assert.equal(JSON.stringify(view.servers), servers);
+    assert.equal(view.server?.id, added.servers[1]!.id);
+    assert.match(view.error!, /Прежний список/);
+    assert.match(view.warning!, partial ? /не поддерживается/ : /404/);
+    assert.equal(f.subscription()?.status.lastSha256, oldStatus.lastSha256);
+    assert.equal(f.subscription()?.status.lastSuccessAt, oldStatus.lastSuccessAt);
+    assert.deepEqual(f.subscription()?.serverIds, added.servers.map((server) => server.id));
+    assert.equal(f.subscription()?.status.nextAttemptAt, '2030-01-01T00:00:00Z');
+    assert.equal(f.subscription()?.status.lastError?.code, code);
+  }
+  assert.equal(f.subscription()?.status.consecutiveFailures, 2);
+  assert.equal((await f.connection.action('connect')).phase, 'connected');
+  assert.deepEqual(f.messages.find((message) => message.method === 'config.apply')!.args.intent.servers, [added.servers[1]]);
+});
+
+test('initial partial import exposes supported TCP servers without inventing a stored format', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  f.refreshWith((source) => ({ refreshed: [], unchanged: [], failed: [{
+    subscriptionId: source.id, code: 'SchemaMismatch', retryable: false, consecutiveFailures: 1, partialServers: subscriptionServers(source.id, 18),
+  }], skipped: [] }));
+  const view = await f.connection.action('subscribe', { url: subscriptionURL });
+  assert.equal(view.error, null);
+  assert.equal(view.servers.length, 18);
+  assert.ok(view.servers.every((server) => server.network === 'tcp'));
+  assert.match(view.warning!, /Часть записей.*не поддерживается/);
+  assert.match(view.warning!, /временные/);
+  assert.equal(view.subscription?.temporary, true);
+  assert.equal(f.subscription(), null);
+  assert.equal(f.stored(), null);
+  assert.ok(!f.events.includes('save-subscription-public'));
+  const chosen = view.servers[17]!;
+  await f.connection.action('select', { serverId: chosen.id });
+  assert.equal(f.connection.snapshot().server?.id, chosen.id);
+  assert.equal((await f.connection.action('connect')).phase, 'connected');
+  assert.deepEqual(f.messages.find((message) => message.method === 'config.apply')!.args.intent.servers, [chosen]);
+  assert.equal((await f.connection.action('disconnect')).phase, 'disconnected');
+  const unchangedList = JSON.stringify(f.connection.snapshot().servers);
+  f.refreshWith((source) => ({ refreshed: [], unchanged: [], failed: [{
+    subscriptionId: source.id, code: 'SchemaMismatch', retryable: false, consecutiveFailures: 2, partialServers: subscriptionServers(source.id, 1),
+  }] }));
+  const failed = await f.connection.action('refresh');
+  assert.equal(failed.server?.id, chosen.id);
+  assert.equal(JSON.stringify(failed.servers), unchangedList);
+  f.refreshWith((source) => ({ refreshed: [{ subscriptionId: source.id, format: 'v2ray-json', sha256: 'c'.repeat(64), serverCount: 18, servers: view.servers }], unchanged: [], failed: [] }));
+  const confirmed = await f.connection.action('refresh');
+  assert.equal(confirmed.server?.id, chosen.id);
+  assert.equal(confirmed.subscription?.temporary, false);
+  assert.equal(confirmed.warning, null);
+  assert.equal(f.subscription()?.format, 'v2ray-json');
+  assert.equal(f.subscription()?.status.consecutiveFailures, 0);
+  assert.equal(f.subscription()?.status.lastError, null);
+  assert.equal(f.subscription()?.status.nextAttemptAt, undefined);
+  assert.equal((await f.connection.action('connect')).phase, 'connected');
+  assert.deepEqual(f.messages.find((message) => message.method === 'config.apply')!.args.intent.servers, [chosen]);
+});
+
+test('partial import with confirmed format persists supported list, selection and unsupported warning', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  f.refreshWith((source) => ({ refreshed: [], unchanged: [], failed: [{
+    subscriptionId: source.id, code: 'SchemaMismatch', retryable: false, consecutiveFailures: 1,
+    format: 'v2ray-json', rejectedCount: 2, partialServers: subscriptionServers(source.id, 18),
+  }] }));
+  const view = await f.connection.action('subscribe', { url: subscriptionURL });
+  assert.equal(view.error, null);
+  assert.equal(view.subscription?.temporary, false);
+  assert.equal(view.servers.length, 18);
+  assert.match(view.warning!, /Неподдерживаемых записей: 2/);
+  assert.ok(!view.warning!.includes('временные'));
+  assert.equal(f.subscription()?.format, 'v2ray-json');
+  assert.equal(f.subscription()?.status.consecutiveFailures, 1);
+  assert.equal(f.subscription()?.status.lastError?.code, 'SchemaMismatch');
+  assert.equal(f.subscription()?.status.lastSha256, undefined);
+  assert.equal(f.subscription()?.status.lastSuccessAt, undefined);
+  assert.deepEqual(f.subscription()?.serverIds, view.servers.map((server) => server.id));
+  const chosen = view.servers[17]!;
+  await f.connection.action('select', { serverId: chosen.id });
+  const selected = JSON.stringify(f.stored());
+  const list = JSON.stringify(f.servers());
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  const loaded = await restarted.action('status');
+  assert.equal(loaded.server?.id, chosen.id);
+  assert.equal(JSON.stringify(loaded.servers), list);
+  assert.match(loaded.warning!, /неподдерживаемые/);
+  f.refreshWith((source) => ({ refreshed: [], unchanged: [], failed: [{
+    subscriptionId: source.id, code: 'SchemaMismatch', retryable: false, consecutiveFailures: 2,
+    format: 'clash-yaml', rejectedCount: 1, partialServers: subscriptionServers(source.id, 1),
+  }] }));
+  await restarted.action('refresh');
+  assert.equal(JSON.stringify(f.stored()), selected);
+  assert.equal(JSON.stringify(f.servers()), list);
+  assert.equal(f.subscription()?.format, 'v2ray-json');
+  assert.equal((await restarted.action('connect')).phase, 'connected');
+  assert.deepEqual(f.messages.find((message) => message.method === 'config.apply')!.args.intent.servers, [chosen]);
+});
+
+test('a new partial subscription replaces the active list without mixing source owners', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const first = await f.connection.action('subscribe', { url: subscriptionURL });
+  await f.connection.action('select', { serverId: first.servers[1]!.id });
+  f.refreshWith((source) => ({ refreshed: [], unchanged: [], failed: [{
+    subscriptionId: source.id, code: 'SchemaMismatch', retryable: false, consecutiveFailures: 1,
+    format: 'vless-base64', rejectedCount: 1, partialServers: subscriptionServers(source.id, 2),
+  }] }));
+  const second = await f.connection.action('subscribe', { url: 'https://second.example.test/private-source' });
+  assert.equal(second.error, null);
+  assert.notEqual(second.subscription?.id, first.subscription?.id);
+  assert.equal(second.servers.length, 2);
+  assert.ok(second.servers.every((server) => server.subscriptionId === second.subscription!.id));
+  assert.deepEqual(f.subscription()?.serverIds, second.servers.map((server) => server.id));
+  const chosen = second.servers[1]!;
+  assert.equal((await f.connection.action('select', { serverId: chosen.id })).error, null);
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  const loaded = await restarted.action('status');
+  assert.equal(loaded.subscription?.id, second.subscription?.id);
+  assert.equal(loaded.server?.id, chosen.id);
+  assert.deepEqual(loaded.servers, second.servers);
+  const refreshed = await restarted.action('refresh');
+  assert.equal(refreshed.server?.id, chosen.id);
+  assert.deepEqual(refreshed.servers, second.servers);
+  assert.equal((await restarted.action('connect')).phase, 'connected');
+  assert.deepEqual(f.messages.find((message) => message.method === 'config.apply')!.args.intent.servers, [chosen]);
+});
+
+test('unchanged refresh updates only attempt time, preserving source status, servers and selection', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('subscribe', { url: subscriptionURL });
+  const source = structuredClone(f.subscription()!);
+  const servers = JSON.stringify(f.servers());
+  const selected = JSON.stringify(f.stored());
+  f.refreshWith((source) => ({ refreshed: [], unchanged: [source.id], failed: [], skipped: [] }));
+  assert.equal((await f.connection.action('refresh')).error, null);
+  const after = structuredClone(f.subscription()!);
+  assert.ok(after.status.lastAttemptAt);
+  after.status.lastAttemptAt = source.status.lastAttemptAt;
+  assert.deepEqual(after, source);
+  assert.equal(JSON.stringify(f.servers()), servers);
+  assert.equal(JSON.stringify(f.stored()), selected);
+});
+
+test('unknown server selection and malformed payload cannot change saved selection', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('subscribe', { url: subscriptionURL });
+  const stored = JSON.stringify(f.stored());
+  const saves = f.events.filter((event) => event === 'save-subscription-public').length;
+  for (const payload of [undefined, {}, { serverId: crypto.randomUUID() }, { serverId: 0 }, { serverId: subscriptionURL }]) {
+    const view = await f.connection.action('select', payload);
+    assert.match(view.error!, /доступного списка/);
+    assert.ok(!JSON.stringify(view).includes('query-secret'));
+    assert.equal(JSON.stringify(f.stored()), stored);
+  }
+  assert.equal(f.events.filter((event) => event === 'save-subscription-public').length, saves);
+});
+
+test('subscribe, refresh and select are refused while connected or blocked', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  await f.connection.action('connect');
+  const selected = JSON.stringify(f.stored());
+  const serverList = JSON.stringify(f.servers());
+  const requests = f.messages.filter((message) => ['profile.import', 'subscription.refresh'].includes(message.method)).length;
+  for (const phase of ['connected', 'blocked']) {
+    if (phase === 'blocked') { f.kill(); await f.connection.action('status'); }
+    for (const action of ['subscribe', 'refresh', 'select'] as const) {
+      const view = await f.connection.action(action, action === 'subscribe' ? { url: subscriptionURL } : { serverId: added.servers[2]!.id });
+      assert.equal(view.phase, phase);
+      assert.match(view.error!, /Сначала отключитесь/);
+    }
+    assert.equal(JSON.stringify(f.stored()), selected);
+    assert.equal(JSON.stringify(f.servers()), serverList);
+    assert.equal(f.messages.filter((message) => ['profile.import', 'subscription.refresh'].includes(message.method)).length, requests);
+  }
+  await f.connection.action('disconnect');
+  assert.equal((await f.connection.action('select', { serverId: added.servers[2]!.id })).error, null);
+});
+
+test('pending refresh blocks overlapping subscription edits and reports pending in status', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  let finish!: (result: SubscriptionResult) => void;
+  let started!: () => void;
+  const began = new Promise<void>((resolve) => { started = resolve; });
+  f.refreshWith(() => new Promise<SubscriptionResult>((resolve) => { finish = resolve; started(); }));
+  const refreshing = f.connection.action('refresh');
+  await began;
+  assert.equal((await f.connection.action('status')).pending, true);
+  for (const action of ['subscribe', 'refresh', 'select'] as const) {
+    const view = await f.connection.action(action, action === 'subscribe' ? { url: subscriptionURL } : { serverId: added.servers[1]!.id });
+    assert.match(view.error!, /Дождитесь/);
+    assert.equal(view.pending, true);
+    assert.equal(view.server?.id, added.server?.id);
+  }
+  finish({ refreshed: [], unchanged: [added.subscription!.id], failed: [] });
+  assert.equal((await refreshing).pending, false);
+});
+
+test('manual save clears controller subscription association without deleting the old library', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  const library = JSON.stringify([f.subscription(), f.servers()]);
+  const manual = await f.connection.action('save', form());
+  assert.equal(manual.subscription, null);
+  assert.equal(manual.warning, null);
+  assert.equal(manual.servers.length, 1);
+  assert.equal(manual.servers[0]!.source, 'manual');
+  assert.equal(JSON.stringify([f.subscription(), f.servers()]), library);
+  assert.match((await f.connection.action('refresh')).error!, /добавьте подписку/);
+  assert.match((await f.connection.action('select', { serverId: added.servers[0]!.id })).error!, /доступного списка/);
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  assert.equal((await restarted.action('status')).subscription, null);
+});
+
+test('public subscription library and selected server survive controller restart', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  await f.connection.action('select', { serverId: added.servers[2]!.id });
+  f.refreshWith((source) => ({ refreshed: [], unchanged: [], failed: [{ subscriptionId: source.id, code: 'AuthFailed', retryable: false, consecutiveFailures: 1 }] }));
+  await f.connection.action('refresh');
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  const view = await restarted.action('status');
+  assert.equal(view.server?.id, added.servers[2]!.id);
+  assert.deepEqual(view.servers, added.servers);
+  assert.equal(view.subscription?.consecutiveFailures, 1);
+  assert.match(view.warning!, /404/);
+});
+
+test('subscription TCP servers keep none, TLS and REALITY settings in chosen-only intent', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  f.refreshWith((source) => {
+    const list = subscriptionServers(source.id);
+    delete list[0]!.reality;
+    list[0]!.security = 'none';
+    list[0]!.flow = '';
+    delete list[1]!.reality;
+    list[1]!.security = 'tls';
+    list[1]!.tls = { serverName: 'tls.example.test', alpn: ['h2', 'http/1.1'], fingerprint: 'chrome', insecure: false };
+    return { refreshed: [{ subscriptionId: source.id, format: 'vless-uri-list', sha256: 'e'.repeat(64), serverCount: list.length, servers: list }], unchanged: [], failed: [] };
+  });
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  assert.equal(f.subscription()?.format, 'vless-uri-list');
+  assert.deepEqual(added.servers.map((server) => server.security), ['none', 'tls', 'reality']);
+  for (const server of added.servers) {
+    await f.connection.action('select', { serverId: server.id });
+    assert.equal((await f.connection.action('connect')).phase, 'connected');
+    assert.deepEqual(f.messages.filter((message) => message.method === 'config.apply').at(-1)!.args.intent.servers, [server]);
+    assert.equal((await f.connection.action('disconnect')).phase, 'disconnected');
+  }
+});
+
+test('request-level refresh errors persist valid status without leaking private details or replacing data', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('subscribe', { url: subscriptionURL });
+  const selected = JSON.stringify(f.stored());
+  const list = JSON.stringify(f.servers());
+  const request = f.connection.client.request.bind(f.connection.client);
+  for (const code of ['Timeout', 'Busy', 'HandshakeFailed']) {
+    f.connection.client.request = async (method, args) => {
+      if (method === 'subscription.refresh') throw Object.assign(new Error(subscriptionURL), { code });
+      return request(method, args);
+    };
+    const view = await f.connection.action('refresh');
+    assert.ok(view.error);
+    assert.ok(!JSON.stringify([view, f.subscription()]).includes('query-secret'));
+    assert.equal(JSON.stringify(f.stored()), selected);
+    assert.equal(JSON.stringify(f.servers()), list);
+    assert.equal(f.subscription()?.status.lastError?.code, code === 'Busy' ? 'Internal' : code === 'HandshakeFailed' ? 'NetworkUnreachable' : code);
+  }
+});
+
+test('subscription errors and unknown result fields never expose raw URL secrets', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  f.deny('AuthFailed');
+  const failed = await f.connection.action('subscribe', { url: subscriptionURL });
+  assert.ok(failed.error);
+  assert.equal(f.subscription(), null);
+  assert.ok(!JSON.stringify(failed).includes('query-secret'));
+  f.deny(null);
+  f.refreshWith((source) => ({ refreshed: [{ subscriptionId: source.id, sha256: 'd'.repeat(64), format: 'clash-yaml', serverCount: 1,
+    servers: subscriptionServers(source.id, 1).map((server) => ({ ...server, url: subscriptionURL, userId: 'private-access-secret', reality: { ...server.reality!, raw: subscriptionURL } })),
+  }], unchanged: [], failed: [] }));
+  const view = await f.connection.action('subscribe', { url: subscriptionURL });
+  assert.equal(view.error, null);
+  assert.equal(f.subscription()?.format, 'clash-yaml');
+  for (const secret of ['private-path-secret', 'query-secret', 'fragment-secret', 'private-access-secret']) {
+    assert.ok(!JSON.stringify([view, f.subscription(), f.servers(), f.stored()]).includes(secret));
+  }
+  const mutated = f.connection.snapshot();
+  mutated.servers[0]!.displayName = 'Changed outside';
+  assert.notEqual(f.connection.snapshot().servers[0]!.displayName, 'Changed outside');
 });

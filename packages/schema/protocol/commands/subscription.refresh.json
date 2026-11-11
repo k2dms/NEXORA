@@ -152,6 +152,16 @@
               ],
               "format": "date-time"
             },
+            "format": {
+              "type": "string",
+              "enum": ["vless-base64", "vless-uri-list", "v2ray-json", "clash-yaml"],
+              "description": "Resolved format when parsing produced partialServers. The extension can persist that explicit parser verdict rather than retaining auto or guessing a format. Absent when no parser accepted the body."
+            },
+            "rejectedCount": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of entries rejected by a partial parse, without returning their credential-bearing input."
+            },
             "partialServers": {
               "type": "array",
               "maxItems": 4096,

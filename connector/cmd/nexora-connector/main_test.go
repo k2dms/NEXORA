@@ -640,7 +640,7 @@ func TestThisBuildRegistersOnlyTheMethodsItCanAnswer(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := s.d.Methods()
-	if want := []string{"config.apply", "connector.hello", "connector.version", "core.status", "core.stop", "profile.import", "server.test"}; !slices.Equal(got, want) {
+	if want := []string{"config.apply", "connector.hello", "connector.version", "core.status", "core.stop", "profile.import", "server.test", "subscription.refresh"}; !slices.Equal(got, want) {
 		t.Errorf("this build registers %v, want exactly %v", got, want)
 	}
 	for _, name := range got {

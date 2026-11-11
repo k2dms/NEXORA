@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"strings"
 
 	"github.com/k2dms/nexora/connector/internal/dispatch"
@@ -41,7 +42,8 @@ var importCredentialShape = importObject(map[string]importRule{
 }, "entity", "entityId", "field", "value")
 
 var importArgsShape = importObject(map[string]importRule{
-	"profiles":          importArray(1, 256, func(any) bool { return true }, false),
+	"profiles":          importArray(0, 256, func(any) bool { return true }, false),
+	"subscriptions":     importArray(0, 64, func(v any) bool { return subscriptionSourceShape(v) }, false),
 	"servers":           importArray(0, 512, func(any) bool { return true }, false),
 	"credentials":       importArray(0, 512, importCredentialShape, false),
 	"mode":              importEnum("merge", "replace"),
@@ -103,6 +105,10 @@ func (h *profileImport) Handle(ctx context.Context, f *envelope.Frame) (any, *di
 	}
 	if !importArgsShape(args) {
 		return nil, refuseImport("BadRequest", "args violate the closed single-frame import contract")
+	}
+	subscriptionDocs, _ := args["subscriptions"].([]any)
+	if len(args["profiles"].([]any)) == 0 && len(subscriptionDocs) == 0 {
+		return nil, refuseImport("BadRequest", "an import requires a profile or subscription source")
 	}
 	if args["mode"] == "replace" {
 		return nil, refuseImport("Busy", "replace requires verified restorable snapshots on both sides; that API is unavailable and nothing was written")
@@ -205,13 +211,45 @@ func (h *profileImport) Handle(ctx context.Context, f *envelope.Frame) (any, *di
 		}
 	}
 
+	subscriptions := map[string]map[string]any{}
+	for _, doc := range subscriptionDocs {
+		source := doc.(map[string]any)
+		owner := source["id"].(string)
+		if _, duplicate := subscriptions[owner]; duplicate {
+			return nil, refuseImport("InvalidProfile", "duplicate subscription identities are not allowed")
+		}
+		subscriptions[owner] = source
+	}
+	for owner, source := range subscriptions {
+		text, declared := source["urlRef"].(string)
+		if !declared {
+			continue
+		}
+		r, err := keystore.Parse(text)
+		resolved, found := resolveImportOwner(r.ID, subscriptions)
+		if err != nil || r.Entity != "subscription" || r.Field != "url" || !found || resolved != owner {
+			return nil, refuseImport("InvalidProfile", "a subscription URL reference has an invalid owner or field")
+		}
+		if _, collision := refs[text]; collision {
+			return nil, refuseImport("InvalidProfile", "subscription URL references collide")
+		}
+		descriptor := importSecretRef{text: r.String(), field: "url"}
+		refs[text], byOwnerField[owner+"/url"] = descriptor, descriptor
+	}
+
 	values := map[string][]byte{}
 	credentials, _ := args["credentials"].([]any)
 	for _, entry := range credentials {
 		c := entry.(map[string]any)
 		field := c["field"].(string)
-		owner, found := resolveImportOwner(c["entityId"].(string), servers)
-		if c["entity"] != "server" || (field != "user-id" && field != "headers") || !found {
+		owners := servers
+		allowed := c["entity"] == "server" && (field == "user-id" || field == "headers")
+		if c["entity"] == "subscription" {
+			owners = subscriptions
+			allowed = field == "url"
+		}
+		owner, found := resolveImportOwner(c["entityId"].(string), owners)
+		if !allowed || !found {
 			return nil, refuseImport("InvalidProfile", "a credential has no supported owner and field in this payload")
 		}
 		r, referenced := byOwnerField[owner+"/"+field]
@@ -225,7 +263,7 @@ func (h *profileImport) Handle(ctx context.Context, f *envelope.Frame) (any, *di
 		if !validateImportSecret(r, value) {
 			return nil, refuseImport("InvalidProfile", "a credential violates its field shape or declared header keys")
 		}
-		if field == "user-id" {
+		if field != "headers" {
 			values[r.text] = []byte(value.(string))
 		} else {
 			// JSON encoding a validated string map cannot fail.
@@ -265,6 +303,14 @@ func (h *profileImport) Handle(ctx context.Context, f *envelope.Frame) (any, *di
 }
 
 func validateImportSecret(ref importSecretRef, value any) bool {
+	if ref.field == "url" {
+		text, ok := value.(string)
+		if !ok || !importString(1, 4096, "")(text) {
+			return false
+		}
+		address, err := url.Parse(text)
+		return err == nil && address.Scheme == "https" && address.Hostname() != "" && address.User == nil && address.Fragment == "" && address.Opaque == ""
+	}
 	if ref.field == "user-id" {
 		return importUserID(value)
 	}

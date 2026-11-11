@@ -747,3 +747,106 @@ func TestProfileImportConstructorCancellationAndEmptyHash(t *testing.T) {
 		t.Fatal(bad)
 	}
 }
+
+func testImportSubscriptionArgs() map[string]any {
+	source := map[string]any{
+		"id": importProfileID, "displayName": "Subscription", "url": "https://example.test/",
+		"urlRef": "keystore://subscription/" + importProfileID + "/url", "format": "auto",
+		"limits":       map[string]any{"maxBytes": 2097152, "maxRedirects": 3, "timeoutMs": 20000, "maxServers": 512},
+		"keepLastGood": true, "schedule": map[string]any{"intervalSeconds": 3600},
+		"status": map[string]any{"consecutiveFailures": 0}, "serverIds": []any{},
+	}
+	return map[string]any{
+		"profiles": []any{}, "subscriptions": []any{source},
+		"credentials": []any{map[string]any{"entity": "subscription", "entityId": importProfileID, "field": "url", "value": "https://example.test/private-feed?token=synthetic-marker"}},
+	}
+}
+
+func TestProfileImportSubscriptionURLStorageRotationAndSafeResult(t *testing.T) {
+	s, p, h := testImportStore(t)
+	args := testImportSubscriptionArgs()
+	for _, address := range []string{"https://example.test/private-feed?token=synthetic-marker", "https://example.test/replacement?key=rotated-marker"} {
+		args["credentials"].([]any)[0].(map[string]any)["value"] = address
+		answer, bad := h.Handle(context.Background(), testImportFrame(args))
+		if bad != nil {
+			t.Fatal(bad)
+		}
+		result := answer.(*importAnswer)
+		if result.SecretsExtracted != 1 || len(result.Imported.ProfileIDs) != 0 || len(result.Imported.ServerIDs) != 0 {
+			t.Fatal("source-only import did not return its count-only result")
+		}
+		data, _ := json.Marshal(answer)
+		if bytes.Contains(data, []byte(address)) || bytes.Contains(data, []byte("Subscription")) {
+			t.Fatal("subscription credential or document escaped in the result")
+		}
+		secret, err := s.Resolve("keystore://subscription/" + importProfileID + "/url")
+		if err != nil || string(secret.Value) != address {
+			t.Fatal("URL was not stored or rotated under its declared owner")
+		}
+		for _, blob := range testImportDisk(t, s) {
+			if bytes.Contains(blob, []byte(address)) {
+				t.Fatal("plaintext URL persisted")
+			}
+		}
+	}
+	before, calls := testImportDisk(t, s), p.calls
+	delete(args, "credentials")
+	if _, bad := h.Handle(context.Background(), testImportFrame(args)); bad != nil {
+		t.Fatal(bad)
+	}
+	if p.calls != calls || !reflect.DeepEqual(before, testImportDisk(t, s)) {
+		t.Fatal("reference-only import rewrote an existing URL")
+	}
+}
+
+func TestProfileImportSubscriptionFailuresPreserveStoredURL(t *testing.T) {
+	cases := map[string]func(map[string]any){
+		"http": func(a map[string]any) {
+			a["credentials"].([]any)[0].(map[string]any)["value"] = "http://example.test/private-feed"
+		},
+		"userinfo": func(a map[string]any) {
+			a["credentials"].([]any)[0].(map[string]any)["value"] = "https://user:password@example.test/"
+		},
+		"fragment": func(a map[string]any) {
+			a["credentials"].([]any)[0].(map[string]any)["value"] = "https://example.test/#secret-marker"
+		},
+		"wrong owner":       func(a map[string]any) { a["credentials"].([]any)[0].(map[string]any)["entityId"] = importOtherServerID },
+		"wrong field":       func(a map[string]any) { a["credentials"].([]any)[0].(map[string]any)["field"] = "token" },
+		"wrong entity":      func(a map[string]any) { a["credentials"].([]any)[0].(map[string]any)["entity"] = "server" },
+		"orphan credential": func(a map[string]any) { delete(a["subscriptions"].([]any)[0].(map[string]any), "urlRef") },
+		"wrong ref owner": func(a map[string]any) {
+			a["subscriptions"].([]any)[0].(map[string]any)["urlRef"] = "keystore://subscription/" + importOtherServerID + "/url"
+		},
+		"wrong ref entity": func(a map[string]any) {
+			a["subscriptions"].([]any)[0].(map[string]any)["urlRef"] = "keystore://server/" + importProfileID + "/url"
+		},
+		"duplicate credential": func(a map[string]any) {
+			a["credentials"] = append(a["credentials"].([]any), a["credentials"].([]any)[0])
+		},
+		"duplicate source": func(a map[string]any) {
+			a["subscriptions"] = append(a["subscriptions"].([]any), a["subscriptions"].([]any)[0])
+		},
+		"public token query": func(a map[string]any) {
+			a["subscriptions"].([]any)[0].(map[string]any)["url"] = "https://example.test/?token=synthetic-marker"
+		},
+		"invalid server before URL": func(a map[string]any) { a["servers"] = []any{map[string]any{"id": importServerID}} },
+		"empty import":              func(a map[string]any) { delete(a, "subscriptions"); delete(a, "credentials") },
+	}
+	for name, mutate := range cases {
+		t.Run(name, func(t *testing.T) {
+			s, p, h := testImportStore(t)
+			if _, bad := h.Handle(context.Background(), testImportFrame(testImportSubscriptionArgs())); bad != nil {
+				t.Fatal(bad)
+			}
+			before, calls := testImportDisk(t, s), p.calls
+			args := testImportSubscriptionArgs()
+			mutate(args)
+			if answer, bad := h.Handle(context.Background(), testImportFrame(args)); bad == nil || answer != nil {
+				t.Fatal("invalid subscription import accepted")
+			}
+			if p.calls != calls || !reflect.DeepEqual(before, testImportDisk(t, s)) {
+				t.Fatal("failed replacement changed the protected last-good URL")
+			}
+		})
+	}
+}

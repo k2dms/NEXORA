@@ -106,7 +106,7 @@ field that pins it:
 nested `args.chunk` object — `{contentHash, chunkSeq, chunkCount, encoding}` — and it MUST be structurally
 identical to `protocol/envelope.schema.json#/properties/chunk`; `packages/schema/scripts/verify.mjs` "the envelope chunk shape and profile.import args.chunk are one shape" compares the two field by
 field so the mirror cannot drift. `args.profiles` is `minItems: 0` precisely so a slice frame can carry no
-profiles (`packages/schema/protocol/commands/profile.import.json:17-21`), `contentHash` is mandatory whenever
+profiles (`packages/schema/protocol/commands/profile.import.json:51-55`), `contentHash` is mandatory whenever
 `chunk` is present, and the group rules — same `chunkCount` across a group, `chunkSeq` covering
 `0..chunkCount-1` exactly once, one hash per group — are asserted over
 `packages/schema/fixtures/protocol/*.jsonl` by `packages/schema/scripts/verify.mjs` "a chunked profile.import slice exists in the fixtures", "a complete chunked import reassembles in the fixtures" and "the chunked IntegrityMismatch path is exercised by a real group", which fails if a chunked group is absent

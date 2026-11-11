@@ -191,7 +191,7 @@ var importServerShape = importObject(map[string]importRule{
 	"reality": importObject(map[string]importRule{
 		"publicKey":   importString(0, -1, `^[A-Za-z0-9_-]{43}$`),
 		"serverName":  importHost,
-		"shortId":     importString(0, -1, `^([0-9a-f]{2}){0,4}$`),
+		"shortId":     importString(0, -1, `^([0-9a-f]{2}){0,8}$`),
 		"spiderX":     importString(0, 64, ""),
 		"fingerprint": importString(1, 32, ""),
 	}, "publicKey", "serverName"),

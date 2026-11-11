@@ -202,9 +202,9 @@
         },
         "shortId": {
           "type": "string",
-          "pattern": "^([0-9a-f]{2}){0,4}$",
+          "pattern": "^([0-9a-f]{2}){0,8}$",
           "default": "",
-          "description": "Hex, 0-8 chars."
+          "description": "Hex, 0-16 chars (up to 8 bytes)."
         },
         "spiderX": {
           "type": "string",

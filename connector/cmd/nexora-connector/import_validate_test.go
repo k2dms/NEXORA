@@ -283,15 +283,19 @@ func TestImportValidationServerConditionalsAndReality(t *testing.T) {
 		s["security"], s["reality"] = "reality", map[string]any{"publicKey": strings.Repeat("a", 43), "serverName": "example.test", "shortId": "", "spiderX": "", "fingerprint": "chrome"}
 		return s
 	}
-	if !validateImportServer(importParsed(t, base())) {
-		t.Fatal("valid REALITY rejected")
+	for _, shortID := range []string{"", "0011223344", "0011223344556677"} {
+		s := base()
+		s["reality"].(map[string]any)["shortId"] = shortID
+		if !validateImportServer(importParsed(t, s)) {
+			t.Fatal("valid REALITY short ID rejected")
+		}
 	}
 	for _, tc := range []struct {
 		path  string
 		value any
 	}{
 		{"reality.publicKey", strings.Repeat("a", 42)}, {"reality.publicKey", strings.Repeat("+", 43)},
-		{"reality.shortId", "a"}, {"reality.shortId", "ABCDEF"}, {"reality.shortId", "0011223344"},
+		{"reality.shortId", "a"}, {"reality.shortId", "ABCDEF"}, {"reality.shortId", "001122334455667788"},
 		{"reality.serverName", ""}, {"reality.spiderX", strings.Repeat("a", 65)}, {"reality.fingerprint", ""},
 	} {
 		s := base()

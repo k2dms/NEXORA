@@ -391,3 +391,17 @@ Each was found by reading one artefact against another, not by running anything.
 | 3 | Should the 64-inbound ceiling rise, or should profiles compile a subset? | `docs/architecture/27-config-compilation-pipeline.md` §5 owns the topology; the number belongs to `docs/architecture/40-open-decisions.md` |
 | 4 | `KeystoreUnavailable` on a second machine for `urlRef`/`headersRef` sources: which UI state names it | `docs/architecture/37-ui-architecture.md` §4 |
 | 5 | Whether a subscription may ever be created by the Connector (import of a legacy profile with `sourceUrl`) or only by the user | `docs/architecture/35-schema-versioning-migration.md` §6 |
+
+## 14. Implemented connection-page slice
+
+The URI parser accepts TCP VLESS with none, TLS or REALITY security. `raw` is the TCP alias used by current
+Xray share links; omitted `type` has the VLESS URI TCP default. Other transports and unrecognised connection-affecting
+query fields are refused per entry, not guessed. The loss tables above describe the wider contract, not proof that
+every declared transport or format has an implemented subscription parser. REALITY Short ID accepts 0–16 even-length
+hex characters: Xray's eight-byte limit, not eight characters. Unsupported postquantum query parameters are refused.
+
+An initial partial import returns the resolved `failed[].format` and `rejectedCount`; accepted servers can be
+saved with a warning without storing `auto`. A failed refresh of an existing source preserves its last-good public
+list, selection and protected credentials. The full private URL enters only through `profile.import.args.credentials`
+with a public source declaring its owner; the Connector fetches and parses the feed without returning credential values.
+The connection page changes selection only while disconnected and compiles only the selected server, not the whole feed.

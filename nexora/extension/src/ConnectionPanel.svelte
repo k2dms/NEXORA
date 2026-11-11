@@ -2,10 +2,10 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { ConnectionView, ServerForm } from './model';
+  import type { Action as ConnectionAction, ConnectionView, ServerForm } from './model';
   import { request } from './rpc';
 
-  type Action = 'save' | 'connect' | 'disconnect' | 'open-site';
+  type Action = Exclude<ConnectionAction, 'status'>;
   type FieldErrors = Record<string, string | undefined>;
 
   const phaseLabels: Record<ConnectionView['phase'], string> = {
@@ -25,7 +25,7 @@
   };
   const uuidPattern = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
   const publicKeyPattern = '[A-Za-z0-9_\\-]{43}';
-  const shortIdPattern = '([0-9a-f]{2}){0,4}';
+  const shortIdPattern = '([0-9a-f]{2}){0,8}';
   const addressPattern = '[^\\s\\x2f?#@]+';
   const sniPattern = '[^\\s:\\x2f?#@]+';
   const validationMessages: Record<string, string> = {
@@ -35,8 +35,9 @@
     userId: 'Введите UUID: 32 шестнадцатеричных символа в формате 8-4-4-4-12.',
     serverName: 'Укажите SNI — имя хоста без схемы, порта и пути.',
     publicKey: 'Публичный ключ REALITY: ровно 43 символа A–Z, a–z, 0–9, _ или -.',
-    shortId: 'Short ID: 0, 2, 4, 6 или 8 символов (0–9, a–f).',
+    shortId: 'Short ID: до 16 символов попарно (0–9, a–f).',
     url: 'Введите полный адрес сайта, начинающийся с https://.',
+    subscriptionUrl: 'Введите полный HTTPS-адрес подписки без логина и пароля.',
   };
 
   let view = $state<ConnectionView | null>(null);
@@ -47,6 +48,7 @@
   let statusError = $state<string | null>(null);
   let notice = $state('');
   let uuidInput = $state<HTMLInputElement>();
+  let subscriptionInput = $state<HTMLInputElement>();
 
   // A status response issued before an action must never replace its result.
   let revision = 0;
@@ -54,11 +56,12 @@
   let polling = false;
 
   const transitioning = $derived(view?.phase === 'connecting' || view?.phase === 'disconnecting');
-  const editable = $derived(view?.phase === 'disconnected' && !pending && !statusError);
+  const editable = $derived(view?.phase === 'disconnected' && !pending && !view.pending && !statusError);
   const showForm = $derived(view?.phase === 'disconnected' && (!view.server || replacing));
   const canConnect = $derived(editable && !!view?.server && !replacing);
-  const canDisconnect = $derived(!pending && (view?.phase === 'connected' || view?.phase === 'blocked'));
-  const canOpen = $derived(view?.phase === 'connected' && !pending && !statusError);
+  const canDisconnect = $derived(!pending && !view?.pending && (view?.phase === 'connected' || view?.phase === 'blocked'));
+  const canOpen = $derived(view?.phase === 'connected' && !pending && !view.pending && !statusError);
+  const selectedServer = $derived(view?.servers.find((server) => server.id === view?.server?.id));
   const phaseLabel = $derived(view ? phaseLabels[view.phase] : 'Состояние неизвестно');
 
   function acceptView(next: ConnectionView): void {
@@ -96,18 +99,20 @@
       revision += 1;
       window.clearInterval(interval);
       if (uuidInput) uuidInput.value = '';
+      if (subscriptionInput) subscriptionInput.value = '';
     };
   });
 
   async function perform(action: Action, payload?: unknown): Promise<void> {
-    if (!active || pending || transitioning) return;
-    if (action === 'save' && !editable) return;
+    if (!active || pending || view?.pending || transitioning) return;
+    if (['save', 'subscribe', 'refresh', 'select'].includes(action) && !editable) return;
     if (action === 'connect' && !canConnect) return;
     if (action === 'disconnect' && !canDisconnect) return;
     if (action === 'open-site' && !canOpen) return;
 
     const ticket = ++revision;
     const secretInput = uuidInput;
+    const secretSubscriptionInput = subscriptionInput;
     pending = action;
     actionError = null;
     notice = '';
@@ -118,6 +123,11 @@
       if (action === 'save' && next.server && !next.error) {
         replacing = false;
         notice = 'Сервер сохранён.';
+      } else if ((action === 'subscribe' || action === 'refresh') && next.subscription && !next.error) {
+        replacing = false;
+        notice = 'Список подписки получен. Выберите сервер и нажмите «Подключить».';
+      } else if (action === 'select' && !next.error) {
+        notice = 'Сервер выбран. Подключение запускается отдельно.';
       } else if (action === 'open-site' && !next.error) {
         notice = 'Запрос на открытие сайта отправлен. Доступность сайта не проверялась.';
       }
@@ -126,6 +136,7 @@
     } finally {
       // UUID lives only in the input and this transient request, never in UI state/storage.
       if (secretInput) secretInput.value = '';
+      if (secretSubscriptionInput) secretSubscriptionInput.value = '';
       if (active && ticket === revision) pending = null;
     }
   }
@@ -150,13 +161,13 @@
       let message = '';
       if (!input.validity.valid || (input.required && !input.value.trim())) {
         message = validationMessages[input.name] ?? 'Проверьте значение поля.';
-      } else if (input.name === 'url') {
+      } else if (input.name === 'url' || input.name === 'subscriptionUrl') {
         try {
           const url = new URL(input.value.trim());
-          if (url.protocol !== 'https:' || !url.hostname) message = validationMessages.url;
-          else if (url.username || url.password) message = 'Адрес сайта не должен содержать логин или пароль.';
+          if (url.protocol !== 'https:' || !url.hostname) message = validationMessages[input.name];
+          else if (url.username || url.password) message = input.name === 'url' ? 'Адрес сайта не должен содержать логин или пароль.' : validationMessages.subscriptionUrl;
         } catch {
-          message = validationMessages.url;
+          message = validationMessages[input.name];
         }
       }
       if (message) {
@@ -192,6 +203,18 @@
       flow: data.get('flow') === 'on',
     };
     void perform('save', payload);
+  }
+
+  function subscribe(event: SubmitEvent): void {
+    event.preventDefault();
+    if (!editable) return;
+    const form = event.currentTarget as HTMLFormElement;
+    if (!validate(form)) {
+      if (subscriptionInput) subscriptionInput.value = '';
+      return;
+    }
+    const url = subscriptionInput?.value.trim() ?? '';
+    void perform('subscribe', { url });
   }
 
   function openSite(event: SubmitEvent): void {
@@ -259,12 +282,45 @@
   {/if}
   <p class="notice" role="status" aria-live="polite" hidden={!notice}>{notice}</p>
 
+  <section class="subscription-card" aria-labelledby="subscription-title">
+    <div class="section-heading">
+      <h2 id="subscription-title">Подписка</h2>
+      {#if view?.subscription}<span class="protocol">{view.subscription.serverCount} серверов</span>{/if}
+    </div>
+    {#if view?.subscription}<p class="subscription-name">{view.subscription.displayName}</p>{/if}
+    <form novalidate autocomplete="off" onsubmit={subscribe}>
+      <fieldset disabled={!editable}>
+        <legend class="visually-hidden">Добавление HTTPS-подписки</legend>
+        <label for="subscription-url">HTTPS-ссылка подписки</label>
+        <input bind:this={subscriptionInput} class="technical" id="subscription-url" name="subscriptionUrl" type="password" required placeholder="Вставьте ссылку подписки" autocomplete="off" spellcheck="false" autocapitalize="none" aria-invalid={!!fieldErrors.subscriptionUrl} aria-describedby="subscription-hint subscription-error" oninput={clearFieldError} />
+        <p class="field-error" id="subscription-error" hidden={!fieldErrors.subscriptionUrl}>{fieldErrors.subscriptionUrl ?? ''}</p>
+        <p class="field-hint" id="subscription-hint">Ссылка хранится только в защищённом хранилище Connector. Поле очищается после попытки добавления. Смена сервера — только после отключения.</p>
+        <div class="actions">
+          <button class="primary" type="submit">{pending === 'subscribe' ? 'Добавление…' : 'Добавить подписку'}</button>
+          <button class="secondary" type="button" disabled={!view?.subscription} onclick={() => void perform('refresh')}>{pending === 'refresh' ? 'Обновление…' : 'Обновить'}</button>
+        </div>
+      </fieldset>
+    </form>
+    {#if view?.warning}<p class="subscription-warning" role="status" aria-live="polite">{view.warning}</p>{/if}
+  </section>
+
   {#if view?.server}
     <section class="server-card" aria-labelledby="server-title">
       <div class="section-heading">
         <h2 id="server-title">Сервер</h2>
-        <span class="protocol">VLESS / REALITY · TCP</span>
+        <span class="protocol">VLESS / {selectedServer?.security === 'tls' ? 'TLS' : selectedServer?.security === 'none' ? 'без TLS' : 'REALITY'} · TCP</span>
       </div>
+      {#if view.subscription && view.servers.some((server) => server.subscriptionId === view?.subscription?.id)}
+        <div class="field">
+          <label for="subscription-server">Доступный сервер</label>
+          <select id="subscription-server" value={view.server.id} disabled={!editable} aria-describedby="selection-hint" onchange={(event) => void perform('select', { serverId: event.currentTarget.value })}>
+            {#each view.servers.filter((server) => server.subscriptionId === view?.subscription?.id) as server (server.id)}
+              <option value={server.id}>{server.displayName} · {server.address}:{server.port}</option>
+            {/each}
+          </select>
+          <p class="field-hint" id="selection-hint">В Core передаётся только выбранный сервер. Подключение не запускается автоматически.</p>
+        </div>
+      {/if}
       <p class="server-name">{view.server.displayName}</p>
       <p class="server-address technical">{view.server.address}<span class="port"> · {view.server.port}</span></p>
       <div class="actions">
@@ -334,8 +390,8 @@
           </div>
           <div class="field">
             <label for="short-id">Short ID <span class="optional">необязательно</span></label>
-            <input class="technical" id="short-id" name="shortId" pattern={shortIdPattern} maxlength="8" spellcheck="false" autocapitalize="none" aria-invalid={!!fieldErrors.shortId} aria-describedby="short-hint short-error" oninput={clearFieldError} />
-            <p class="field-hint" id="short-hint">До 8 hex-символов. Оставьте пустым, если ID не выдан.</p>
+            <input class="technical" id="short-id" name="shortId" pattern={shortIdPattern} maxlength="16" spellcheck="false" autocapitalize="none" aria-invalid={!!fieldErrors.shortId} aria-describedby="short-hint short-error" oninput={clearFieldError} />
+            <p class="field-hint" id="short-hint">До 16 hex-символов. Оставьте пустым, если ID не выдан.</p>
             <p class="field-error" id="short-error" hidden={!fieldErrors.shortId}>{fieldErrors.shortId ?? ''}</p>
           </div>
           <label class="checkbox" for="vision"><input id="vision" name="flow" type="checkbox" checked /><span>Vision <span class="technical">xtls-rprx-vision</span></span></label>
@@ -415,13 +471,18 @@
   .request-errors p + p { margin-top: 8px; }
   .notice { margin-top: 12px; color: var(--cyan); font-size: 12px; }
   .server-card, .form-section, .recovery-card { margin-top: 24px; }
+  .subscription-card { margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--slate); min-width: 0; }
+  .subscription-name { margin-bottom: 12px; font-size: 12px; color: #b6c8d8; overflow-wrap: anywhere; }
+  .subscription-warning { margin-top: 12px; color: #f1cfa4; font-size: 12px; overflow-wrap: anywhere; }
   .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
   .protocol { color: #a9bacb; font-size: 10px; }
   .server-name { font-size: 18px; font-weight: 550; overflow-wrap: anywhere; }
   .server-address { margin-top: 4px; color: #b6c8d8; font-size: 12px; overflow-wrap: anywhere; }
   .port { color: #a9bacb; }
   .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 17px; }
-  button, input { font: inherit; }
+  button, input, select { font: inherit; }
+  select { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 40px; padding: 9px 10px; background: #18293d; border: 1px solid #587089; border-radius: 5px; color: var(--paper); font-size: 13px; }
+  select:disabled { opacity: 0.55; cursor: not-allowed; }
   button { min-height: 40px; border: 1px solid transparent; border-radius: 6px; padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.4; transition: background-color 120ms ease, border-color 120ms ease; }
   button.primary { background: var(--cyan); color: var(--navy); }
   button.primary:hover:not(:disabled) { background: #a0e0e8; }
@@ -455,7 +516,7 @@
   footer { margin-top: 20px; color: #a9bacb; font-size: 11px; line-height: 1.6; }
   .legacy-note { margin-top: 10px; }
   a { color: #c0e6ed; text-decoration: underline; text-underline-offset: 3px; }
-  :where(button, input, a):focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  :where(button, input, select, a):focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
   .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
   @media (max-width: 360px) {
     .panel { padding: 20px 16px 18px; }

@@ -6,11 +6,11 @@
 > falsified the original plan, the exact inventory of what exists on disk, and the precise next steps.
 > Written 2026-11-04. English because it is the repository language.
 
-Status as of 2026-11-11: **The Windows/Chromium single-server connection path works against a local REALITY
-fixture: add → connect → open HTTPS → disconnect → reconnect. It is not a production release: trusted Core
-installation, external-server acceptance and browser-restart/shared-owner recovery remain unfinished.** The latest
-continuation is §4.58; older scope and inventory paragraphs below are dated history, not a prohibition on
-implementation. §7 records the push authorization and ref.
+Status as of 2026-11-11: **Windows/Chromium supports a private subscription URL → choose a server → connect →
+open external HTTPS → disconnect. The manual REALITY path also remains verified. It is not a production release:
+trusted Core installation and browser-restart/shared-owner recovery remain unfinished.** The latest continuation
+is §4.59; older scope and inventory paragraphs below are dated history, not a prohibition on implementation.
+§7 records the push authorization and ref.
 
 ---
 
@@ -1506,7 +1506,7 @@ by ajv, read by `packages/schema/scripts/verify.mjs`, and now read by the Go gen
 `connector/internal/contract/contract_gen.go:143`. `connector/internal/contractgen/contractgen.go:323` is where the
 projection refuses instead of copies: both floors must be built on the scheme they are anchored to, the entity and field
 lists must agree with the registry's own, the identifier segment of the shape must be the ingest document's pattern
-byte-for-byte (`packages/schema/protocol/commands/profile.import.json:85`), and
+byte-for-byte (`packages/schema/protocol/commands/profile.import.json:94`), and
 `connector/internal/contractgen/contractgen.go:344` will not emit a vocabulary with more — or fewer — than one
 object-shaped field, because `headers` is the one ODEC-36 is about. One artefact, three readers, a build that stops when
 they drift: §4.16's golden rule applied to a grammar rather than a fixture. The other half of that claim is a test, not
@@ -1524,7 +1524,7 @@ prefix means a value in a reference position, and a value is never echoed
 (`connector/internal/keystore/ref_test.go:82`); a proven prefix with an unproven shape is a malformed reference, echoed
 only once the floor has accepted it. The fourth refusal is not in §11
 and could not be: an empty value. The contract bounds a credential at the door
-(`packages/schema/protocol/commands/profile.import.json:95`) and says nothing about a zero-length one, so the store keeps
+(`packages/schema/protocol/commands/profile.import.json:104`) and says nothing about a zero-length one, so the store keeps
 a floor of its own and answers it with `SchemaMismatch`, recorded here rather than smoothed over.
 
 **DPAPI is two syscalls and no dependency.** `connector/internal/keystore/platform_windows.go:21` reaches `crypt32.dll`
@@ -3980,6 +3980,69 @@ not a trusted installation; the self-signed local HTTPS fixture requires a test-
 recovery with authenticated shared ownership/adoption. This local single-server path does not establish incognito,
 other browser families, subscription workflows, routing UI parity, a signed installer or a distributable release.
 Do not return to unrelated protocol predicates before this user-facing path is installable and restart-safe.
+
+---
+
+### 4.59 Private subscription import and selected-server external HTTPS (2026-11-11)
+
+**Written.** The connection page accepts a private HTTPS subscription URL, shows its accepted servers, and lets the
+user explicitly choose one before connecting. Selection and refresh are disabled during active/pending operations;
+import never auto-connects. Only the selected server enters the Connector profile and materialized Xray config.
+The manual connection path is retained, without deleting the existing subscription library when a manual server is saved.
+
+Source-only `profile.import` validates the public source owner before storing URL credentials. The full URL and feed
+UUIDs remain in Windows DPAPI; Chrome receives public server documents and random-owner references, not credential
+values. The public URL contains only the origin. Import validation failures preserve the old protected value, and
+refresh writes credentials only after parsing, public-output validation and response-size preflight. The existing
+batch rollback is still not crash-atomic or serialized between Connector processes.
+
+The registered `subscription.refresh` handler uses bounded HTTPS fetches with system certificate validation and no
+environment proxy. Every redirect gets DNS/IP validation and dialing uses the validated addresses; cross-origin
+redirects discard custom headers. Loopback, link-local and metadata destinations are refused; private-network
+addresses remain allowed by the architecture. Errors are sanitized. URI lists and strict standard/URL base64 wrappers
+are implemented for TCP VLESS with none/TLS/REALITY security, including `raw` and omitted-type TCP aliases. Other
+transports, formats and unsupported connection-affecting query fields are explicitly refused, not silently guessed.
+
+A successful full refresh updates the public library. An initial partial import can save accepted servers with the
+resolved format and rejected-entry warning. A partial/failed refresh of an existing source preserves the last-good
+list, selection and encrypted credentials. URL/UUID rotation does not put secret hashes into identity keys. This
+slice implements explicit refresh, not automatic subscription scheduling or a full multi-source management UI.
+
+**Measured defect and fix.** The supplied feed exposed the old Short ID limit: eight hex characters instead of
+Xray's eight bytes. The schema, Go validator, parser and manual form now accept 0–16 even-length hex characters.
+The local REALITY golden passed against Xray 24.11.11 with a 16-character Short ID, including disconnect/reconnect.
+Postquantum URI parameters unsupported by this pinned Core/model remain refused.
+
+**Measured live subscription.** Chrome 157.0.8103.51 used the packaged extension, real Native Messaging, DPAPI and
+Xray 24.11.11. One completed snapshot contained 25 entries: 23 selectable and two explicitly rejected. The feed
+changed during testing; these counts are observations, not fixtures or a promise of a fixed server count. The final
+rerun asserted three distinct selected server IDs and proved external HTTPS through each by receiving an egress IP
+different from the pre-connection direct probe; one additional candidate did not prove egress. The test checked chosen-only Core output, disabled connected selection,
+partial-refresh last-good preservation, an empty URL input after import, no private URL/path/UUID in local/sync
+storage or plaintext protected blobs, proxy readback restoration, config removal after stop and no 320 px overflow.
+All three temporary HKCU registrations and the secret-bearing scratch browser/installation directory were removed
+before the success record. No private feed URL, body, UUID, remote IP or Xray executable is committed.
+
+**Source-switch regression.** A second source with an initial partial parse previously retained the first source's
+active list. Initial acceptance is now scoped to the new source's empty membership, while subsequent partial refreshes
+still preserve that source's last-good list. The regression failed before the two-line fix and verifies new source
+ownership, explicit selection, controller reload, partial-refresh preservation and chosen-only Core intent. The final
+live Chrome run also re-added the authorized feed as a fresh source, asserted that the active list switched to its
+new owner, then passed the three-distinct-server HTTPS, disconnect and cleanup checks above.
+
+**Checks.** The 24 extension controller tests, Svelte/TypeScript with zero errors/warnings and Vite packaging passed.
+Windows Connector command tests/vet and WSL Ubuntu 24.04 Go 1.24.13 race/vet passed after the Short ID fix. Schema
+verification passed 1237 checks, protocol 16 and state 20. These tests do not replace the live browser measurement.
+Existing architecture line citations moved with the import contract; no verification/open-decision row was closed.
+
+**Reproduce and scope.** Use the same local binaries/build prerequisites as §4.58 and pass the authorized private
+URL only through the `NEXORA_SUBSCRIPTION_URL` environment variable to `npm --prefix nexora/extension run verify:browser`;
+set `NEXORA_XRAY` to the local test binary. Live mode uses valid external HTTPS certificates, without the local
+fixture's certificate exception. The harness paces Core mutations within the unchanged four-per-20-second budget.
+Its mechanically prepared receipt is not a trusted installation. Not every listed server was checked for reachability;
+trusted pinned installation, browser-restart/shared-owner adoption, incognito and other browser families remain open.
+The previous published connection slice was `e8579d3`, pushed to `nexora/master`; this slice uses the same authorized
+`git push nexora nexora/architecture:master`, never `origin`, force, amended published commits or skipped hooks.
 
 ---
 

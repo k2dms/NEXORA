@@ -14,9 +14,12 @@
     "required": ["profiles"],
     "allOf": [
       {
-        "description": "A single-frame import must carry at least one profile. A chunked import may carry none on the frames that are only slices -- the terminal frame holds the complete arrays.",
+        "description": "A single-frame import must carry at least one profile or subscription source. Subscription sources declare the owners of URL credentials before subscription.refresh; they remain extension-owned and are not written by the Connector. A chunked import may carry no profiles on slice frames.",
         "if": { "not": { "required": ["chunk"] } },
-        "then": { "properties": { "profiles": { "minItems": 1 } } }
+        "then": { "anyOf": [
+          { "properties": { "profiles": { "minItems": 1 } } },
+          { "required": ["subscriptions"], "properties": { "subscriptions": { "minItems": 1 } } }
+        ] }
       },
       {
         "description": "A chunked import cannot be verified without the hash of the whole, so contentHash is mandatory on every slice frame. The Connector rejects a reassembled payload whose hash differs (IntegrityMismatch) rather than importing an unknown subset. The slice fields are nested under `chunk` -- the same shape protocol/envelope.schema.json#/properties/chunk uses for the frame carrying this call; that object is authoritative and scripts/verify.mjs asserts this mirror is structurally identical to it. Group rules the same script enforces over protocol/fixtures/protocol/*.jsonl: every slice of one import (same envelope.id) declares the same chunkCount, its chunkSeq values cover 0..chunkCount-1 exactly once, and args.contentHash equals args.chunk.contentHash; a group that disagrees about contentHash must be answered by IntegrityMismatch.",
@@ -55,6 +58,12 @@
         "type": "array",
         "maxItems": 512,
         "items": { "$ref": "https://schema.nexora.local/server.schema.json" }
+      },
+      "subscriptions": {
+        "type": "array",
+        "maxItems": 64,
+        "items": { "$ref": "https://schema.nexora.local/subscription-source.schema.json" },
+        "description": "Public source documents declaring owners of URL credentials. They are validated but never stored by the Connector; the full private address arrives only in credentials and the public url carries a redacted display address."
       },
       "mode": { "enum": ["merge", "replace"], "default": "merge" },
       "contentHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },

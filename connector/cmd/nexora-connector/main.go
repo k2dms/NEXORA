@@ -216,6 +216,11 @@ func newService(cfg config) (*service, error) {
 		return nil, err
 	}
 	handlers["profile.import"] = imp.Handle
+	refresh, err := newSubscriptionRefresh(store)
+	if err != nil {
+		return nil, err
+	}
+	handlers["subscription.refresh"] = refresh.Handle
 	d, err := dispatch.New(dispatch.Config{Handlers: handlers})
 	if err != nil {
 		return nil, err

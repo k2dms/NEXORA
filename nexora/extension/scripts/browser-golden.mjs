@@ -17,6 +17,7 @@ await mkdir(core, { recursive: true });
 const env = { ...process.env, LOCALAPPDATA: local };
 const bins = resolve(project, '../../tmp/bin') + '/';
 const xray = process.env.NEXORA_XRAY;
+const subscriptionURL = process.env.NEXORA_SUBSCRIPTION_URL;
 assert.ok(xray, 'set NEXORA_XRAY to the local Xray 24.11.11 test executable; no download or install is performed');
 const keys = [
   'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.nexora.connector',
@@ -50,7 +51,7 @@ const publicKey = pair.publicKey.export({ format: 'der', type: 'spki' }).subarra
 const userId = randomUUID();
 const serverConfig = {
   log: { loglevel: 'warning' },
-  inbounds: [{ listen: '127.0.0.1', port: serverPort, protocol: 'vless', settings: { clients: [{ id: userId, flow: 'xtls-rprx-vision' }], decryption: 'none' }, streamSettings: { network: 'tcp', security: 'reality', realitySettings: { show: false, dest: '127.0.0.1:' + sitePort, xver: 0, serverNames: ['localhost'], privateKey, shortIds: ['abcd'] } } }],
+  inbounds: [{ listen: '127.0.0.1', port: serverPort, protocol: 'vless', settings: { clients: [{ id: userId, flow: 'xtls-rprx-vision' }], decryption: 'none' }, streamSettings: { network: 'tcp', security: 'reality', realitySettings: { show: false, dest: '127.0.0.1:' + sitePort, xver: 0, serverNames: ['localhost'], privateKey, shortIds: ['0011223344556677'] } } }],
   outbounds: [{ protocol: 'freedom', sendThrough: '127.0.0.2' }],
 };
 await writeFile(root + '/server.json', JSON.stringify(serverConfig));
@@ -74,7 +75,8 @@ try {
   await delay(300);
   assert.equal(server.exitCode, null, 'REALITY fixture did not start');
   chrome = spawn(process.env.NEXORA_CHROME ?? join(process.env.PROGRAMFILES ?? 'C:/Program Files', 'Google/Chrome/Application/chrome.exe'), [
-    '--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--ignore-certificate-errors',
+    '--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
+    ...subscriptionURL ? [] : ['--ignore-certificate-errors'],
     '--enable-unsafe-extension-debugging', '--remote-debugging-port=' + debugPort, '--user-data-dir=' + root + '/browser', 'about:blank',
   ], { stdio: 'ignore', env });
   let version;
@@ -114,7 +116,118 @@ try {
   }
   assert.equal(status?.view?.connector, 'ready', JSON.stringify(status));
   const before = await evaluate('chrome.proxy.settings.get({incognito:false})');
-  const input = { displayName: 'Loopback REALITY', address: '127.0.0.1', port: serverPort, userId, serverName: 'localhost', publicKey, shortId: 'abcd', flow: true };
+  if (subscriptionURL) {
+    const probe = process.env.NEXORA_EGRESS_PROBE ?? 'https://api.ipify.org?format=json';
+    const direct = await (await fetch(probe, { signal: AbortSignal.timeout(20000) })).json();
+    assert.ok(direct.ip, 'egress probe must return a JSON ip field');
+    const privateBody = Buffer.from(await (await fetch(subscriptionURL, { signal: AbortSignal.timeout(20000) })).text(), 'base64').toString();
+    const privateIds = [...privateBody.matchAll(/vless:\/\/([0-9a-f-]+)@/gi)].map((match) => match[1]);
+    assert.ok(privateIds.length >= 3, 'live subscription has too few entries');
+    const privateEntries = privateBody.trim().split(/\r?\n/).filter((line) => line.startsWith('vless://')).map((line) => new URL(line));
+    const tcpEntries = privateEntries.filter((entry) => ['tcp', 'raw', null].includes(entry.searchParams.get('type')) && !entry.searchParams.has('support-x25519mlkem768'));
+    const unsupportedCount = privateEntries.length - tcpEntries.length;
+    await evaluate(`(()=>{const input=document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#subscription-url');input.value=${JSON.stringify(subscriptionURL)};input.dispatchEvent(new Event('input',{bubbles:true}));input.form.requestSubmit();})()`);
+    for (let attempt = 0; attempt < 240; attempt++) {
+      status = await rpc('status');
+      if (status.view.subscription || status.view.error) break;
+      await delay(250);
+    }
+    assert.ok(status.view.subscription, 'live subscription import failed: ' + (status.view.error?.code ?? 'no answer'));
+    assert.equal(status.view.servers.length, tcpEntries.length, 'TCP subscription entry count mismatch');
+    assert.ok(status.view.warning, 'unsupported entries must be visible');
+    assert.equal(await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#subscription-url').value"), '');
+    const firstSource = status.view.subscription.id;
+    await delay(2100);
+    await evaluate(`(()=>{const input=document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#subscription-url');input.value=${JSON.stringify(subscriptionURL)};input.dispatchEvent(new Event('input',{bubbles:true}));input.form.requestSubmit();})()`);
+    for (let attempt = 0; attempt < 240; attempt++) {
+      status = await rpc('status');
+      if (!status.view.pending && (status.view.subscription?.id !== firstSource || status.view.error)) break;
+      await delay(250);
+    }
+    assert.notEqual(status.view.subscription?.id, firstSource, 'new partial source kept the old active subscription');
+    assert.equal(status.view.servers.length, tcpEntries.length, 'new source lost its supported server list');
+    assert.ok(status.view.servers.every((server) => server.subscriptionId === status.view.subscription.id), 'new source mixed old server owners');
+    const localStorage = await evaluate('chrome.storage.local.get(null)');
+    const syncStorage = await evaluate('chrome.storage.sync.get(null)');
+    const publicData = JSON.stringify([localStorage, syncStorage]);
+    for (const secret of [subscriptionURL, new URL(subscriptionURL).pathname, ...privateIds]) {
+      assert.ok(!publicData.includes(secret), 'private subscription data escaped into browser storage');
+      for (const file of await readdir(local + '/NEXORA/keystore')) {
+        assert.ok(!(await readFile(local + '/NEXORA/keystore/' + file)).includes(Buffer.from(secret)), 'subscription secret is plaintext at rest');
+      }
+    }
+    assert.equal(Object.values(localStorage).find((item) => item?.urlRef?.startsWith('keystore://subscription/'))?.format, 'vless-base64', 'partial import did not persist its resolved format');
+    const protectedBefore = new Map();
+    for (const file of await readdir(local + '/NEXORA/keystore')) protectedBefore.set(file, await readFile(local + '/NEXORA/keystore/' + file));
+    const selected = status.view.server.id;
+    const refresh = await rpc('refresh');
+    assert.ok(refresh.view.warning, 'partial refresh did not report unsupported entries');
+    assert.equal(refresh.view.server.id, selected, 'refresh lost the selected server');
+    assert.deepEqual(refresh.view.servers, status.view.servers, 'refresh changed the last-good server list');
+    for (const [file, value] of protectedBefore) assert.deepEqual(await readFile(local + '/NEXORA/keystore/' + file), value, 'partial refresh changed a last-good credential');
+    const representatives = ['tcp', 'raw', null].map((network) => status.view.servers.find((server) => tcpEntries.some((entry) => entry.searchParams.get('type') === network && entry.hostname === server.address && Number(entry.port) === server.port))).filter(Boolean);
+    const candidates = [...new Map([...representatives, ...status.view.servers].map((server) => [server.id, server])).values()];
+    const successes = [];
+    let failures = 0;
+    for (const candidate of candidates.slice(0, 8)) {
+      await delay(6000); // Core mutations share a four-per-20-second budget.
+      await evaluate(`(()=>{const select=document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#subscription-server');select.value=${JSON.stringify(candidate.id)};select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+      for (let attempt = 0; attempt < 40; attempt++) {
+        status = await rpc('status');
+        if (status.view.server.id === candidate.id) break;
+        await delay(100);
+      }
+      assert.equal(status.view.server.id, candidate.id, 'UI server selection failed');
+      await delay(2100);
+      await evaluate("[...document.querySelector('nexora-connection-panel').shadowRoot.querySelectorAll('button')].find(button=>button.textContent.trim()==='Подключить').click()");
+      for (let attempt = 0; attempt < 100; attempt++) {
+        status = await rpc('status');
+        if (status.view.phase === 'connected' || status.view.error) break;
+        await delay(100);
+      }
+      assert.equal(status.view.phase, 'connected', 'selected server Core did not start');
+      assert.equal(await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#subscription-server').disabled"), true, 'selection remained enabled while connected');
+      const config = JSON.parse(await readFile(local + '/NEXORA/config/config.json', 'utf8'));
+      const proxied = config.outbounds.filter((outbound) => outbound.protocol === 'vless');
+      assert.equal(proxied.length, 1, 'Core received more than the selected subscription server');
+      assert.equal(proxied[0].settings.vnext[0].address, candidate.address, 'Core received the wrong server');
+      await delay(2100);
+      const url = probe + (probe.includes('?') ? '&' : '?') + 'nexora=' + randomUUID();
+      const previousTargets = new Set((await call('Target.getTargets')).targetInfos.map((target) => target.targetId));
+      await evaluate(`(()=>{const input=document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#site-url');input.value=${JSON.stringify(url)};input.dispatchEvent(new Event('input',{bubbles:true}));input.form.requestSubmit();})()`);
+      let site;
+      for (let attempt = 0; attempt < 60; attempt++) {
+        site = (await call('Target.getTargets')).targetInfos.find((target) => target.type === 'page' && !previousTargets.has(target.targetId));
+        if (site) break;
+        await delay(100);
+      }
+      assert.ok(site, 'open-site UI did not create a tab');
+      const siteSession = (await call('Target.attachToTarget', { targetId: site.targetId, flatten: true })).sessionId;
+      let egress;
+      for (let attempt = 0; attempt < 120; attempt++) {
+        let body;
+        try { body = await call('Runtime.evaluate', { expression: 'document.body?.textContent', returnByValue: true }, siteSession); }
+        catch { break; }
+        try { egress = JSON.parse(body.result.value); } catch {}
+        if (egress?.ip) break;
+        await delay(250);
+      }
+      if (egress?.ip && egress.ip !== direct.ip) successes.push(candidate.id);
+      else failures++;
+      await call('Target.closeTarget', { targetId: site.targetId });
+      await delay(2100);
+      status = await rpc('disconnect');
+      assert.equal(status.view.phase, 'disconnected', 'live disconnect failed: ' + status.view.error + '; connector=' + status.view.connector + '; provenSelections=' + successes.length);
+      await assert.rejects(readFile(local + '/NEXORA/config/config.json'), { code: 'ENOENT' });
+      assert.deepEqual((await evaluate('chrome.proxy.settings.get({incognito:false})')).value, before.value);
+      if (successes.length === 3) break;
+    }
+    assert.equal(new Set(successes).size, 3, 'fewer than three distinct selected servers proved external HTTPS egress');
+    await call('Emulation.setDeviceMetricsOverride', { width: 320, height: 1000, deviceScaleFactor: 1, mobile: false }, sessionId);
+    assert.equal(await evaluate('document.documentElement.scrollWidth <= 320'), true, 'subscription UI overflows at 320px');
+    measurement = { browser: version.Browser, realNativeMessaging: true, realDPAPI: true, subscriptionEntries: privateEntries.length, selectableServers: status.view.servers.length, unsupportedEntries: unsupportedCount, externalRealityHTTPSSelections: successes.length, unsuccessfulSelections: failures, selectionDisabledWhileConnected: true, onlySelectedServerInCore: true, subscriptionSecretsAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, width320WithoutOverflow: true, scope: 'user-authorized live subscription; valid HTTPS certificates; mechanically prepared test receipt, not trusted production installation' };
+  } else {
+  const input = { displayName: 'Loopback REALITY', address: '127.0.0.1', port: serverPort, userId, serverName: 'localhost', publicKey, shortId: '0011223344556677', flow: true };
   await evaluate(`(()=>{const root=document.querySelector('nexora-connection-panel').shadowRoot;for(const [name,value] of Object.entries(${JSON.stringify(input)})){if(name==='flow')continue;const element=root.querySelector('[name="'+name+'"]');element.value=String(value);element.dispatchEvent(new Event('input',{bubbles:true}));}root.querySelector('#server-form').requestSubmit();})()`);
   for (let attempt = 0; attempt < 40; attempt++) {
     status = await rpc('status');
@@ -151,7 +264,7 @@ try {
   const body = await call('Runtime.evaluate', { expression: 'document.body.textContent', returnByValue: true }, siteSession);
   assert.equal(body.result.value, 'nexora-local-https-ok');
   await delay(2100);
-  await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('button.secondary[type=button]').click()");
+  await evaluate("[...document.querySelector('nexora-connection-panel').shadowRoot.querySelectorAll('button')].find(button=>button.textContent.trim()==='Отключить').click()");
   for (let attempt = 0; attempt < 60; attempt++) {
     status = await rpc('status');
     if (status.view.phase === 'disconnected') break;
@@ -179,6 +292,7 @@ try {
   assert.equal(status.view.phase, 'disconnected', JSON.stringify(status));
   await assert.rejects(readFile(local + '/NEXORA/config/config.json'), { code: 'ENOENT' });
   measurement = { browser: version.Browser, extensionId: id, realNativeMessaging: true, realXrayReality: true, httpsTunneledSource: '127.0.0.2', uuidAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, reconnectAfterStop: true, width320WithoutOverflow: true, screenshot: root + '-connected.png', scope: 'loopback fixture; mechanically prepared test receipt, not trusted production installation; test-only HTTPS certificate exception' };
+  }
 } finally {
   if (socket?.readyState === WebSocket.OPEN) {
     try { await call('Browser.close'); } catch {}

@@ -2,7 +2,7 @@ import type { Json } from '../../../packages/protocol/src/contract.ts';
 import { ConnectorClient, type Port } from '../../../packages/state/src/client.ts';
 import settings from '../../../packages/schema/examples/settings.default.json' with { type: 'json' };
 import failurePolicy from '../../../packages/schema/examples/failure-policy.default.json' with { type: 'json' };
-import type { Action, ConnectionView, SavedProfile, SavedServer, ServerForm } from './model.ts';
+import type { Action, ConnectionView, SavedProfile, SavedServer, SavedSubscription, ServerForm, SubscriptionResult } from './model.ts';
 
 export type Selection = { server: SavedServer; profile: SavedProfile };
 export type ProxyValue = chrome.proxy.ProxyConfig;
@@ -12,6 +12,9 @@ export type Environment = {
   version: string;
   load(): Promise<Selection | null>;
   save(selection: Selection): Promise<void>;
+  loadSubscription(): Promise<SavedSubscription | null>;
+  loadServers(ids: string[]): Promise<SavedServer[]>;
+  saveSubscription(source: SavedSubscription, servers: SavedServer[], selection: Selection | null): Promise<void>;
   readRuntime(): Promise<RuntimeRecord | null>;
   writeRuntime(record: RuntimeRecord | null): Promise<void>;
   getProxy(): Promise<{ value: ProxyValue; levelOfControl: string }>;
@@ -31,7 +34,7 @@ export function createSelection(value: unknown): { selection: Selection; userId:
   if (typeof f.address !== 'string' || !address.test(f.address) || !Number.isInteger(f.port) || f.port < 1 || f.port > 65535) throw new Error('Проверьте адрес и порт сервера.');
   if (typeof f.userId !== 'string' || !uuid.test(f.userId)) throw new Error('Введите UUID доступа к VLESS.');
   if (typeof f.serverName !== 'string' || !hostname.test(f.serverName) || typeof f.publicKey !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(f.publicKey)) throw new Error('Проверьте имя SNI и публичный ключ REALITY (43 символа).');
-  if (typeof f.shortId !== 'string' || !/^([0-9a-f]{2}){0,4}$/.test(f.shortId) || typeof f.flow !== 'boolean') throw new Error('Short ID должен содержать 0–8 шестнадцатеричных символов, попарно.');
+  if (typeof f.shortId !== 'string' || !/^([0-9a-f]{2}){0,8}$/.test(f.shortId) || typeof f.flow !== 'boolean') throw new Error('Short ID должен содержать 0–16 шестнадцатеричных символов, попарно.');
   const id = crypto.randomUUID();
   const profileId = crypto.randomUUID();
   const server: SavedServer = {
@@ -55,6 +58,35 @@ export function siteURL(value: unknown): string {
   return url.href;
 }
 
+export function createSubscription(value: unknown): { source: SavedSubscription; url: string } {
+  let url: string;
+  try { url = siteURL(value); }
+  catch { throw new Error('Введите полный HTTPS-адрес подписки без логина и пароля.'); }
+  const parsed = new URL(url);
+  const id = crypto.randomUUID();
+  return {
+    url,
+    source: {
+      id, displayName: parsed.hostname, url: parsed.origin + '/', urlRef: `keystore://subscription/${id}/url`,
+      format: 'auto', limits: { maxBytes: 2097152, maxRedirects: 3, timeoutMs: 20000, maxServers: 512 },
+      keepLastGood: true, schedule: { intervalSeconds: 3600 }, status: { consecutiveFailures: 0 }, serverIds: [],
+    },
+  };
+}
+
+function subscriptionStatusCode(code: string): string {
+  if (code === 'HandshakeFailed') return 'NetworkUnreachable';
+  return ['NetworkUnreachable', 'Timeout', 'AuthFailed', 'SchemaMismatch', 'QuotaExceeded', 'IntegrityMismatch', 'DiskFull', 'Internal'].includes(code) ? code : 'Internal';
+}
+
+function subscriptionWarning(code: string, partial: boolean): string {
+  if (partial) return 'Часть записей подписки не поддерживается или превышает лимит. Доступны только разобранные TCP-серверы.';
+  if (code === 'AuthFailed') return 'Подписка недоступна: отказ в доступе или адрес больше не существует (в том числе HTTP 404). Прежний список сохранён.';
+  if (code === 'SchemaMismatch') return 'Подписка содержит неподдерживаемые параметры. Прежний список и выбранный сервер сохранены.';
+  if (code === 'QuotaExceeded') return 'Подписка превышает допустимый лимит. Прежний список сохранён.';
+  return 'Не удалось обновить подписку. Прежний список и выбранный сервер сохранены. Повторите обновление позже.';
+}
+
 function failure(error: unknown): string {
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
   switch (code) {
@@ -71,10 +103,12 @@ function failure(error: unknown): string {
 export class Connection {
   readonly client: ConnectorClient;
   private selection: Selection | null = null;
+  private subscription: SavedSubscription | null = null;
+  private servers: SavedServer[] = [];
   private runtime: RuntimeRecord | null = null;
   private initialized: Promise<void> | null = null;
   private busy = false;
-  private view: ConnectionView = { phase: 'disconnected', connector: 'idle', server: null, error: null, coreVersion: null };
+  private view: ConnectionView = { phase: 'disconnected', connector: 'idle', server: null, servers: [], subscription: null, warning: null, pending: false, error: null, coreVersion: null };
 
   private readonly env: Environment;
 
@@ -94,6 +128,9 @@ export class Connection {
 
   private async initialize(): Promise<void> {
     this.selection = await this.env.load();
+    this.subscription = this.selection?.server.source === 'subscription' ? await this.env.loadSubscription() : null;
+    this.servers = this.subscription ? await this.env.loadServers(this.subscription.serverIds) : this.selection ? [this.selection.server] : [];
+    if (this.subscription?.status.lastError) this.view.warning = subscriptionWarning(this.subscription.status.lastError.code, false);
     this.runtime = await this.env.readRuntime();
     if (this.runtime?.active) {
       this.view.phase = 'blocked';
@@ -136,8 +173,18 @@ export class Connection {
           } as Json);
           await this.env.save(selection);
           this.selection = selection;
+          this.subscription = null;
+          this.servers = [selection.server];
+          this.view.warning = null;
           break;
         }
+        case 'subscribe': await this.subscribe(payload); break;
+        case 'refresh':
+          this.requireEditable();
+          if (!this.subscription) throw new Error('Сначала добавьте подписку.');
+          await this.refreshSubscription(this.subscription);
+          break;
+        case 'select': await this.select(payload); break;
         case 'connect': await this.connect(); break;
         case 'disconnect': await this.disconnect(); break;
         case 'open-site':
@@ -153,6 +200,126 @@ export class Connection {
       if (this.view.phase === 'disconnecting') this.view.phase = this.runtime?.active ? 'blocked' : 'disconnected';
     } finally { this.busy = false; }
     return this.snapshot();
+  }
+
+  private requireEditable(): void {
+    if (this.view.phase !== 'disconnected') throw new Error('Сначала отключитесь от сервера.');
+  }
+
+  private async subscribe(payload: unknown): Promise<void> {
+    this.requireEditable();
+    const request = createSubscription(payload);
+    try {
+      await this.ready();
+      await this.client.request('profile.import', {
+        profiles: [], subscriptions: [request.source],
+        credentials: [{ entity: 'subscription', entityId: request.source.id, field: 'url', value: request.url }],
+      } as Json);
+    } finally { request.url = ''; }
+    await this.refreshSubscription(request.source);
+  }
+
+  private selectedServer(server: SavedServer): Selection {
+    const id = this.selection?.profile.id ?? crypto.randomUUID();
+    return {
+      server,
+      profile: {
+        id, displayName: server.displayName, kind: 'connector', serverIds: [server.id], defaultServerId: server.id,
+        selection: { mode: 'fixed' }, failover: { enabled: false }, failurePolicy: { coreDeath: { action: 'block' } },
+      },
+    };
+  }
+
+  private async select(payload: unknown): Promise<void> {
+    this.requireEditable();
+    const id = payload && typeof payload === 'object' && 'serverId' in payload ? payload.serverId : null;
+    const server = this.servers.find((item) => item.id === id);
+    if (!server || !this.subscription || server.subscriptionId !== this.subscription.id) throw new Error('Выберите сервер из доступного списка подписки.');
+    if (this.selection?.server.id === server.id) return;
+    const selection = this.selectedServer(server);
+    if (this.subscription.format !== 'auto') await this.env.saveSubscription(this.subscription, this.servers, selection);
+    this.selection = selection;
+  }
+
+  private async refreshSubscription(source: SavedSubscription): Promise<void> {
+    const at = new Date().toISOString();
+    let result: SubscriptionResult;
+    try {
+      await this.ready();
+      result = await this.client.request('subscription.refresh', { sources: [source], force: true } as Json) as SubscriptionResult;
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'Internal';
+      result = { refreshed: [], unchanged: [], failed: [{ subscriptionId: source.id, code, retryable: true, consecutiveFailures: source.status.consecutiveFailures + 1 }] };
+    }
+    const refreshed = result.refreshed.find((item) => item.subscriptionId === source.id);
+    if (refreshed) {
+      if (!['vless-base64', 'vless-uri-list', 'v2ray-json', 'clash-yaml'].includes(refreshed.format)) throw new Error('Connector не подтвердил формат подписки. Список не изменён.');
+      const servers = this.subscriptionServers(refreshed.servers, source.id);
+      const server = servers.find((item) => item.id === this.selection?.server.id) ?? servers[0];
+      const selection = server ? this.selectedServer(server) : null;
+      const updated: SavedSubscription = {
+        ...source, format: refreshed.format, serverIds: servers.map((item) => item.id),
+        status: { lastAttemptAt: at, lastSuccessAt: at, lastSha256: refreshed.sha256, serverCount: servers.length, consecutiveFailures: 0, lastError: null },
+      };
+      await this.env.saveSubscription(updated, servers, selection);
+      this.subscription = updated;
+      this.servers = servers;
+      this.selection = selection;
+      this.view.warning = refreshed.lossyFields?.length ? 'При импорте часть полей не перенесена. Проверьте параметры выбранного сервера перед подключением.' : null;
+      if (!server) this.view.error = 'В подписке нет доступных TCP-серверов.';
+      return;
+    }
+    if (result.unchanged.includes(source.id)) {
+      const updated = { ...source, status: { ...source.status, lastAttemptAt: at } };
+      if (updated.format !== 'auto') await this.env.saveSubscription(updated, this.servers, this.selection);
+      this.subscription = updated;
+      return;
+    }
+    const failed = result.failed.find((item) => item.subscriptionId === source.id);
+    if (failed) {
+      // Never replace an existing subscription list or selection with partial data.
+      const initialPartial = !source.serverIds.length && !!failed.partialServers?.length;
+      const servers = initialPartial ? this.subscriptionServers(failed.partialServers!, source.id) : this.servers;
+      const selection = initialPartial ? this.selectedServer(servers[0]!) : this.selection;
+      const status = { ...source.status, lastAttemptAt: at, consecutiveFailures: failed.consecutiveFailures, lastError: { code: subscriptionStatusCode(failed.code), at } };
+      delete status.nextAttemptAt;
+      if (failed.nextAttemptAt) status.nextAttemptAt = failed.nextAttemptAt;
+      const format = source.format === 'auto' && failed.format ? failed.format : source.format;
+      if (format !== 'auto' && !['vless-base64', 'vless-uri-list', 'v2ray-json', 'clash-yaml'].includes(format)) throw new Error('Connector не подтвердил формат подписки. Список не изменён.');
+      const updated: SavedSubscription = { ...source, format, status, serverIds: initialPartial ? servers.map((server) => server.id) : source.serverIds };
+      this.view.warning = subscriptionWarning(failed.code, !!failed.partialServers?.length);
+      if (failed.rejectedCount) this.view.warning += ` Неподдерживаемых записей: ${failed.rejectedCount}.`;
+      if (!initialPartial && failed.partialServers?.length) this.view.warning += ' Прежний список и выбранный сервер сохранены без изменений.';
+      if (updated.format === 'auto') {
+        // A partial result may lack the optional format verdict. Never invent or persist it.
+        this.view.warning += ' Формат ещё не подтверждён: новая подписка и её список временные до успешного обновления; после перезапуска добавьте ссылку заново.';
+      } else await this.env.saveSubscription(updated, servers, selection);
+      if (initialPartial || !this.subscription || this.subscription.id === source.id) {
+        this.subscription = updated;
+        this.servers = servers;
+        this.selection = selection;
+      }
+      this.view.error = initialPartial ? null : subscriptionWarning(failed.code, false);
+      return;
+    }
+    if (result.skipped?.includes(source.id)) throw new Error('Обновление подписки отложено Connector. Повторите позже.');
+    throw new Error('Connector не вернул результат обновления подписки. Список не изменён.');
+  }
+
+  private subscriptionServers(servers: SavedServer[], subscriptionId: string): SavedServer[] {
+    if (servers.length > 512 || new Set(servers.map((server) => server.id)).size !== servers.length) throw new Error('Connector вернул некорректный список серверов.');
+    return servers.map((server) => {
+      if (!uuid.test(server.id) || server.protocol !== 'vless' || server.network !== 'tcp' || server.source !== 'subscription' || server.subscriptionId !== subscriptionId || server.userIdRef !== `keystore://server/${server.id}/user-id`) throw new Error('Connector вернул неподдерживаемый сервер. Список не изменён.');
+      // Whitelist public fields; do not retain any inline credential or raw feed field.
+      const saved: SavedServer = {
+        id: server.id, displayName: server.displayName, protocol: server.protocol, address: server.address, port: server.port,
+        userIdRef: server.userIdRef, network: server.network, security: server.security, flow: server.flow,
+        source: server.source, subscriptionId,
+      };
+      if (server.tls) saved.tls = { serverName: server.tls.serverName, ...(server.tls.alpn ? { alpn: [...server.tls.alpn] } : {}), ...(server.tls.fingerprint ? { fingerprint: server.tls.fingerprint } : {}), ...(server.tls.insecure === false ? { insecure: false } : {}) };
+      if (server.reality) saved.reality = { serverName: server.reality.serverName, publicKey: server.reality.publicKey, ...(server.reality.shortId !== undefined ? { shortId: server.reality.shortId } : {}), ...(server.reality.fingerprint ? { fingerprint: server.reality.fingerprint } : {}), ...(server.reality.spiderX !== undefined ? { spiderX: server.reality.spiderX } : {}) };
+      return saved;
+    });
   }
 
   private async connect(): Promise<void> {
@@ -233,6 +400,15 @@ export class Connection {
 
   snapshot(): ConnectionView {
     const server = this.selection?.server;
-    return { ...this.view, server: server ? { id: server.id, displayName: server.displayName, address: server.address, port: server.port } : null };
+    const source = this.subscription;
+    return {
+      ...this.view, pending: this.busy, servers: structuredClone(this.servers),
+      subscription: source ? {
+        id: source.id, displayName: source.displayName, serverCount: this.servers.filter((item) => item.subscriptionId === source.id).length,
+        consecutiveFailures: source.status.consecutiveFailures, lastAttemptAt: source.status.lastAttemptAt,
+        lastSuccessAt: source.status.lastSuccessAt, temporary: source.format === 'auto',
+      } : null,
+      server: server ? { id: server.id, displayName: server.displayName, address: server.address, port: server.port } : null,
+    };
   }
 }

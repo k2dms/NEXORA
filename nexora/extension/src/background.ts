@@ -1,6 +1,6 @@
 import { hostName } from '../../../packages/protocol/src/contract.ts';
 import { Connection, type RuntimeRecord, type Selection } from './connection.ts';
-import { channel, selectedKey, runtimeKey, type Action } from './model.ts';
+import { channel, selectedKey, runtimeKey, type Action, type SavedSubscription, type SavedServer } from './model.ts';
 
 const connection = new Connection({
   version: chrome.runtime.getManifest().version,
@@ -26,6 +26,29 @@ const connection = new Connection({
       [selectedKey]: profile.id,
     });
   },
+  async loadSubscription() {
+    const selection = await this.load();
+    const id = selection?.server.source === 'subscription' ? selection.server.subscriptionId : null;
+    if (!id) return null;
+    const key = `-nexora.subscription.${id}`;
+    return (await chrome.storage.local.get(key))[key] as SavedSubscription | undefined ?? null;
+  },
+  async loadServers(ids) {
+    const keys = ids.map((id) => `-nexora.server.${id}`);
+    const stored = await chrome.storage.local.get(keys);
+    return keys.map((key) => stored[key] as SavedServer | undefined).filter((server): server is SavedServer => !!server);
+  },
+  async saveSubscription(source, servers, selection) {
+    // Auto is a transient parser declaration, never a stored source.
+    if (source.format === 'auto' || source.url !== new URL(source.url).origin + '/') throw new Error('Подписка ещё не готова к сохранению.');
+    const values: Record<string, unknown> = { [`-nexora.subscription.${source.id}`]: source, [selectedKey]: selection?.profile.id ?? null };
+    for (const server of servers) values[`-nexora.server.${server.id}`] = server;
+    if (selection) {
+      values[`-nexora.server.${selection.server.id}`] = selection.server;
+      values[`-nexora.profile.${selection.profile.id}`] = selection.profile;
+    }
+    await chrome.storage.local.set(values);
+  },
   async readRuntime() { return (await chrome.storage.session.get(runtimeKey))[runtimeKey] as RuntimeRecord | undefined ?? null; },
   async writeRuntime(record) {
     if (record) await chrome.storage.session.set({ [runtimeKey]: record });
@@ -45,7 +68,7 @@ const connection = new Connection({
   async openSite(url) { await chrome.tabs.create({ url }); },
 });
 
-const actions = new Set<Action>(['status', 'save', 'connect', 'disconnect', 'open-site']);
+const actions = new Set<Action>(['status', 'save', 'subscribe', 'refresh', 'select', 'connect', 'disconnect', 'open-site']);
 const answers = new Map<string, Promise<unknown>>();
 chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
   if (!message || typeof message !== 'object' || !('channel' in message) || message.channel !== channel) return;
