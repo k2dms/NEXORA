@@ -219,7 +219,7 @@ Not a schedule — a dependency graph the states impose:
    is a phantom. What is actually left in this step is three rows, and each is smaller than it reads: `VER-66` needs
    a body detector the entity schemas have no field for — the register question closest to it in shape, `ODEC-40`,
    was answered on 2026-11-07 and left, while this one is still open — `VER-19`
-   needs a `dedupeWindow` field no contract carries and a live run to bound it, and `VER-58`'s injection half is a
+   now needs a live cross-port replay/adoption fixture, not the implemented process-local bounds, and `VER-58`'s injection half is a
    scan over a `nexora/**` that is empty — the emptiness §8 refuses to count as evidence for `VER-02` and `VER-03`.
    The fourth is `VER-83`, and it is the queue's only row of this shape: nothing is absent from disk, no question
    gates it, and what it waits for is a sixth pass in a guard that already runs in the pipeline.
@@ -395,7 +395,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
-| VER-19 | `dedupeWindow` bounds are neither data nor tested (ADR-0008 rule 2) | `contracts` · assertion | 2 · 2 |
+| VER-19 | Bounded process-local dedupe is tested; native-port recreation/adoption replay has no live fixture | `contracts` · assertion | 2 · 2 |
 | VER-66 | `format: auto` never resolving ambiguously — no fixture where both detectors fire | `contracts` · assertion | 1 · 1 |
 
 ### `needs-human` — 4

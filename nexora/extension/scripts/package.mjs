@@ -1,0 +1,22 @@
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const legacy = resolve(root, '../../omega-target-chromium-extension/build');
+const output = resolve(root, 'dist/chromium');
+const source = resolve(root, '../../omega-target-chromium-extension/overlay/manifest.json');
+await readFile(resolve(legacy, 'options.html'));
+await mkdir(output, { recursive: true });
+await cp(legacy, output, { recursive: true });
+await cp(resolve(root, 'dist/assets-build'), output, { recursive: true });
+const manifest = JSON.parse(await readFile(source, 'utf8'));
+manifest.name = 'NEXORA';
+manifest.minimum_chrome_version = '102';
+manifest.permissions = [...new Set([...manifest.permissions, 'nativeMessaging'])];
+manifest.options_page = 'nexora-options.html';
+manifest.options_ui.page = 'nexora-options.html';
+await writeFile(resolve(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+const background = await readFile(resolve(legacy, 'x-background.js'), 'utf8');
+await writeFile(resolve(output, 'x-background.js'), "import './nexora-background.js';\n" + background);
+console.log('NEXORA Chromium artifact: ' + output);

@@ -9,43 +9,43 @@ package contract
 
 var Methods = []Method{
 	{Name: "connector.hello", Class: "read", AvailableBeforeHello: true, Privileged: false,
-		Replayable: true, TimeoutMs: 5000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 5000, Capabilities: nil},
 	{Name: "connector.version", Class: "read", AvailableBeforeHello: false, Privileged: false,
-		Replayable: true, TimeoutMs: 2000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 2000, Capabilities: nil},
 	{Name: "connector.status", Class: "read", AvailableBeforeHello: false, Privileged: false,
-		Replayable: true, TimeoutMs: 3000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 3000, Capabilities: nil},
 	{Name: "connector.health", Class: "read", AvailableBeforeHello: false, Privileged: false,
-		Replayable: true, TimeoutMs: 5000, Capabilities: []string{"health.probes"}},
+		Replayable: true, Idempotent: true, TimeoutMs: 5000, Capabilities: []string{"health.probes"}},
 	{Name: "connector.events.subscribe", Class: "mutate", AvailableBeforeHello: false, Privileged: false,
-		Replayable: true, TimeoutMs: 5000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 5000, Capabilities: nil},
 	{Name: "core.start", Class: "converge", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 15000, Capabilities: []string{"integrity.pinned-core"}},
+		Replayable: true, Idempotent: true, TimeoutMs: 15000, Capabilities: []string{"integrity.pinned-core"}},
 	{Name: "core.stop", Class: "converge", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 10000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 10000, Capabilities: nil},
 	{Name: "core.restart", Class: "converge", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 20000, Capabilities: []string{"integrity.pinned-core"}},
+		Replayable: true, Idempotent: true, TimeoutMs: 20000, Capabilities: []string{"integrity.pinned-core"}},
 	{Name: "core.status", Class: "read", AvailableBeforeHello: false, Privileged: false,
-		Replayable: true, TimeoutMs: 3000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 3000, Capabilities: nil},
 	{Name: "core.select", Class: "mutate", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 3000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 3000, Capabilities: nil},
 	{Name: "config.apply", Class: "replace", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 30000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 30000, Capabilities: nil},
 	{Name: "config.snapshot", Class: "read", AvailableBeforeHello: false, Privileged: false,
-		Replayable: true, TimeoutMs: 5000, Capabilities: []string{"config.snapshot"}},
+		Replayable: true, Idempotent: true, TimeoutMs: 5000, Capabilities: []string{"config.snapshot"}},
 	{Name: "profile.import", Class: "replace", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 60000, Capabilities: []string{"chunked.import"}},
+		Replayable: true, Idempotent: true, TimeoutMs: 60000, Capabilities: []string{"chunked.import"}},
 	{Name: "profile.remove", Class: "mutate", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 10000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 10000, Capabilities: nil},
 	{Name: "profile.validate", Class: "read", AvailableBeforeHello: false, Privileged: false,
-		Replayable: true, TimeoutMs: 10000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 10000, Capabilities: nil},
 	{Name: "subscription.refresh", Class: "mutate", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 120000, Capabilities: []string{"chunked.import"}},
+		Replayable: true, Idempotent: true, TimeoutMs: 120000, Capabilities: []string{"chunked.import"}},
 	{Name: "server.test", Class: "probe", AvailableBeforeHello: false, Privileged: true,
-		Replayable: false, TimeoutMs: 30000, Capabilities: []string{"health.probes"}},
+		Replayable: false, Idempotent: true, TimeoutMs: 30000, Capabilities: []string{"health.probes"}},
 	{Name: "diagnostics.get", Class: "read", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 15000, Capabilities: []string{"diagnostics.redacted"}},
+		Replayable: true, Idempotent: true, TimeoutMs: 15000, Capabilities: []string{"diagnostics.redacted"}},
 	{Name: "keystore.purge", Class: "mutate", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, TimeoutMs: 10000, Capabilities: nil},
+		Replayable: true, Idempotent: true, TimeoutMs: 10000, Capabilities: nil},
 }
 
 var ErrorCodes = []Code{
@@ -109,6 +109,9 @@ const (
 	EffectiveCrossBrowserBytes       = 1048576
 	MaxConcurrentRequests            = 64
 	MaxInFlightBytes                 = 8388608
+	DedupeWindowSeconds              = 300
+	DedupeMaxEntries                 = 256
+	DedupeMaxBytes                   = 8388608
 	HeartbeatSeconds                 = 25
 	MissedHeartbeatsBeforeDisconnect = 3
 	ReconnectJitterPercent           = 30

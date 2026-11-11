@@ -25,12 +25,12 @@ declared properties of every command.
 1. The client-generated request `id` IS the idempotency key. The connector MUST treat a second request with
    a key it has already answered for an idempotent command as a replay: it MUST return the stored response,
    MUST NOT re-run the side effect, and MUST answer with `inReplyTo` set to that same id.
-2. Keys and stored answers MUST be retained for a bounded window only, sized and aged in the connector's own
-   configuration, and eviction MUST be observable. The window is deliberately bounded so a long-lived
-   connector cannot accumulate answers forever and cannot make an old gesture look fresh. **This bound is not
-   yet contract data**: no field in `packages/schema` states a window length or a key-count ceiling, so
-   Phase 2 MUST add one (a `dedupeWindow` field on the framing document is the intended home) rather than
-   hard-coding a constant in Go.
+2. Keys and successful answers MUST be retained for a bounded window only, and eviction MUST be observable.
+   `packages/schema/protocol/framing.json#/dedupeWindow` declares 300 seconds from first completion,
+   256 entries and 8 MiB of encoded results per sender per Connector process. Replays do not extend age.
+   Admission precedes replay; only response snapshots and routing keys are retained, never request payloads.
+   Age, entry and byte evictions have aggregate counters. Refusals and oversized answers are not retained.
+   This volatile window does not survive a new Connector process; cross-port adoption remains unverified.
 3. State-changing commands MUST converge to a desired state rather than perform an action blindly. The
    `class` enum makes this a checked property: `converge` means repeated calls are no-ops
    (`packages/schema/protocol/command-allowlist.json:18`), `replace` means declarative reconcile —
@@ -97,8 +97,8 @@ that lets a late answer be discarded rather than applied.
   request whose id is answered more than once, i.e. a replay recorded as data.
 - Class distribution of the 19 methods (8 read, 3 converge, 2 replace, 5 mutate, 1 probe) — VERIFIED against
   `packages/schema/protocol/command-allowlist.json:13`.
-- Rule 2's window bounds — UNVERIFIED: no contract field expresses them, stated in the decision rather than
-  hidden in the consequences.
+- Rule 2's process-local bounds — VERIFIED by generated contract limits and dispatcher tests; cross-process
+  replay remains UNVERIFIED because a new native port still creates a new Connector owner.
 
 ## Verification
 
@@ -106,9 +106,9 @@ Today: `npm --prefix packages/schema run verify` asserts the probe rule (`packag
 the rationale rule, the replay-identity rule and the single-answer rule across
 `packages/schema/fixtures/protocol/` — 109 frames, 5 idempotent replay pairs, all green.
 
-Deferred to Phase 2: the connector's actual deduplication — a Go test that sends one request twice and asserts
-one side effect plus two identical answers, a second `core.start` after a reconnect returning the same PID,
-and the `dedupeWindow` contract field with its own invalid example. Specified in
-`docs/architecture/26-command-surface.md` and `docs/architecture/29-subscriptions-and-servers.md`.
+Implemented: process-local duplicate/concurrent calls, detached results, TTL and entry/byte eviction tests;
+the wired import A → rotation B → replay A test preserves B with exactly two protected writes
+(`connector/cmd/nexora-connector/main_test.go:601`). Deferred: replay across port recreation and a second
+Core start after adoption returning the same PID, as required by ADR-0005 and ODEC-01.
 
-Verified: NO — deferred to Phase 2 (rule 2 has no check and no data yet).
+Verified: NO — deferred to Phase 2 (cross-process replay and adoption remain unmeasured).

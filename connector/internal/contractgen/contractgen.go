@@ -60,6 +60,11 @@ type framingDoc struct {
 		BackoffSeconds []int `json:"backoffSeconds"`
 		JitterPercent  int   `json:"jitterPercent"`
 	} `json:"reconnect"`
+	DedupeWindow struct {
+		WindowSeconds int `json:"windowSeconds"`
+		MaxEntries    int `json:"maxEntries"`
+		MaxBytes      int `json:"maxBytes"`
+	} `json:"dedupeWindow"`
 	SenderPolicy struct {
 		Identity struct {
 			HostName      string `json:"hostName"`
@@ -116,6 +121,7 @@ type commandDoc struct {
 	Name          string   `json:"name"`
 	Class         string   `json:"class"`
 	Replayable    bool     `json:"replayable"`
+	Idempotent    bool     `json:"idempotent"`
 	RequiresHello bool     `json:"requiresHello"`
 	TimeoutMs     int      `json:"timeoutMs"`
 	Capabilities  []string `json:"capabilities"`
@@ -266,6 +272,15 @@ func Source(repoRoot string) ([]byte, error) {
 			return nil, fmt.Errorf("protocolVersion disagrees between %s: %d vs %d", pair.what, pair.a, pair.b)
 		}
 	}
+	for name, value := range map[string]int{
+		"windowSeconds": fr.DedupeWindow.WindowSeconds,
+		"maxEntries":    fr.DedupeWindow.MaxEntries,
+		"maxBytes":      fr.DedupeWindow.MaxBytes,
+	} {
+		if value <= 0 {
+			return nil, fmt.Errorf("framing.json dedupeWindow.%s must be a positive integer, got %d", name, value)
+		}
+	}
 	if !codes["Busy"] {
 		return nil, fmt.Errorf("the taxonomy has no Busy code, which every rate limit answers with")
 	}
@@ -369,8 +384,8 @@ func Source(repoRoot string) ([]byte, error) {
 		}
 		fmt.Fprintf(&b, "\t{Name: %s, Class: %s, AvailableBeforeHello: %s, Privileged: %s,\n",
 			quote(c.Name), quote(c.Class), strconv.FormatBool(c.AvailableBeforeHello), strconv.FormatBool(c.Privileged))
-		fmt.Fprintf(&b, "\t\tReplayable: %s, TimeoutMs: %d, Capabilities: %s},\n",
-			strconv.FormatBool(doc.Replayable), doc.TimeoutMs, stringSliceLit(doc.Capabilities))
+		fmt.Fprintf(&b, "\t\tReplayable: %s, Idempotent: %s, TimeoutMs: %d, Capabilities: %s},\n",
+			strconv.FormatBool(doc.Replayable), strconv.FormatBool(doc.Idempotent), doc.TimeoutMs, stringSliceLit(doc.Capabilities))
 	}
 	for name := range docs {
 		if !published[name] {
@@ -422,6 +437,9 @@ func Source(repoRoot string) ([]byte, error) {
 		{"EffectiveCrossBrowserBytes", strconv.Itoa(fr.Limits.EffectiveCrossBrowserBytes.Value)},
 		{"MaxConcurrentRequests", strconv.Itoa(fr.Limits.MaxConcurrentRequests.Value)},
 		{"MaxInFlightBytes", strconv.Itoa(fr.Limits.MaxInFlightBytes.Value)},
+		{"DedupeWindowSeconds", strconv.Itoa(fr.DedupeWindow.WindowSeconds)},
+		{"DedupeMaxEntries", strconv.Itoa(fr.DedupeWindow.MaxEntries)},
+		{"DedupeMaxBytes", strconv.Itoa(fr.DedupeWindow.MaxBytes)},
 		{"HeartbeatSeconds", strconv.Itoa(fr.Liveness.HeartbeatSeconds)},
 		{"MissedHeartbeatsBeforeDisconnect", strconv.Itoa(fr.Liveness.MissedHeartbeatsBeforeDisconnect)},
 		{"ReconnectJitterPercent", strconv.Itoa(fr.Reconnect.JitterPercent)},

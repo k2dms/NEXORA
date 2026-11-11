@@ -3,10 +3,13 @@ package dispatch
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -522,5 +525,505 @@ func TestTheUnpublishedNamesInTheCorpusAreAnsweredHereNotInTheCodec(t *testing.T
 	}
 	if *ran != 0 {
 		t.Error("a name the allowlist does not publish reached a handler")
+	}
+}
+
+func dedupeDispatcher(t *testing.T, now *clock, handlers map[string]Handler) *Dispatcher {
+	t.Helper()
+	d, err := New(Config{Handlers: handlers, Now: now.Now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d
+}
+
+func answer(t *testing.T, d *Dispatcher, id Identity, f *envelope.Frame) any {
+	t.Helper()
+	result, r := d.Dispatch(context.Background(), id, f)
+	if r != nil {
+		t.Fatalf("dispatch refused: %+v", r)
+	}
+	return result
+}
+
+func resultJSON(t *testing.T, result any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+func TestConcurrentAndRepeatedRequestsShareOneStoredAnswer(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	id := negotiated(contract.CapabilityNames()...)
+	started, release := make(chan struct{}), make(chan struct{})
+	var runs atomic.Int32
+	var d *Dispatcher
+	d = dedupeDispatcher(t, now, map[string]Handler{"config.apply": func(context.Context, *envelope.Frame) (any, *Refusal) {
+		n := runs.Add(1)
+		// A handler may call back into dispatch counters; holding d.mu here would deadlock.
+		d.Refused(id.SenderID)
+		if n == 1 {
+			close(started)
+		}
+		<-release
+		return map[string]any{"applied": true, "generation": n}, nil
+	}})
+	f := request(t, "req-concurrent-1", "config.apply")
+	type reply struct {
+		result any
+		r      *Refusal
+	}
+	const callers = 12 // Under the pipe floor, even though every reply counts against it.
+	replies := make(chan reply, callers)
+	launch := func() {
+		result, r := d.Dispatch(context.Background(), id, f)
+		replies <- reply{result, r}
+	}
+	go launch()
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("handler could not read dispatch counters; d.mu deadlock")
+	}
+	var launched sync.WaitGroup
+	launched.Add(callers - 1)
+	for i := 1; i < callers; i++ {
+		go func() { launched.Done(); launch() }()
+	}
+	launched.Wait()
+	close(release)
+	want := []byte(`{"applied":true,"generation":1}`)
+	for i := 0; i < callers; i++ {
+		select {
+		case got := <-replies:
+			if got.r != nil || !bytes.Equal(resultJSON(t, got.result), want) {
+				t.Fatalf("concurrent answer: %s / %+v", resultJSON(t, got.result), got.r)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("identical calls did not complete; waiter or d.mu deadlock")
+		}
+	}
+	if got := resultJSON(t, answer(t, d, id, f)); !bytes.Equal(got, want) || runs.Load() != 1 {
+		t.Fatalf("repeat got %s, side effects=%d, want the stored result and one effect", got, runs.Load())
+	}
+}
+
+func TestImportARetryDoesNotOverwriteLaterCredentialB(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	writes, protected := 0, ""
+	d := dedupeDispatcher(t, now, map[string]Handler{"profile.import": func(_ context.Context, f *envelope.Frame) (any, *Refusal) {
+		// A protected-write stand-in: real Store/profileImport is outside dispatch's dependencies.
+		var args struct {
+			Credential string `json:"credential"`
+		}
+		if err := json.Unmarshal(f.Args, &args); err != nil {
+			return nil, &Refusal{Code: "BadRequest", Message: "invalid import"}
+		}
+		protected = args.Credential
+		writes++
+		return map[string]any{"applied": true, "write": writes}, nil
+	}})
+	id := negotiated(contract.CapabilityNames()...)
+	a, b := request(t, "req-import-A", "profile.import"), request(t, "req-import-B", "profile.import")
+	a.Args, b.Args = json.RawMessage(`{"credential":"X"}`), json.RawMessage(`{"credential":"Y"}`)
+	storedA := resultJSON(t, answer(t, d, id, a))
+	answer(t, d, id, b)
+	// Both named mutation slots are spent. Same id+method means the stored answer, not
+	// a second write or an args digest comparison, even if the caller changes its args.
+	a.Args = json.RawMessage(`{"credential":"must-not-be-written"}`)
+	replay := resultJSON(t, answer(t, d, id, a))
+	if writes != 2 || protected != "Y" || !bytes.Equal(replay, storedA) {
+		t.Fatalf("A/B/replay A: writes=%d, protected=%q, replay=%s, stored=%s", writes, protected, replay, storedA)
+	}
+	cache := d.responses[id.SenderID]
+	if strings.Contains(string(cache.entries[a.ID].result), "credential") || strings.Contains(string(cache.entries[a.ID].result), "must-not-be-written") {
+		t.Fatal("response cache retained request/credential material")
+	}
+}
+
+func TestDedupeExpiryStartsAtFirstCompletionAndReplayDoesNotExtendIt(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	runs := 0
+	d := dedupeDispatcher(t, now, map[string]Handler{"config.apply": func(context.Context, *envelope.Frame) (any, *Refusal) {
+		runs++
+		if runs == 1 {
+			now.After(2 * time.Minute) // Time in the handler is not deducted from the response window.
+		}
+		return runs, nil
+	}})
+	id := negotiated(contract.CapabilityNames()...)
+	f := request(t, "req-expiry-1", "config.apply")
+	want := resultJSON(t, answer(t, d, id, f))
+	completed := now.Now()
+	now.After(time.Duration(contract.DedupeWindowSeconds)*time.Second - time.Second)
+	if got := resultJSON(t, answer(t, d, id, f)); !bytes.Equal(got, want) || runs != 1 {
+		t.Fatalf("reply expired before its completion-based window: %s, runs=%d", got, runs)
+	}
+	if !d.responses[id.SenderID].entries[f.ID].completed.Equal(completed) {
+		t.Fatal("replay extended the expiry")
+	}
+	now.After(time.Second)
+	answer(t, d, id, f)
+	if runs != 2 || d.DedupeStats().AgeEvictions != 1 {
+		t.Fatalf("expiry boundary: runs=%d, stats=%+v", runs, d.DedupeStats())
+	}
+}
+
+func TestEntryEvictionIsBoundedObservableAndNotReplayLRU(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	runs, h := counting(t)
+	d := dedupeDispatcher(t, now, map[string]Handler{"connector.version": h})
+	id := negotiated(contract.CapabilityNames()...)
+	first := request(t, "req-entry-0000", "connector.version")
+	for i := 0; i < contract.DedupeMaxEntries; i++ {
+		answer(t, d, id, request(t, fmt.Sprintf("req-entry-%04d", i), "connector.version"))
+		now.After(time.Second) // Stay under the pipe floor and inside the 300s window.
+	}
+	answer(t, d, id, first) // Does not promote it past a later first completion.
+	answer(t, d, id, request(t, "req-entry-extra", "connector.version"))
+	cache := d.responses[id.SenderID]
+	if len(cache.entries) != contract.DedupeMaxEntries || cache.entries[first.ID] != nil || d.DedupeStats().EntryEvictions != 1 {
+		t.Fatalf("entry bound/oldest eviction: entries=%d, stats=%+v", len(cache.entries), d.DedupeStats())
+	}
+	answer(t, d, id, first)
+	if *runs != contract.DedupeMaxEntries+2 || len(cache.entries) > contract.DedupeMaxEntries {
+		t.Fatalf("evicted request did not run fresh within the bound: runs=%d, entries=%d", *runs, len(cache.entries))
+	}
+}
+
+func TestByteEvictionAndOversizedResponsesStayBounded(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	runs := 0
+	payload := strings.Repeat("x", contract.HostToExtensionBytes*3/4)
+	d := dedupeDispatcher(t, now, map[string]Handler{"connector.version": func(context.Context, *envelope.Frame) (any, *Refusal) {
+		runs++
+		return payload, nil
+	}})
+	id := negotiated(contract.CapabilityNames()...)
+	size := len(resultJSON(t, payload))
+	fit := contract.DedupeMaxBytes / size
+	first := request(t, "req-bytes-0000", "connector.version")
+	for i := 0; i <= fit; i++ {
+		answer(t, d, id, request(t, fmt.Sprintf("req-bytes-%04d", i), "connector.version"))
+		cache := d.responses[id.SenderID]
+		if cache.bytes > contract.DedupeMaxBytes || len(cache.entries) > contract.DedupeMaxEntries {
+			t.Fatalf("dedupe exceeded its bounds: bytes=%d, entries=%d", cache.bytes, len(cache.entries))
+		}
+		now.After(time.Second)
+	}
+	cache := d.responses[id.SenderID]
+	if cache.entries[first.ID] != nil || d.DedupeStats().ByteEvictions != 1 {
+		t.Fatalf("byte eviction did not remove/observe oldest answer: %+v", d.DedupeStats())
+	}
+	answer(t, d, id, first)
+	if runs != fit+2 {
+		t.Fatalf("byte-evicted request was replayed, runs=%d", runs)
+	}
+
+	// One answer larger than the entire byte budget is delivered but cannot be retained.
+	payload = strings.Repeat("z", contract.DedupeMaxBytes+1)
+	oversized := request(t, "req-bytes-large", "connector.version")
+	beforeBytes, beforeEntries := cache.bytes, len(cache.entries)
+	beforeEvictions := d.DedupeStats().ByteEvictions
+	answer(t, d, id, oversized)
+	answer(t, d, id, oversized)
+	if cache.bytes != beforeBytes || len(cache.entries) != beforeEntries || cache.entries[oversized.ID] != nil || d.DedupeStats().ByteEvictions != beforeEvictions+2 {
+		t.Fatalf("oversized answer poisoned/displaced the cache: bytes=%d, entries=%d, stats=%+v", cache.bytes, len(cache.entries), d.DedupeStats())
+	}
+}
+
+func TestAdmissionIsRecheckedBeforeCachedAnswersAndCollisions(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	runs, h := counting(t)
+	d := dedupeDispatcher(t, now, map[string]Handler{"config.snapshot": h})
+	id := negotiated(contract.CapabilityNames()...)
+	f := request(t, "req-admission-1", "config.snapshot")
+	want := resultJSON(t, answer(t, d, id, f))
+	for _, gate := range []struct {
+		name, code string
+		change     func(*Identity)
+	}{
+		{"unauthorized", "UnauthorizedExtension", func(id *Identity) { id.Allowlisted = false }},
+		{"hello withdrawn", "HandshakeFailed", func(id *Identity) { id.Negotiated = false }},
+		{"capability withdrawn", "HandshakeFailed", func(id *Identity) { id.Capabilities = nil }},
+	} {
+		t.Run(gate.name, func(t *testing.T) {
+			withdrawn := id
+			gate.change(&withdrawn)
+			result, r := d.Dispatch(context.Background(), withdrawn, f)
+			if result != nil || r == nil || r.Code != gate.code {
+				t.Fatalf("cached answer bypassed admission: result=%v, refusal=%+v", result, r)
+			}
+		})
+	}
+	for method, code := range map[string]string{"core.select": "Internal", "core.snooze": "UnknownMethod"} {
+		result, r := d.Dispatch(context.Background(), id, request(t, f.ID, method))
+		if result != nil || r == nil || r.Code != code {
+			t.Fatalf("%s did not precede collision lookup: %v / %+v", method, result, r)
+		}
+	}
+	if got := resultJSON(t, answer(t, d, id, f)); !bytes.Equal(got, want) || *runs != 1 {
+		t.Fatal("admission refusals damaged the original stored answer")
+	}
+}
+
+func TestMethodCollisionIsSanitizedIncludingInFlightAndProbe(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	runs, h := counting(t)
+	d := dedupeDispatcher(t, now, map[string]Handler{"config.apply": h, "core.stop": h, "server.test": h})
+	id := negotiated(contract.CapabilityNames()...)
+	f := request(t, "req-secret-collision", "config.apply")
+	m, _ := contract.LookupMethod("config.apply")
+	entry, _, r := d.beginResponse(context.Background(), id, f.ID, m)
+	if r != nil || entry == nil {
+		t.Fatalf("reserve: %+v", r)
+	}
+	for _, completed := range []bool{false, true} {
+		if completed {
+			d.completeResponse(id.SenderID, f.ID, entry, json.RawMessage(`{"applied":true}`))
+		}
+		for _, method := range []string{"core.stop", "server.test"} {
+			collision := request(t, f.ID, method)
+			collision.Args = json.RawMessage(`{"credential":"secret-collision-value"}`)
+			result, r := d.Dispatch(context.Background(), id, collision)
+			if result != nil || r == nil || r.Code != "BadRequest" || r.Message != "request id is already bound to another method" {
+				t.Fatalf("collision completed=%v: %v / %+v", completed, result, r)
+			}
+			if strings.Contains(r.Message, f.ID) || strings.Contains(r.Message, "secret-collision-value") {
+				t.Fatal("collision answer disclosed request material")
+			}
+		}
+	}
+	if *runs != 0 {
+		t.Fatal("colliding method reached a side effect")
+	}
+}
+
+func TestSenderScopeAndNewDispatcher(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	runs, h := counting(t)
+	handlers := map[string]Handler{"profile.import": h}
+	d := dedupeDispatcher(t, now, handlers)
+	one, two := negotiated(contract.CapabilityNames()...), negotiated(contract.CapabilityNames()...)
+	two.SenderID = "ext-another-pinned"
+	f := request(t, "req-sender-key", "profile.import")
+	answer(t, d, one, f)
+	answer(t, d, two, f)
+	// A new identity snapshot shares the sender key only within this dispatcher. This
+	// does not assert Connector/port adoption: creating a new dispatcher below loses the cache.
+	renewed := negotiated(contract.CapabilityNames()...)
+	answer(t, d, renewed, f)
+	answer(t, d, two, f)
+	if *runs != 2 {
+		t.Fatalf("per-sender/port scope: runs=%d, want two", *runs)
+	}
+	fresh := dedupeDispatcher(t, now, handlers)
+	answer(t, fresh, one, f)
+	if *runs != 3 {
+		t.Fatal("a new Connector dispatcher inherited a response cache")
+	}
+}
+
+func TestProbeAndHelloAreNeverCachedAndFlagsGateDedupe(t *testing.T) {
+	for _, m := range []contract.Method{
+		{Name: "config.apply", Replayable: false, Idempotent: true},
+		{Name: "config.apply", Replayable: true, Idempotent: false},
+		{Name: "server.test", Replayable: true, Idempotent: true},
+		{Name: "connector.hello", Replayable: true, Idempotent: true, AvailableBeforeHello: true},
+	} {
+		if cacheable(m) {
+			t.Errorf("dedupe admitted %+v", m)
+		}
+	}
+	now := &clock{t: time.Unix(0, 0)}
+	probeRuns, probe := counting(t)
+	helloRuns, hello := counting(t)
+	d := dedupeDispatcher(t, now, map[string]Handler{"server.test": probe, "connector.hello": hello})
+	id := negotiated(contract.CapabilityNames()...)
+	f := request(t, "req-probe-repeat", "server.test")
+	rl, _ := contract.RateLimitFor("server.test")
+	for i := 0; i < rl.MaxRequests; i++ {
+		answer(t, d, id, f)
+	}
+	if _, r := d.Dispatch(context.Background(), id, f); r == nil || r.Code != "Busy" || *probeRuns != rl.MaxRequests {
+		t.Fatalf("repeated probe did not run/pay its budget each time: runs=%d, refusal=%+v", *probeRuns, r)
+	}
+	for i := 0; i < 2; i++ {
+		answer(t, d, Identity{SenderID: id.SenderID, Allowlisted: true}, request(t, "req-hello-repeat", "connector.hello"))
+	}
+	if *helloRuns != 2 || len(d.responses) != 0 {
+		t.Fatal("probe or per-connection hello was cached")
+	}
+}
+
+func TestHandlerFailuresAreNotCachedOrCountedAsFrontDoorRefusals(t *testing.T) {
+	for _, code := range []string{"Busy", "BadRequest", "CoreNotRunning"} {
+		t.Run(code, func(t *testing.T) {
+			now := &clock{t: time.Unix(0, 0)}
+			runs := 0
+			d := dedupeDispatcher(t, now, map[string]Handler{"core.status": func(context.Context, *envelope.Frame) (any, *Refusal) {
+				runs++
+				if runs == 1 {
+					return nil, &Refusal{Code: code, Message: "handler refused"}
+				}
+				return runs, nil
+			}})
+			id := negotiated(contract.CapabilityNames()...)
+			f := request(t, "req-error-retry", "core.status")
+			if _, r := d.Dispatch(context.Background(), id, f); r == nil || r.Code != code {
+				t.Fatalf("handler failure: %+v", r)
+			}
+			want := resultJSON(t, answer(t, d, id, f))
+			if got := resultJSON(t, answer(t, d, id, f)); !bytes.Equal(got, want) || runs != 2 || d.Refused(id.SenderID) != 0 {
+				t.Fatalf("failure poisoned retry or guard: result=%s, runs=%d", got, runs)
+			}
+		})
+	}
+}
+
+func TestCachedReplayBypassesMutationBudgetButPaysPipeFloor(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	runs, h := counting(t)
+	d := dedupeDispatcher(t, now, map[string]Handler{"core.start": h})
+	id := negotiated(contract.CapabilityNames()...)
+	rl, _ := contract.RateLimitFor("core.start")
+	floor := contract.CatchAllRateLimit()
+	f := request(t, "req-rate-0000", "core.start")
+	for i := 0; i < rl.MaxRequests; i++ {
+		answer(t, d, id, request(t, fmt.Sprintf("req-rate-%04d", i), "core.start"))
+	}
+	for i := rl.MaxRequests; i < floor.MaxRequests; i++ {
+		answer(t, d, id, f)
+	}
+	if _, r := d.Dispatch(context.Background(), id, f); r == nil || r.Code != "Busy" {
+		t.Fatalf("replay bypassed pipe floor: %+v", r)
+	}
+	if *runs != rl.MaxRequests {
+		t.Fatalf("replays repeated mutations: %d", *runs)
+	}
+	now.After(time.Second)
+	for i := 0; i < floor.MaxRequests; i++ {
+		answer(t, d, id, f)
+	}
+	if _, r := d.Dispatch(context.Background(), id, f); r == nil || r.Code != "Busy" {
+		t.Fatalf("next-window replay bypassed the pipe floor: %+v", r)
+	}
+	fresh := request(t, "req-rate-fresh", "core.start")
+	if _, r := d.Dispatch(context.Background(), id, fresh); r == nil || r.Code != "Busy" {
+		t.Fatalf("a new mutation bypassed the still-spent method budget: %+v", r)
+	}
+	if d.responses[id.SenderID].entries[fresh.ID] != nil {
+		t.Fatal("budget refusal left a cached answer/reservation")
+	}
+	now.After(time.Duration(rl.WindowSeconds) * time.Second)
+	answer(t, d, id, fresh)
+	if *runs != rl.MaxRequests+1 {
+		t.Fatal("budget Busy poisoned a later same-id retry")
+	}
+}
+
+func TestMutableHandlerAndReplayResultsCannotChangeStoredBytes(t *testing.T) {
+	for _, shape := range []string{"map", "raw", "nil"} {
+		t.Run(shape, func(t *testing.T) {
+			now := &clock{t: time.Unix(0, 0)}
+			shared := map[string]any{"nested": []any{map[string]any{"value": "original"}}}
+			raw := json.RawMessage(`{"value":"original"}`)
+			var returned any
+			switch shape {
+			case "map":
+				returned = shared
+			case "raw":
+				returned = raw
+			}
+			d := dedupeDispatcher(t, now, map[string]Handler{"config.snapshot": func(context.Context, *envelope.Frame) (any, *Refusal) {
+				return returned, nil
+			}})
+			id := negotiated(contract.CapabilityNames()...)
+			f := request(t, "req-mutable-1", "config.snapshot")
+			first := answer(t, d, id, f)
+			want := resultJSON(t, first)
+			shared["nested"].([]any)[0].(map[string]any)["value"] = "modified"
+			raw[0] = '['
+			replay, ok := answer(t, d, id, f).(json.RawMessage)
+			if !ok || !bytes.Equal(replay, want) {
+				t.Fatalf("handler alias changed cached bytes: %s, want %s", replay, want)
+			}
+			replay[0] = '['
+			if next := resultJSON(t, answer(t, d, id, f)); !bytes.Equal(next, want) {
+				t.Fatalf("caller mutated stored replay: %s, want %s", next, want)
+			}
+		})
+	}
+}
+
+func TestInFlightReservationsAreBoundedNeverEvictedAndWaitsCanCancel(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	d := dedupeDispatcher(t, now, nil)
+	id := negotiated(contract.CapabilityNames()...)
+	m, _ := contract.LookupMethod("config.apply")
+	var first *cachedResponse
+	for i := 0; i < contract.DedupeMaxEntries; i++ {
+		entry, replay, r := d.beginResponse(context.Background(), id, fmt.Sprintf("req-pending-%04d", i), m)
+		if entry == nil || replay != nil || r != nil {
+			t.Fatalf("reservation %d: %+v", i, r)
+		}
+		if i == 0 {
+			first = entry
+		}
+	}
+	now.After(time.Duration(contract.DedupeWindowSeconds+1) * time.Second)
+	if _, _, r := d.beginResponse(context.Background(), id, "req-pending-over", m); r == nil || r.Code != "Busy" {
+		t.Fatalf("all in-flight slots were not bounded: %+v", r)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, _, r := d.beginResponse(ctx, id, "req-pending-0000", m); r == nil || r.Code != "Busy" {
+		t.Fatalf("canceled waiter did not return retryable Busy: %+v", r)
+	}
+	if d.DedupeStats() != (DedupeStats{}) || len(d.responses[id.SenderID].entries) != contract.DedupeMaxEntries {
+		t.Fatal("pending entries aged out or were evicted")
+	}
+	d.completeResponse(id.SenderID, "req-pending-0000", first, json.RawMessage(`{"applied":true}`))
+	if entry, _, r := d.beginResponse(context.Background(), id, "req-pending-over", m); entry == nil || r != nil || d.DedupeStats().EntryEvictions != 1 {
+		t.Fatalf("completed entry could not free a slot: %+v, stats=%+v", r, d.DedupeStats())
+	}
+}
+
+func TestPanicAndEncodingFailureReleaseReservations(t *testing.T) {
+	for _, failure := range []string{"panic", "encoding"} {
+		t.Run(failure, func(t *testing.T) {
+			now := &clock{t: time.Unix(0, 0)}
+			runs := 0
+			d := dedupeDispatcher(t, now, map[string]Handler{"core.status": func(context.Context, *envelope.Frame) (any, *Refusal) {
+				runs++
+				if runs == 1 {
+					if failure == "panic" {
+						panic("handler panic")
+					}
+					return make(chan int), nil
+				}
+				return "recovered", nil
+			}})
+			id := negotiated(contract.CapabilityNames()...)
+			f := request(t, "req-failure-1", "core.status")
+			func() {
+				defer func() {
+					if failure == "panic" && recover() == nil {
+						t.Error("expected the handler panic to propagate")
+					}
+				}()
+				if _, r := d.Dispatch(context.Background(), id, f); failure == "encoding" && (r == nil || r.Code != "Internal" || r.Message != "handler result could not be encoded") {
+					t.Fatalf("encoding failure was not sanitized: %+v", r)
+				}
+			}()
+			answer(t, d, id, f)
+			answer(t, d, id, f)
+			if runs != 2 {
+				t.Fatalf("failed result poisoned the reservation, runs=%d", runs)
+			}
+		})
 	}
 }

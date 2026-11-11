@@ -102,10 +102,10 @@ a privileged daemon holding a master key, or a plain file with an ACL.
 - VERIFIED -- `connector/internal/keystore/platform_windows.go:70`: the protection is one call pair into
   `crypt32.dll` with no descriptor, no application entropy and `CRYPTPROTECT_UI_FORBIDDEN`, so rule 1's "no
   home-grown crypto" is a syscall rather than a library the module would have to take a dependency on to get.
-- VERIFIED -- `connector/internal/keystore/store.go:105`: a protector that answers with the bytes it was handed is
+- VERIFIED -- `connector/internal/keystore/store.go:112`: a protector that answers with the bytes it was handed is
   refused at write time, which is rule 5's forbidden plaintext fallback made unrepresentable rather than discouraged.
-- VERIFIED -- `connector/internal/keystore/store.go:133`: a blob is installed by temp-file-and-rename at `0600`
-  inside a directory created `0700` (`connector/internal/keystore/store.go:54`), so rule 1's "a set of files" is
+- VERIFIED -- `connector/internal/keystore/store.go:153`: a blob is installed by temp-file-and-rename at `0600`
+  inside a directory created `0700` (`connector/internal/keystore/store.go:57`), so rule 1's "a set of files" is
   a set one user owns.
 - INFERRED -- Windows DPAPI user-scope semantics (a same-user process can decrypt). OS behaviour, not
   observable from this tree by construction: the round trip is now measured

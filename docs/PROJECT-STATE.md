@@ -6,10 +6,10 @@
 > falsified the original plan, the exact inventory of what exists on disk, and the precise next steps.
 > Written 2026-11-04. English because it is the repository language.
 
-Status as of 2026-11-11: **Phase 2 implementation is underway; M3 includes the compiler, apply writer,
-supervisor, health prober and receipt verifier, `server.test` and `core.status` are dispatched, the hop-2 shim, the TypeScript codec and
-the extension client are written, and the installer registers the host with three browser families.** The latest
-continuation is §4.57; older scope and inventory paragraphs below are dated history, not a prohibition on
+Status as of 2026-11-11: **The Windows/Chromium single-server connection path works against a local REALITY
+fixture: add → connect → open HTTPS → disconnect → reconnect. It is not a production release: trusted Core
+installation, external-server acceptance and browser-restart/shared-owner recovery remain unfinished.** The latest
+continuation is §4.58; older scope and inventory paragraphs below are dated history, not a prohibition on
 implementation. §7 records the push authorization and ref.
 
 ---
@@ -1497,17 +1497,17 @@ and the ninth `ok` line: §4.16 left its Gates paragraph saying "the ninth will 
 one", and this is a package that is not that one, so the eight became nine on the same command. It is the first Go code
 in the repository that holds a credential, which is why most of what it asserts is absence: nothing on disk is the value
 (`connector/internal/keystore/keystore_test.go:84`), no error string quotes one (`connector/internal/keystore/keystore_test.go:246`),
-and a resolved secret prints as its reference and nothing else (`connector/internal/keystore/store.go:189`). ADR-0011
+and a resolved secret prints as its reference and nothing else (`connector/internal/keystore/store.go:291`). ADR-0011
 rule 6, turned into three test names.
 
 **The grammar is projected, so it cannot be copied twice.** doc 32 §5 says the reference vocabulary is data, and
 `packages/schema/envelope-keys.schema.json:143` is the line holding it: scheme, floor and shape as three `const`s, read
 by ajv, read by `packages/schema/scripts/verify.mjs`, and now read by the Go generator into
-`connector/internal/contract/contract_gen.go:140`. `connector/internal/contractgen/contractgen.go:308` is where the
+`connector/internal/contract/contract_gen.go:143`. `connector/internal/contractgen/contractgen.go:323` is where the
 projection refuses instead of copies: both floors must be built on the scheme they are anchored to, the entity and field
 lists must agree with the registry's own, the identifier segment of the shape must be the ingest document's pattern
 byte-for-byte (`packages/schema/protocol/commands/profile.import.json:85`), and
-`connector/internal/contractgen/contractgen.go:329` will not emit a vocabulary with more — or fewer — than one
+`connector/internal/contractgen/contractgen.go:344` will not emit a vocabulary with more — or fewer — than one
 object-shaped field, because `headers` is the one ODEC-36 is about. One artefact, three readers, a build that stops when
 they drift: §4.16's golden rule applied to a grammar rather than a fixture. The other half of that claim is a test, not
 a generator: `connector/internal/keystore/vocabulary_test.go:108` walks every JSON file under `packages/schema/`,
@@ -1532,13 +1532,13 @@ through `syscall.NewLazyDLL`, because the module has zero external requirements 
 API: `CryptProtectData` with no descriptor, no application entropy, `CRYPTPROTECT_UI_FORBIDDEN`, and a `LocalFree` of the
 buffer the OS allocated. The `golang.org/x/sys` import a DPAPI binding usually arrives with would have been this
 module's first; the hand-written `DATA_BLOB` is the cheaper thing to audit. What the call buys is checked at
-`connector/internal/keystore/store.go:105`: the store refuses a protector that answers with the bytes it was handed,
+`connector/internal/keystore/store.go:112`: the store refuses a protector that answers with the bytes it was handed,
 which is rule 5's forbidden plaintext fallback made unrepresentable at write time, and
 `connector/internal/keystore/keystore_test.go:100` proves the refusal with an `identityProtector` that is exactly the
 plausible placeholder rule 5 fears.
 
 **The seam is why the ubuntu runner has keystore tests at all.** `Protector` is an interface of two methods
-(`connector/internal/keystore/store.go:17`), `New` takes one and `Open` does not; on anything that is not Windows
+(`connector/internal/keystore/store.go:19`), `New` takes one and `Open` does not; on anything that is not Windows
 `connector/internal/keystore/platform_other.go:11` answers an error so `Open` fails closed, because ADR-0011 binds
 Windows and rule 5 forbids filling the gap with a cipher nobody designed. That split lets 21 of the 24 tests run on
 Linux against a base64 protector that is explicitly *not* protection: one blob per reference, temp-file-and-rename at
@@ -1562,7 +1562,7 @@ is `profile.import`'s argument validation, which is not written. And nothing ope
 **Which is why ODEC-36's blocker is narrower and no smaller.** §4.16 recorded shape C refusing at its `headersRef`
 because "no schema in this repository lists the keys". The mechanism half of that reason is gone: a
 `keystore://…/headers` reference parses, resolves and reads out as a `map[string]string`
-(`connector/internal/keystore/store.go:205`), and the key names come from the object a user imported rather than from a
+(`connector/internal/keystore/store.go:306`), and the key names come from the object a user imported rather than from a
 schema that never enumerated them. What remains is the decision, and `connector/internal/compile/outbound.go:229` still
 refuses for the right reason: whether that map is inside the hashed bytes or only in the written file is a question about
 what `configHash` *means*, and no amount of code answers it. The comment above the refusal was rewritten to say so,
@@ -1856,7 +1856,7 @@ the `cmd` line moved from hundredths of a second to 0.265 s, because two of the 
 compare-and-swap, then the intent, then the compile, then the file, then the reservation table, then the process —
 "compare-and-swap first … a refusal at any of those points has touched nothing after it" is doc 27 §8's atomicity rule
 restated as a sequence rather than as a rename, and `Handle` keeps the shape of that sentence.
-`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:676`) is the one that makes it
+`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:679`) is the one that makes it
 observable: after the Busy it asserts the applied-state record was read once and never written
 (`reads != 1 || writes != 0`), Core was never touched (`starts != 0 || stops != 0`) and no config file exists — three
 negative assertions against the packages behind
@@ -1878,7 +1878,7 @@ reader would "fix" the `!= ""` guard into a bug.
 
 **ODEC-36 is a knob, and the knob is required.** `hashSpan` (`:74`) has two live values and a zero value that
 `newConfigApply` refuses (`:126`), so a build that has not read the register cannot answer `config.apply` at all —
-`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:995`) walks all seven
+`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:1008`) walks all seven
 wiring cases including the four nil seams, and each refusal's message names the decision or the directory it is missing.
 The two spans are then measured against each other rather than argued: the same intent gives two different
 lowercase-sha256 strings (`TestHashesDifferBetweenTheTwoSpans`:600), because `internal/apply` reports both digests
@@ -1895,7 +1895,7 @@ argument: `errors.As` on `*keystore.Error` first (`:500`), because a keystore re
 code; then `errors.Is(err, supervisor.ErrIntegrity)` (`:505`), because doc 22 §4's "an unbootable Core is surfaced as
 `IntegrityMismatch`" is a security answer rather than a config one; then the six markers (`:478`), then the `compile: `
 prefix as `InvalidProfile` (`:517`), then `ConfigApplyFailed` (`:522`). `TestRefusalCodesDrivesTheRealRefusals`
-(`connector/cmd/nexora-connector/config_apply_test.go:775`) makes each of the three packages refuse *for real* — a stage
+(`connector/cmd/nexora-connector/config_apply_test.go:788`) makes each of the three packages refuse *for real* — a stage
 of the pipeline, the keystore, the writer, the reservation store, the process owner — and asserts the code plus the
 cause that survived into the message, so a reworded refusal fails a row there instead of quietly changing an answer a
 client acts on. Two rows of that table are worth the sentence: doc 32 §11's missing secret answers `InvalidProfile` (the
@@ -1935,7 +1935,7 @@ command surface that stops a running Core cannot be tested that way, which is th
 becomes this slice's bug: a test of *ordering* is the first test of *still being alive*.
 
 **Three assertions had to move before the reconciliation test meant anything.** (1) The launch closure picks a record
-slot by spawn count and clamps it (`connector/cmd/nexora-connector/config_apply_test.go:534-538`), because the ladder is
+slot by spawn count and clamps it (`connector/cmd/nexora-connector/config_apply_test.go:547-551`), because the ladder is
 entitled to spawn a third child and a closure that indexed by call count would have handed the third one the second
 record — a proof of a handover that never happened. (2) The test waits for the *first* child's record before issuing the
 second apply (`:530`, 20 s): the second apply ends that process, so a child that had not finished booting would leave no
@@ -1964,8 +1964,8 @@ stale addresses were not in a document citing a document, they were in the recor
 
 **Queue arithmetic, stated so the next slice can check it.** 79 rows → 80: `VER-32` moves `no-code` → `no-run` (the
 envelope→Xray compiler now has an answer for ADR-0013's promise — `Unrepresentable`
-(`connector/cmd/nexora-connector/config_apply.go:568`) carries the compile's report into the result, proven at
-`connector/cmd/nexora-connector/config_apply_test.go:1083` — and what no test here can show is a real Core holding the
+(`connector/cmd/nexora-connector/config_apply.go:567`) carries the compile's report into the result, proven at
+`connector/cmd/nexora-connector/config_apply_test.go:1096` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
 and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:142-143`, and `intentSource` had no production
 implementation). `no-code` is therefore 54 → 53 → 54 and `no-run` 5 → 6, `connector` 37+1 → 39 and `decision` 3 → 4.
@@ -1997,7 +1997,7 @@ still does not have, and `internal/chunk`, which `ODEC-34` still stops.
 
 **What landed.** §6's M2 tail queues three items beside the milestone and says of all three that they are "a string and a
 check in a file the next real slice already opens". §4.20 opened that file, so this is the three of them, in the order
-they were written: the front door's gate message (`connector/internal/dispatch/dispatch.go:169`), an assertion joining
+they were written: the front door's gate message (`connector/internal/dispatch/dispatch.go:204`), an assertion joining
 doc 31 §8 to `packages/schema/protocol/framing.json#/senderPolicy/rateLimitFacts/countedWhere` (§4.12's repair, which
 left the data, the document and a comment agree and left nothing to keep them agreeing), and an assertion that opens
 `docs/architecture/39-verification-matrix.md` and reads its tallies out of the document instead of comparing the data to
@@ -2010,7 +2010,7 @@ finished is the defect doc 40 §3 calls a question the register invented.
 and because a hello was answered and a later `VersionMismatch` withdrew it; §4.13 ran the second case on purpose through
 the corpus's own `handshake.jsonl` and found the refusal claiming the frame "arrived before connector.hello". The state
 was right and the wording was a history, so the message now names the state — `TestTheGateMessageNamesTheStateRatherThanOneHistory`
-(`connector/internal/dispatch/dispatch_test.go:148`) drives both halves, requires the two messages to be byte-identical,
+(`connector/internal/dispatch/dispatch_test.go:151`) drives both halves, requires the two messages to be byte-identical,
 requires the words "in force" and "withdrawn" to be present and the word "before" to be absent, and then walks every
 published gated method with a 32-character sender id to hold each message under the envelope's
 `#/properties/error/properties/message/maxLength` of 200, since nothing on that path clips.
@@ -3471,7 +3471,7 @@ in-memory table (`connector/cmd/nexora-connector/config_apply.go:135`, written o
 `connector/cmd/nexora-connector/config_apply.go:517`, after the rename and the reconcile, because ADR-0010 forbids
 keeping a copy of intent and a dryRun puts nothing anywhere). `newHealthSurface`
 (`connector/cmd/nexora-connector/health_probe.go:67`) joins that table and that endpoint to the supervisor's live
-inbound table, read through `healthInbounds` (`connector/cmd/nexora-connector/config_apply.go:587`) rather than a
+inbound table, read through `healthInbounds` (`connector/cmd/nexora-connector/config_apply.go:586`) rather than a
 second copy of the ports, and `connector/cmd/nexora-connector/main.go:203` registers the handler. A probe of a
 server nothing has applied is a refusal naming the absence, and a fetch probe before the first settings document is
 the same: neither is a constructor error, because both are facts about the world the Connector is allowed to learn
@@ -3628,7 +3628,7 @@ dispatch table rather than by the transport. That run also exposed a fact no doc
 connector never stamps its own version — `debug.ReadBuildInfo().Main.Version` is "(devel)" for a main module whatever
 tags exist, measured with a local `connector/v0.0.0` tag that changed nothing — so an unstamped binary refuses to
 start and the live crossing was impossible until `releaseVersion`
-(`connector/cmd/nexora-connector/main.go:344`) let the build pass it in with `-ldflags -X`. The tag is gone; the
+(`connector/cmd/nexora-connector/main.go:354`) let the build pass it in with `-ldflags -X`. The tag is gone; the
 ldflags line is the release recipe now, and `--connector-version` remains the operator's way to name the release a
 hand-built process answers for. `tools/check-doc-evidence.mjs`'s `FUTURE_PREFIX` lost `packages/protocol/` and doc 20
 §1's future-path sentence lost it too, so citations into this package are checked from here on; the §6 figures are
@@ -3664,8 +3664,8 @@ the numbers, and every consumer reached them by name.
 **Moved.** Data first: `#/limits` now carries 67108864 and 1048576, each `reason` names the page its number came
 from, and the host-to-extension `enforcement` puts the refusal on the sender rather than the receiver, because a
 receiver-side check is a dead port. The generator's invariant is inverted beside it
-(`connector/internal/contractgen/contractgen.go:276`), both projections regenerated, and the checks that had been
-blind to the swap now pin the values: `connector/internal/contract/contract_test.go:142` requires exactly 67108864 and
+(`connector/internal/contractgen/contractgen.go:291`), both projections regenerated, and the checks that had been
+blind to the swap now pin the values: `connector/internal/contract/contract_test.go:299` requires exactly 67108864 and
 1048576, the schema harness's check labelled "extension-to-host frame limit is 64 MiB" in
 `packages/schema/scripts/verify.mjs` requires the first and that block's third check requires the
 second, and the protocol harness's over-ceiling fixture had to be rewritten (`packages/protocol/scripts/verify.mjs:149`,
@@ -3748,7 +3748,7 @@ accepted the registered sender, spawned a real Connector over hop 2 and returned
 protocol version 1, connector version 0.1.0 and the capability list. A foreign origin got exactly one
 `UnauthorizedExtension` per frame and no Connector was started (`connector/cmd/nexora-host/main.go:204`); twelve such
 frames produced ten answers and then stdout closed with exit 1 and the guard's own message
-(`connector/internal/dispatch/dispatch.go:241`), which is the amplification bound doing what doc 31 says it does.
+(`connector/internal/dispatch/dispatch.go:408`), which is the amplification bound doing what doc 31 says it does.
 `uninstall` then removed all three keys and both files, and the sender that had just been served was refused with the
 missing-allowlist note (`connector/cmd/nexora-host/main.go:179`). `connector/cmd/nexora-installer/main_test.go:433`
 keeps the registry half of that run as a test against the real `reg.exe`, with its own cleanup.
@@ -3926,6 +3926,60 @@ Existing source citations are re-aimed; verification and decision counts do not 
 snapshot handler and expectation field; the row stays `no-code`, and no distribution, marker or decision count
 changes. §4.56's two `Internal` replies remain the dated observation that prompted this slice. ODEC-01 remains open:
 a lock file alone cannot create a reusable authenticated pipe, shared Core owner or cross-host port budget.
+
+### 4.58 A real Chromium connection path, safe import and bounded replay (2026-11-11)
+
+**Written.** `nexora/extension/` is a separate Node 24/Svelte 5/Vite package. It overlays the already-built
+Chromium 102+ artifact with a Russian connection page and authenticated background channel; Angular/CoffeeScript,
+Grunt and existing profiles are not rewritten. One manually entered TCP VLESS/REALITY server, optional Vision,
+HTTPS opening and explicit disconnect are implemented. Browser local storage holds public server/profile intent
+and a random-owner keystore reference; the UUID goes only through `profile.import.args.credentials` and is cleared
+from the form. Runtime/previous-proxy records use session storage, not local or sync storage.
+
+`profile.import` validates the full single-frame merge before any protected write, confirms secret-reference owners
+against entities in that payload, and batch-stages encrypted values with rollback on reported rename errors.
+Replace, chunking and nonempty content hashes refuse rather than pretend to work. Compiler typed-decode preflight
+rejects unsupported numeric spellings and inactive foreign transport blocks on TCP before storage. The keystore
+batch is not a crash-atomic transaction and its mutex does not serialize separate processes.
+
+`core.stop` now converges to stopped and removes the materialized config only after confirmed process stop;
+failed stop preserves it, failed removal reports a sanitized error and can be retried. Reconnecting with the same
+retained hash starts a fresh Core if no matching process is running. The background records recovery state before
+setting SOCKS5 loopback proxy, verifies browser readback, and restores the previous proxy only after successful stop.
+Failed pre-proxy session persistence stops the newly applied Core; failed restoration retains the blocking proxy.
+External loss of proxy control is reported as protection unconfirmed, not as guaranteed traffic blocking.
+
+**Replay safety.** `packages/schema/protocol/framing.json#/dedupeWindow` is generated into Go: 300 seconds from
+first successful completion, 256 entries and 8 MiB of result snapshots per sender per Connector process. Admission
+is rechecked before replay, mutation budgets count new work, and the pipe floor counts every answer. Refusals,
+hello and probes are not cached. Eviction counters contain no request IDs or payloads. The wired A → rotation B →
+replay A regression (`connector/cmd/nexora-connector/main_test.go:601`) returns A's stored result without undoing B
+and observes exactly two protected writes. A new Connector loses this volatile window; VER-19 stays open for
+cross-port replay/adoption, with no change to verification distributions or deferred-marker counts.
+
+**Measured after the fixes.** Chrome 157.0.8103.51 loaded the actual packaged artifact and used real Native
+Messaging, Windows DPAPI and Xray 24.11.11. UI form save → connect → open HTTPS → disconnect → reconnect passed.
+The HTTPS fixture observed source `127.0.0.2`, distinguishing the REALITY server's outbound from direct browser
+traffic. The UUID was absent from Chrome local/sync storage and plaintext keystore blobs, previous proxy readback
+matched, both stops removed the config, and the connected UI had no horizontal overflow at 320 px. The harness
+removed all three temporary HKCU registrations and its secret-bearing scratch/profile directory before reporting
+success. The public-only screenshot stays outside that directory; neither it nor fixture keys/binaries are committed.
+
+Windows and WSL Ubuntu 24.04 full Go tests and vet passed; Linux race checks passed for the Connector command,
+dispatcher and keystore. Nine controller tests passed; Svelte/TypeScript reported zero errors/warnings and packaging
+passed. These controller fixtures are not browser proof; the live harness above is the browser measurement.
+
+**Reproduce locally.** Build the existing legacy Chromium output first, then `npm --prefix nexora/extension install`
+and `npm --prefix nexora/extension run build`. Build the Connector, host and installer into `tmp/bin/` (Connector
+release version `0.1.0`). On Windows with Chrome and OpenSSL, run `NEXORA_XRAY=<local Xray 24.11.11 executable>
+npm --prefix nexora/extension run verify:browser` in Git Bash. The harness refuses existing NEXORA host registrations,
+creates only temporary test installation state, and downloads no Core. Its mechanically prepared hash receipt is
+not a trusted installation; the self-signed local HTTPS fixture requires a test-only certificate exception.
+
+**Next product slice.** Trusted pinned Core installation, external REALITY acceptance and browser-restart/MV3
+recovery with authenticated shared ownership/adoption. This local single-server path does not establish incognito,
+other browser families, subscription workflows, routing UI parity, a signed installer or a distributable release.
+Do not return to unrelated protocol predicates before this user-facing path is installable and restart-safe.
 
 ---
 
@@ -4330,7 +4384,7 @@ place, and neither is a status edit:
    the harness refuses a gated row's deletion while its question stays open — around the gate leaves a question
    blocking nothing, which doc 40 forbids, and through it leaves the question naming a row no longer in the matrix. What
    the step actually holds today is `VER-66`, `VER-19` and `VER-58`, and each is smaller than it reads: the first wants a
-   body detector no entity schema has a field for, the second a `dedupeWindow` field and a live run to bound it, and the
+   body detector no entity schema has a field for, the second a live cross-port replay/adoption fixture after §4.58, and the
    third a scan over a `nexora/**` that is empty.
 2. **The browser half.** `LIVE-01…24`, unchanged and `SKIPPED`, need a person with a real Chrome, and `LIVE-14`
    needs the export that would replace the fixtures' exporter-shaped values.
@@ -4597,7 +4651,7 @@ written before any behaviour existed. What each next milestone has to make true:
 17. **A claim that nothing tests a rule is a claim about the tree, and the tree answers it** (§4.14). A reading of the
     rate-budget contract arrived phrased as though no test existed for who counts a budget or whether it is per sender,
     and proposed a register entry and a queue row for the question. `TestABudgetIsPerSenderAndNotPerProcess` in
-    `connector/internal/dispatch/dispatch_test.go:245` spends one sender's budget, refuses that sender's second call,
+    `connector/internal/dispatch/dispatch_test.go:307` spends one sender's budget, refuses that sender's second call,
     admits a second sender's first, and asserts the handler ran exactly twice — while quoting the contract field that
     scopes the budget in its own comment. The entry was refused. This is not a courtesy check on a draft: every
     assertion in `packages/schema/scripts/verify.mjs` counts register entries and would have agreed with a register that

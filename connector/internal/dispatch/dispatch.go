@@ -21,6 +21,7 @@ package dispatch
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -96,7 +97,7 @@ type Config struct {
 	// Handlers maps a contract method name to the function that answers it. Every name must be in the closed
 	// allowlist; New refuses a dispatcher built around a method the contract does not publish.
 	Handlers map[string]Handler
-	// Now is the clock the budgets and the refusal window read. Tests pass a fake one; production leaves it nil.
+	// Now is the clock the budgets, refusal window and response dedupe read. Tests pass a fake one; production leaves it nil.
 	Now func() time.Time
 }
 
@@ -111,6 +112,33 @@ type Dispatcher struct {
 	mu       sync.Mutex
 	spent    map[string]map[string][]time.Time
 	refusals map[string][]time.Time
+
+	responses map[string]*responseCache
+	evictions DedupeStats
+}
+
+// DedupeStats exposes aggregate eviction counts without request ids, senders or payloads.
+// Expiry is lazy: age evictions are counted when the sender next uses the cache.
+type DedupeStats struct {
+	AgeEvictions   uint64
+	EntryEvictions uint64
+	ByteEvictions  uint64
+}
+
+// responseCache is per sender. Entries include in-flight reservations, which cannot be evicted;
+// order lists completed request ids in first-completion order, never replay order.
+// Only routing keys and encoded successful answers are retained, never frames, args or digests.
+type responseCache struct {
+	entries map[string]*cachedResponse
+	order   []string
+	bytes   int
+}
+
+type cachedResponse struct {
+	method    string
+	done      chan struct{}
+	result    json.RawMessage
+	completed time.Time
 }
 
 // New builds the dispatcher over the generated surface.
@@ -130,6 +158,7 @@ func New(cfg Config) (*Dispatcher, error) {
 	return &Dispatcher{
 		handlers: handlers, now: cfg.Now,
 		spent: map[string]map[string][]time.Time{}, refusals: map[string][]time.Time{},
+		responses: map[string]*responseCache{},
 	}, nil
 }
 
@@ -185,38 +214,176 @@ func (d *Dispatcher) Dispatch(ctx context.Context, id Identity, f *envelope.Fram
 	if !ok {
 		return nil, d.refuse(id, "Internal", fmt.Sprintf("%s is published but this build registers no handler for it", method))
 	}
-	if r := d.charge(id, m); r != nil {
+	// Admission is always rechecked, even for a stored answer. Dedupe precedes budgets and state,
+	// so a retry does not spend the mutation budget or repeat a protected write.
+	entry, replay, r := d.beginResponse(ctx, id, f.ID, m)
+	if r != nil {
 		return nil, r
+	}
+	var encoded json.RawMessage
+	if entry != nil {
+		// Also releases reservations after budget refusals or a handler panic. No mutex is held
+		// while invoking a handler, encoding its answer, or waiting for another invocation.
+		defer func(requestID string) { d.completeResponse(id.SenderID, requestID, entry, encoded) }(f.ID)
+	}
+	if r := d.charge(id, m, replay != nil); r != nil {
+		return nil, r
+	}
+	if replay != nil {
+		return replay, nil
 	}
 	result, refusal := handler(ctx, f)
 	// A handler's error is an answer, not a refusal: the amplification guard bounds the front door's volume of
-	// saying no, and a failing method must not be able to close a sender's port.
+	// saying no, and a failing method must not be able to close a sender's port. No errors are cached.
+	if entry != nil && refusal == nil {
+		raw, err := json.Marshal(result)
+		if err != nil {
+			return nil, &Refusal{Code: "Internal", Message: "handler result could not be encoded"}
+		}
+		encoded = json.RawMessage(raw)
+	}
+	// Preserve the handler's typed first result (hello/session wiring also uses typed answers).
+	// Encoding above detached the cached result from any mutable object the caller receives.
 	return result, refusal
 }
 
-// charge takes the two budgets a request spends — its method's named one and the catch-all floor — and refuses with
-// retryable `Busy` when either is already spent. It records only what it admits, because a budget is a count of
-// work started; the guard that bounds refusals is the other counter.
-func (d *Dispatcher) charge(id Identity, m contract.Method) *Refusal {
+func cacheable(m contract.Method) bool {
+	// Hello establishes per-connection session state and cannot be reduced to a stored wire answer.
+	// Probes must always take a fresh measurement, even if their desired-state flag is idempotent.
+	return m.Replayable && m.Idempotent && !m.AvailableBeforeHello && m.Name != "server.test"
+}
+
+// beginResponse returns either an owned reservation, an independent replay, or a refusal.
+// A waiter retains only a completion channel, not the original request or a response outside the bound.
+func (d *Dispatcher) beginResponse(ctx context.Context, id Identity, requestID string, m contract.Method) (*cachedResponse, json.RawMessage, *Refusal) {
+	for {
+		d.mu.Lock()
+		cache := d.responses[id.SenderID]
+		if cache != nil {
+			d.expireResponsesLocked(cache, d.now())
+			if entry := cache.entries[requestID]; entry != nil {
+				if entry.method != m.Name {
+					r := d.refuseLocked(id, "BadRequest", "request id is already bound to another method")
+					d.mu.Unlock()
+					return nil, nil, r
+				}
+				if entry.result != nil {
+					replay := append(json.RawMessage(nil), entry.result...)
+					d.mu.Unlock()
+					return nil, replay, nil
+				}
+				done := entry.done
+				d.mu.Unlock()
+				select {
+				case <-done:
+					continue
+				case <-ctx.Done():
+					return nil, nil, d.refuse(id, "Busy", "request is still in flight")
+				}
+			}
+		}
+		if !cacheable(m) {
+			d.mu.Unlock()
+			return nil, nil, nil
+		}
+		if cache == nil {
+			cache = &responseCache{entries: map[string]*cachedResponse{}}
+			d.responses[id.SenderID] = cache
+		}
+		if len(cache.entries) >= contract.DedupeMaxEntries {
+			if len(cache.order) == 0 {
+				r := d.refuseLocked(id, "Busy", "response dedupe has no free in-flight slot")
+				d.mu.Unlock()
+				return nil, nil, r
+			}
+			evictResponse(cache)
+			d.evictions.EntryEvictions++
+		}
+		entry := &cachedResponse{method: m.Name, done: make(chan struct{})}
+		cache.entries[requestID] = entry
+		d.mu.Unlock()
+		return entry, nil, nil
+	}
+}
+
+func (d *Dispatcher) completeResponse(senderID, requestID string, entry *cachedResponse, result json.RawMessage) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	defer close(entry.done)
+	cache := d.responses[senderID]
+	at := d.now()
+	d.expireResponsesLocked(cache, at)
+	if len(result) > contract.DedupeMaxBytes {
+		// A single oversized answer cannot displace the whole cache or exceed its byte bound.
+		d.evictions.ByteEvictions++
+		result = nil
+	}
+	if result == nil {
+		delete(cache.entries, requestID)
+		if len(cache.entries) == 0 {
+			delete(d.responses, senderID)
+		}
+		return
+	}
+	for cache.bytes > contract.DedupeMaxBytes-len(result) {
+		evictResponse(cache)
+		d.evictions.ByteEvictions++
+	}
+	entry.result, entry.completed = result, at
+	cache.bytes += len(result)
+	cache.order = append(cache.order, requestID)
+}
+
+func (d *Dispatcher) expireResponsesLocked(cache *responseCache, at time.Time) {
+	edge := at.Add(-time.Duration(contract.DedupeWindowSeconds) * time.Second)
+	for len(cache.order) > 0 && !cache.entries[cache.order[0]].completed.After(edge) {
+		evictResponse(cache)
+		d.evictions.AgeEvictions++
+	}
+}
+
+// evictResponse removes the oldest completed answer. In-flight entries never appear in order.
+func evictResponse(cache *responseCache) {
+	requestID := cache.order[0]
+	cache.bytes -= len(cache.entries[requestID].result)
+	delete(cache.entries, requestID)
+	cache.order[0] = ""
+	cache.order = cache.order[1:]
+}
+
+// DedupeStats returns process-local counters only; it emits no protocol event.
+func (d *Dispatcher) DedupeStats() DedupeStats {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.evictions
+}
+
+// charge takes the method budget for new work and the catch-all floor for every answer, including
+// cached replays. It refuses with retryable Busy and records only what it admits.
+func (d *Dispatcher) charge(id Identity, m contract.Method, replay bool) *Refusal {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	at := d.now()
 
 	named := []contract.RateLimit{contract.CatchAllRateLimit()}
-	if rl, ok := contract.RateLimitFor(m.Name); ok {
+	if rl, ok := contract.RateLimitFor(m.Name); ok && !replay {
 		named = append([]contract.RateLimit{rl}, named...)
 	}
+	if d.spent[id.SenderID] == nil {
+		d.spent[id.SenderID] = map[string][]time.Time{}
+	}
 	for _, rl := range named {
-		if len(prune(d.spent[id.SenderID][key(rl)], at, rl.WindowSeconds)) >= rl.MaxRequests {
+		// Keep the pruned length, not just its backing array: replay bursts in the next
+		// window must not duplicate live timestamps or retain unbounded spent history.
+		k := key(rl)
+		d.spent[id.SenderID][k] = prune(d.spent[id.SenderID][k], at, rl.WindowSeconds)
+		if len(d.spent[id.SenderID][k]) >= rl.MaxRequests {
 			return d.refuseLocked(id, "Busy",
 				fmt.Sprintf("%s: %d requests in %ds is the budget for %s",
 					m.Name, rl.MaxRequests, rl.WindowSeconds, scope(rl)))
 		}
 	}
 	for _, rl := range named {
-		if d.spent[id.SenderID] == nil {
-			d.spent[id.SenderID] = map[string][]time.Time{}
-		}
 		d.spent[id.SenderID][key(rl)] = append(d.spent[id.SenderID][key(rl)], at)
 	}
 	return nil

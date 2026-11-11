@@ -100,7 +100,7 @@
     "scheme": "keystore://",
     "pattern": "^keystore://[A-Za-z0-9._:/-]{1,96}$",
     "shape": "^keystore://(server|subscription|profile|sync|host)/[0-9a-f][0-9a-f-]{6,61}[0-9a-f]/(user-id|headers|url|token)$",
-    "mintedBy": "The Connector, when it stores a value: it generates a random identifier and returns keystore://<entity>/<that identifier>/<field>. Nothing in the extension, the envelope or a feed ever composes a reference, and no part of the stored value is ever part of one.",
+    "mintedBy": "The Connector mints or confirms the reference when profile.import stores a value. An import may predeclare keystore://<entity>/<random owner identifier>/<field>; the Connector confirms the exact or unambiguous owner prefix against entities in that same payload before storing anything. A client declaration is not proof that a secret exists. No part of the stored value is ever part of the reference.",
     "neverDerivedFrom": [
       "the secret value itself -- a content-addressed reference is an offline dictionary: the reference syncs, exports and logs freely, so a guesser only compares strings",
       "any digest, truncated digest or keyed MAC of the secret value",

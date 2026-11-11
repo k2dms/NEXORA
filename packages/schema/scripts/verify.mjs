@@ -242,6 +242,14 @@ const taxonomy = dataDocs['protocol/error-taxonomy.json'];
 // ---------------------------------------------------------------- framing sanity
 
 const framing = await readJson(join(PKG, 'protocol', 'framing.json'));
+for (const name of ['windowSeconds', 'maxEntries', 'maxBytes']) {
+  const value = framing.dedupeWindow?.[name];
+  check(
+    Number.isSafeInteger(value) && value > 0,
+    `dedupe window has a positive integer bound: ${name}`,
+    `${name}=${value}; response dedupe must be bounded by contract data`,
+  );
+}
 {
   check(
     framing.limits.extensionToHostBytes.value === 67108864,

@@ -127,8 +127,8 @@ So the vocabulary is one object in the envelope-key registry
 - **The shape** — `#/properties/secretReferences/properties/shape`: `<entity>/<identifier>/<field>`, with both
   lists closed (`properties/entities`, `properties/fields`). Assertion: *every recorded reference follows the
   entity/id/field shape* — over every example and every recorded protocol frame in the package.
-- **Minting** — `#/properties/secretReferences/properties/mintedBy`: the Connector, with a random identifier.
-  Nothing in the extension, the envelope, or a feed composes a reference.
+- **Minting or confirmation** — `#/properties/secretReferences/properties/mintedBy`: the Connector confirms a predeclared random owner reference against entities in the same import payload before storing a value.
+  A client declaration does not prove a secret exists; no identifier is derived from a secret value.
 - **Never derived** — `#/properties/secretReferences/properties/neverDerivedFrom`. A content-addressed reference
   is the worst possible design: the reference syncs, exports and logs freely while the value does not, so every
   envelope becomes an offline dictionary — anyone who guesses the value checks the guess by comparing strings.

@@ -67,6 +67,13 @@
     "jitterPercent": 30,
     "afterReconnect": "re-run connector.hello, then reconcile: the extension sends config.snapshot hash and the Connector answers whether the applied config still matches."
   },
+  "dedupeWindow": {
+    "windowSeconds": 300,
+    "maxEntries": 256,
+    "maxBytes": 8388608,
+    "scope": "per sender id, per Connector process; not persisted",
+    "eviction": "age/entry/byte eviction observable; no request or secret material retained"
+  },
   "ordering": {
     "rule": "Frames on one port are delivered in order per sender. Cross-sender ordering is not assumed; seq is assigned by each sender and only used for gap detection.",
     "backpressure": "Sender stops issuing requests beyond limits.maxConcurrentRequests; there is no unbounded queue in either direction."

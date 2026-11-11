@@ -20,6 +20,7 @@ import (
 	"github.com/k2dms/nexora/connector/internal/contractgen"
 	"github.com/k2dms/nexora/connector/internal/envelope"
 	"github.com/k2dms/nexora/connector/internal/frames"
+	"github.com/k2dms/nexora/connector/internal/keystore"
 	"github.com/k2dms/nexora/connector/internal/peer"
 )
 
@@ -597,16 +598,49 @@ func TestTheStartupLineNamesTheIdentityInjectionAsTheDecisionsOwnMechanism(t *te
 	}
 }
 
+func TestProfileImportReplayCannotUndoCredentialRotation(t *testing.T) {
+	cfg := jsonlConfig(t, true)
+	protector := &importTestProtector{}
+	cfg.protector = protector
+	s, err := newService(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.respond(mustParse(t, requestLine(t, "replay-hello", "connector.hello", recordedHelloArgs))); err != nil {
+		t.Fatal(err)
+	}
+	args := testImportArgs(false)
+	first := mustParse(t, requestLine(t, "import-original", "profile.import", stringMustJSON(args)))
+	original, err := s.respond(first)
+	if err != nil || original.OK == nil || !*original.OK {
+		t.Fatal("original import failed")
+	}
+	args["credentials"] = []any{testImportCredential(importServerID, "user-id", importRotatedUser)}
+	rotated, err := s.respond(mustParse(t, requestLine(t, "import-rotation", "profile.import", stringMustJSON(args))))
+	if err != nil || rotated.OK == nil || !*rotated.OK {
+		t.Fatal("credential rotation failed")
+	}
+	replayed, err := s.respond(first)
+	if err != nil || !bytes.Equal(original.Result, replayed.Result) {
+		t.Fatal("replay did not return the stored import result")
+	}
+	store, err := keystore.New(cfg.keystoreDir, protector)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secret, err := store.Resolve(importUserRef)
+	if err != nil || string(secret.Value) != importRotatedUser || protector.calls != 2 {
+		t.Fatal("replay repeated a protected write or undid rotation")
+	}
+}
+
 func TestThisBuildRegistersOnlyTheMethodsItCanAnswer(t *testing.T) {
 	s, err := newService(jsonlConfig(t, true))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Five names, each because the fact its result requires is data this process holds: the negotiation's own, the
-	// two version strings, the intent a `config.apply` frame carries, the servers that apply put in force, and the
-	// process the supervisor owns.
 	got := s.d.Methods()
-	if want := []string{"config.apply", "connector.hello", "connector.version", "core.status", "server.test"}; !slices.Equal(got, want) {
+	if want := []string{"config.apply", "connector.hello", "connector.version", "core.status", "core.stop", "profile.import", "server.test"}; !slices.Equal(got, want) {
 		t.Errorf("this build registers %v, want exactly %v", got, want)
 	}
 	for _, name := range got {

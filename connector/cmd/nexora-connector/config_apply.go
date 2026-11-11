@@ -515,20 +515,19 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 	// The intent is in force now: the file is renamed, the table is stored, and Core has been told. This is the
 	// only place the snapshot moves, which is why `server.test` can name a server id and get a real answer.
 	a.noteInForce(&args.intent)
-	return a.answer(res, hash, recorded.AppliedHash, false, restarted, hash == recorded.AppliedHash), nil
+	return a.answer(res, hash, recorded.AppliedHash, false, restarted, !restarted && hash == recorded.AppliedHash), nil
 }
 
-// reconcile is doc 22 §3 invariant 4 — restart on a hash difference and on nothing else — and the reason the
-// comparison is against the applied-state record rather than against `Status().Hash` is that the record survives a
-// Connector restart and a dead Core, while a status does not.
-//
-// Stop-then-start rather than `supervisor.Restart`, because Restart re-spawns the config path already on record
-// and this call has just installed a new one.
+// A retained hash proves what was applied, not that its process is still running.
 func (a *configApply) reconcile(ctx context.Context, args applyArgs, path, hash string, res *compile.Result, recorded string) (bool, *dispatch.Refusal) {
-	if args.restartPolicy == restartNever || hash == recorded {
+	if args.restartPolicy == restartNever {
 		return false, nil
 	}
-	if live := a.core.Status(); live.Running {
+	live := a.core.Status()
+	if live.Running && live.Hash == hash && hash == recorded {
+		return false, nil
+	}
+	if live.Running || live.Restarting {
 		if _, err := a.core.Stop(ctx, true); err != nil {
 			return false, refuseApply(err, "config.apply: the running Core did not stop, so the new config was never handed to it")
 		}

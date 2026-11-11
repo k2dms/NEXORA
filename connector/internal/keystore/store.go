@@ -7,7 +7,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
+	"sync"
 )
 
 // Protector is the OS seam: the thing that makes a value unreadable to a process that is not this user in this
@@ -23,6 +25,7 @@ type Protector interface {
 type Store struct {
 	dir string
 	p   Protector
+	mu  sync.Mutex
 }
 
 // DefaultDir is ADR-0011's path: `%LOCALAPPDATA%\NEXORA\keystore`. It returns an error on a platform no ADR has
@@ -64,6 +67,8 @@ func (s *Store) Dir() string { return s.dir }
 // doc 32 §4's first two rows. A missing blob is InvalidProfile (the user retypes), an OS refusal is
 // KeystoreUnavailable (nobody who types helps), and the two never share an answer.
 func (s *Store) Resolve(ref string) (Secret, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	r, err := Parse(ref)
 	if err != nil {
 		return Secret{}, err
@@ -91,6 +96,8 @@ func (s *Store) Resolve(ref string) (Secret, error) {
 // Put writes a secret, minting nothing: the reference is the one the ingest door already handed back
 // (doc 32 §6). Re-sending the same reference overwrites, which is rotation and needs no separate call.
 func (s *Store) Put(ref string, value []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	r, err := Parse(ref)
 	if err != nil {
 		return err
@@ -108,33 +115,124 @@ func (s *Store) Put(ref string, value []byte) error {
 		return unavailable("put", r.String(), errors.New("the protector returned the value unchanged"))
 	}
 
-	// Written to a temporary file and renamed, because a half-written credential is the worst state a secret store
-	// can be in: it resolves, it is wrong, and nothing about the file says so.
-	tmp, err := os.CreateTemp(s.dir, ".keystore-*")
+	// Stage the protected bytes, then atomically install this one credential.
+	tmpName, err := s.stageBlob(blob)
 	if err != nil {
 		return unavailable("put", r.String(), err)
 	}
-	tmpName := tmp.Name()
-	defer func() {
-		// Best-effort cleanup of the scratch file; the rename below takes it out of the error path when it works.
-		_ = os.Remove(tmpName)
-	}()
-	if _, err := tmp.Write(blob); err != nil {
-		tmp.Close()
-		return unavailable("put", r.String(), err)
-	}
-	if err := tmp.Sync(); err != nil {
-		tmp.Close()
-		return unavailable("put", r.String(), err)
-	}
-	if err := tmp.Close(); err != nil {
-		return unavailable("put", r.String(), err)
-	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		return unavailable("put", r.String(), err)
-	}
+	defer os.Remove(tmpName)
 	if err := os.Rename(tmpName, s.path(r)); err != nil {
 		return unavailable("put", r.String(), err)
+	}
+	return nil
+}
+
+// stageBlob writes only encrypted bytes. Callers own the returned scratch file.
+// It never locks: Put and PutBatch hold the store lock across the whole operation.
+func (s *Store) stageBlob(blob []byte) (name string, err error) {
+	tmp, err := os.CreateTemp(s.dir, ".keystore-*")
+	if err != nil {
+		return "", err
+	}
+	name = tmp.Name()
+	defer func() {
+		if err != nil {
+			_ = tmp.Close()
+			_ = os.Remove(name)
+		}
+	}()
+	if _, err = tmp.Write(blob); err != nil {
+		return name, err
+	}
+	if err = tmp.Sync(); err != nil {
+		return name, err
+	}
+	if err = tmp.Close(); err != nil {
+		return name, err
+	}
+	err = os.Chmod(name, 0o600)
+	return name, err
+}
+
+// PutBatch protects and stages every credential before installing any target.
+// A later rename failure restores the prior encrypted bytes without invoking the
+// protector again, and removes only targets this batch created. This is rollback
+// on reported errors, not crash-atomic multi-file replacement. Other operations
+// on this Store cannot observe or interleave with the install/rollback sequence.
+func (s *Store) PutBatch(values map[string][]byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	type entry struct {
+		ref     Ref
+		tmp     string
+		old     []byte
+		existed bool
+	}
+	keys := make([]string, 0, len(values))
+	for ref := range values {
+		keys = append(keys, ref)
+	}
+	sort.Strings(keys)
+	entries := make([]entry, 0, len(keys))
+	defer func() {
+		for _, e := range entries {
+			if e.tmp != "" {
+				_ = os.Remove(e.tmp)
+			}
+		}
+	}()
+	// Validate all references and retain all prior encrypted blobs first.
+	for _, key := range keys {
+		r, err := Parse(key)
+		if err != nil {
+			return err
+		}
+		if len(values[key]) == 0 {
+			return &Error{Op: "put-batch", Ref: r.String(), Cause: ErrEmptyValue}
+		}
+		old, err := os.ReadFile(s.path(r))
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return unavailable("put-batch", r.String(), err)
+		}
+		entries = append(entries, entry{ref: r, old: old, existed: err == nil})
+	}
+	for i := range entries {
+		e := &entries[i]
+		value := values[e.ref.String()]
+		blob, err := s.p.Protect(value)
+		if err != nil {
+			return unavailable("put-batch", e.ref.String(), err)
+		}
+		if len(blob) == 0 || bytes.Equal(blob, value) {
+			return unavailable("put-batch", e.ref.String(), errors.New("the protector returned the value unchanged"))
+		}
+		e.tmp, err = s.stageBlob(blob)
+		if err != nil {
+			return unavailable("put-batch", e.ref.String(), err)
+		}
+	}
+	for i, e := range entries {
+		if err := os.Rename(e.tmp, s.path(e.ref)); err != nil {
+			var failure error = unavailable("put-batch", e.ref.String(), err)
+			for j := i - 1; j >= 0; j-- {
+				prior := entries[j]
+				var rollbackErr error
+				if prior.existed {
+					var tmp string
+					tmp, rollbackErr = s.stageBlob(prior.old)
+					if rollbackErr == nil {
+						rollbackErr = os.Rename(tmp, s.path(prior.ref))
+						_ = os.Remove(tmp)
+					}
+				} else {
+					rollbackErr = os.Remove(s.path(prior.ref))
+				}
+				if rollbackErr != nil {
+					failure = errors.Join(failure, unavailable("rollback", prior.ref.String(), rollbackErr))
+				}
+			}
+			return failure
+		}
 	}
 	return nil
 }
@@ -143,6 +241,8 @@ func (s *Store) Put(ref string, value []byte) error {
 // deletion is expected to be retried against a store the user may already have emptied; keystore.purge's own
 // accounting (doc 32 §7) reads the boolean rather than an error.
 func (s *Store) Delete(ref string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	r, err := Parse(ref)
 	if err != nil {
 		return false, err
@@ -160,6 +260,8 @@ func (s *Store) Delete(ref string) (bool, error) {
 // Has reports whether a reference resolves without carrying the value. It is what `profile.validate`-shaped
 // questions and the purge scopes use, and it is the only method here that never touches a plaintext.
 func (s *Store) Has(ref string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	r, err := Parse(ref)
 	if err != nil {
 		return false, err

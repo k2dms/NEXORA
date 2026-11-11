@@ -1,7 +1,11 @@
 package contract
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/k2dms/nexora/connector/internal/contractgen"
@@ -26,6 +30,159 @@ func TestProjectionMatchesTheContractData(t *testing.T) {
 	}
 	if string(got) != string(want) {
 		t.Fatal("contract_gen.go is not the current projection of packages/schema/protocol — run `go generate ./...` in connector/")
+	}
+}
+
+func TestDedupeBoundsAndIdempotencyAreProjectedFromContractData(t *testing.T) {
+	root, err := contractgen.FindRepoRoot(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var framing struct {
+		DedupeWindow struct {
+			WindowSeconds int `json:"windowSeconds"`
+			MaxEntries    int `json:"maxEntries"`
+			MaxBytes      int `json:"maxBytes"`
+		} `json:"dedupeWindow"`
+	}
+	readContractJSON(t, filepath.Join(root, "packages", "schema", "protocol", "framing.json"), &framing)
+	bounds := framing.DedupeWindow
+	if bounds.WindowSeconds <= 0 || bounds.MaxEntries <= 0 || bounds.MaxBytes <= 0 {
+		t.Fatalf("dedupe window is not positively bounded: %+v", bounds)
+	}
+	if DedupeWindowSeconds != bounds.WindowSeconds || DedupeMaxEntries != bounds.MaxEntries || DedupeMaxBytes != bounds.MaxBytes {
+		t.Fatalf("dedupe bounds differ from contract data: %+v", bounds)
+	}
+	for _, m := range Methods {
+		var doc struct {
+			Idempotent bool `json:"idempotent"`
+			Replayable bool `json:"replayable"`
+		}
+		readContractJSON(t, filepath.Join(root, "packages", "schema", "protocol", "commands", m.Name+".json"), &doc)
+		if m.Idempotent != doc.Idempotent || m.Replayable != doc.Replayable {
+			t.Errorf("%s projection lost its execution flags", m.Name)
+		}
+	}
+}
+
+// Mutations are made only in temporary fixtures, never in the normative source directory.
+func TestProjectionRejectsInvalidDedupeBounds(t *testing.T) {
+	fixture := contractFixture(t)
+	file := filepath.Join(fixture, "packages", "schema", "protocol", "framing.json")
+	var original map[string]json.RawMessage
+	readContractJSON(t, file, &original)
+	var bounds map[string]json.RawMessage
+	if err := json.Unmarshal(original["dedupeWindow"], &bounds); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"windowSeconds", "maxEntries", "maxBytes"} {
+		for _, invalid := range []string{"0", "-1", "1.5", `"300"`, "null", ""} {
+			t.Run(name+"/"+invalid, func(t *testing.T) {
+				mutated := make(map[string]json.RawMessage, len(bounds))
+				for k, v := range bounds {
+					mutated[k] = v
+				}
+				if invalid == "" {
+					delete(mutated, name)
+				} else {
+					mutated[name] = json.RawMessage(invalid)
+				}
+				original["dedupeWindow"] = contractJSON(t, mutated)
+				writeContractJSON(t, file, original)
+				if _, err := contractgen.Source(fixture); err == nil || !strings.Contains(err.Error(), "dedupeWindow") {
+					t.Fatalf("invalid dedupeWindow.%s=%s projected: %v", name, invalid, err)
+				}
+			})
+		}
+	}
+	delete(original, "dedupeWindow")
+	writeContractJSON(t, file, original)
+	if _, err := contractgen.Source(fixture); err == nil {
+		t.Fatal("missing dedupeWindow projected as an unbounded/disabled cache")
+	}
+}
+
+func TestValidDedupeAndIdempotencyMutationsChangeTheProjection(t *testing.T) {
+	fixture := contractFixture(t)
+	before, err := contractgen.Source(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(fixture, "packages", "schema", "protocol", "framing.json")
+	var doc map[string]json.RawMessage
+	readContractJSON(t, file, &doc)
+	doc["dedupeWindow"] = contractJSON(t, map[string]int{"windowSeconds": 301, "maxEntries": 257, "maxBytes": 8388609})
+	writeContractJSON(t, file, doc)
+	command := filepath.Join(fixture, "packages", "schema", "protocol", "commands", "profile.import.json")
+	var method map[string]json.RawMessage
+	readContractJSON(t, command, &method)
+	method["idempotent"] = json.RawMessage("false")
+	writeContractJSON(t, command, method)
+	after, err := contractgen.Source(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(before, after) {
+		t.Fatal("positive bounds/idempotency mutation left the projection unchanged")
+	}
+	for _, want := range []string{"DedupeWindowSeconds", "301", "DedupeMaxEntries", "257", "DedupeMaxBytes", "8388609", "Idempotent: false"} {
+		if !bytes.Contains(after, []byte(want)) {
+			t.Errorf("mutated projection lost %q", want)
+		}
+	}
+}
+
+func contractFixture(t *testing.T) string {
+	t.Helper()
+	root, err := contractgen.FindRepoRoot(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture := t.TempDir()
+	source := filepath.Join(root, "packages", "schema")
+	target := filepath.Join(fixture, "packages", "schema")
+	if err := os.CopyFS(filepath.Join(target, "protocol"), os.DirFS(filepath.Join(source, "protocol"))); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(target, "examples"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{"envelope-keys.schema.json", filepath.Join("examples", "envelope-keys.nexora.json")} {
+		raw, err := os.ReadFile(filepath.Join(source, rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(target, rel), raw, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return fixture
+}
+
+func readContractJSON(t *testing.T, file string, dst any) {
+	t.Helper()
+	raw, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, dst); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func contractJSON(t *testing.T, value any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+func writeContractJSON(t *testing.T, file string, value any) {
+	t.Helper()
+	if err := os.WriteFile(file, contractJSON(t, value), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }
 

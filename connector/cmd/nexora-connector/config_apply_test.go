@@ -504,6 +504,19 @@ func TestApplyIsOnePathThroughCompileTheWriterAndTheSupervisor(t *testing.T) {
 	if after := sup.Status(); after.PID != before.PID || !after.Running {
 		t.Errorf("the repeat apply moved the process: %+v after %+v", after, before)
 	}
+	if _, err := sup.Stop(context.Background(), true); err != nil {
+		t.Fatal(err)
+	}
+	third, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"]}`)
+	if ref != nil {
+		t.Fatalf("connecting after stop refused: %s — %s", ref.Code, ref.Message)
+	}
+	if !third.Restarted || third.UnchangedBecauseHashMatched || third.ConfigHash != answer.ConfigHash {
+		t.Errorf("connecting after stop answered %+v", third)
+	}
+	if after := sup.Status(); !after.Running || after.PID == before.PID {
+		t.Errorf("connecting after stop did not start a fresh process: %+v", after)
+	}
 }
 
 // TestAChangedIntentReplacesTheFileAndTheProcess is the other half of replace-and-reconcile: the second call sees a

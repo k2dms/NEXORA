@@ -206,6 +206,16 @@ func newService(cfg config) (*service, error) {
 		return nil, fmt.Errorf("the core.status surface could not be built: %w", err)
 	}
 	handlers["core.status"] = cs.Handle
+	stop, err := newCoreStop(sup, configDir)
+	if err != nil {
+		return nil, err
+	}
+	handlers["core.stop"] = stop.Handle
+	imp, err := newProfileImport(store)
+	if err != nil {
+		return nil, err
+	}
+	handlers["profile.import"] = imp.Handle
 	d, err := dispatch.New(dispatch.Config{Handlers: handlers})
 	if err != nil {
 		return nil, err

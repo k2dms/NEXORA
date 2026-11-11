@@ -557,24 +557,24 @@
     },
     {
       "id": "VER-19",
-      "subject": "the idempotency window has no field and no test: nothing bounds `dedupeWindow`, and no run shows two identical commands answering identically",
+      "subject": "bounded process-local dedupe is tested, but replay after native-port recreation and shared Core adoption has no live fixture",
       "state": "no-fixture",
       "owner": "contracts",
       "closesBy": {
         "kind": "assertion",
-        "ref": "the idempotency window is a bounded field, and a duplicate pair has exactly one side effect"
+        "ref": "a live retry across native-port recreation and adoption returns the prior result without repeating a protected write or Core start"
       },
       "at": [
         {
           "doc": "docs/adr/0008-idempotency-and-replay.md",
-          "anchor": "Verified: NO — deferred to Phase 2 (rule 2 has no check and no data ye"
+          "anchor": "Verified: NO — deferred to Phase 2 (cross-process replay and adoption remain unmeasured)."
         },
         {
           "doc": "docs/architecture/22-component-contracts.md",
           "anchor": "identical answers (ADR-0008). `Verified: NO — deferred to Phase 2` for"
         }
       ],
-      "why": "The replay fixtures prove a recorded pair answers once; only a live run can prove the window's bounds, and today no contract even states them."
+      "why": "The generated 300-second/256-entry/8-MiB window and wired A/B/A credential-rotation regression cover one Connector process. A fresh native port still creates another owner and loses that cache; no live fixture proves adoption and replay across that boundary."
     },
     {
       "id": "VER-20",

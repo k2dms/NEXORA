@@ -20,6 +20,7 @@ type Method struct {
 	AvailableBeforeHello bool
 	Privileged           bool
 	Replayable           bool
+	Idempotent           bool
 	TimeoutMs            int
 	Capabilities         []string
 }
