@@ -18,6 +18,19 @@
       "pid": { "type": ["integer", "null"], "minimum": 1 },
       "coreVersion": { "type": ["string", "null"] },
       "configHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "selectedProfileId": { "type": ["string", "null"], "format": "uuid", "description": "The single profile the live Core was started with; null for no live Core or a multi-profile config." },
+      "inboundPorts": {
+        "type": "array",
+        "items": {
+          "type": "object", "additionalProperties": false, "required": ["listen", "port", "tag"],
+          "properties": {
+            "listen": { "type": "string" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "tag": { "type": "string" }
+          }
+        },
+        "description": "The inbounds held by the live supervisor, never inferred from a stale file."
+      },
       "startedAt": { "type": ["string", "null"], "format": "date-time" },
       "uptimeSeconds": { "type": ["integer", "null"], "minimum": 0 },
       "contained": { "type": ["boolean", "null"] },

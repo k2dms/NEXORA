@@ -11,6 +11,7 @@ import (
 	"github.com/k2dms/nexora/connector/internal/dispatch"
 	"github.com/k2dms/nexora/connector/internal/envelope"
 	"github.com/k2dms/nexora/connector/internal/receipt"
+	"github.com/k2dms/nexora/connector/internal/supervisor"
 )
 
 type coreStatus struct {
@@ -40,14 +41,16 @@ func newCoreStatus(core coreProcess, coreDir string) (*coreStatus, error) {
 }
 
 type coreStatusAnswer struct {
-	Running       bool      `json:"running"`
-	PID           *int      `json:"pid"`
-	CoreVersion   *string   `json:"coreVersion"`
-	ConfigHash    *string   `json:"configHash"`
-	StartedAt     *string   `json:"startedAt"`
-	UptimeSeconds *int64    `json:"uptimeSeconds"`
-	Contained     *bool     `json:"contained"`
-	LastExit      *coreExit `json:"lastExit"`
+	Running           bool                 `json:"running"`
+	PID               *int                 `json:"pid"`
+	CoreVersion       *string              `json:"coreVersion"`
+	ConfigHash        *string              `json:"configHash"`
+	StartedAt         *string              `json:"startedAt"`
+	UptimeSeconds     *int64               `json:"uptimeSeconds"`
+	Contained         *bool                `json:"contained"`
+	LastExit          *coreExit            `json:"lastExit"`
+	SelectedProfileID *string              `json:"selectedProfileId"`
+	InboundPorts      []supervisor.Inbound `json:"inboundPorts"`
 }
 
 type coreExit struct {
@@ -61,7 +64,7 @@ func (s *coreStatus) Handle(_ context.Context, f *envelope.Frame) (any, *dispatc
 		return nil, bad
 	}
 	live := s.core.Status()
-	ans := coreStatusAnswer{Running: live.Running}
+	ans := coreStatusAnswer{Running: live.Running, InboundPorts: []supervisor.Inbound{}}
 	// An unreadable receipt cannot establish a version, but process facts still answer.
 	if v, err := s.version(); err == nil && v != "" {
 		ans.CoreVersion = &v
@@ -70,6 +73,10 @@ func (s *coreStatus) Handle(_ context.Context, f *envelope.Frame) (any, *dispatc
 		ans.ConfigHash = &live.Hash
 	}
 	if live.Running {
+		ans.InboundPorts = append(ans.InboundPorts, live.Inbounds...)
+		if reApplyID.MatchString(live.ProfileID) {
+			ans.SelectedProfileID = &live.ProfileID
+		}
 		ans.PID = &live.PID
 		ans.Contained = &live.Contained
 		at := live.StartedAt.UTC().Format(time.RFC3339Nano)

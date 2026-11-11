@@ -39,6 +39,18 @@ func (s *coreStop) Handle(ctx context.Context, f *envelope.Frame) (any, *dispatc
 	if bad != nil {
 		return nil, bad
 	}
+	var expected struct {
+		Hash string `json:"expectedConfigHash"`
+	}
+	if len(f.Args) != 0 {
+		_ = json.Unmarshal(f.Args, &expected)
+	}
+	if expected.Hash != "" {
+		live := s.core.Status()
+		if (live.Running || live.Restarting) && live.Hash != expected.Hash {
+			return nil, &dispatch.Refusal{Code: "Busy", Message: "core.stop: another config owns the live Core; the stale session cannot stop it"}
+		}
+	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	stopped, err := s.core.Stop(ctx, graceful)
@@ -74,9 +86,15 @@ func readStopArgs(f *envelope.Frame) (bool, *dispatch.Refusal) {
 	}
 	for k := range raw {
 		switch k {
-		case "graceful", "reason":
+		case "graceful", "reason", "expectedConfigHash":
 		default:
 			return false, badStopArgs("args carry a field core.stop does not declare")
+		}
+	}
+	if v, ok := raw["expectedConfigHash"]; ok {
+		var hash string
+		if err := json.Unmarshal(v, &hash); err != nil || len(hash) != 64 || !reAppliedHash.MatchString(hash) {
+			return false, badStopArgs("expectedConfigHash is not a lowercase sha256")
 		}
 	}
 	if v, ok := raw["graceful"]; ok {

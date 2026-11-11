@@ -7,7 +7,7 @@ ProxyImpl = require('./proxy_impl')
 class SettingsProxyImpl extends ProxyImpl
   @isSupported: -> chrome?.proxy?.settings?
   features: ['fullUrlHttp', 'pacScript', 'watchProxyChange']
-  applyProfile: (profile, meta, options) ->
+  _applyProfile: (profile, meta, options) ->
     meta ?= profile
     if profile.profileType == 'SystemProfile'
       # Clear proxy settings, returning proxy control to Chromium.
@@ -194,5 +194,11 @@ class SettingsProxyImpl extends ProxyImpl
             for own pattern of bypassSet
               {conditionType: 'BypassCondition', pattern: pattern}
           profile
+
+  applyProfile: (profile, meta, options) ->
+    chromeApiPromisify(chrome.storage.local, 'get')('-nexora.runtimeConnection').then (stored) =>
+      if stored['-nexora.runtimeConnection']?
+        throw new Error('Disconnect NEXORA before changing the browser proxy.')
+      @_applyProfile(profile, meta, options)
 
 module.exports = SettingsProxyImpl

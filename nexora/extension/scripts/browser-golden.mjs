@@ -5,7 +5,7 @@ import { generateKeyPairSync, createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { strict as assert } from 'node:assert';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 assert.equal(process.platform, 'win32', 'this live test requires Windows Native Messaging and DPAPI');
@@ -59,35 +59,77 @@ await writeFile(core + '/receipt.json', JSON.stringify({ tag: 'v24.11.11', pinsV
 let socket;
 let chrome;
 let server;
+let version;
+let id;
+let sessionId;
 let installed = false;
 let measurement;
 let nextId = 0;
 const pending = new Map();
+const workerVersions = new Map();
 const delay = (ms) => new Promise((done) => setTimeout(done, ms));
+const connectorExe = bins + 'nexora-connector.exe';
+const hostExe = bins + 'nexora-host.exe';
+const instancePath = local + '/NEXORA/state/connector-instance.json';
+const appliedPath = local + '/NEXORA/state/state.json';
+const runtimeKey = '-nexora.runtimeConnection';
+const imageKey = (path) => resolve(path).replaceAll('\\', '/').toLowerCase();
+const processes = (filter) => JSON.parse(command('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+  `$ErrorActionPreference='Stop';$items=@(Get-CimInstance Win32_Process -Filter '${filter}' | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine,CreationDate);ConvertTo-Json -InputObject $items -Compress`,
+]).trim());
+const processAt = (pid) => {
+  assert.ok(Number.isSafeInteger(pid) && pid > 0, 'invalid process PID');
+  return processes('ProcessId=' + pid)[0];
+};
+const waitProcessExit = async (owned) => {
+  const deadline = performance.now() + 20000;
+  while (performance.now() < deadline) {
+    const current = processAt(owned.ProcessId);
+    if (!current || current.CreationDate !== owned.CreationDate) return;
+    await delay(100);
+  }
+  throw new Error('process did not exit: ' + owned.ProcessId);
+};
+const waitChildExit = (child) => new Promise((resolve, reject) => {
+  if (!child || child.exitCode !== null || child.signalCode !== null) { resolve(); return; }
+  const done = () => { clearTimeout(timer); child.off('error', failed); resolve(); };
+  const failed = (error) => { clearTimeout(timer); child.off('exit', done); reject(error); };
+  const timer = setTimeout(() => { child.off('exit', done); child.off('error', failed); reject(new Error('child did not exit: ' + child.pid)); }, 20000);
+  child.once('exit', done);
+  child.once('error', failed);
+});
+const stopChild = async (child) => {
+  if (child?.exitCode === null && child.signalCode === null) child.kill();
+  await waitChildExit(child);
+};
 const call = (method, params = {}, sessionId) => new Promise((resolve, reject) => {
   const id = ++nextId;
   const timer = setTimeout(() => { pending.delete(id); reject(new Error('CDP timeout: ' + method)); }, 20000);
   pending.set(id, { resolve, reject, timer });
-  socket.send(JSON.stringify({ id, method, params, sessionId }));
+  try { socket.send(JSON.stringify({ id, method, params, sessionId })); }
+  catch (error) { pending.delete(id); clearTimeout(timer); reject(error); }
 });
-try {
-  server = spawn(xray, ['run', '-c', root + '/server.json'], { stdio: 'ignore' });
-  await delay(300);
-  assert.equal(server.exitCode, null, 'REALITY fixture did not start');
+const launchChrome = async () => {
   chrome = spawn(process.env.NEXORA_CHROME ?? join(process.env.PROGRAMFILES ?? 'C:/Program Files', 'Google/Chrome/Application/chrome.exe'), [
     '--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
     ...subscriptionURL ? [] : ['--ignore-certificate-errors'],
     '--enable-unsafe-extension-debugging', '--remote-debugging-port=' + debugPort, '--user-data-dir=' + root + '/browser', 'about:blank',
   ], { stdio: 'ignore', env });
-  let version;
-  for (let attempt = 0; attempt < 50; attempt++) {
-    try { version = await (await fetch('http://127.0.0.1:' + debugPort + '/json/version')).json(); break; } catch { await delay(100); }
+  version = undefined;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    assert.equal(chrome.exitCode, null, 'Chrome exited before CDP was ready');
+    try { version = await (await fetch('http://127.0.0.1:' + debugPort + '/json/version', { signal: AbortSignal.timeout(1000) })).json(); break; }
+    catch { await delay(100); }
   }
-  assert.ok(version);
-  socket = new WebSocket(version.webSocketDebuggerUrl);
-  await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
-  socket.onmessage = ({ data }) => {
+  assert.ok(version, 'Chrome did not expose CDP');
+  const ws = socket = new WebSocket(version.webSocketDebuggerUrl);
+  await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject; });
+  workerVersions.clear();
+  ws.onmessage = ({ data }) => {
     const message = JSON.parse(data);
+    if (message.method === 'ServiceWorker.workerVersionUpdated') {
+      for (const worker of message.params.versions) workerVersions.set(worker.versionId, worker);
+    }
     const request = pending.get(message.id);
     if (!request) return;
     pending.delete(message.id);
@@ -95,19 +137,76 @@ try {
     if (message.error) request.reject(new Error(JSON.stringify(message.error)));
     else request.resolve(message.result);
   };
-  const { id } = await call('Extensions.loadUnpacked', { path: resolve(project, 'dist/chromium') });
-  installed = true;
-  command(bins + 'nexora-installer.exe', ['install', '--host', bins + 'nexora-host.exe', '--origin', 'chrome-extension://' + id + '/']);
-  const { targetId } = await call('Target.createTarget', { url: 'chrome-extension://' + id + '/nexora-options.html' });
-  const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true });
-  await call('Runtime.enable', {}, sessionId);
-  const evaluate = async (expression) => {
-    const response = await call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
-    if (response.exceptionDetails) throw new Error(response.exceptionDetails.text + ': ' + (response.exceptionDetails.exception?.description ?? ''));
-    return response.result.value;
+  ws.onclose = () => {
+    if (socket !== ws) return;
+    for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error('CDP browser closed')); }
+    pending.clear();
   };
+};
+const closeChrome = async () => {
+  if (socket?.readyState === WebSocket.OPEN) {
+    try { await call('Browser.close'); } catch {} // Chrome may close CDP before acknowledging Browser.close.
+  }
+  await waitChildExit(chrome);
+  socket?.close();
+};
+const evaluate = async (expression) => {
+  const response = await call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
+  if (response.exceptionDetails) throw new Error(response.exceptionDetails.text + ': ' + (response.exceptionDetails.exception?.description ?? ''));
+  return response.result.value;
+};
+const attachOptions = async () => {
+  const { targetId } = await call('Target.createTarget', { url: 'chrome-extension://' + id + '/nexora-options.html' });
+  sessionId = (await call('Target.attachToTarget', { targetId, flatten: true })).sessionId;
+  await call('Runtime.enable', {}, sessionId);
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const actualId = await evaluate('globalThis.chrome?.runtime?.id');
+    if (actualId) { assert.equal(actualId, id, 'options extension ID changed'); return targetId; }
+    await delay(100);
+  }
+  await call('Target.closeTarget', { targetId });
+  const error = new Error('options page did not load the expected extension');
+  error.code = 'EXTENSION_NOT_LOADED';
+  throw error;
+};
+const rpc = async (action, payload) => evaluate(`new Promise(resolve=>chrome.runtime.sendMessage(${JSON.stringify({ channel: 'nexora.connection.v1', id: randomUUID(), action, payload })},resolve))`);
+const awaitConnected = async () => {
+  let answer;
+  for (let attempt = 0; attempt < 120; attempt++) {
+    answer = await rpc('status');
+    if (answer?.view?.phase === 'connected' && answer.view.connector === 'ready') return answer;
+    await delay(250);
+  }
+  assert.fail('connection did not recover: ' + JSON.stringify(answer));
+};
+const workers = async () => (await call('Target.getTargets')).targetInfos.filter((target) => target.type === 'service_worker' && target.url.startsWith('chrome-extension://' + id + '/'));
+const nativeHosts = () => processes("Name=\"" + basename(hostExe) + "\"").filter((item) => {
+  assert.ok(item.ExecutablePath, 'cannot verify native-host process image');
+  return imageKey(item.ExecutablePath) === imageKey(hostExe);
+});
+const cleanupConnector = async () => {
+  let record;
+  try { record = JSON.parse(await readFile(instancePath, 'utf8')); }
+  catch (error) { if (error.code === 'ENOENT') return; throw error; }
+  const owned = processAt(record.pid);
+  if (!owned) return;
+  assert.ok(owned.ExecutablePath && imageKey(owned.ExecutablePath) === imageKey(connectorExe), 'refusing to terminate a PID whose image is not the test Connector');
+  const children = processes('ParentProcessId=' + record.pid);
+  for (const child of children) assert.ok(child.ExecutablePath && imageKey(child.ExecutablePath) === imageKey(xray), 'unexpected shared Connector child');
+  command('taskkill.exe', ['/PID', String(record.pid), '/F']); // Session record + verified image; never /IM or /T.
+  await waitProcessExit(owned);
+  for (const child of children) await waitProcessExit(child);
+};
+try {
+  server = spawn(xray, ['run', '-c', root + '/server.json'], { stdio: 'ignore' });
+  await delay(300);
+  assert.equal(server.exitCode, null, 'REALITY fixture did not start');
+  await launchChrome();
+  ({ id } = await call('Extensions.loadUnpacked', { path: resolve(project, 'dist/chromium') }));
+  installed = true;
+  command(bins + 'nexora-installer.exe', ['install', '--host', hostExe, '--origin', 'chrome-extension://' + id + '/']);
+  await attachOptions();
   await delay(1500);
-  const rpc = async (action, payload) => evaluate(`new Promise(resolve=>chrome.runtime.sendMessage(${JSON.stringify({ channel: 'nexora.connection.v1', id: randomUUID(), action, payload })},resolve))`);
   let status;
   for (let attempt = 0; attempt < 40; attempt++) {
     status = await rpc('status');
@@ -252,17 +351,142 @@ try {
     await delay(100);
   }
   assert.equal(status.view.phase, 'connected', JSON.stringify(status));
-  await delay(2100);
-  const url = 'https://127.0.0.1:' + sitePort + '/golden';
-  await evaluate(`(()=>{const root=document.querySelector('nexora-connection-panel').shadowRoot;const el=root.querySelector('#site-url');el.value=${JSON.stringify(url)};el.dispatchEvent(new Event('input',{bubbles:true}));el.form.requestSubmit();})()`);
-  for (let attempt = 0; attempt < 80 && !arrivals.includes('127.0.0.2'); attempt++) await delay(100);
-  assert.ok(arrivals.includes('127.0.0.2'), 'HTTPS request never passed through REALITY server: ' + JSON.stringify(arrivals));
-  const targets = await call('Target.getTargets');
-  const site = targets.targetInfos.find((target) => target.url === url);
-  assert.ok(site);
-  const siteSession = (await call('Target.attachToTarget', { targetId: site.targetId, flatten: true })).sessionId;
-  const body = await call('Runtime.evaluate', { expression: 'document.body.textContent', returnByValue: true }, siteSession);
-  assert.equal(body.result.value, 'nexora-local-https-ok');
+  const selectedServer = status.view.server.id;
+  const runtimeBefore = await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)}).then(value=>value[${JSON.stringify(runtimeKey)}])`);
+  assert.equal(runtimeBefore?.active, true, 'active connection was not persisted durably');
+  assert.deepEqual(runtimeBefore.previous, before.value, 'durable runtime lost the exact previous proxy');
+  const connectorBefore = JSON.parse(await readFile(instancePath, 'utf8'));
+  const appliedBefore = JSON.parse(await readFile(appliedPath, 'utf8'));
+  assert.equal(appliedBefore.selectedProfile, runtimeBefore.profileId);
+  assert.equal(appliedBefore.appliedConfigHash, runtimeBefore.configHash);
+  const connectorProcess = processAt(connectorBefore.pid);
+  const coreProcess = processAt(appliedBefore.lastStartPid);
+  assert.ok(connectorProcess?.ExecutablePath && imageKey(connectorProcess.ExecutablePath) === imageKey(connectorExe), 'not the session test Connector');
+  assert.ok(coreProcess?.ExecutablePath && imageKey(coreProcess.ExecutablePath) === imageKey(xray), 'applied-state PID is not the test Core');
+  const assertSameProcesses = async () => {
+    const connectorNow = JSON.parse(await readFile(instancePath, 'utf8'));
+    const appliedNow = JSON.parse(await readFile(appliedPath, 'utf8'));
+    assert.equal(connectorNow.pid, connectorBefore.pid, 'shared Connector PID changed');
+    assert.equal(connectorNow.startedAt, connectorBefore.startedAt, 'shared Connector instance changed');
+    assert.equal(appliedNow.lastStartPid, appliedBefore.lastStartPid, 'Core PID changed');
+    assert.equal(appliedNow.selectedProfile, appliedBefore.selectedProfile, 'Core selection changed');
+    assert.equal(appliedNow.appliedConfigHash, appliedBefore.appliedConfigHash, 'Core config changed');
+    assert.equal(processAt(connectorBefore.pid)?.CreationDate, connectorProcess.CreationDate, 'Connector process exited or PID was reused');
+    const candidates = processes('ParentProcessId=' + connectorBefore.pid);
+    assert.deepEqual(candidates.map((item) => item.ProcessId), [appliedBefore.lastStartPid], 'shared Connector has no Core or duplicate children');
+    assert.equal(candidates[0].CreationDate, coreProcess.CreationDate, 'Core process exited or PID was reused');
+    assert.ok(candidates[0].ExecutablePath && imageKey(candidates[0].ExecutablePath) === imageKey(xray));
+  };
+  const proveHTTPS = async () => {
+    await delay(2100);
+    const start = arrivals.length;
+    const url = 'https://127.0.0.1:' + sitePort + '/golden?' + randomUUID();
+    await evaluate(`(()=>{const root=document.querySelector('nexora-connection-panel').shadowRoot;const el=root.querySelector('#site-url');el.value=${JSON.stringify(url)};el.dispatchEvent(new Event('input',{bubbles:true}));el.form.requestSubmit();})()`);
+    for (let attempt = 0; attempt < 80 && !arrivals.slice(start).includes('127.0.0.2'); attempt++) await delay(100);
+    assert.ok(arrivals.slice(start).includes('127.0.0.2'), 'fresh HTTPS request never passed through REALITY server');
+    const site = (await call('Target.getTargets')).targetInfos.find((target) => target.url === url);
+    assert.ok(site, 'loopback HTTPS tab missing');
+    const siteSession = (await call('Target.attachToTarget', { targetId: site.targetId, flatten: true })).sessionId;
+    let text;
+    for (let attempt = 0; attempt < 80; attempt++) {
+      text = (await call('Runtime.evaluate', { expression: 'document.body?.textContent', returnByValue: true }, siteSession)).result.value;
+      if (text === 'nexora-local-https-ok') break;
+      await delay(100);
+    }
+    assert.equal(text, 'nexora-local-https-ok');
+    await call('Target.closeTarget', { targetId: site.targetId });
+  };
+  await proveHTTPS();
+  const workerRestart = { stopped: false, recovered: false, method: null, reason: null };
+  const oldWorker = (await workers())[0];
+  if (oldWorker) {
+    try { await call('ServiceWorker.enable', {}, sessionId); } catch {}
+    for (let attempt = 0; attempt < 10 && ![...workerVersions.values()].some((worker) => worker.targetId === oldWorker.targetId); attempt++) await delay(100);
+    const workerVersion = [...workerVersions.values()].find((worker) => worker.targetId === oldWorker.targetId);
+    if (workerVersion) {
+      try { await call('ServiceWorker.stopWorker', { versionId: workerVersion.versionId }, sessionId); workerRestart.method = 'ServiceWorker.stopWorker'; } catch {}
+    }
+    if (!workerRestart.method) {
+      try {
+        if ((await call('Target.closeTarget', { targetId: oldWorker.targetId })).success) workerRestart.method = 'Target.closeTarget';
+      } catch {}
+    }
+    const confirmWorkerStopped = async () => {
+      for (let attempt = 0; attempt < 50; attempt++) {
+        if (!(await workers()).some((worker) => worker.targetId === oldWorker.targetId)) return true;
+        await delay(100);
+      }
+      return false;
+    };
+    if (workerRestart.method) workerRestart.stopped = await confirmWorkerStopped();
+    if (!workerRestart.stopped && workerRestart.method === 'ServiceWorker.stopWorker') {
+      try {
+        if ((await call('Target.closeTarget', { targetId: oldWorker.targetId })).success) {
+          workerRestart.method = 'Target.closeTarget';
+          workerRestart.stopped = await confirmWorkerStopped();
+        }
+      } catch {}
+    }
+    if (workerRestart.stopped) {
+      status = await awaitConnected();
+      assert.ok((await workers()).some((worker) => worker.targetId !== oldWorker.targetId), 'MV3 worker did not restart');
+      assert.equal(status.view.server.id, selectedServer, 'worker restart lost selected server');
+      assert.deepEqual(await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)}).then(value=>value[${JSON.stringify(runtimeKey)}])`), runtimeBefore, 'worker restart changed durable runtime');
+      await assertSameProcesses();
+      workerRestart.recovered = true;
+    } else workerRestart.reason = 'CDP could not prove the original worker target stopped; no worker restart claimed';
+  } else workerRestart.reason = 'MV3 worker target unavailable; no worker restart claimed';
+  assert.ok(nativeHosts().length > 0, 'no real native-host process before browser shutdown');
+  const oldChromePID = chrome.pid;
+  await closeChrome();
+  for (let attempt = 0; attempt < 100 && nativeHosts().length; attempt++) await delay(100);
+  assert.equal(nativeHosts().length, 0, 'native hosts survived Browser.close');
+  const quietStart = performance.now();
+  let zeroPortSamples = 0;
+  do {
+    assert.equal(nativeHosts().length, 0, 'native host appeared during the zero-native-port interval');
+    await assertSameProcesses();
+    zeroPortSamples++;
+    if (performance.now() - quietStart < 60000) await delay(1000);
+  } while (performance.now() - quietStart < 60000);
+  assert.equal(nativeHosts().length, 0, 'native host present at end of ADR5 survival interval');
+  await assertSameProcesses();
+  const zeroNativePortsMilliseconds = Math.round(performance.now() - quietStart);
+  await launchChrome();
+  assert.notEqual(chrome.pid, oldChromePID, 'Chrome was not relaunched');
+  let automaticWorker;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    automaticWorker = (await workers())[0];
+    if (automaticWorker) break;
+    await delay(100);
+  }
+  let unpackedReloadedOnRelaunch = false;
+  if (!automaticWorker) {
+    // Probe the old ID before reloading: a loaded extension must initialize without an options-page RPC.
+    let extensionStillLoaded = false;
+    try { await attachOptions(); extensionStillLoaded = true; }
+    catch (error) { if (error.code !== 'EXTENSION_NOT_LOADED') throw error; }
+    assert.equal(extensionStillLoaded, false, 'persisted extension did not initialize its background automatically');
+    const loaded = await call('Extensions.loadUnpacked', { path: resolve(project, 'dist/chromium') });
+    assert.equal(loaded.id, id, 'unpacked extension ID changed on relaunch');
+    unpackedReloadedOnRelaunch = true;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      automaticWorker = (await workers())[0];
+      if (automaticWorker) break;
+      await delay(100);
+    }
+  }
+  assert.ok(automaticWorker, 'background did not initialize automatically before attaching new options');
+  for (let attempt = 0; attempt < 50 && !nativeHosts().length; attempt++) await delay(100);
+  assert.ok(nativeHosts().length > 0, 'background did not reconnect native messaging automatically before options opened');
+  await attachOptions();
+  assert.equal(await evaluate('chrome.runtime.id'), id, 'extension ID changed after browser restart');
+  assert.deepEqual(await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)}).then(value=>value[${JSON.stringify(runtimeKey)}])`), runtimeBefore, 'browser restart lost durable local runtime');
+  status = await awaitConnected();
+  assert.equal(status.view.server.id, selectedServer, 'browser restart lost selected server');
+  await assertSameProcesses();
+  await proveHTTPS();
+  const recovery = { workerRestart, browserRestart: true, sameUserDataDirAndDebugPort: true, extensionIdStable: true, unpackedReloadedOnRelaunch, backgroundAutomaticallyInitialized: true, durableLocalRuntimeSurvived: true, connectorPID: connectorBefore.pid, corePID: appliedBefore.lastStartPid, connectorAndCorePIDsUnchanged: true, selectedServerRestored: true, noDuplicateCore: true, adr5Survived: true, zeroNativePorts: true, zeroNativePortsMilliseconds, zeroPortSamples, zeroNativePortsEvidence: 'no process with the expected test native-host executable during the closed-browser interval', httpsProvenAfterBrowserRestart: true };
   await delay(2100);
   await evaluate("[...document.querySelector('nexora-connection-panel').shadowRoot.querySelectorAll('button')].find(button=>button.textContent.trim()==='Отключить').click()");
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -274,6 +498,7 @@ try {
   await assert.rejects(readFile(local + '/NEXORA/config/config.json'), { code: 'ENOENT' });
   const after = await evaluate('chrome.proxy.settings.get({incognito:false})');
   assert.deepEqual(after.value, before.value);
+  assert.equal(await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)}).then(value=>Object.hasOwn(value,${JSON.stringify(runtimeKey)}))`), false, 'disconnect did not clear durable local runtime');
   await delay(2100);
   await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('button.primary[type=button]').click()");
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -291,19 +516,30 @@ try {
   status = await rpc('disconnect');
   assert.equal(status.view.phase, 'disconnected', JSON.stringify(status));
   await assert.rejects(readFile(local + '/NEXORA/config/config.json'), { code: 'ENOENT' });
-  measurement = { browser: version.Browser, extensionId: id, realNativeMessaging: true, realXrayReality: true, httpsTunneledSource: '127.0.0.2', uuidAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, reconnectAfterStop: true, width320WithoutOverflow: true, screenshot: root + '-connected.png', scope: 'loopback fixture; mechanically prepared test receipt, not trusted production installation; test-only HTTPS certificate exception' };
+  assert.deepEqual((await evaluate('chrome.proxy.settings.get({incognito:false})')).value, before.value);
+  assert.equal(await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)}).then(value=>Object.hasOwn(value,${JSON.stringify(runtimeKey)}))`), false, 'final disconnect did not clear durable local runtime');
+  measurement = { browser: version.Browser, extensionId: id, realNativeMessaging: true, realXrayReality: true, httpsTunneledSource: '127.0.0.2', recovery, durableRuntimeClearedOnDisconnect: true, uuidAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, reconnectAfterStop: true, width320WithoutOverflow: true, screenshot: root + '-connected.png', scope: 'loopback fixture; mechanically prepared test receipt, not trusted production installation; test-only HTTPS certificate exception' };
   }
 } finally {
-  if (socket?.readyState === WebSocket.OPEN) {
-    try { await call('Browser.close'); } catch {}
-    socket.close();
-  }
-  if (chrome?.exitCode === null) chrome.kill();
-  if (server?.exitCode === null) server.kill();
-  web.closeAllConnections();
-  await new Promise((done) => web.close(done));
-  if (installed) command(bins + 'nexora-installer.exe', ['uninstall']);
-  for (const key of keys) assert.notEqual(spawnSync('reg.exe', ['query', key], { stdio: 'ignore' }).status, 0, 'temporary registration not removed');
+  const cleanupErrors = [];
+  const cleanup = async (action) => { try { await action(); } catch (error) { cleanupErrors.push(error); } };
+  await cleanup(async () => {
+    try { await closeChrome(); } catch { await stopChild(chrome); socket?.close(); }
+    for (let attempt = 0; attempt < 100 && nativeHosts().length; attempt++) await delay(100);
+    assert.equal(nativeHosts().length, 0, 'native hosts still running during cleanup');
+  });
+  await cleanup(() => stopChild(server));
+  await cleanup(async () => {
+    web.closeAllConnections();
+    await new Promise((done) => web.close(done));
+  });
+  // Never kill the shared service while a browser/host could still reconnect and recreate it.
+  if (!cleanupErrors.length) await cleanup(cleanupConnector);
+  await cleanup(async () => {
+    if (installed) command(bins + 'nexora-installer.exe', ['uninstall']);
+    for (const key of keys) assert.notEqual(spawnSync('reg.exe', ['query', key], { stdio: 'ignore' }).status, 0, 'temporary registration not removed');
+  });
+  if (cleanupErrors.length) throw new AggregateError(cleanupErrors, 'cleanup failed; sandbox retained: ' + root);
   await rm(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 }
 console.log(JSON.stringify({ ...measurement, sandboxDisposed: true }));

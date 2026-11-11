@@ -98,6 +98,48 @@ func TestCoreStatusAnswersTheProcessTheSupervisorHolds(t *testing.T) {
 	}
 }
 
+func TestCoreStatusReportsOnlyLiveSingleProfileAndInbounds(t *testing.T) {
+	inbounds := []supervisor.Inbound{
+		{Listen: "127.0.0.1", Port: shapeAPort, Tag: firstPortTag},
+		{Listen: "::1", Port: shapeAPort + 1, Tag: "block"},
+	}
+	for _, tc := range []struct {
+		name       string
+		running    bool
+		restarting bool
+		profile    string
+		selected   any
+	}{
+		{"running single UUID", true, false, profileID, profileID},
+		{"running no selection", true, false, "", nil},
+		{"running multiple UUIDs", true, false, profileID + "," + importProfileID, nil},
+		{"running uppercase UUID", true, false, strings.ToUpper(profileID), nil},
+		{"running malformed selection", true, false, "not-a-profile", nil},
+		{"stopped retained selection", false, false, profileID, nil},
+		{"restarting retained selection", false, true, profileID, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, _ := statusSurface(t, supervisor.Status{
+				Running: tc.running, Restarting: tc.restarting, Hash: statusHash,
+				ProfileID: tc.profile, Inbounds: inbounds,
+			}, false)
+			got := statusAnswer(t, s, `{}`)
+			if selected, present := got["selectedProfileId"]; !present || selected != tc.selected {
+				t.Errorf("selectedProfileId = %v (present=%t), want %v", selected, present, tc.selected)
+			}
+			want := []any{}
+			if tc.running {
+				for _, in := range inbounds {
+					want = append(want, map[string]any{"listen": in.Listen, "port": float64(in.Port), "tag": in.Tag})
+				}
+			}
+			if !reflect.DeepEqual(got["inboundPorts"], want) || got["running"] != tc.running {
+				t.Errorf("running/inboundPorts = %v/%v, want %t/%v", got["running"], got["inboundPorts"], tc.running, want)
+			}
+		})
+	}
+}
+
 func TestCoreStatusAnswersWhenCoreIsDownAndKeepsWhatOutlivedIt(t *testing.T) {
 	died := time.Date(2026, 11, 11, 10, 40, 0, 0, time.UTC)
 	s, _ := statusSurface(t, supervisor.Status{
@@ -253,6 +295,7 @@ func TestCoreStatusRealSupervisorLifecyclePersistsAfterStop(t *testing.T) {
 		"running": true, "pid": float64(live.PID), "configHash": statusHash,
 		"contained": live.Contained, "startedAt": live.StartedAt.UTC().Format(time.RFC3339Nano),
 		"uptimeSeconds": float64(42), "coreVersion": nil, "lastExit": nil,
+		"selectedProfileId": nil, "inboundPorts": []any{},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("live answer = %v, want %v", got, want)
@@ -287,6 +330,7 @@ func TestCoreStatusRealSupervisorLifecyclePersistsAfterStop(t *testing.T) {
 	want = map[string]any{
 		"running": false, "pid": nil, "configHash": statusHash, "contained": nil,
 		"startedAt": nil, "uptimeSeconds": nil, "coreVersion": nil, "lastExit": exit,
+		"selectedProfileId": nil, "inboundPorts": []any{},
 	}
 	if got := statusAnswer(t, s, `{}`); !reflect.DeepEqual(got, want) {
 		t.Errorf("stopped answer = %v, want %v", got, want)
@@ -361,6 +405,7 @@ func TestCoreStatusServiceWiringRequiresHelloAndLoadsPersistedState(t *testing.T
 	want := map[string]any{
 		"running": false, "pid": nil, "configHash": statusHash, "contained": nil,
 		"startedAt": nil, "uptimeSeconds": nil, "coreVersion": "24.11.11",
+		"selectedProfileId": nil, "inboundPorts": []any{},
 		"lastExit": map[string]any{"at": died.Format(time.RFC3339Nano), "exitCode": float64(17), "signal": "SIGKILL"},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -413,6 +458,7 @@ func TestCoreStatusMalformedReceiptLeavesVersionNullAndProcessFactsIntact(t *tes
 				"running": true, "pid": float64(8144), "configHash": statusHash, "contained": true,
 				"startedAt": started.Format(time.RFC3339Nano), "uptimeSeconds": float64(42),
 				"coreVersion": nil, "lastExit": nil,
+				"selectedProfileId": nil, "inboundPorts": []any{},
 			}
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("answer = %v, want %v", got, want)

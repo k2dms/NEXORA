@@ -13,6 +13,7 @@
     "additionalProperties": false,
     "properties": {
       "graceful": { "type": "boolean", "default": true },
+      "expectedConfigHash": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Refuse with Busy if a running or restarting Core belongs to a different config; prevents stale browser recovery from stopping another session." },
       "reason": { "type": "string", "maxLength": 40 }
     }
   },

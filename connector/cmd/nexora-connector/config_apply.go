@@ -93,7 +93,8 @@ type applyConfig struct {
 	StateDir string
 	// ConfigDir holds the compiled config internal/apply writes: doc 34 §7's per-user config directory, whose
 	// one stable file name is what makes doc 27 §8's replacement a rename and not a create.
-	ConfigDir string
+	ConfigDir     string
+	preserveOwner bool
 }
 
 // configApply is the handler: the seams, the directories, and the span.
@@ -449,6 +450,12 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 		return nil, bad
 	}
 
+	if a.cfg.preserveOwner && !args.dryRun {
+		live := a.core.Status()
+		if (live.Running || live.Restarting) && live.ProfileID != strings.Join(args.profileIDs, ",") {
+			return nil, &dispatch.Refusal{Code: "CoreAlreadyRunning", Message: "config.apply: another profile owns Core; explicitly disconnect that session before applying a different profile"}
+		}
+	}
 	recorded, err := a.record.Read()
 	if err != nil {
 		return nil, refuseApply(err, "config.apply: the applied-state record could not be read, so the hash this call would compare and report is unknown")

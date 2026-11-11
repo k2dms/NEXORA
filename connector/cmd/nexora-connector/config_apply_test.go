@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -697,6 +698,98 @@ func TestCompareAndSwapMismatchIsBusy(t *testing.T) {
 	// The matching case is the one that proves the comparison is against the record and not against a constant.
 	if _, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"],"expectedAppliedHash":"`+strings.Repeat("a", 64)+`"}`); ref != nil {
 		t.Errorf("an apply whose belief matches the record was refused: %s — %s", ref.Code, ref.Message)
+	}
+}
+
+func TestSharedApplyRejectsForeignOwnerBeforeEffects(t *testing.T) {
+	for _, restarting := range []bool{false, true} {
+		for _, policy := range []string{restartAuto, restartNever} {
+			t.Run(fmt.Sprintf("restarting=%t/policy=%s", restarting, policy), func(t *testing.T) {
+				h := newHarness(t, baseIntent(t), testProtector{})
+				h.surface.cfg.preserveOwner = true
+				live := supervisor.Status{Running: !restarting, Restarting: restarting, ProfileID: importProfileID, Hash: statusHash}
+				h.core.status = live
+				resolver := &countingResolver{inner: h.store}
+				h.surface.resolver = resolver
+				if err := supervisor.WriteState(h.dirs.state, supervisor.State{AppliedHash: statusHash, SelectedProfile: importProfileID}); err != nil {
+					t.Fatal(err)
+				}
+				before, err := supervisor.ReadState(h.dirs.state)
+				if err != nil {
+					t.Fatal(err)
+				}
+				path := filepath.Join(h.dirs.config, apply.FileName)
+				if err := os.WriteFile(path, []byte("private-config"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				_, _, ref := h.ask(t, `{"profileIds":["`+profileID+`"],"restartPolicy":"`+policy+`","expectedAppliedHash":"`+strings.Repeat("a", 64)+`"}`)
+				if ref == nil || ref.Code != "CoreAlreadyRunning" || ref.Close {
+					t.Fatalf("foreign apply refusal = %+v, want CoreAlreadyRunning before CAS", ref)
+				}
+				if reads, writes := h.record.counts(); reads != 0 || writes != 0 || resolver.count() != 0 {
+					t.Fatalf("foreign apply touched record or keystore: reads=%d writes=%d secrets=%d", reads, writes, resolver.count())
+				}
+				if starts, stops := h.core.calls(); starts != 0 || stops != 0 || !reflect.DeepEqual(h.core.Status(), live) {
+					t.Fatal("foreign apply changed Core")
+				}
+				if raw, err := os.ReadFile(path); err != nil || string(raw) != "private-config" {
+					t.Fatal("foreign apply changed the materialized config")
+				}
+				if after, err := supervisor.ReadState(h.dirs.state); err != nil || !reflect.DeepEqual(after, before) {
+					t.Fatal("foreign apply changed persisted state")
+				}
+				if len(h.surface.force.servers) != 0 || h.surface.force.endpoint != "" {
+					t.Fatal("foreign apply changed the in-force intent")
+				}
+			})
+		}
+	}
+}
+
+func TestSharedApplyAllowsOwnerPreviewAndStoppedCore(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		preserve bool
+		live     supervisor.Status
+		dryRun   bool
+	}{
+		{"same running owner", true, supervisor.Status{Running: true, ProfileID: profileID}, false},
+		{"same restarting owner", true, supervisor.Status{Restarting: true, ProfileID: profileID}, false},
+		{"stopped foreign owner", true, supervisor.Status{ProfileID: importProfileID}, false},
+		{"foreign preview", true, supervisor.Status{Running: true, ProfileID: importProfileID}, true},
+		{"nonshared foreign owner", false, supervisor.Status{Running: true, ProfileID: importProfileID}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newHarness(t, baseIntent(t), testProtector{})
+			h.surface.cfg.preserveOwner = tc.preserve
+			h.core.status = tc.live
+			resolver := &countingResolver{inner: h.store}
+			h.surface.resolver = resolver
+			answer, _, ref := h.ask(t, fmt.Sprintf(`{"profileIds":["%s"],"dryRun":%t}`, profileID, tc.dryRun))
+			if ref != nil || answer.Applied == tc.dryRun || answer.DryRun != tc.dryRun {
+				t.Fatalf("answer = %+v, refusal = %+v", answer, ref)
+			}
+			if tc.dryRun {
+				h.noConfigFile(t)
+				if starts, stops := h.core.calls(); starts != 0 || stops != 0 || resolver.count() != 0 {
+					t.Fatal("foreign preview touched Core or keystore")
+				}
+				if _, writes := h.record.counts(); writes != 0 {
+					t.Fatal("foreign preview wrote state")
+				}
+			} else {
+				wantStops := 0
+				if tc.live.Running || tc.live.Restarting {
+					wantStops = 1
+				}
+				if starts, stops := h.core.calls(); starts != 1 || stops != wantStops {
+					t.Fatalf("starts=%d stops=%d, want 1/%d", starts, stops, wantStops)
+				}
+				if h.core.starts[0].ProfileID != profileID || len(h.appliedConfig(t)) == 0 {
+					t.Fatal("accepted apply did not hand the selected profile/config to Core")
+				}
+			}
+		})
 	}
 }
 

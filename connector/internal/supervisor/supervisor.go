@@ -116,6 +116,7 @@ type Status struct {
 	Running   bool
 	PID       int
 	Hash      string
+	ProfileID string
 	StartedAt time.Time
 	Contained bool
 	// ContainmentNote is why Contained is false, in the platform seam's own words. ADR-0005 rule 5 requires the
@@ -289,10 +290,14 @@ func (s *Supervisor) statusLocked() Status {
 		out.ContainmentNote = c.note
 		if s.want != nil {
 			out.Inbounds = s.want.Inbounds
+			out.ProfileID = s.want.ProfileID
 		}
 	}
 	if s.run != nil {
 		out.Restarting = true
+		if s.want != nil {
+			out.ProfileID = s.want.ProfileID
+		}
 	}
 	return out
 }

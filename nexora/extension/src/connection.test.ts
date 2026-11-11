@@ -27,6 +27,10 @@ function fixture() {
   const previous: ProxyValue = { mode: 'pac_script', pacScript: { data: 'function FindProxyForURL(){return "DIRECT";}', mandatory: true } };
   let proxy = previous;
   let running = false;
+  let coreProfile: string | null = null;
+  let coreInbounds: { listen: string; port: number; tag: string }[] = [];
+  let statusOverride: Record<string, unknown> = {};
+  let controlled = false;
   let denied: string | null = null;
   const messages: { method: string; args: any }[] = [];
   const env: Environment = {
@@ -51,11 +55,14 @@ function fixture() {
             case 'config.apply':
               if (denied) { code = denied; break; }
               running = true;
-              result = { applied: true, configHash: 'a'.repeat(64), inboundPorts: [{ listen: '127.0.0.1', port: 20100, tag: 'in-srv-' + frame.args.intent.servers[0].id.replaceAll('-', '').slice(0, 8) }] };
+              coreProfile = frame.args.profileIds[0];
+              coreInbounds = [{ listen: '127.0.0.1', port: 20100, tag: 'in-srv-' + frame.args.intent.servers[0].id.replaceAll('-', '').slice(0, 8) }];
+              result = { applied: true, configHash: 'a'.repeat(64), inboundPorts: coreInbounds };
               break;
-            case 'core.status': result = { running, configHash: 'a'.repeat(64), coreVersion: '24.11.11' }; break;
+            case 'core.status': result = { running, configHash: 'a'.repeat(64), coreVersion: '24.11.11', selectedProfileId: running ? coreProfile : null, inboundPorts: running ? coreInbounds : [], ...statusOverride }; break;
             case 'core.stop':
               if (denied) { code = denied; break; }
+              if (running && frame.args.expectedConfigHash && frame.args.expectedConfigHash !== (statusOverride.configHash ?? 'a'.repeat(64))) { code = 'Busy'; break; }
               running = false; result = { running: false }; break;
           }
           queueMicrotask(() => listener({ type: 'response', inReplyTo: frame.id, ok: !code, result, error: code ? { code, message: 'private cause' } : undefined }));
@@ -75,8 +82,8 @@ function fixture() {
     },
     async readRuntime() { return record; },
     async writeRuntime(value) { record = value && structuredClone(value); },
-    async getProxy() { return { value: proxy, levelOfControl: 'controllable_by_this_extension' }; },
-    async setProxy(value) { events.push('set-proxy'); proxy = value; },
+    async getProxy() { return { value: proxy, levelOfControl: controlled ? 'controlled_by_this_extension' : 'controllable_by_this_extension' }; },
+    async setProxy(value) { events.push('set-proxy'); proxy = value; controlled = true; },
     async restoreProxy(value) { events.push('restore-proxy'); proxy = value; },
     async openSite() { events.push('open-site'); },
   };
@@ -85,6 +92,7 @@ function fixture() {
     connection, env, events, messages, previous, proxy: () => proxy, stored: () => selection, record: () => record,
     subscription: () => subscription, servers: () => servers,
     refreshWith: (response: typeof refreshResponse) => { refreshResponse = response; },
+    statusWith: (value: Record<string, unknown>) => { statusOverride = value; },
     deny: (code: string | null) => { denied = code; }, kill: () => { running = false; },
   };
 }
@@ -205,6 +213,21 @@ test('failed session cleanup after restoration never records an active tunnel', 
   assert.deepEqual(f.proxy(), f.previous);
   assert.equal(f.record()?.active, false);
   f.connection.client.stop();
+});
+
+test('an applied response without a valid hash cannot stop an unknown Core', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  const request = f.connection.client.request.bind(f.connection.client);
+  f.connection.client.request = async (method, args) => {
+    const result = await request(method, args);
+    return method === 'config.apply' ? { ...(result as object), configHash: 'not-a-hash' } : result;
+  };
+  assert.equal((await f.connection.action('connect')).phase, 'blocked');
+  assert.ok(!f.events.includes('core.stop'));
+  assert.ok(!f.events.includes('set-proxy'));
+  assert.deepEqual(f.proxy(), f.previous);
 });
 
 test('open-site refuses non-HTTPS, credentials and malformed input', () => {
@@ -592,4 +615,127 @@ test('subscription errors and unknown result fields never expose raw URL secrets
   const mutated = f.connection.snapshot();
   mutated.servers[0]!.displayName = 'Changed outside';
   assert.notEqual(f.connection.snapshot().servers[0]!.displayName, 'Changed outside');
+});
+
+async function readyStatus(connection: Connection) {
+  const deadline = Date.now() + 1000;
+  let view = await connection.action('status');
+  while (view.connector !== 'ready' && Date.now() < deadline) {
+    await new Promise((done) => setTimeout(done, 5));
+    view = await connection.action('status');
+  }
+  assert.equal(view.connector, 'ready');
+  return connection.action('status');
+}
+
+test('controller restart adopts only the proven live session and restores the original proxy', async (t) => {
+  const f = fixture();
+  await f.connection.action('save', form());
+  assert.equal((await f.connection.action('connect')).phase, 'connected');
+  f.connection.client.stop();
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  assert.equal((await readyStatus(restarted)).phase, 'connected');
+  assert.equal(f.messages.filter((m) => m.method === 'config.apply').length, 1);
+  assert.equal((await restarted.action('disconnect')).phase, 'disconnected');
+  assert.deepEqual(f.proxy(), f.previous);
+  assert.equal(f.record(), null);
+  assert.equal(f.messages.find((m) => m.method === 'core.stop')!.args.expectedConfigHash, 'a'.repeat(64));
+});
+
+test('restart refuses stopped, foreign, missing and ambiguous Core proofs without reapplying', async (t) => {
+  for (const override of [
+    { running: false }, { configHash: 'b'.repeat(64) }, { selectedProfileId: crypto.randomUUID() },
+    { selectedProfileId: null }, { inboundPorts: [] },
+    { inboundPorts: [{ listen: '0.0.0.0', port: 20100, tag: 'wrong' }] },
+  ]) {
+    const f = fixture();
+    await f.connection.action('save', form());
+    await f.connection.action('connect');
+    f.connection.client.stop();
+    f.statusWith(override);
+    const restarted = new Connection(f.env);
+    t.after(() => restarted.client.stop());
+    assert.equal((await readyStatus(restarted)).phase, 'blocked');
+    assert.equal(f.proxy().mode, 'fixed_servers');
+    assert.equal(f.messages.filter((m) => m.method === 'config.apply').length, 1);
+    assert.ok(!f.events.includes('restore-proxy'));
+    assert.equal((await restarted.action('open-site', { url: 'https://example.test/' })).phase, 'blocked');
+    assert.ok(!f.events.includes('open-site'));
+  }
+});
+
+test('old or lost runtime proof cannot enable direct traffic or stop an unknown session', async (t) => {
+  for (const lost of [false, true]) {
+    const f = fixture();
+    await f.connection.action('save', form());
+    await f.connection.action('connect');
+    f.connection.client.stop();
+    if (lost) f.env.readRuntime = async () => null;
+    else delete (f.record() as Partial<RuntimeRecord>).configHash;
+    const restarted = new Connection(f.env);
+    t.after(() => restarted.client.stop());
+    assert.equal((await readyStatus(restarted)).phase, 'blocked');
+    assert.equal((await restarted.action('disconnect')).phase, 'blocked');
+    assert.equal(f.proxy().mode, 'fixed_servers');
+    assert.ok(!f.events.includes('core.stop'));
+    assert.ok(!f.events.includes('restore-proxy'));
+  }
+});
+
+test('lost proxy control keeps recovery blocked', async (t) => {
+  const f = fixture();
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  f.connection.client.stop();
+  f.env.setProxy = async () => { throw new Error('policy owns proxy'); };
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  assert.equal((await readyStatus(restarted)).phase, 'blocked');
+  assert.ok(!f.events.includes('restore-proxy'));
+});
+
+test('a changed live config blocks opening sites and stale disconnect cannot stop it', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  f.statusWith({ configHash: 'b'.repeat(64) });
+  assert.equal((await f.connection.action('status')).phase, 'blocked');
+  assert.equal((await f.connection.action('open-site', { url: 'https://example.test/' })).phase, 'blocked');
+  assert.equal((await f.connection.action('disconnect')).phase, 'blocked');
+  assert.ok(!f.events.includes('restore-proxy'));
+  assert.ok(!f.events.includes('open-site'));
+});
+
+test('a late status answer cannot revive an explicitly disconnected session', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  const applied = f.messages.find((m) => m.method === 'config.apply')!;
+  const request = f.connection.client.request.bind(f.connection.client);
+  let answer!: (status: any) => void;
+  f.connection.client.request = async (method, args) => method === 'core.status' ? new Promise((resolve) => { answer = resolve; }) : request(method, args);
+  const pending = f.connection.action('status');
+  await Promise.resolve();
+  assert.equal((await f.connection.action('disconnect')).phase, 'disconnected');
+  answer({ running: true, configHash: 'a'.repeat(64), selectedProfileId: applied.args.profileIds[0], inboundPorts: [{ listen: '127.0.0.1', port: 20100, tag: 'in-srv-' + applied.args.intent.servers[0].id.replaceAll('-', '').slice(0, 8) }] });
+  await pending;
+  assert.equal(f.connection.snapshot().phase, 'disconnected');
+  assert.deepEqual(f.proxy(), f.previous);
+});
+
+test('an interrupted disconnect retains its previous proxy until explicit completion', async (t) => {
+  const f = fixture();
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  f.connection.client.stop();
+  f.record()!.active = false;
+  f.kill();
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  assert.equal((await readyStatus(restarted)).phase, 'blocked');
+  assert.equal((await restarted.action('disconnect')).phase, 'disconnected');
+  assert.deepEqual(f.proxy(), f.previous);
 });

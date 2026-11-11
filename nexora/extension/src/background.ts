@@ -49,10 +49,10 @@ const connection = new Connection({
     }
     await chrome.storage.local.set(values);
   },
-  async readRuntime() { return (await chrome.storage.session.get(runtimeKey))[runtimeKey] as RuntimeRecord | undefined ?? null; },
+  async readRuntime() { return (await chrome.storage.local.get(runtimeKey))[runtimeKey] as RuntimeRecord | undefined ?? null; },
   async writeRuntime(record) {
-    if (record) await chrome.storage.session.set({ [runtimeKey]: record });
-    else await chrome.storage.session.remove(runtimeKey);
+    if (record) await chrome.storage.local.set({ [runtimeKey]: record });
+    else await chrome.storage.local.remove(runtimeKey);
   },
   async getProxy() { return await chrome.proxy.settings.get({ incognito: false }); },
   async setProxy(value) {
@@ -90,5 +90,7 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
 
 chrome.proxy.settings.onChange.addListener((details) => {
   if (connection.snapshot().phase !== 'connected' && connection.snapshot().phase !== 'blocked') return;
-  void connection.preserveProxy(details.value);
+  void connection.preserveProxy(details.value, details.levelOfControl);
 });
+
+void connection.action('status');

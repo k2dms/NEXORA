@@ -6,10 +6,11 @@
 > falsified the original plan, the exact inventory of what exists on disk, and the precise next steps.
 > Written 2026-11-04. English because it is the repository language.
 
-Status as of 2026-11-11: **Windows/Chromium supports a private subscription URL → choose a server → connect →
-open external HTTPS → disconnect. The manual REALITY path also remains verified. It is not a production release:
-trusted Core installation and browser-restart/shared-owner recovery remain unfinished.** The latest continuation
-is §4.59; older scope and inventory paragraphs below are dated history, not a prohibition on implementation.
+Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL → choose a server → connect →
+open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
+in an isolated test installation. It is not a production release: trusted Core installation and the complete
+shared-owner policy remain unfinished.** The latest continuation is §4.60; older scope and inventory paragraphs
+below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
 ---
@@ -1713,7 +1714,7 @@ containment handle ends a process. Nothing in this slice says a word about wheth
 
 **`Launch` exists because argv is not this package's fact.** The corpus names the config file, its hash, and the moment
 it is handed over — and never the command line that delivers it. So the supervisor takes a function that builds the
-child and refuses to invent `xray run -c` (`connector/internal/supervisor/supervisor.go:330`), in the same way §4.18's
+child and refuses to invent `xray run -c` (`connector/internal/supervisor/supervisor.go:351`), in the same way §4.18's
 writer takes a directory rather than naming `%LOCALAPPDATA%`: an invention in a seam's place is a fact about a binary
 this host has never run. `Verify` is the same discipline pointed the other way — doc 33 §6's table row says the receipt
 comparison runs "every `core.start` / `core.restart`, before exec", so it is a function this package calls before every
@@ -1747,7 +1748,7 @@ attribute and `os/exec` exposes only the pid, so a dependency-free Connector can
 besides the handle list. The assignment therefore happens after the pid exists — a window — and doc 22 §4 now says so,
 names the closing of the window as ADR-0011's platform work, and does not pretend the invariant moved. What the code
 does about it is the part rule 5 can require today: `spawnLocked` creates the scope before the spawn
-(`connector/internal/supervisor/supervisor.go:346`), attaches after, and reports the answer — `contained` beside a note
+(`connector/internal/supervisor/supervisor.go:374`), attaches after, and reports the answer — `contained` beside a note
 in the platform's own words — and a scope that cannot be made is *not* a refused start, because `core.start`'s own gloss
 says `false` "is a reported condition, not a silent one". `TestStartReportsContainmentAsThePlatformAnswersIt`
 (`connector/internal/supervisor/supervisor_test.go:552`) fails if the flag and the note ever disagree, on any platform,
@@ -1845,7 +1846,7 @@ binary this host still does not have.
 ### 4.20 M3's sixth slice: the command surface that joins compile, apply and supervisor (`connector/cmd/nexora-connector/`, 2026-11-06)
 
 **What landed.** Two files, 1 761 lines, sixteen test functions, and no fourth package. `config_apply.go` (523 lines) is
-`Handle` (`connector/cmd/nexora-connector/config_apply.go:389`) over the three things §4.15 to §4.19 built: the seams
+`Handle` (`connector/cmd/nexora-connector/config_apply.go:447`) over the three things §4.15 to §4.19 built: the seams
 `intentSource` (`:58`) and `coreProcess` (`:66`), the wiring `applyConfig` (`:101`), the hand-decoded args
 (`readApplyArgs`:172), the answer struct (`applyAnswer`:271), the reconciliation (`reconcile`:360) and the classification
 table (`codeMarkers`:478, `codeForApply`:499). `config_apply_test.go` (1 238 lines) is the slice's claim. `go test
@@ -1856,7 +1857,7 @@ the `cmd` line moved from hundredths of a second to 0.265 s, because two of the 
 compare-and-swap, then the intent, then the compile, then the file, then the reservation table, then the process —
 "compare-and-swap first … a refusal at any of those points has touched nothing after it" is doc 27 §8's atomicity rule
 restated as a sequence rather than as a rename, and `Handle` keeps the shape of that sentence.
-`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:679`) is the one that makes it
+`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:680`) is the one that makes it
 observable: after the Busy it asserts the applied-state record was read once and never written
 (`reads != 1 || writes != 0`), Core was never touched (`starts != 0 || stops != 0`) and no config file exists — three
 negative assertions against the packages behind
@@ -1878,11 +1879,11 @@ reader would "fix" the `!= ""` guard into a bug.
 
 **ODEC-36 is a knob, and the knob is required.** `hashSpan` (`:74`) has two live values and a zero value that
 `newConfigApply` refuses (`:126`), so a build that has not read the register cannot answer `config.apply` at all —
-`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:1008`) walks all seven
+`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:1101`) walks all seven
 wiring cases including the four nil seams, and each refusal's message names the decision or the directory it is missing.
 The two spans are then measured against each other rather than argued: the same intent gives two different
 lowercase-sha256 strings (`TestHashesDifferBetweenTheTwoSpans`:600), because `internal/apply` reports both digests
-(`connector/internal/apply/write.go:103`) and `span` (`connector/cmd/nexora-connector/config_apply.go:404`) drops
+(`connector/internal/apply/write.go:103`) and the then-present `span` selector dropped
 exactly one — "which is exactly what ODEC-36 says is undecided" is what that function's comment claims, and the test is
 what makes it a claim about code. The slice also paid ODEC-36's consequence forward into the register's `why`: under
 `hashValues` a *preview* has to materialize to know what the file would hash to (`previewHash`:387), so a dryRun can
@@ -1908,7 +1909,7 @@ without the sentence.
 **`ErrIntegrity` had to be added to the supervisor, and it is a sentinel for a reason.** doc 33 §6's pre-exec proof is
 the verifier's own error, and reading `IntegrityMismatch` out of its *words* would be a string match on somebody else's
 message — the same failure §4.11 records a green check hiding. So the supervisor wraps it beside the cause
-(`connector/internal/supervisor/supervisor.go:346`, `%w: %w` around `:52`) and the surface matches the sentinel, which
+(`connector/internal/supervisor/supervisor.go:374`, `%w: %w` around `:52`) and the surface matches the sentinel, which
 keeps the verifier's reason available in the message and the taxonomy code out of anybody's prose.
 
 **`clip` keeps the tail, which is a decision with a consequence attached.** `maxApplyMessage` (`:438`) is the envelope
@@ -1967,7 +1968,7 @@ envelope→Xray compiler now has an answer for ADR-0013's promise — `Unreprese
 (`connector/cmd/nexora-connector/config_apply.go:567`) carries the compile's report into the result, proven at
 `connector/cmd/nexora-connector/config_apply_test.go:1096` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
-and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:142-143`, and `intentSource` had no production
+and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:150-151`, and `intentSource` had no production
 implementation). `no-code` is therefore 54 → 53 → 54 and `no-run` 5 → 6, `connector` 37+1 → 39 and `decision` 3 → 4.
 `marker.counted` 206 → 207 for doc 27 §9's one new label (the partition is 157 + 26 + 24), and the register 38 → 39
 entries over 59 → 60 sites with `contract` 14 → 15. `verify.mjs`'s literals moved to those numbers; the check count did
@@ -3878,7 +3879,7 @@ label rather than adding contract checks; `node tools/check-doc-evidence.mjs` an
 
 ### 4.57 `core.status` is dispatched — process facts and retained state over the real host (2026-11-11)
 
-**Written.** `connector/cmd/nexora-connector/core_status.go:22` binds the existing process owner and install receipt;
+**Written.** `connector/cmd/nexora-connector/core_status.go:23` binds the existing process owner and install receipt;
 its handler (`connector/cmd/nexora-connector/core_status.go:59`) answers `running`, live PID, start, uptime and
 containment, and retains the applied hash and last exit when Core is down. Missing process facts are null, not
 zero-valued claims; an unreadable receipt leaves the version null without suppressing process facts. The existing
@@ -3888,7 +3889,7 @@ empty closed args object accepts omitted args, null or `{}` and refuses extra fi
 invented for fields the result does not require.
 
 **Two defects caught before publication.** The Core version is the receipt's release tag with its leading `v`
-removed, not `pinsVersion`, which names the pin set (`connector/cmd/nexora-connector/core_status.go:36`). The first
+removed, not `pinsVersion`, which names the pin set (`connector/cmd/nexora-connector/core_status.go:37`). The first
 real-host run also lost a persisted exit signal: the supervisor's `Signalled` boolean is not serialized, so a
 reopened record has a signal string and a false boolean. The handler now reads the retained string directly
 (`connector/cmd/nexora-connector/core_status.go:82`), and the wired regression seeds that state before a new service.
@@ -4044,6 +4045,90 @@ trusted pinned installation, browser-restart/shared-owner adoption, incognito an
 The previous published connection slice was `e8579d3`, pushed to `nexora/master`; this slice uses the same authorized
 `git push nexora nexora/architecture:master`, never `origin`, force, amended published commits or skipped hooks.
 
+### 4.60 Shared Windows Connector and proven browser-restart recovery (2026-11-12)
+
+**Written.** Native Messaging hosts now adopt one long-lived per-user Windows Connector through a named pipe per
+startup-allowlisted sender. The named mutex object's existence owns the instance before keystore/supervisor creation;
+a concurrent spawn cannot create a second Core owner. The mutex and pipes have explicit protected current-user
+DACLs. Pipes reject remote clients and first-instance creation refuses name squatting. Each side verifies the pipe
+peer's OS process image against the expected executable. The host starts Connector detached and breaks away from its
+parent's job; failure to launch detached is an error, not a silently inherited lifetime. No network control API,
+second handshake or payload sender field was added.
+
+The process shares dispatcher windows, replay, keystore and supervisor, but each port negotiates independently. The
+third same-sender port closes the oldest; another sender has its own limits. Closing a host or its browser port does
+not stop Core. An active or restarting Core keeps Connector alive without ports; an idle Connector with neither
+ports nor Core exits after one minute. `state/connector-instance.json` is diagnostic metadata, not adoption authority.
+Xray remains in Connector's containment job; the test verified its exit before scratch-directory removal.
+
+`core.status` now reports the live single profile and actual inbounds, never a retained stopped profile as recovery
+proof. Shared `config.apply` refuses a different running/restarting profile before state/config effects. Optional
+`core.stop.expectedConfigHash` rejects a stale stop with Busy before stopping Core or deleting config. Core operations
+are serialized so the hash check cannot race another apply. Shared dispatch receives the service cancellation
+context, not a background context; port disappearance still does not cancel the long-lived Core owner.
+
+The browser stores the previous proxy and active hash/profile/loopback proxy in `chrome.storage.local`, not session
+storage or sync. Worker initialization reasserts the saved blocking proxy and asks `core.status`; connection becomes
+usable only when the live hash, chosen profile, inbound tag and exact loopback port agree and browser proxy readback
+succeeds. Missing, old, foreign or stopped proof remains blocked, without automatic reapply or direct fallback.
+Late status/proxy work cannot revive an explicit disconnect. An interrupted disconnect retains its previous-proxy
+record until explicit completion. Legacy profile application refuses proxy writes while any runtime record remains.
+The previous PAC itself may contain user content; the runtime record is not claimed to be universally secret-free.
+
+**Measured.** Chrome 157.0.8103.51, real Native Messaging/DPAPI and Xray 24.11.11 passed the loopback REALITY golden.
+`ServiceWorker.stopWorker` observably stopped the old MV3 worker; a new worker recovered the selected server without
+replacing Connector or Core. The final run after the shutdown regression fix followed full `Browser.close` with
+actual Chrome/host exit, 61,501 ms with no test native-host processes (32 samples), and same-profile/debug-port Chrome
+relaunch. Connector PID 18988 and Core PID 15628, their creation identities, selected profile and applied hash were
+unchanged; there was exactly one Core.
+Fresh HTTPS after relaunch arrived through REALITY with source 127.0.0.2. Explicit disconnect restored the exact
+previous proxy, removed the compiled config and durable runtime; connecting/disconnecting again also passed.
+The 320 px connected UI had no horizontal overflow. The harness verified process images before terminating only
+its session-owned Connector, waited for children to exit, unregistered the three temporary HKCU entries and removed
+the secret-bearing sandbox before reporting success. No real subscription URL or feed was needed for this run.
+
+**Test-installation limit.** CDP-loaded unpacked extensions are transient in this Chrome build: the harness had to
+reload the same artifact on relaunch, obtaining the same extension ID and durable profile data. Its background then
+initialized Native Messaging before an options page opened. This proves recovery when the extension loads, not
+persistent installation through a store/signed package. The receipt was mechanically prepared for the local test
+binary and HTTPS used the existing test-only certificate exception; trusted production installation is still open.
+The first harness attempt incorrectly named the supervisor record `applied-state.json`; the actual existing
+`state/state.json` and its `lastStartPid` supplied the successful proof.
+
+**Shutdown regression.** Read-only review found that a refresh of 64 slow sources could keep `serving.Wait()`
+waiting after service cancellation because dispatch discarded the service context. A bounded handler regression
+failed before the change and passed after dispatch inherited that context. The service cancels its own child
+context before joining serving goroutines on every exit path, including listener failure, not on browser/worker
+port teardown; the 128-minute worst case was a code trace, not a live run.
+
+**Checks.** All 32 controller tests and Svelte/TypeScript checks passed; legacy proxy guard assertions covered active
+and interrupted records plus normal delegation. The changed legacy bundle and Vite/Chromium package built. Windows
+Connector/host/localpipe/supervisor tests and vet passed, including eleven new ownership/negotiation/stop/status/cancellation tests;
+WSL Ubuntu 24.04 Go 1.24.13 race tests passed for the corresponding non-Windows seams. Real Windows named-pipe tests
+covered bidirectional 128 KiB bytes, executable authentication, close-unblocks-I/O, mutex exclusivity and squatting.
+The native Windows race-detector run was unavailable because this toolchain has CGO disabled; the WSL race run does
+not exercise Windows pipe syscalls. Schema verification passed 1239 checks, protocol 16 and state 20; source/document evidence and secret guards passed.
+
+**Still open.** ODEC-01, VER-12 and VER-14 remain open: this protective baseline is not the complete multi-browser
+profile/explicit takeover policy or the old outer-job/lock-format decision. Current executable identity is not code
+signature authentication and does not remove the residual malicious-same-user threat. Idle service exit and every
+concurrent real-host interleaving have not been live-measured. Older ADR-0005/doc 21 outer-containment statements need
+a deliberate lifetime-policy decision rather than treating browser exit as permission to kill an active session.
+There is no old session-storage migration: a missing proof blocks instead of guessing. Trusted pinned installation,
+incognito and other browser families remain unfinished; no verification/open-decision row was closed.
+
+**Next-install blocker, checked 2026-11-12.** `gh api repos/XTLS/Xray-core/releases/tags/v24.11.11` returned archive
+assets and their `.dgst` checksum files, including `Xray-windows-64.zip`, but no detached minisign signature asset.
+The repository still has example placeholders rather than a shipped trusted pins document. This checks the release
+asset list, not every possible signing channel; checksums alone do not satisfy the current signature requirement.
+A verified signature source or a deliberate trust-policy decision is needed before first-run installation can be
+claimed as production. No signature bypass, generated production key or mechanically prepared release receipt was added.
+
+**Reproduce and publication.** Build the three local product binaries (Connector with `main.releaseVersion=0.1.0`),
+rebuild the legacy Chromium bundle before packaging NEXORA, then set `NEXORA_XRAY` to the local 24.11.11 executable and
+run `npm --prefix nexora/extension run verify:browser`. The previous published HEAD was `6ff282a`; publish this verified
+slice only with the authorized `git push nexora nexora/architecture:master`, without binaries, secrets or skipped hooks.
+
 ---
 
 ## 5. Verification state to the letter
@@ -4195,7 +4280,13 @@ The previous published connection slice was `e8579d3`, pushed to `nexora/master`
 
 ## 6. The exact next steps (task #6 → #11)
 
-**Current queue, 2026-11-07 (supersedes historical sequencing below):** §4.36 supplies real Xray config and
+**Current product queue, 2026-11-12:** §4.58/§4.59 delivered manual and subscription selected-server HTTPS;
+§4.60 delivered shared Windows Connector and measured MV3/full-browser recovery. Next is trusted pinned Xray
+installation without a mechanically prepared receipt. Complete ODEC-01's multi-profile/takeover and lifetime decision
+before closing VER-12/VER-14; incognito, other browser families and the remaining routing fixtures are still open.
+This product queue supersedes the older sequencing below without retiring its unfinished verification rows.
+
+**Historical queue, 2026-11-07:** §4.36 supplies real Xray config and
 loopback routing probes, so a missing local Core binary is no longer a blocker; §4.37 exercises the complete
 compiled two-server VLESS path on loopback, with server selection proven by the source address the target saw; §4.38
 answers ODEC-39 — the intent documents ride the `config.apply` frame, the per-user layout is spelled, and the

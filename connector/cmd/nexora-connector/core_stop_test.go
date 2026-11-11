@@ -164,6 +164,88 @@ func TestCoreStopRejectsClosedAndMalformedArgsWithoutStopping(t *testing.T) {
 	}
 }
 
+func TestCoreStopExpectedConfigHashRejectsInvalidValuesWithoutEffects(t *testing.T) {
+	for _, value := range []string{
+		`null`, `true`, `64`, `[]`, `{}`, `""`, `"sha256"`,
+		`"` + strings.Repeat("a", 63) + `"`, `"` + strings.Repeat("a", 65) + `"`,
+		`"` + strings.ToUpper(statusHash) + `"`, `"` + strings.Repeat("g", 64) + `"`,
+	} {
+		t.Run(value, func(t *testing.T) {
+			live := supervisor.Status{Running: true, Hash: statusHash, ProfileID: profileID, PID: 8144}
+			core := &fakeCore{status: live}
+			s := stopSurface(t, core)
+			if err := os.WriteFile(s.configPath, []byte("private-config"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			ans, ref := s.Handle(context.Background(), stopFrame(`{"expectedConfigHash":`+value+`}`))
+			if ans != nil || ref == nil || ref.Code != "Internal" || ref.Close {
+				t.Fatalf("answer = %v, refusal = %+v, want Internal", ans, ref)
+			}
+			if starts, stops := core.calls(); starts != 0 || stops != 0 || !reflect.DeepEqual(core.Status(), live) {
+				t.Fatal("invalid hash changed Core")
+			}
+			if raw, err := os.ReadFile(s.configPath); err != nil || string(raw) != "private-config" {
+				t.Fatal("invalid hash changed or removed the config")
+			}
+		})
+	}
+}
+
+func TestCoreStopExpectedConfigHashMismatchPreservesLiveOwner(t *testing.T) {
+	for _, live := range []supervisor.Status{
+		{Running: true, Hash: statusHash, ProfileID: profileID},
+		{Restarting: true, Hash: statusHash, ProfileID: profileID},
+		{Running: true, Hash: "", ProfileID: profileID},
+	} {
+		t.Run(fmt.Sprintf("running=%t/restarting=%t/hash=%s", live.Running, live.Restarting, live.Hash), func(t *testing.T) {
+			core := &fakeCore{status: live}
+			s := stopSurface(t, core)
+			if err := os.WriteFile(s.configPath, []byte("private-config"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			ans, ref := s.Handle(context.Background(), stopFrame(`{"graceful":false,"expectedConfigHash":"`+strings.Repeat("a", 64)+`"}`))
+			if ans != nil || ref == nil || ref.Code != "Busy" || ref.Close {
+				t.Fatalf("answer = %v, refusal = %+v, want Busy", ans, ref)
+			}
+			if starts, stops := core.calls(); starts != 0 || stops != 0 || !reflect.DeepEqual(core.Status(), live) {
+				t.Fatal("stale stop changed Core")
+			}
+			if raw, err := os.ReadFile(s.configPath); err != nil || string(raw) != "private-config" {
+				t.Fatal("stale stop changed or removed the config")
+			}
+		})
+	}
+}
+
+func TestCoreStopExpectedConfigHashAllowsMatchingAbsentAndStopped(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		live supervisor.Status
+		args string
+	}{
+		{"matching running", supervisor.Status{Running: true, Hash: statusHash}, `{"expectedConfigHash":"` + statusHash + `"}`},
+		{"matching restarting", supervisor.Status{Restarting: true, Hash: statusHash}, `{"expectedConfigHash":"` + statusHash + `"}`},
+		{"absent precondition", supervisor.Status{Running: true, Hash: statusHash}, `{}`},
+		{"stopped retained hash", supervisor.Status{Hash: strings.Repeat("a", 64)}, `{"expectedConfigHash":"` + statusHash + `"}`},
+		{"stopped no hash", supervisor.Status{}, `{"expectedConfigHash":"` + statusHash + `"}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			core := &fakeCore{status: tc.live}
+			s := stopSurface(t, core)
+			if err := os.WriteFile(s.configPath, []byte("private-config"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			stopAnswer(t, s, tc.args)
+			if starts, stops := core.calls(); starts != 0 || stops != 1 {
+				t.Fatalf("starts = %d, stops = %d, want one stop", starts, stops)
+			}
+			if _, err := os.Stat(s.configPath); !errors.Is(err, os.ErrNotExist) {
+				t.Fatal("accepted stop retained the config")
+			}
+		})
+	}
+}
+
 func TestCoreStopErrorMappingUsesDeclaredCodesAndKeepsCausesPrivate(t *testing.T) {
 	doc := readStopContract(t)
 	const private = "private-stop-note"

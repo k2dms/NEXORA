@@ -13,16 +13,19 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/k2dms/nexora/connector/internal/contract"
@@ -49,11 +52,15 @@ type config struct {
 	// stateDir, configDir, keystoreDir and coreDir are the per-user layout of doc 34 §7, overridable one flag
 	// each because a test or a sandboxed run must be able to point them at a temp tree. The empty string means
 	// the default: %LOCALAPPDATA%\NEXORA\ and the subdirectory of the same name, which is what production uses.
-	stateDir    string
-	configDir   string
-	keystoreDir string
-	coreDir     string
-	protector   keystore.Protector
+	stateDir     string
+	configDir    string
+	keystoreDir  string
+	coreDir      string
+	protector    keystore.Protector
+	shared       bool
+	senderIDs    []string
+	instanceRoot string
+	hostExe      string
 }
 
 // duplex joins the connector's two descriptors into the single io.ReadWriteCloser internal/peer takes: Native
@@ -76,10 +83,12 @@ func (d duplex) Close() error {
 // service is one connection's front door: the process-wide dispatcher, this pipe's negotiation, and the identity the
 // host resolved before it read a byte of payload.
 type service struct {
+	ctx         context.Context
 	d           *dispatch.Dispatcher
 	sess        *hello.Session
 	senderID    string
 	allowlisted bool
+	core        *supervisor.Supervisor
 
 	// p and stop are set only by the framed mode: the peer reads its own endpoint, and a refusal that says the
 	// stream ends instead of an answer is carried out of Serve as the error the caller prints.
@@ -190,12 +199,20 @@ func newService(cfg config) (*service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the Core supervisor could not be built: %w", err)
 	}
-	ca, err := newConfigApply(applyConfig{StateDir: stateDir, ConfigDir: configDir},
+	ca, err := newConfigApply(applyConfig{StateDir: stateDir, ConfigDir: configDir, preserveOwner: cfg.shared},
 		fileStateRecord{dir: stateDir}, store, sup)
 	if err != nil {
 		return nil, fmt.Errorf("the config.apply surface could not be built: %w", err)
 	}
-	handlers["config.apply"] = ca.Handle
+	var coreMu sync.Mutex
+	serialized := func(h dispatch.Handler) dispatch.Handler {
+		return func(ctx context.Context, f *envelope.Frame) (any, *dispatch.Refusal) {
+			coreMu.Lock()
+			defer coreMu.Unlock()
+			return h(ctx, f)
+		}
+	}
+	handlers["config.apply"] = serialized(ca.Handle)
 	st, err := newHealthSurface(ca)
 	if err != nil {
 		return nil, fmt.Errorf("the server.test surface could not be built: %w", err)
@@ -205,12 +222,12 @@ func newService(cfg config) (*service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the core.status surface could not be built: %w", err)
 	}
-	handlers["core.status"] = cs.Handle
+	handlers["core.status"] = serialized(cs.Handle)
 	stop, err := newCoreStop(sup, configDir)
 	if err != nil {
 		return nil, err
 	}
-	handlers["core.stop"] = stop.Handle
+	handlers["core.stop"] = serialized(stop.Handle)
 	imp, err := newProfileImport(store)
 	if err != nil {
 		return nil, err
@@ -225,13 +242,13 @@ func newService(cfg config) (*service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &service{d: d, sess: new(hello.Session), senderID: cfg.senderID, allowlisted: cfg.allowlisted}, nil
+	return &service{ctx: context.Background(), d: d, sess: new(hello.Session), senderID: cfg.senderID, allowlisted: cfg.allowlisted, core: sup}, nil
 }
 
 // respond is the one dispatch path the two transports share, so --jsonl cannot diverge from the contract's own:
 // exactly one of the answer frame and the reason the stream ends is non-nil.
 func (s *service) respond(f *envelope.Frame) (*envelope.Frame, error) {
-	result, refusal := s.d.Dispatch(context.Background(), s.sess.Identity(s.senderID, s.allowlisted), f)
+	result, refusal := s.d.Dispatch(s.ctx, s.sess.Identity(s.senderID, s.allowlisted), f)
 	s.sess.Record(result, refusal)
 	if refusal == nil {
 		res, err := f.Respond(result)
@@ -385,11 +402,26 @@ func main() {
 	configDir := fs.String("config-dir", "", "override of the per-user compiled-config directory (doc 34 §7)")
 	keystoreDir := fs.String("keystore-dir", "", "override of the per-user keystore directory (ADR-0011)")
 	coreDir := fs.String("core-dir", "", "override of the pinned Core install root (doc 33 §7)")
+	shared := fs.Bool("shared", false, "serve the per-user sender endpoints independently of host lifetime")
+	senderIDs := fs.String("sender-ids", "", "JSON array of normalized sender origins admitted by the spawning host")
+	instanceRoot := fs.String("instance-root", "", "per-user NEXORA root used for exclusive shared instance coordination")
+	hostExe := fs.String("host-exe", "", "host executable whose process identity is required on sender endpoints")
 	_ = fs.Parse(os.Args[1:])
 
 	cfg := config{senderID: *senderID, allowlisted: *allowlisted, jsonl: *jsonl, version: *version,
-		stateDir: *stateDir, configDir: *configDir, keystoreDir: *keystoreDir, coreDir: *coreDir}
-	if err := run(cfg, duplex{os.Stdin, os.Stdout}, os.Stderr); err != nil {
+		stateDir: *stateDir, configDir: *configDir, keystoreDir: *keystoreDir, coreDir: *coreDir,
+		shared: *shared, instanceRoot: *instanceRoot, hostExe: *hostExe}
+	var err error
+	if cfg.shared {
+		if err = json.Unmarshal([]byte(*senderIDs), &cfg.senderIDs); err == nil {
+			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+			defer cancel()
+			err = runShared(ctx, cfg, os.Stderr)
+		}
+	} else {
+		err = run(cfg, duplex{os.Stdin, os.Stdout}, os.Stderr)
+	}
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "nexora-connector: %v\n", err)
 		os.Exit(1)
 	}

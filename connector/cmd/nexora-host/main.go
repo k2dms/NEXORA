@@ -406,7 +406,7 @@ func main() {
 	}
 
 	cfg := config{senderID: origin, connectorBin: *connectorBin, allowlistPath: *allowlistPath}
-	open := spawn(cfg.connectorBin, connectorArgs, nil)
+	open := sharedOpen(cfg.connectorBin, cfg.allowlistPath)
 	if err := run(cfg, duplex{os.Stdin, os.Stdout}, open, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "nexora-host: %v\n", err)
 		os.Exit(1)

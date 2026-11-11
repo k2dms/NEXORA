@@ -6,7 +6,7 @@ import type { Action, ConnectionView, SavedProfile, SavedServer, SavedSubscripti
 
 export type Selection = { server: SavedServer; profile: SavedProfile };
 export type ProxyValue = chrome.proxy.ProxyConfig;
-export type RuntimeRecord = { previous: ProxyValue; proxy: ProxyValue | null; active: boolean };
+export type RuntimeRecord = { previous: ProxyValue; proxy: ProxyValue | null; active: boolean; configHash: string; profileId: string };
 export type Environment = {
   connectNative(): Port;
   version: string;
@@ -26,6 +26,30 @@ export type Environment = {
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const address = /^[A-Za-z0-9.\-:\[\]]{1,253}$/;
 const hostname = /^[A-Za-z0-9.-]{1,253}$/;
+const configHash = /^[0-9a-f]{64}$/i;
+
+function loopbackProxy(proxy: ProxyValue | null): boolean {
+  const rules = proxy?.rules;
+  const single = rules?.singleProxy;
+  return proxy?.mode === 'fixed_servers' && single?.scheme === 'socks5' && single.host === '127.0.0.1'
+    && Number.isInteger(single.port) && single.port! >= 1 && single.port! <= 65535
+    && !rules?.proxyForHttp && !rules?.proxyForHttps && !rules?.proxyForFtp && !rules?.fallbackProxy
+    && rules?.bypassList?.length === 1 && rules.bypassList[0] === '<-loopback>';
+}
+
+function runtimeProof(status: unknown, record: RuntimeRecord, selection: Selection | null): string | null {
+  if (typeof record.configHash !== 'string' || !configHash.test(record.configHash) || typeof record.profileId !== 'string' || !uuid.test(record.profileId)) return 'В сохранённом сеансе нет доказательства конфига и профиля. Прокси не сброшен; отключитесь явно.';
+  if (!status || typeof status !== 'object') return 'Connector не подтвердил состояние Core. Прокси не сброшен.';
+  const state = status as { running?: unknown; configHash?: unknown; selectedProfileId?: unknown; inboundPorts?: unknown };
+  if (state.running !== true) return 'Core остановился или не подтвердил запуск. Прокси не сброшен; автоматический запуск отключён.';
+  if (state.configHash !== record.configHash) return 'Конфиг Core не совпадает с сохранённым сеансом. Прокси не сброшен.';
+  if (state.selectedProfileId !== record.profileId || selection?.profile.id !== record.profileId) return 'Профиль Core не совпадает с сохранённым и выбранным профилем. Прокси не сброшен.';
+  if (!loopbackProxy(record.proxy) || !selection || typeof selection.server.id !== 'string' || !uuid.test(selection.server.id)) return 'Сохранённый локальный SOCKS5-прокси не подтверждён. Прокси не сброшен.';
+  const tag = `in-srv-${selection.server.id.replaceAll('-', '').slice(0, 8)}`;
+  const ports = Array.isArray(state.inboundPorts) ? state.inboundPorts.filter((item) => item && typeof item === 'object' && item.tag === tag) : [];
+  if (ports.length !== 1 || ports[0].listen !== '127.0.0.1' || ports[0].port !== record.proxy!.rules!.singleProxy!.port) return 'Входящий порт Core не совпадает с сохранённым прокси выбранного сервера. Прокси не сброшен.';
+  return null;
+}
 
 export function createSelection(value: unknown): { selection: Selection; userId: string } {
   if (!value || typeof value !== 'object') throw new Error('Введите параметры сервера.');
@@ -108,6 +132,8 @@ export class Connection {
   private runtime: RuntimeRecord | null = null;
   private initialized: Promise<void> | null = null;
   private busy = false;
+  private revision = 0;
+  private proxyWork: Promise<void> = Promise.resolve();
   private view: ConnectionView = { phase: 'disconnected', connector: 'idle', server: null, servers: [], subscription: null, warning: null, pending: false, error: null, coreVersion: null };
 
   private readonly env: Environment;
@@ -117,11 +143,13 @@ export class Connection {
     this.client = new ConnectorClient({
       connect: () => env.connectNative(), extensionVersion: env.version,
       onState: (state) => {
+        this.revision++;
         this.view.connector = state;
-        if ((state === 'waiting' || state === 'incompatible') && this.runtime?.active) {
+        if ((state === 'waiting' || state === 'incompatible' || state === 'stopped') && this.runtime?.active) {
           this.view.phase = 'blocked';
           this.view.error = 'Связь с Connector потеряна. Прокси не сброшен; отключитесь явно, чтобы восстановить прежние настройки.';
         }
+        if (state === 'ready' && this.runtime?.active && !this.busy) void this.refresh();
       },
     });
   }
@@ -132,10 +160,24 @@ export class Connection {
     this.servers = this.subscription ? await this.env.loadServers(this.subscription.serverIds) : this.selection ? [this.selection.server] : [];
     if (this.subscription?.status.lastError) this.view.warning = subscriptionWarning(this.subscription.status.lastError.code, false);
     this.runtime = await this.env.readRuntime();
+    this.revision++;
     if (this.runtime?.active) {
       this.view.phase = 'blocked';
-      this.view.error = 'Сеанс Connector прерван. Прежний прокси сохранён. Отключитесь перед новым подключением.';
-      if (this.runtime.proxy) await this.env.setProxy(this.runtime.proxy);
+      this.view.error = 'Сеанс Connector прерван. Прежний прокси сохранён; ожидается проверка Core.';
+      if (typeof this.runtime.configHash === 'string' && configHash.test(this.runtime.configHash)) this.client.recordAppliedConfigHash(this.runtime.configHash);
+      if (loopbackProxy(this.runtime.proxy)) {
+        try { await this.env.setProxy(this.runtime.proxy!); }
+        catch { this.view.error = 'Локальный прокси не подтверждён. Закройте вкладки и восстановите управление прокси.'; }
+      }
+    } else if (this.runtime) {
+      this.view.phase = 'blocked';
+      this.view.error = 'Отключение было прервано. Завершите отключение, чтобы восстановить прежний прокси.';
+    } else if (!this.runtime) {
+      const actual = await this.env.getProxy();
+      if (actual.value.mode === 'fixed_servers' && actual.value.rules?.singleProxy?.host === '127.0.0.1' && actual.value.rules.singleProxy.scheme === 'socks5') {
+        this.view.phase = 'blocked';
+        this.view.error = 'Нет сохранённого доказательства сеанса и прежнего прокси. Прямое подключение не включено.';
+      }
     }
     this.client.start();
   }
@@ -325,48 +367,62 @@ export class Connection {
   private async connect(): Promise<void> {
     if (!this.selection) throw new Error('Сначала добавьте сервер.');
     if (this.view.phase !== 'disconnected') throw new Error('Сначала отключите предыдущий сеанс.');
+    this.revision++;
     this.view.phase = 'connecting';
     const previous = await this.env.getProxy();
     if (!['controllable_by_this_extension', 'controlled_by_this_extension'].includes(previous.levelOfControl)) throw new Error('Прокси управляется политикой браузера или другим расширением. Подключение не начато.');
     await this.ready();
     const { profile, server } = this.selection;
+    const revision = this.revision;
+    const current = () => this.revision === revision && this.client.state === 'ready';
     const result = await this.client.request('config.apply', {
       profileIds: [profile.id], intent: { profiles: [profile], servers: [server], settings, failurePolicy },
     } as Json) as { applied?: boolean; configHash?: string; inboundPorts?: { listen: string; port: number; tag: string }[] };
     try {
-      const inbound = result.inboundPorts?.find((item) => item.tag === `in-srv-${server.id.replaceAll('-', '').slice(0, 8)}`);
-      if (!result.applied || !inbound || inbound.listen !== '127.0.0.1' || !Number.isInteger(inbound.port) || inbound.port < 1 || inbound.port > 65535) throw new Error('Connector не сообщил безопасный входящий порт. Прокси браузера не изменён.');
-      const state = await this.client.request('core.status', {}) as { running?: boolean; configHash?: string };
-      if (!state.running || state.configHash !== result.configHash) throw new Error('Core не подтвердил запуск нужного конфига. Прокси браузера не изменён.');
+      const inbound = Array.isArray(result.inboundPorts) ? result.inboundPorts.find((item) => item?.tag === `in-srv-${server.id.replaceAll('-', '').slice(0, 8)}`) : undefined;
+      if (result.applied !== true || typeof result.configHash !== 'string' || !configHash.test(result.configHash) || !inbound || inbound.listen !== '127.0.0.1' || !Number.isInteger(inbound.port) || inbound.port < 1 || inbound.port > 65535) throw new Error('Connector не сообщил безопасный входящий порт и хеш конфига. Прокси браузера не изменён.');
+      if (!current()) throw new Error('Связь с Connector изменилась. Подключение не подтверждено.');
+      const state = await this.client.request('core.status', {});
       const proxy: ProxyValue = { mode: 'fixed_servers', rules: { singleProxy: { scheme: 'socks5', host: '127.0.0.1', port: inbound.port }, bypassList: ['<-loopback>'] } };
-      const record = { previous: previous.value, proxy, active: true };
+      const record: RuntimeRecord = { previous: previous.value, proxy, active: true, configHash: result.configHash, profileId: profile.id };
+      const error = runtimeProof(state, record, this.selection);
+      if (error) throw new Error(error);
+      if (!current()) throw new Error('Связь с Connector изменилась. Подключение не подтверждено.');
       await this.env.writeRuntime(record);
       this.runtime = record;
-      await this.env.setProxy(proxy);
-      this.client.recordAppliedConfigHash(result.configHash ?? null);
+      this.view.phase = 'blocked';
+      this.client.recordAppliedConfigHash(record.configHash);
+      if (!current()) throw new Error('Связь с Connector потеряна. Прокси не сброшен.');
+      await this.proxyOperation(() => this.env.setProxy(proxy));
+      if (!current()) throw new Error('Связь с Connector потеряна. Прокси не сброшен.');
       this.view.phase = 'connected';
       await this.refresh();
     } catch (error) {
-      if (result.applied && !this.runtime?.active) {
-        try { await this.client.request('core.stop', { graceful: true, reason: 'connect-failed' }); }
-        catch { this.view.phase = 'blocked'; }
+      if (result.applied === true && !this.runtime?.active) {
+        if (current() && typeof result.configHash === 'string' && configHash.test(result.configHash)) {
+          try { await this.client.request('core.stop', { graceful: true, reason: 'connect-failed', expectedConfigHash: result.configHash }); }
+          catch { this.view.phase = 'blocked'; }
+        } else this.view.phase = 'blocked';
       }
       throw error;
     }
   }
 
   private async disconnect(): Promise<void> {
+    this.revision++;
+    if (!this.runtime || typeof this.runtime.configHash !== 'string' || !configHash.test(this.runtime.configHash)) throw new Error('Нет подтверждённой записи сеанса. Прокси не сброшен; восстановите настройки вручную после остановки Core.');
     this.view.phase = 'disconnecting';
     await this.ready();
-    await this.client.request('core.stop', { graceful: true, reason: 'user-disconnect' });
+    await this.client.request('core.stop', { graceful: true, reason: 'user-disconnect', expectedConfigHash: this.runtime.configHash });
     if (this.runtime) {
       await this.env.writeRuntime({ ...this.runtime, active: false });
       this.runtime.active = false;
-      try { await this.env.restoreProxy(this.runtime.previous); }
+      try { await this.proxyOperation(() => this.env.restoreProxy(this.runtime!.previous)); }
       catch (error) {
         this.runtime.active = true;
-        try { await this.env.setProxy(this.runtime.proxy!); }
-        finally { await this.env.writeRuntime(this.runtime); }
+        try {
+          if (loopbackProxy(this.runtime.proxy)) await this.proxyOperation(() => this.env.setProxy(this.runtime!.proxy!));
+        } finally { await this.env.writeRuntime(this.runtime); }
         throw error;
       }
     }
@@ -376,23 +432,61 @@ export class Connection {
     this.view.phase = 'disconnected';
   }
 
-  private async refresh(): Promise<void> {
-    try {
-      const status = await this.client.request('core.status', {}) as { running?: boolean; coreVersion?: string | null };
-      this.view.coreVersion = status.coreVersion ?? null;
-      if (this.runtime?.active && this.view.phase === 'connected' && !status.running) {
-        this.view.phase = 'blocked';
-        this.view.error = 'Core остановился. Прокси остаётся на локальном входящем порту: прямое подключение не включено.';
-      }
-    } catch { /* The state callback keeps the proxy in force if its port closes. */ }
+  // Serialize writes so a late recovery/onChange write cannot overwrite an explicit restoration.
+  private proxyOperation(operation: () => Promise<void>): Promise<void> {
+    const work = this.proxyWork.then(operation);
+    this.proxyWork = work.catch(() => {});
+    return work;
   }
 
-  async preserveProxy(actual: ProxyValue): Promise<void> {
-    if (!this.runtime?.active || !this.runtime.proxy) return;
-    const expected = this.runtime.proxy;
-    if (actual.mode === expected.mode && actual.rules?.singleProxy?.host === expected.rules?.singleProxy?.host && actual.rules?.singleProxy?.port === expected.rules?.singleProxy?.port && actual.rules?.singleProxy?.scheme === 'socks5' && actual.rules?.bypassList?.length === 1 && actual.rules.bypassList[0] === '<-loopback>') return;
-    try { await this.env.setProxy(expected); }
-    catch {
+  private async refresh(): Promise<void> {
+    const record = this.runtime;
+    const selection = this.selection;
+    const revision = ++this.revision;
+    const current = () => this.revision === revision && this.runtime === record && this.selection === selection && this.client.state === 'ready' && this.view.phase !== 'disconnecting';
+    try {
+      const status = await this.client.request('core.status', {});
+      if (!current()) return;
+      this.view.coreVersion = status && typeof status === 'object' && 'coreVersion' in status && typeof status.coreVersion === 'string' ? status.coreVersion : null;
+      if (!record?.active) return;
+      const error = runtimeProof(status, record, selection);
+      if (error) {
+        this.view.phase = 'blocked';
+        this.view.error = error;
+        return;
+      }
+      await this.proxyOperation(async () => {
+        if (!current() || !record.active) return;
+        if (this.view.phase === 'blocked') await this.env.setProxy(record.proxy!);
+        else {
+          const actual = await this.env.getProxy();
+          if (!current()) return;
+          if (actual.levelOfControl !== 'controlled_by_this_extension' || !loopbackProxy(actual.value) || actual.value.rules!.singleProxy!.port !== record.proxy!.rules!.singleProxy!.port) throw new Error('proxy readback failed');
+        }
+        if (!current() || !record.active) return;
+        this.view.phase = 'connected';
+        this.view.error = null;
+      });
+    } catch {
+      if (!current() || !record?.active) return;
+      this.view.phase = 'blocked';
+      this.view.error = 'Состояние Core или управление локальным прокси не подтверждено. Закройте вкладки; прокси не сброшен.';
+    }
+  }
+
+  async preserveProxy(actual: ProxyValue, levelOfControl?: string): Promise<void> {
+    try { await this.initialized; } catch { return; }
+    const record = this.runtime;
+    if (!record?.active || !loopbackProxy(record.proxy) || this.view.phase === 'disconnecting') return;
+    if (loopbackProxy(actual) && actual.rules!.singleProxy!.port === record.proxy!.rules!.singleProxy!.port && (levelOfControl === undefined || levelOfControl === 'controlled_by_this_extension')) return;
+    const revision = ++this.revision;
+    const current = () => this.revision === revision && this.runtime === record && record.active && this.view.phase !== 'disconnecting';
+    try {
+      await this.proxyOperation(async () => {
+        if (current()) await this.env.setProxy(record.proxy!);
+      });
+    } catch {
+      if (!current()) return;
       this.view.phase = 'blocked';
       this.view.error = 'Настройки прокси изменены извне. Защита не подтверждена: закройте вкладки и восстановите управление прокси.';
     }
