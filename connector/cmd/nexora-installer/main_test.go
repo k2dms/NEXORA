@@ -96,7 +96,7 @@ func readManifest(t *testing.T, root string) manifest {
 
 func TestTheManifestIsOneObjectBothFamiliesRead(t *testing.T) {
 	cfg, reg := installFixture(t, pinnedOrigin, geckoID)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	m := readManifest(t, cfg.root)
@@ -122,7 +122,7 @@ func TestTheManifestIsOneObjectBothFamiliesRead(t *testing.T) {
 
 func TestBothAllowListsArePresentEvenWhenOneIsEmpty(t *testing.T) {
 	cfg, _ := installFixture(t, pinnedOrigin)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(manifestPath(cfg.root))
@@ -153,7 +153,7 @@ func TestBothAllowListsArePresentEvenWhenOneIsEmpty(t *testing.T) {
 
 func TestExactlyOneEntryPointPerInstallation(t *testing.T) {
 	cfg, reg := installFixture(t, pinnedOrigin, geckoID)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	first, err := os.ReadFile(manifestPath(cfg.root))
@@ -162,7 +162,7 @@ func TestExactlyOneEntryPointPerInstallation(t *testing.T) {
 	}
 	// A second install with the ids in the other order is the same installation, not a second one.
 	cfg.origins = []string{geckoID, pinnedOrigin, pinnedOrigin}
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	second, err := os.ReadFile(manifestPath(cfg.root))
@@ -194,7 +194,7 @@ func TestExactlyOneEntryPointPerInstallation(t *testing.T) {
 
 func TestTheRegistrationMatrixIsDoc25sWindowsColumn(t *testing.T) {
 	cfg, reg := installFixture(t, pinnedOrigin)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	want := []string{
@@ -224,7 +224,7 @@ func TestTheRegistrationMatrixIsDoc25sWindowsColumn(t *testing.T) {
 
 func TestTheAllowlistIsTheFileTheHostOpens(t *testing.T) {
 	cfg, _ := installFixture(t, pinnedOrigin, geckoID)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(filepath.Join(cfg.root, filepath.FromSlash(contract.HostAllowlistFile)))
@@ -260,7 +260,7 @@ func TestAnOriginThatCannotMatchIsRefusedBeforeAnythingIsWritten(t *testing.T) {
 		"nexora@example.org@elsewhere",
 	} {
 		cfg, reg := installFixture(t, bad)
-		err := install(cfg)
+		err := installWindows(cfg)
 		if err == nil {
 			t.Errorf("%q was accepted; no browser would ever hand the host that id", bad)
 			continue
@@ -277,7 +277,7 @@ func TestAnOriginThatCannotMatchIsRefusedBeforeAnythingIsWritten(t *testing.T) {
 func TestAGeckoGuidIsAnAddOnId(t *testing.T) {
 	id := "{12345678-1234-1234-1234-123456789abc}"
 	cfg, _ := installFixture(t, id)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	m := readManifest(t, cfg.root)
@@ -291,12 +291,12 @@ func TestAGeckoGuidIsAnAddOnId(t *testing.T) {
 
 func TestInstallRefusesAnEmptyOrMissingHost(t *testing.T) {
 	cfg, _ := installFixture(t)
-	if err := install(cfg); err == nil {
+	if err := installWindows(cfg); err == nil {
 		t.Error("an install with no --origin was accepted; both allow lists would be empty and every frame refused")
 	}
 	cfg, reg := installFixture(t, pinnedOrigin)
 	cfg.hostBin = filepath.Join(cfg.root, "absent"+exeSuffix())
-	if err := install(cfg); err == nil {
+	if err := installWindows(cfg); err == nil {
 		t.Error("a manifest naming a binary that is not there was accepted")
 	}
 	if len(reg.calls) != 0 {
@@ -307,7 +307,7 @@ func TestInstallRefusesAnEmptyOrMissingHost(t *testing.T) {
 func TestARegistrationFailureNamesTheFamilyAndTheFilesItLeft(t *testing.T) {
 	cfg, reg := installFixture(t, pinnedOrigin)
 	reg.failAdd = registrations()[1].key
-	err := install(cfg)
+	err := installWindows(cfg)
 	if err == nil {
 		t.Fatal("a failed registration was reported as success")
 	}
@@ -329,7 +329,7 @@ func TestARegistrationFailureNamesTheFamilyAndTheFilesItLeft(t *testing.T) {
 
 func TestUninstallRemovesTheRegistrationsAndTheTwoFilesOnly(t *testing.T) {
 	cfg, reg := installFixture(t, pinnedOrigin, geckoID)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	// The user's data shares this root and is not the installer's to delete.
@@ -342,7 +342,7 @@ func TestUninstallRemovesTheRegistrationsAndTheTwoFilesOnly(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := uninstall(cfg); err != nil {
+	if err := uninstallWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	if len(reg.keys) != 0 {
@@ -367,11 +367,11 @@ func TestUninstallRemovesTheRegistrationsAndTheTwoFilesOnly(t *testing.T) {
 
 func TestUninstallIsIdempotent(t *testing.T) {
 	cfg, _ := installFixture(t, pinnedOrigin)
-	if err := install(cfg); err != nil {
+	if err := installWindows(cfg); err != nil {
 		t.Fatal(err)
 	}
 	for i := 0; i < 2; i++ {
-		if err := uninstall(cfg); err != nil {
+		if err := uninstallWindows(cfg); err != nil {
 			t.Fatalf("uninstall %d: %v", i+1, err)
 		}
 	}

@@ -1967,7 +1967,7 @@ envelope→Xray compiler now has an answer for ADR-0013's promise — `Unreprese
 (`connector/cmd/nexora-connector/config_apply.go:568`) carries the compile's report into the result, proven at
 `connector/cmd/nexora-connector/config_apply_test.go:1083` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
-and `connector.version` only, `connector/cmd/nexora-connector/main.go:79-80`, and `intentSource` has no production
+and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:142-143`, and `intentSource` had no production
 implementation). `no-code` is therefore 54 → 53 → 54 and `no-run` 5 → 6, `connector` 37+1 → 39 and `decision` 3 → 4.
 `marker.counted` 206 → 207 for doc 27 §9's one new label (the partition is 157 + 26 + 24), and the register 38 → 39
 entries over 59 → 60 sites with `contract` 14 → 15. `verify.mjs`'s literals moved to those numbers; the check count did
@@ -3472,7 +3472,7 @@ in-memory table (`connector/cmd/nexora-connector/config_apply.go:135`, written o
 keeping a copy of intent and a dryRun puts nothing anywhere). `newHealthSurface`
 (`connector/cmd/nexora-connector/health_probe.go:67`) joins that table and that endpoint to the supervisor's live
 inbound table, read through `healthInbounds` (`connector/cmd/nexora-connector/config_apply.go:587`) rather than a
-second copy of the ports, and `connector/cmd/nexora-connector/main.go:199` registers the handler. A probe of a
+second copy of the ports, and `connector/cmd/nexora-connector/main.go:203` registers the handler. A probe of a
 server nothing has applied is a refusal naming the absence, and a fetch probe before the first settings document is
 the same: neither is a constructor error, because both are facts about the world the Connector is allowed to learn
 only from a frame.
@@ -3628,7 +3628,7 @@ dispatch table rather than by the transport. That run also exposed a fact no doc
 connector never stamps its own version — `debug.ReadBuildInfo().Main.Version` is "(devel)" for a main module whatever
 tags exist, measured with a local `connector/v0.0.0` tag that changed nothing — so an unstamped binary refuses to
 start and the live crossing was impossible until `releaseVersion`
-(`connector/cmd/nexora-connector/main.go:339`) let the build pass it in with `-ldflags -X`. The tag is gone; the
+(`connector/cmd/nexora-connector/main.go:344`) let the build pass it in with `-ldflags -X`. The tag is gone; the
 ldflags line is the release recipe now, and `--connector-version` remains the operator's way to name the release a
 hand-built process answers for. `tools/check-doc-evidence.mjs`'s `FUTURE_PREFIX` lost `packages/protocol/` and doc 20
 §1's future-path sentence lost it too, so citations into this package are checked from here on; the §6 figures are
@@ -3712,7 +3712,7 @@ labels in `docs/adr/0004` and doc 21 and two `contractgen.go` line cites drifted
 functions): the fifteenth `ok` line where §4.54 printed fourteen. Two verbs. `install` writes one Native Messaging
 manifest under the per-user root's `host` directory, writes the startup allowlist beside it, and points three HKCU keys
 at that one file (`connector/cmd/nexora-installer/main.go:75`); `uninstall`
-(`connector/cmd/nexora-installer/main.go:273`) deletes the three keys and those two files and nothing else — the
+(`connector/cmd/nexora-installer/main.go:277`) deletes the three keys and those two files and nothing else — the
 keystore, the compiled config, the state directory and the Core tree survive it, which
 `connector/cmd/nexora-installer/main_test.go:330` asserts by creating all four and finding them afterwards. Both files
 go through `writeAtomic` (`connector/cmd/nexora-installer/main.go:173`): temp file, write, `Sync`, `0600`, rename,
@@ -3755,7 +3755,7 @@ keeps the registry half of that run as a test against the real `reg.exe`, with i
 
 **Two defects the measurement found, both fixed here.** First: `install --origin <id>` printed "no `--origin` was
 given", because `flag.Parse` stops at the first non-flag argument and the verb is one — the flags were never read. The
-verb is now split off before the flag set is built (`connector/cmd/nexora-installer/main.go:303`), with
+verb is now split off before the flag set is built (`connector/cmd/nexora-installer/main.go:311`), with
 `connector/cmd/nexora-installer/main_test.go:402` pinning the order. Second: the manifest carried
 `"allowed_extensions": null`, because a nil Go slice marshals to `null` and a browser reading that key does not get an
 empty list. Both slices are now initialized empty. The test that should have caught it did not: its first version
@@ -3883,7 +3883,7 @@ its handler (`connector/cmd/nexora-connector/core_status.go:59`) answers `runnin
 containment, and retains the applied hash and last exit when Core is down. Missing process facts are null, not
 zero-valued claims; an unreadable receipt leaves the version null without suppressing process facts. The existing
 empty closed args object accepts omitted args, null or `{}` and refuses extra fields with the command's declared
-`Internal` code. `connector/cmd/nexora-connector/main.go:204` registers the fifth implemented method. Optional
+`Internal` code. `connector/cmd/nexora-connector/main.go:208` registers the fifth implemented method. Optional
 `activeServerTag` and `stats` are absent because there is no selection or counter producer; no new obligation is
 invented for fields the result does not require.
 
@@ -3907,6 +3907,20 @@ do not prove remote VLESS/REALITY, a browser launch, selection counters, adoptio
 file creation and its write. The child now writes a sibling temporary file and renames it only after the write
 closes; the reader cannot observe a partial record. The failing test passed 100 repeats; module build, vet and the
 full Go suite passed. Production code is unchanged. Existing citations above are re-aimed; census counts do not move.
+
+**Ubuntu CI follow-up (2026-11-11).** The front-door test fixture now supplies the existing test protector and
+isolated directories; a service without that internal override still requires the system protector and refuses
+unsupported platforms. The installer keeps its platform-gated entry points and separates their unchanged Windows
+registration bodies so fake-registry tests can exercise them on Linux. No CLI bypass, plaintext fallback or CI
+skip was added. `run` closes its transport on every return, including startup refusals; a regression first reproduced
+three blocked writes and now observes closed pipes, and the hello pipe test has an I/O deadline. The default-layout
+test supplies a temporary per-user root instead of skipping when the environment has none.
+Build, vet and the full Go suite passed on Ubuntu 24.04 under WSL with Go 1.24.13, including both production
+unsupported-platform refusals. The same checks passed on Windows with Go 1.27.3 except the existing real-HKCU test,
+which was deliberately not run. Focused Connector checks passed twenty repeats on both hosts; Linux also repeated
+the changed-intent restart check, and both changed command packages passed `-race`. These are local runs, not a
+GitHub runner result; real browser registration, Xray and remote VLESS/REALITY were not re-tested in this fix.
+Existing source citations are re-aimed; verification and decision counts do not move.
 
 **Bookkeeping.** Doc 26's current row, doc 39 and `packages/schema/verification.json` narrow `VER-90` to the missing
 snapshot handler and expectation field; the row stays `no-code`, and no distribution, marker or decision count

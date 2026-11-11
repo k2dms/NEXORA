@@ -53,6 +53,7 @@ type config struct {
 	configDir   string
 	keystoreDir string
 	coreDir     string
+	protector   keystore.Protector
 }
 
 // duplex joins the connector's two descriptors into the single io.ReadWriteCloser internal/peer takes: Native
@@ -164,9 +165,12 @@ func newService(cfg config) (*service, error) {
 			coreDir = core
 		}
 	}
-	protector, err := keystore.NewSystemProtector()
-	if err != nil {
-		return nil, fmt.Errorf("no keystore protector on this platform: %w", err)
+	protector := cfg.protector
+	if protector == nil {
+		protector, err = keystore.NewSystemProtector()
+		if err != nil {
+			return nil, fmt.Errorf("no keystore protector on this platform: %w", err)
+		}
 	}
 	store, err := keystore.New(keystoreDir, protector)
 	if err != nil {
@@ -293,6 +297,7 @@ func (s *service) serveLines(pipe io.ReadWriteCloser) error {
 }
 
 func run(cfg config, pipe io.ReadWriteCloser, notes io.Writer) error {
+	defer pipe.Close()
 	// Nothing here may default to a permissive caller: the identity is the platform's answer, and a build that
 	// guessed it would be the fallthrough ADR-0004 rule 3 forbids. --allowlisted therefore defaults false.
 	if cfg.senderID == "" {

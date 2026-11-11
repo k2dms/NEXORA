@@ -211,6 +211,10 @@ func install(cfg config) error {
 	if err := supported(); err != nil {
 		return err
 	}
+	return installWindows(cfg)
+}
+
+func installWindows(cfg config) error {
 	if len(cfg.origins) == 0 {
 		return errors.New("installer: no --origin was given; a manifest whose allow lists are both empty is a host no extension may call, which is not an install")
 	}
@@ -274,6 +278,10 @@ func uninstall(cfg config) error {
 	if err := supported(); err != nil {
 		return err
 	}
+	return uninstallWindows(cfg)
+}
+
+func uninstallWindows(cfg config) error {
 	var failed []string
 	for _, r := range registrations() {
 		// reg.exe delete answers non-zero for a key that is already absent, so the proof of removal is the query

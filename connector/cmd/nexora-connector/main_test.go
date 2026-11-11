@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -50,7 +51,7 @@ func wiringDirs(t *testing.T) (state, config, keystore, core string) {
 func jsonlConfig(t *testing.T, allowlisted bool) config {
 	state, conf, keys, core := wiringDirs(t)
 	return config{senderID: pinned, allowlisted: allowlisted, jsonl: true, version: "1.0.0",
-		stateDir: state, configDir: conf, keystoreDir: keys, coreDir: core}
+		stateDir: state, configDir: conf, keystoreDir: keys, coreDir: core, protector: testProtector{}}
 }
 
 func framedConfig(t *testing.T, allowlisted bool) config {
@@ -233,9 +234,13 @@ func TestJSONLModeAnswersTheFrontDoorCases(t *testing.T) {
 // end is a real internal/peer endpoint sending length-prefixed frames, so the gate this process reads is moved only
 // by a hello that crossed the transport.
 func TestTheNegotiationGateOpensOnlyAfterHelloCrossesThePipe(t *testing.T) {
+	cfg := framedConfig(t, true)
 	hostEnd, extEnd := net.Pipe()
+	if err := extEnd.SetDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
 	done := make(chan error, 1)
-	go func() { done <- run(framedConfig(t, true), hostEnd, io.Discard) }()
+	go func() { done <- run(cfg, hostEnd, io.Discard) }()
 
 	driver := peer.New(extEnd, peer.ToHost())
 	go func() { _ = driver.Serve() }()
@@ -495,7 +500,7 @@ func TestTheProcessRefusesToServeWithoutTheFlagsThatNameItsCaller(t *testing.T) 
 }
 
 func TestAnAllowlistedFlagAbsentMeansNothingIsAllowed(t *testing.T) {
-	cfg := config{senderID: pinned, jsonl: true, version: "1.0.0"}
+	cfg := jsonlConfig(t, false)
 	got, err := runJSONL(t, cfg, requestLine(t, "req-failclosed-1", "connector.hello", recordedHelloArgs))
 	if err != nil {
 		t.Fatal(err)
@@ -525,9 +530,10 @@ func TestTheRegisteredConfigApplyRefusesWithoutACore(t *testing.T) {
 // TestTheWiringDefaultsToThePerUserLayout pins the default half of the same decision: a config whose dir fields
 // are empty resolves to the per-user tree of doc 34 §7 and its named subdirectories.
 func TestTheWiringDefaultsToThePerUserLayout(t *testing.T) {
+	t.Setenv("LOCALAPPDATA", t.TempDir())
 	state, conf, keys, core, err := defaultDirs()
 	if err != nil {
-		t.Skipf("no per-user root on this host: %v", err)
+		t.Fatal(err)
 	}
 	base := filepath.Dir(state)
 	if base != filepath.Dir(conf) || base != filepath.Dir(keys) || base != filepath.Dir(core) {
@@ -643,5 +649,53 @@ func TestTheVersionAnswerIgnoresWhatThePeerClaimsAboutItself(t *testing.T) {
 	}
 	if bytes.Contains(res.Result, []byte("9.9.9")) {
 		t.Errorf("the answer quoted the peer's own version claim: %s", res.Result)
+	}
+}
+
+func TestRunClosesThePipeOnStartupFailure(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  config
+		want string
+	}{
+		{"missing sender", config{version: "1.0.0"}, "--sender-id"},
+		{"missing version", config{senderID: pinned}, "--connector-version"},
+		{"service construction", config{senderID: pinned, version: "invalid"}, "hello: connectorVersion"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			hostEnd, extEnd := net.Pipe()
+			t.Cleanup(func() { _ = hostEnd.Close(); _ = extEnd.Close() })
+			if err := extEnd.SetWriteDeadline(time.Now().Add(time.Second)); err != nil {
+				t.Fatal(err)
+			}
+			written := make(chan error, 1)
+			go func() {
+				_, err := extEnd.Write([]byte{1})
+				written <- err
+			}()
+			if err := run(c.cfg, hostEnd, io.Discard); err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("startup returned %v, want %s", err, c.want)
+			}
+			select {
+			case err := <-written:
+				if !errors.Is(err, io.ErrClosedPipe) {
+					t.Fatalf("peer write returned %v, want the startup failure to close the pipe", err)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("peer write remained blocked after startup failed")
+			}
+		})
+	}
+}
+
+func TestServiceWithoutAProtectorOverrideRefusesUnsupportedPlatforms(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows has the system DPAPI protector")
+	}
+	cfg := jsonlConfig(t, true)
+	cfg.protector = nil
+	if _, err := newService(cfg); err == nil || !strings.Contains(err.Error(), "no keystore protector on this platform") {
+		t.Fatalf("default protector returned %v, want the unsupported-platform refusal", err)
 	}
 }
