@@ -16,9 +16,10 @@ export type SavedServer = {
   address: string;
   port: number;
   userIdRef: string;
-  network: 'tcp';
+  network: 'tcp' | 'ws';
   security: 'none' | 'tls' | 'reality';
   flow: string;
+  ws?: { path?: string; host?: string };
   tls?: { serverName: string; alpn?: string[]; fingerprint?: string; insecure?: false };
   reality?: { serverName: string; publicKey: string; shortId?: string; fingerprint?: string; spiderX?: string };
   source: 'manual' | 'subscription';

@@ -188,7 +188,7 @@ func parseSubscriptionVLESS(line string) (map[string]any, string, bool) {
 			return nil, "", false
 		}
 		switch key {
-		case "type", "security", "flow", "encryption", "headerType", "sni", "fp", "alpn", "pbk", "sid", "spx":
+		case "type", "security", "flow", "encryption", "headerType", "sni", "fp", "alpn", "pbk", "sid", "spx", "path", "host":
 		default:
 			// Includes insecure, certificate/pinning and unknown socket options.
 			return nil, "", false
@@ -198,7 +198,10 @@ func parseSubscriptionVLESS(line string) (map[string]any, string, bool) {
 	if _, present := query["type"]; !present {
 		network = "tcp" // VLESS URI default; raw is Xray's TCP alias.
 	}
-	if network != "tcp" && network != "raw" {
+	if network == "raw" {
+		network = "tcp"
+	}
+	if network != "tcp" && network != "ws" {
 		return nil, "", false
 	}
 	for _, key := range []string{"encryption", "headerType"} {
@@ -210,7 +213,22 @@ func parseSubscriptionVLESS(line string) (map[string]any, string, bool) {
 	if _, present := query["security"]; !present {
 		security = "none"
 	}
-	server := map[string]any{"protocol": "vless", "address": address, "port": port, "network": "tcp", "security": security, "flow": query.Get("flow")}
+	server := map[string]any{"protocol": "vless", "address": address, "port": port, "network": network, "security": security, "flow": query.Get("flow")}
+	ws := map[string]any{}
+	for key, rule := range map[string]importRule{"path": importPath, "host": importHost} {
+		if list, present := query[key]; present {
+			if network != "ws" || !rule(list[0]) {
+				return nil, "", false
+			}
+			ws[key] = list[0]
+		}
+	}
+	if network == "ws" {
+		if (security != "none" && security != "tls") || query.Get("flow") != "" {
+			return nil, "", false
+		}
+		server["ws"] = ws
+	}
 	block := map[string]any{}
 	switch security {
 	case "none":
@@ -250,6 +268,14 @@ func parseSubscriptionVLESS(line string) (map[string]any, string, bool) {
 	// leaking through documents or their identity hash. This is not a secret hash.
 	publicJSON, _ := json.Marshal(server)
 	publicText := strings.ToLower(string(publicJSON))
+	if network == "ws" {
+		// Inspect one extra escape layer for credential copies without changing the path.
+		decodedPath, err := url.PathUnescape(query.Get("path"))
+		if err != nil {
+			return nil, "", false
+		}
+		publicText += "\n" + strings.ToLower(decodedPath)
+	}
 	if subscriptionSecretText.MatchString(address) || strings.Contains(publicText, strings.ToLower(credential)) || strings.Contains(publicText, strings.ToLower(strings.ReplaceAll(credential, "-", ""))) {
 		return nil, "", false
 	}

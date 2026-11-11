@@ -233,6 +233,40 @@ func TestSubscriptionConstructorAndSingleBatchPreflight(t *testing.T) {
 	}
 }
 
+func TestSubscriptionWebSocketRefreshStoresCredentials(t *testing.T) {
+	for _, format := range []string{"vless-uri-list", "vless-base64"} {
+		t.Run(format, func(t *testing.T) {
+			h, p := subscriptionTestHandler(t)
+			body := subscriptionTestBody("tcp.example.test") + "\n" +
+				"vless://" + importUser + "@ws.example.test:443?type=ws&security=tls&sni=TLS.Example.Test&path=%2Fsocket%252Fcase&host=HTTP.Example.Test#WebSocket"
+			if format == "vless-base64" {
+				body = base64.StdEncoding.EncodeToString([]byte(body))
+			}
+			subscriptionTestFeed(h, body)
+			answer := subscriptionTestAnswer(t, h, subscriptionTestFrame(subscriptionTestSource()))
+			if len(answer.Failed) != 0 || len(answer.Refreshed) != 1 || answer.Refreshed[0].Format != format || answer.Refreshed[0].ServerCount != 2 || p.calls != 2 {
+				t.Fatal("mixed TCP/WebSocket feed did not protect both credentials")
+			}
+			servers := answer.Refreshed[0].Servers
+			if servers[0]["network"] != "tcp" || servers[1]["network"] != "ws" ||
+				!reflect.DeepEqual(servers[1]["ws"], map[string]any{"path": "/socket%2Fcase", "host": "HTTP.Example.Test"}) ||
+				servers[1]["tls"].(map[string]any)["serverName"] != "tls.example.test" {
+				t.Fatal("WebSocket transport or independent TLS SNI changed")
+			}
+			for _, server := range servers {
+				secret, err := h.store.Resolve(server["userIdRef"].(string))
+				if err != nil || string(secret.Value) != importUser {
+					t.Fatal("returned credential reference is unusable")
+				}
+			}
+			encoded, _ := json.Marshal(answer)
+			if len(testImportDisk(t, h.store)) != 2 || bytes.Contains(encoded, []byte(importUser)) || bytes.Contains(encoded, []byte(body)) {
+				t.Fatal("refresh persisted or returned private feed data")
+			}
+		})
+	}
+}
+
 func TestSubscriptionSourceClosedShape(t *testing.T) {
 	source := subscriptionTestSource()
 	source["urlRef"] = "keystore://subscription/" + subscriptionTestID + "/url"

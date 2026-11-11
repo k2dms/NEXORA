@@ -573,6 +573,61 @@ test('subscription TCP servers keep none, TLS and REALITY settings in chosen-onl
   }
 });
 
+test('subscription WebSocket keeps public path, host and TLS SNI through selection and restart', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  f.refreshWith((source) => {
+    const list = subscriptionServers(source.id, 2);
+    for (const server of list) {
+      delete server.reality;
+      server.network = 'ws';
+      server.flow = '';
+      server.security = 'none';
+      server.ws = { path: '/socket%2Fcase?route=one', host: 'ws.example.test' };
+    }
+    list[1]!.security = 'tls';
+    list[1]!.tls = { serverName: 'tls.example.test', alpn: ['http/1.1'], insecure: false };
+    Object.assign(list[1]!.ws!, { userId: 'private-access-secret', raw: subscriptionURL });
+    return { refreshed: [{ subscriptionId: source.id, format: 'vless-base64', sha256: 'e'.repeat(64), serverCount: list.length, servers: list }], unchanged: [], failed: [] };
+  });
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  assert.equal(added.error, null);
+  assert.deepEqual(added.servers[1]!.ws, { path: '/socket%2Fcase?route=one', host: 'ws.example.test' });
+  assert.ok(!JSON.stringify([added, f.stored(), f.servers()]).includes('private-access-secret'));
+  assert.ok(!JSON.stringify(added).includes('query-secret'));
+  for (const server of added.servers) {
+    await f.connection.action('select', { serverId: server.id });
+    assert.equal((await f.connection.action('connect')).phase, 'connected');
+    assert.deepEqual(f.messages.filter((message) => message.method === 'config.apply').at(-1)!.args.intent.servers, [server]);
+    assert.equal((await f.connection.action('disconnect')).phase, 'disconnected');
+  }
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  const loaded = await restarted.action('status');
+  assert.equal(loaded.server?.id, added.servers[1]!.id);
+  assert.deepEqual(loaded.servers, added.servers);
+  assert.equal(loaded.servers[1]!.tls!.serverName, 'tls.example.test');
+});
+
+test('unsupported WebSocket combinations leave the subscription library unchanged', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('subscribe', { url: subscriptionURL });
+  const stored = JSON.stringify([f.subscription(), f.servers(), f.stored()]);
+  for (const change of [
+    { security: 'reality', flow: '' }, { security: 'none', flow: 'xtls-rprx-vision' },
+    { security: 'none', flow: '', ws: undefined },
+    { security: 'none', flow: '', ws: { headersRef: 'keystore://server/headers', headersKeys: ['Authorization'] } },
+  ]) {
+    f.refreshWith((source) => {
+      const server = { ...subscriptionServers(source.id, 1)[0]!, network: 'ws', ws: {}, ...change } as SavedServer;
+      return { refreshed: [{ subscriptionId: source.id, format: 'vless-uri-list', sha256: 'e'.repeat(64), serverCount: 1, servers: [server] }], unchanged: [], failed: [] };
+    });
+    assert.match((await f.connection.action('refresh')).error!, /неподдерживаемый сервер/);
+    assert.equal(JSON.stringify([f.subscription(), f.servers(), f.stored()]), stored);
+  }
+});
+
 test('request-level refresh errors persist valid status without leaking private details or replacing data', async (t) => {
   const f = fixture();
   t.after(() => f.connection.client.stop());

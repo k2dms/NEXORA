@@ -104,7 +104,7 @@ function subscriptionStatusCode(code: string): string {
 }
 
 function subscriptionWarning(code: string, partial: boolean): string {
-  if (partial) return 'Часть записей подписки не поддерживается или превышает лимит. Доступны только разобранные TCP-серверы.';
+  if (partial) return 'Часть записей подписки не поддерживается или превышает лимит. Доступны только разобранные TCP- и WebSocket-серверы.';
   if (code === 'AuthFailed') return 'Подписка недоступна: отказ в доступе или адрес больше не существует (в том числе HTTP 404). Прежний список сохранён.';
   if (code === 'SchemaMismatch') return 'Подписка содержит неподдерживаемые параметры. Прежний список и выбранный сервер сохранены.';
   if (code === 'QuotaExceeded') return 'Подписка превышает допустимый лимит. Прежний список сохранён.';
@@ -308,7 +308,7 @@ export class Connection {
       this.servers = servers;
       this.selection = selection;
       this.view.warning = refreshed.lossyFields?.length ? 'При импорте часть полей не перенесена. Проверьте параметры выбранного сервера перед подключением.' : null;
-      if (!server) this.view.error = 'В подписке нет доступных TCP-серверов.';
+      if (!server) this.view.error = 'В подписке нет доступных TCP- или WebSocket-серверов.';
       return;
     }
     if (result.unchanged.includes(source.id)) {
@@ -351,13 +351,15 @@ export class Connection {
   private subscriptionServers(servers: SavedServer[], subscriptionId: string): SavedServer[] {
     if (servers.length > 512 || new Set(servers.map((server) => server.id)).size !== servers.length) throw new Error('Connector вернул некорректный список серверов.');
     return servers.map((server) => {
-      if (!uuid.test(server.id) || server.protocol !== 'vless' || server.network !== 'tcp' || server.source !== 'subscription' || server.subscriptionId !== subscriptionId || server.userIdRef !== `keystore://server/${server.id}/user-id`) throw new Error('Connector вернул неподдерживаемый сервер. Список не изменён.');
+      if (!uuid.test(server.id) || server.protocol !== 'vless' || !['tcp', 'ws'].includes(server.network) || server.source !== 'subscription' || server.subscriptionId !== subscriptionId || server.userIdRef !== `keystore://server/${server.id}/user-id`) throw new Error('Connector вернул неподдерживаемый сервер. Список не изменён.');
+      if (server.network === 'ws' && (server.security === 'reality' || server.flow !== '' || !server.ws || 'headersRef' in server.ws || 'headersKeys' in server.ws)) throw new Error('Connector вернул неподдерживаемый сервер. Список не изменён.');
       // Whitelist public fields; do not retain any inline credential or raw feed field.
       const saved: SavedServer = {
         id: server.id, displayName: server.displayName, protocol: server.protocol, address: server.address, port: server.port,
         userIdRef: server.userIdRef, network: server.network, security: server.security, flow: server.flow,
         source: server.source, subscriptionId,
       };
+      if (server.network === 'ws') saved.ws = { ...(server.ws!.path !== undefined ? { path: server.ws!.path } : {}), ...(server.ws!.host !== undefined ? { host: server.ws!.host } : {}) };
       if (server.tls) saved.tls = { serverName: server.tls.serverName, ...(server.tls.alpn ? { alpn: [...server.tls.alpn] } : {}), ...(server.tls.fingerprint ? { fingerprint: server.tls.fingerprint } : {}), ...(server.tls.insecure === false ? { insecure: false } : {}) };
       if (server.reality) saved.reality = { serverName: server.reality.serverName, publicKey: server.reality.publicKey, ...(server.reality.shortId !== undefined ? { shortId: server.reality.shortId } : {}), ...(server.reality.fingerprint ? { fingerprint: server.reality.fingerprint } : {}), ...(server.reality.spiderX !== undefined ? { spiderX: server.reality.spiderX } : {}) };
       return saved;

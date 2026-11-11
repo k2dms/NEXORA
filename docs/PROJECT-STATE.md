@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.62; older scope and inventory paragraphs
+continuation is §4.63; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -4192,6 +4192,49 @@ packaging, multiple senders/browser profiles, takeover and the old outer-job lif
 ODEC-01, VER-12 and VER-14 are not closed by these protective measurements. Reproduce with the §4.61 interactive
 Windows command; the additional idle phase takes another minute. Previous published HEAD: `27488c5`.
 
+### 4.63 VLESS WebSocket subscription transport (2026-11-12)
+
+**Implemented without a second compiler.** The URI/base64 subscription parser now accepts `type=ws` with
+`security=none` or `tls`, an empty flow and optional public `path`/`host`. It reuses the existing Server validator,
+compiler and materializer. Path case/escaping and HTTP Host are preserved; TLS SNI remains independent. TCP/raw
+normalization and credential-independent public identities are unchanged. WS REALITY, Vision, insecure flags,
+unknown options, duplicate parameters and inactive TCP path/host are refused rather than silently discarded.
+Credential copies in public transport fields are rejected before identity derivation, including an extra encoded
+path layer. Invalid escapes are refused so a stray `%` cannot bypass that credential inspection. No URI header,
+early-data, JSON or Clash support is implied.
+
+The extension whitelists the public WS fields, preserves selection across controller restart and sends only the
+chosen server to config.apply. The server card names WebSocket instead of always claiming TCP. Header-bearing WS
+results are refused because this subscription path does not retain their active credential references. The manual
+REALITY form remains TCP-only. Existing subscription last-good, proxy and recovery behavior is unchanged.
+
+**Measured runtime boundary.** Chrome 157.0.8103.51 / Xray 24.11.11 passed a real Native Messaging and WS-none
+loopback golden. Two normalized subscription documents and random synthetic credentials were imported through
+real profile.import/DPAPI; only their public browser library was mechanically seeded. The actual UI selected the
+second path, Core received exactly that WS outbound with the expected path/Host, and fresh HTTPS reached the
+fixture from 127.0.0.2. MV3/full-browser restart kept Connector PID 26644 and Core PID 4360 unchanged, with no
+native host for 61,440 ms (33 samples). Three actual host sessions proved independent hello, concurrent adoption
+and oldest-only eviction again. Explicit disconnect restored the prior proxy, removed materialized configuration
+and durable runtime, and allowed reconnect. Final Connector idle exit took 60,313 ms (45 samples); scratch state
+and temporary registration were disposed. The connected 320px screenshot was inspected. The Vite preview also
+reported the missing extension context safely, without console warnings or errors.
+
+**Checks and limits.** The 34 extension tests, Svelte check/build, Go command/compiler/apply tests and the new
+mixed TCP/WS refresh-to-keystore test passed. Parser tests cover plain/base64, field bounds, transport/TLS fields,
+identity stability, unsupported combinations and encoded credential copies. The runtime golden above used the
+previous local Connector binary because WS document import/compilation already existed; the new URI parser was
+checked separately through the real refresh handler with a test HTTP transport. This is not a real remote WS feed
+fetch or a measured WS-TLS tunnel. No test CA was added to Windows trust, and no production trust, protocol,
+schema, installer or ownership policy changed. Trusted installation, ODEC-01, VER-12 and VER-14 remain open.
+A rebuilt local Connector also passed the unchanged manual REALITY golden: Connector PID 17252 / Core PID 3576,
+61,466 ms without hosts (33 samples), 60,327 ms natural idle exit (45 samples), fresh HTTPS before/after recovery
+and successful sandbox disposal. The repeated WS-none golden on that rebuilt Connector also passed with PID
+23036 / Core 3184: 61,031 ms without hosts (33 samples), 60,406 ms natural idle exit (45 samples), the same chosen
+path/Host, fresh HTTPS and sandbox disposal. Its screenshot was inspected. The final invalid-escape rejection was
+then unit-tested and the local binary rebuilt again; that parser-only change does not run in the mechanically seeded
+golden. Reproduce WS mode with `NEXORA_WS_FIXTURE=1 NEXORA_XRAY=E:/NEXORA/tmp/xray-extract/xray.exe npm --prefix
+nexora/extension run verify:browser` on the interactive Windows desktop. Previous published HEAD: `7154bc2`.
+
 ---
 
 ## 5. Verification state to the letter
@@ -4347,8 +4390,9 @@ Windows command; the additional idle phase takes another minute. Previous publis
 §4.60 delivered shared Windows Connector and measured MV3/full-browser recovery; §4.61 proves normal persistent
 unpacked installation without a restart reload. Trusted pinned Xray installation is blocked on a verified signing
 channel or a deliberate trust-policy decision, not a checksum-only receipt. §4.62 measures natural idle exit and
-three real same-sender host ports sharing one live owner. Next product slices can reuse existing server.test or
-compiled transports; full multi-profile/takeover and the lifetime decision still belong to ODEC-01. Complete that decision
+three real same-sender host ports sharing one live owner. §4.63 adds URI/base64 WebSocket subscription transport
+and measures a selected WS-none tunnel in Chrome, with parsing and runtime boundaries kept separate. Next product
+slices can reuse existing server.test; full multi-profile/takeover and the lifetime decision still belong to ODEC-01. Complete that decision
 before closing VER-12/VER-14; incognito, other browser families and the remaining routing fixtures are still open.
 This product queue supersedes the older sequencing below without retiring its unfinished verification rows.
 

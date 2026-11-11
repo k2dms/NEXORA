@@ -308,7 +308,7 @@
     <section class="server-card" aria-labelledby="server-title">
       <div class="section-heading">
         <h2 id="server-title">Сервер</h2>
-        <span class="protocol">VLESS / {selectedServer?.security === 'tls' ? 'TLS' : selectedServer?.security === 'none' ? 'без TLS' : 'REALITY'} · TCP</span>
+        <span class="protocol">VLESS / {selectedServer?.security === 'tls' ? 'TLS' : selectedServer?.security === 'none' ? 'без TLS' : 'REALITY'} · {selectedServer?.network === 'ws' ? 'WebSocket' : 'TCP'}</span>
       </div>
       {#if view.subscription && view.servers.some((server) => server.subscriptionId === view?.subscription?.id)}
         <div class="field">

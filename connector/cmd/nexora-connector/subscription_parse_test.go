@@ -57,7 +57,7 @@ func subscriptionParseTestPublic(t *testing.T, servers []map[string]any, values 
 				t.Fatal("public document contains a credential")
 			}
 		}
-		if server["source"] != "subscription" || server["subscriptionId"] != subscriptionParseTestSource || server["protocol"] != "vless" || server["network"] != "tcp" {
+		if server["source"] != "subscription" || server["subscriptionId"] != subscriptionParseTestSource || server["protocol"] != "vless" || (server["network"] != "tcp" && server["network"] != "ws") {
 			t.Fatal("server has incorrect provenance or transport")
 		}
 		if _, ok := server["flow"].(string); !ok {
@@ -232,6 +232,202 @@ func TestSubscriptionSecurityFieldsIPv6AndNames(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestSubscriptionWebSocketFieldsAndFormats(t *testing.T) {
+	path := "/MiXeD/%2f%2F/%25?x=A+B&y=1"
+	host := "HTTP.Example.Test."
+	for _, tc := range []struct {
+		name, security string
+		query          url.Values
+		wantWS         map[string]any
+	}{
+		{"defaults", "none", url.Values{"type": {"ws"}}, map[string]any{}},
+		{"explicit defaults", "none", url.Values{"type": {"ws"}, "security": {"none"}, "flow": {""}, "encryption": {"none"}, "headerType": {"none"}}, map[string]any{}},
+		{"path only", "none", url.Values{"type": {"ws"}, "path": {path}}, map[string]any{"path": path}},
+		{"host only", "none", url.Values{"type": {"ws"}, "host": {host}}, map[string]any{"host": host}},
+		{"path and host", "none", url.Values{"type": {"ws"}, "path": {path}, "host": {host}}, map[string]any{"path": path, "host": host}},
+		{"TLS defaults", "tls", url.Values{"type": {"ws"}, "security": {"tls"}, "sni": {"TLS.Example.Test."}}, map[string]any{}},
+		{"TLS fields", "tls", url.Values{"type": {"ws"}, "security": {"tls"}, "sni": {"TLS.Example.Test."}, "fp": {"firefox"}, "alpn": {"h2,http/1.1"}, "path": {path}, "host": {host}}, map[string]any{"path": path, "host": host}},
+		{"field length limits", "none", url.Values{"type": {"ws"}, "path": {"/" + strings.Repeat("a", 254)}, "host": {strings.Repeat("a", 248) + ".test"}}, map[string]any{"path": "/" + strings.Repeat("a", 254), "host": strings.Repeat("a", 248) + ".test"}},
+	} {
+		for _, format := range []string{"vless-uri-list", "vless-base64"} {
+			t.Run(tc.name+"/"+format, func(t *testing.T) {
+				body := subscriptionParseTestURI("example.test:443", subscriptionParseTestUser, "WS node", tc.query)
+				if format == "vless-base64" {
+					body = base64.StdEncoding.EncodeToString([]byte(body))
+				}
+				servers, values, resolved, dropped, err := parseSubscription([]byte(body), "auto", subscriptionParseTestSource, 1)
+				if err != nil || resolved != format || dropped != 0 || len(servers) != 1 {
+					t.Fatalf("supported WebSocket URI refused: %v", err)
+				}
+				subscriptionParseTestPublic(t, servers, values)
+				s := servers[0]
+				ws, ok := s["ws"].(map[string]any)
+				actual, _ := json.Marshal(ws)
+				want, _ := json.Marshal(tc.wantWS)
+				if !ok || string(actual) != string(want) || s["network"] != "ws" || s["security"] != tc.security || s["flow"] != "" || string(values[s["userIdRef"].(string)]) != subscriptionParseTestUser {
+					t.Fatal("WebSocket fields or credential bytes changed")
+				}
+				if tc.security == "tls" {
+					tls := s["tls"].(map[string]any)
+					if tls["serverName"] != "tls.example.test" {
+						t.Fatal("HTTP host replaced TLS SNI")
+					}
+					if tc.query.Has("fp") && (tls["fingerprint"] != "firefox" || strings.Join(tls["alpn"].([]string), ",") != "h2,http/1.1") {
+						t.Fatal("WebSocket TLS options lost")
+					}
+				} else if _, present := s["tls"]; present {
+					t.Fatal("plain WebSocket unexpectedly has TLS")
+				}
+			})
+		}
+	}
+}
+
+func TestSubscriptionWebSocketRefusesInvalidFieldsAndOptions(t *testing.T) {
+	good := subscriptionParseTestURI("good.example.test:443", subscriptionParseTestUser, "Good", url.Values{"type": {"ws"}})
+	for _, tc := range []struct{ name, key, value string }{
+		{"empty path", "path", ""}, {"relative path", "path", "relative"}, {"path space", "path", "/has space"},
+		{"path fragment", "path", "/path#fragment"}, {"path control", "path", "/path\n"}, {"path Unicode", "path", "/путь"},
+		{"path bare escape", "path", "/path%"}, {"path truncated escape", "path", "/path%2"}, {"path bad escape", "path", "/path%zz"},
+		{"path too long", "path", "/" + strings.Repeat("a", 255)}, {"path invalid UTF8", "path", "/" + string([]byte{0xff})},
+		{"empty host", "host", ""}, {"host port", "host", "example.test:443"}, {"host userinfo", "host", "user@example.test"},
+		{"host underscore", "host", "bad_host"}, {"host IPv6", "host", "[2001:db8::1]"}, {"host Unicode", "host", "хост.test"},
+		{"host too long", "host", strings.Repeat("a", 254)}, {"host invalid UTF8", "host", string([]byte{0xff})},
+		{"empty SNI", "sni", ""}, {"absent SNI", "sni", ""}, {"invalid SNI", "sni", "bad_name"},
+		{"Vision", "flow", "xtls-rprx-vision"}, {"unknown flow", "flow", "unknown"}, {"REALITY without Vision", "security", "reality"},
+		{"empty security", "security", ""}, {"unknown security", "security", "xtls"},
+		{"insecure true", "insecure", "true"}, {"insecure false", "insecure", "false"}, {"allow insecure", "allowInsecure", "0"},
+		{"socket options", "sockopt", "{}"}, {"TCP fast open", "tfo", "1"}, {"HTTP header", "headerType", "http"},
+		{"headers", "headers", "{}"}, {"header reference", "headersRef", "private-token"}, {"header keys", "headersKeys", "Host"},
+		{"early data", "earlyData", "1"}, {"maximum early data", "maxEarlyData", "1"}, {"early data alias", "ed", "1"},
+		{"early data header", "earlyDataHeaderName", "Sec-WebSocket-Protocol"}, {"early header alias", "eh", "Sec-WebSocket-Protocol"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			query := url.Values{"type": {"ws"}, "security": {"tls"}, "sni": {"tls.example.test"}, "path": {"/"}, "host": {"http.example.test"}}
+			query.Set(tc.key, tc.value)
+			if tc.name == "absent SNI" {
+				query.Del("sni")
+			}
+			if tc.value == "reality" {
+				query.Set("pbk", strings.Repeat("a", 43))
+			}
+			bad := subscriptionParseTestURI("bad.example.test:443", subscriptionParseTestRotate, "Bad", query)
+			servers, values, _, dropped, err := parseSubscription([]byte(bad+"\n"+good), "auto", subscriptionParseTestSource, 2)
+			if err != nil || dropped != 1 || len(servers) != 1 {
+				t.Fatal("invalid WebSocket entry was not dropped")
+			}
+			subscriptionParseTestPublic(t, servers, values)
+			servers, values, _, dropped, err = parseSubscription([]byte(bad), "auto", subscriptionParseTestSource, 1)
+			if err == nil || servers != nil || values != nil || dropped != 1 || strings.Contains(err.Error(), subscriptionParseTestRotate) || strings.Contains(err.Error(), "private-token") || strings.Contains(err.Error(), "vless://") {
+				t.Fatal("invalid WebSocket entry succeeded or leaked input")
+			}
+		})
+	}
+	for _, network := range []string{"", "tcp", "raw"} {
+		for _, key := range []string{"path", "host"} {
+			for _, value := range []string{"", map[string]string{"path": "/", "host": "example.test"}[key]} {
+				query := url.Values{key: {value}}
+				if network != "" {
+					query.Set("type", network)
+				}
+				bad := subscriptionParseTestURI("example.test:443", subscriptionParseTestUser, "Node", query)
+				if _, _, _, _, err := parseSubscription([]byte(bad), "auto", subscriptionParseTestSource, 1); err == nil {
+					t.Fatal("inactive TCP WebSocket parameter accepted, even when empty")
+				}
+			}
+		}
+	}
+	prefix := subscriptionParseTestURI("example.test:443", subscriptionParseTestUser, "", nil)
+	for _, rawQuery := range []string{
+		"type=ws&path=%2F&path=%2F", "type=ws&path=%2F&%70ath=%2F", "type=ws&host=example.test&host=example.test",
+		"type=ws&host=example.test&%68ost=example.test", "type=ws&type=ws", "type=ws&flow=&flow=",
+		"type=ws&path=%ff", "type=ws&host=%ff", "type=ws&path=%zz", "type=ws&host=%zz", "type=ws;path=%2F", "type=ws&Host=example.test",
+	} {
+		if _, _, _, _, err := parseSubscription([]byte(prefix+"?"+rawQuery), "auto", subscriptionParseTestSource, 1); err == nil {
+			t.Fatal("duplicate, malformed or unknown WebSocket query accepted")
+		}
+	}
+}
+
+func TestSubscriptionWebSocketStableIdentity(t *testing.T) {
+	query := url.Values{"type": {"ws"}, "security": {"tls"}, "sni": {"tls.example.test"}, "path": {"/MiXeD/%2f"}, "host": {"http.example.test"}}
+	parse := func(credential, name string) map[string]any {
+		t.Helper()
+		uri := subscriptionParseTestURI("example.test:443", credential, name, query)
+		servers, values, _, dropped, err := parseSubscription([]byte(uri), "auto", subscriptionParseTestSource, 1)
+		if err != nil || dropped != 0 || len(servers) != 1 {
+			t.Fatal("valid WebSocket identity fixture refused")
+		}
+		subscriptionParseTestPublic(t, servers, values)
+		return servers[0]
+	}
+	original := parse(subscriptionParseTestUser, "Old name")
+	rotated := parse(subscriptionParseTestRotate, "New name")
+	if original["id"] != rotated["id"] || original["userIdRef"] != rotated["userIdRef"] || rotated["displayName"] != "New name" {
+		t.Fatal("WebSocket credential rotation or rename changed identity")
+	}
+	for _, change := range []struct{ key, value string }{{"path", "/changed"}, {"path", "/mixed/%2f"}, {"path", "/MiXeD/%2F"}, {"host", "other.example.test"}, {"sni", "other-tls.example.test"}} {
+		before := query.Get(change.key)
+		query.Set(change.key, change.value)
+		changed := parse(subscriptionParseTestUser, "Old name")
+		query.Set(change.key, before)
+		if original["id"] == changed["id"] {
+			t.Fatalf("WebSocket connection field %s missing from identity", change.key)
+		}
+	}
+	uri := subscriptionParseTestURI("example.test:443", subscriptionParseTestUser, "Old name", query)
+	duplicate := subscriptionParseTestURI("example.test:443", subscriptionParseTestUser, "Rename", query)
+	rotation := subscriptionParseTestURI("example.test:443", subscriptionParseTestRotate, "Rotation", query)
+	servers, values, _, dropped, err := parseSubscription([]byte(strings.Join([]string{uri, duplicate, rotation}, "\n")), "auto", subscriptionParseTestSource, 2)
+	if err != nil || dropped != 1 || len(servers) != 2 || servers[0]["id"] != original["id"] || servers[0]["id"] == servers[1]["id"] {
+		t.Fatal("WebSocket duplicates or credential ordinals handled incorrectly")
+	}
+	subscriptionParseTestPublic(t, servers, values)
+}
+
+func TestSubscriptionWebSocketCredentialCopiesRefusedBeforeIdentity(t *testing.T) {
+	compact := strings.ReplaceAll(subscriptionParseTestUser, "-", "")
+	encode := func(text string) string {
+		var encoded strings.Builder
+		for _, b := range []byte(text) {
+			fmt.Fprintf(&encoded, "%%%02x", b)
+		}
+		return encoded.String()
+	}
+	prefix := subscriptionParseTestURI("example.test:443", subscriptionParseTestUser, "", nil)
+	badEscape := prefix + "?type=ws&path=" + url.QueryEscape("/"+encode(subscriptionParseTestUser)+"/%")
+	if server, secret, ok := parseSubscriptionVLESS(badEscape); ok || server != nil || secret != "" {
+		t.Fatal("malformed escape bypassed credential-copy inspection")
+	}
+	for _, key := range []string{"path", "host"} {
+		for _, credential := range []string{subscriptionParseTestUser, strings.ToUpper(subscriptionParseTestUser), compact, strings.ToUpper(compact)} {
+			for _, layer := range []string{"literal", "URI encoded", "double encoded"} {
+				t.Run(key+"/"+layer+"/"+fmt.Sprint(len(credential))+"/"+fmt.Sprint(credential == strings.ToUpper(credential)), func(t *testing.T) {
+					copy := credential
+					if layer != "literal" {
+						copy = encode(copy)
+					}
+					value := copy + ".example.test"
+					if key == "path" {
+						value = "/prefix/" + copy + "/suffix"
+					}
+					if layer != "URI encoded" {
+						value = url.QueryEscape(value)
+					}
+					bad := prefix + "?type=ws&" + key + "=" + value
+					if server, secret, ok := parseSubscriptionVLESS(bad); ok || server != nil || secret != "" {
+						t.Fatal("credential copy reached identity derivation")
+					}
+					servers, values, _, dropped, err := parseSubscription([]byte(bad), "auto", subscriptionParseTestSource, 1)
+					if err == nil || servers != nil || values != nil || dropped != 1 || strings.Contains(strings.ToLower(err.Error()), strings.ToLower(credential)) || strings.Contains(err.Error(), "%") || strings.Contains(err.Error(), "vless://") {
+						t.Fatal("credential copy succeeded or leaked input")
+					}
+				})
+			}
+		}
 	}
 }
 
