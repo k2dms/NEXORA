@@ -43,7 +43,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
   result.
 - **Copying the live matrix.** Its 24 rows are inherited by id (§7). A second copy of 24 rows is a second thing
   that can be wrong, and it would be wrong in the direction that matters: a stale status column reads as progress.
-- **Designing anything.** A row is not a feature request and not an approval. 52 rows say the component does not
+- **Designing anything.** A row is not a feature request and not an approval. 50 rows say the component does not
   exist; that is the queue reporting the phase boundary, not endorsing what comes after it.
 - **Repeating the argument.** Why a claim is made lives in the document that carries the label. This document
   quotes the line and points at it; it does not re-litigate it.
@@ -94,13 +94,13 @@ would have to be re-derived from the design, which is how a verification matrix 
 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
-| `no-code` | 52 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
+| `no-code` | 50 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
 | `no-check` | 6 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
-| `no-run` | 7 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
+| `no-run` | 9 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 2 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 4 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **52 of 71 rows are `no-code`**: this iteration's claims are overwhelmingly
+The distribution is the finding. **50 of 71 rows are `no-code`**: this iteration's claims are overwhelmingly
 blocked on the Connector, the compiler and the UI existing, not on tests being clever. 6 `no-check` rows read as
 the part closable before Phase 2 writes a line of product code, and four of them — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
@@ -246,8 +246,8 @@ Not a schedule — a dependency graph the states impose:
    why §4 says they cannot be deleted around their gate. Behind them the inbound-per-tag question
    (`ODEC-06`) changes what `VER-30` even asserts. `VER-09`, `VER-37`, `VER-74` wait on browsers and stores, which is
    why they are `needs-human` and not quietly estimated.
-4. **Everything else is `no-code` and waits on the Connector.** 34 of the 52 are owned by it. Four connector rows have
-   left the column since the queue was written — `VER-23`, whose keystore is now code with a green test over the real
+4. **Everything else is `no-code` and waits on the Connector.** 31 of the 50 are owned by it. Four connector rows had
+   left the column by 2026-11-07 — `VER-23`, whose keystore is now code with a green test over the real
    `crypt32` call, `VER-29`, whose writer and rollback are now Go tests over a temp directory
    (`connector/internal/apply`), `VER-14`, whose containment scope is now assigned, reported and proven against a
    child the supervisor spawned and killed (`connector/internal/supervisor`), and `VER-32`, whose report is now read
@@ -269,6 +269,12 @@ Not a schedule — a dependency graph the states impose:
    for `no-run` the moment the receipt code existed (`connector/internal/receipt`), and what stayed is the
    archive-entry refusal of doc 33 §5 step 7, which has no extractor to be code for.
    What does not exist here is a place to put the answer, not the code that would compute it.
+   On 2026-11-11 two more left for `no-run`, both owned by `connector` and both owed to `LIVE-16`: `VER-15`, because
+   `connector/cmd/nexora-installer` writes one manifest, points three family keys at it and reads them back out of
+   the real hive, and `VER-52`, because a real host process answered a foreign origin with one `UnauthorizedExtension`
+   and closed the port on the eleventh refusal. Neither is closed: no browser has resolved the registration, and the
+   per-sender port budget turns out to have no consumer at all — `contract.PortsPerSenderMaxConcurrent` is generated
+   and read by nothing, which is a narrower gap than "unmeasured" and belongs to `ODEC-01`'s naming half.
 
 The queue does not pretend this is fast. It is the reason the queue exists: 70 named obligations with 40 of them
 pointing at one executable matrix is a plan; the same 70 as 192 scattered phrases is a mood.
@@ -296,7 +302,7 @@ pointing at one executable matrix is a plan; the same 70 as 192 scattered phrase
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
-### `no-code` — 52
+### `no-code` — 50
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
@@ -304,7 +310,6 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-03 | no CI grep gate fails when `vless`/`reality`/`xtls` appears as executable code under `packages/` or `nexora/` | `ci` · ci-step | 2 · 2 |
 | VER-12 | no test shows a second Native Messaging connection re-adopts the running Connector instead of starting a second one | `connector` · LIVE-13 | 1 · 2 |
 | VER-13 | reconnect after a port teardown (re-run `connector.hello`, reconcile by `config.snapshot` hash, jittered backoff) has never been executed | `connector` · LIVE-13 | 2 · 3 |
-| VER-15 | no test shows the host registers exactly one Native Messaging entry point per installation | `connector` · LIVE-16 | 1 · 1 |
 | VER-16 | the runtime half of loopback-only: no compiled non-loopback inbound accepted, and `chrome.proxy` never pointing outside 127.0.0.1 | `connector` · LIVE-03 | 4 · 4 |
 | VER-17 | nothing shows the Connector listens on nothing but its loopback inbounds — there is no HTTP control surface to grep | `connector` · LIVE-03 | 1 · 1 |
 | VER-21 | fail-closed in the browser: no Core kill shows a closed block port, a badge, and no `DirectProfile` left applied | `extension` · LIVE-11 | 3 · 4 |
@@ -334,7 +339,6 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-49 | framing enforcement clause by clause: the oversized-write refusal and the late-answer discard are tested, the three-missed-heartbeat verdict is not | `connector` · assertion: codec, request-table and liveness tests | 1 · 5 |
 | VER-50 | `server.test` results never replayed from cache — static half green, runtime half never happened | `connector` · LIVE-05 | 1 · 1 |
 | VER-51 | the probe budget independent of the UI, the popup performing no side-effecting command on mount, `force` bypassing backoff only | `extension` · LIVE-17 | 1 · 1 |
-| VER-52 | the sender policy's refusal, its amplification guard, and a second registration not doubling a budget | `connector` · LIVE-16 | 1 · 4 |
 | VER-53 | no handler exists to prove no shell, path or bind address is caller-chosen at run time | `connector` · LIVE-03 | 1 · 1 |
 | VER-55 | no run shows a per-sender budget counted *before* dispatch, answered `Busy`, with no side effect | `connector` · LIVE-17 | 1 · 1 |
 | VER-59 | a fetched body never executed (compile-not-execute, https-only, byte caps, SSRF guard) — no run has a body to try | `connector` · LIVE-12 | 1 · 1 |
@@ -366,15 +370,17 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-83 | a `§N` after a document path is the corpus's cheapest cite and the only one no pass resolves | `tools` · gate | 1 · 1 |
 | VER-85 | which code answers a malformed request is decided per command by analogy — `HandshakeFailed` in `connector.hello`, `HealthCheckFailed` in `server.test` — and thirteen of nineteen command docs declare no `BadRequest` | `contracts` · decision (`ODEC-43`) | 1 · 1 |
 
-### `no-run` — 7
+### `no-run` — 9
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
 | VER-11 | Ladder A ran by hand on one host and is green on three runner images at the pinned floors; what the row still owes is the unpinned dependency set, which no run can supply while `.gitignore:3` keeps the lockfile out | `ci` · ci-step | 1 · 2 |
 | VER-14 | the scope is built, assigned and proven for the child the Connector spawns — the job object, the assignment, and a test that ends its own child by closing the handle — while the chain above Core needs a host this repository has not written and a session that kills a real parent | `connector` · LIVE-13 | 2 · 4 |
+| VER-15 | one manifest and three family keys are written and read back from HKCU by `connector/cmd/nexora-installer` and its tests, while no browser has resolved that registration | `connector` · LIVE-16 | 1 · 1 |
 | VER-23 | no live run shows a secret surviving a round-trip and dying on command: the store, its DPAPI round-trip and its rotation are Go tests over the real `crypt32` call on this host, and the owner-only file the keystore feeds is now written and re-read by Go tests too, while `keystore.purge` and the masking sink remain unwritten | `connector` · LIVE-18 | 4 · 5 |
 | VER-29 | no live apply has failed: the temp-file, sync, chmod and rename are Go tests over a temp directory, and a document whose secret is missing leaves the previous config byte-identical — the rollback half of doc 27 §8 is measured, and a command frame now drives it, while the Core half is not | `connector` · LIVE-03 | 2 · 3 |
 | VER-32 | the compiled report reaches the `config.apply` answer and a test shows two entries arriving in one frame while the config stays applied; no browser has been shown the array yet | `connector` · LIVE-04 | 2 · 2 |
+| VER-52 | a real host process answered a foreign origin with one `UnauthorizedExtension` and closed the port on the eleventh refusal, reading the allowlist the installer wrote; no browser has done it, and the per-sender port budget has no consumer in any process | `connector` · LIVE-16 | 1 · 4 |
 | VER-57 | no CI build shows the packaged bundle survives the declared CSP | `ci` · ci-step | 1 · 2 |
 | VER-87 | the pre-exec hash of doc 33 §6 exists as code — a receipt reader, a verifier and the supervisor's spawn path that runs it before every exec — but no live core.start or core.restart has executed it, and nothing in this build writes the receipt it reads | `connector` · LIVE-21 | 2 · 4 |
 
@@ -574,6 +580,20 @@ This narrows rather than retires `ODEC-37`. Shape C's `headersRef` is now materi
 `chrome.proxy`; `VER-78` closed on 2026-11-07 by the ODEC-36 answer; the goldens' byte-stability half has its producer. No row, state, distribution or marker count
 changes; doc 27 §3's existing anchor changes from two remaining cases to one in `verification.json` with the prose.
 
+**Installer continuation.** 2026-11-11, with `connector/cmd/nexora-installer`: `VER-15` and `VER-52` move
+`no-code` → `no-run`, both owed to `LIVE-16`. The installer writes the one manifest under the per-user root's `host`
+directory, points the Chrome, Edge and Firefox keys at it, writes the allowlist at
+`packages/schema/protocol/framing.json#/senderPolicy/identity/allowlistFile`, and removes all of it on uninstall; its tests read the directory,
+the argv and the real hive back. The live half ran on this host: a host process with no `--allowlist` flag read that
+file, served the registered sender through to `connector.hello`, answered a foreign origin with one
+`UnauthorizedExtension` and no Connector started, and closed the port on the eleventh refusal in the window.
+`VER-52`'s subject narrows as it moves — the per-sender port budget is not unmeasured behaviour but absent behaviour,
+since `contract.PortsPerSenderMaxConcurrent` is generated and read by nothing. The distribution moves
+`no-code` 52 → 50, `no-run` 7 → 9, `connector` `no-code` 34 → 31; 71 rows, the owner and closing-kind columns and
+`marker.counted` are unchanged, because moving a row between states relabels nothing. Two defects the live run found
+are fixed in the same slice and named in `docs/PROJECT-STATE.md` §4.55: `flag.Parse` stops at the verb, so
+`install --origin <id>` parsed no flags, and a nil allow-list slice marshalled to `null` rather than `[]`.
+
 **Open items.**
 
 1. 17 rows promise a named assertion. 14 of them can only be written once the code they test exists; `VER-20`
@@ -589,7 +609,7 @@ changes; doc 27 §3's existing anchor changes from two remaining cases to one in
    §7's dense-id assertion must be amended in the same commit, deliberately, rather than allowed to drift.
 3. `VER-09` and `VER-74` cannot be closed in-repo at all; they are the two places where this queue's answer is
    "someone must open a browser".
-4. The 52 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
+4. The 50 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
    because it is much harder to state afterwards.
 5. `docs/adr/0020-test-strategy.md:86` calls this document "not yet written". ADR-0001 rule 5 forbids correcting
    history in place, and the same aside sits unsuperseded in `docs/adr/0016-svelte-5-vite-typescript.md:46`, so it

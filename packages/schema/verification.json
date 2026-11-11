@@ -494,8 +494,8 @@
     },
     {
       "id": "VER-15",
-      "subject": "no test shows that the host registers exactly one Native Messaging entry point per installation",
-      "state": "no-code",
+      "subject": "one manifest and three family keys are written and read back from HKCU, but no browser has resolved that registration -- exactly one Native Messaging entry point per extension installation is unproven where it matters",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
@@ -507,7 +507,7 @@
           "anchor": "Exactly one Native Messaging entry point per extension installation"
         }
       ],
-      "why": "Two manifests for one extension id give the browser two paths into one Connector and the sender policy one untested assumption."
+      "why": "Two manifests for one extension id give the browser two paths into one Connector and the sender policy one untested assumption. `connector/cmd/nexora-installer` now writes one manifest under the per-user root's `host` directory, points the Chrome, Edge and Firefox keys at it, and its tests read the directory, the argv and the real hive back; what no test here can do is start a browser and watch it resolve that key, which is LIVE-16's half."
     },
     {
       "id": "VER-16",
@@ -1282,8 +1282,8 @@
     },
     {
       "id": "VER-52",
-      "subject": "the sender policy's runtime refusal is unmeasured: an unknown extension id gets `UnauthorizedExtension` and nothing else, refusals are bounded, and a second registration does not double a budget",
-      "state": "no-code",
+      "subject": "the sender policy's runtime refusal is measured on a pipe but not in a browser: a foreign origin gets `UnauthorizedExtension` and nothing else and ten refusals close the port, while the per-sender port budget has no consumer in any process",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
@@ -1307,7 +1307,7 @@
           "anchor": "An unallowlisted sender cannot use a second registration to get around a budget"
         }
       ],
-      "why": "The privileged-set assertions are green at the contract layer; the refusal, the amplification guard and the per-sender budget are all host behaviour that no fixture can perform."
+      "why": "The privileged-set assertions are green at the contract layer. On 2026-11-11 a real host process read the allowlist `connector/cmd/nexora-installer` wrote, answered one `UnauthorizedExtension` to a foreign origin with no Connector started, and closed the port on the eleventh refusal inside the window (`docs/PROJECT-STATE.md` §4.55). The port budget is not merely unrun: `contract.PortsPerSenderMaxConcurrent` is generated and read by nothing, because one host process serves one port and no process counts the others -- the naming half of ADR-0022 that `ODEC-01` still holds."
     },
     {
       "id": "VER-53",

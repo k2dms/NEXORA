@@ -98,7 +98,7 @@ and dots, no leading, trailing or doubled dot. The extension types that string i
 installer writes the registration under it, and the manifest file is named after it, so a rename is one data change
 with three places that must move together — which is why no place may hold it as a private constant.
 
-Where the registration lives is per family and per OS, and that matrix is the installer's whole job:
+Where the registration lives is per family and per OS; the installer writes the Windows column and refuses the rest (`ODEC-27`):
 
 | Family | Windows | macOS | Linux |
 |---|---|---|---|
@@ -107,11 +107,11 @@ Where the registration lives is per family and per OS, and that matrix is the in
 | Firefox | key `HKCU\SOFTWARE\Mozilla\NativeMessagingHosts\<name>` | `~/Library/Application Support/Mozilla/NativeMessagingHosts/<name>.json` | `~/.mozilla/native-messaging-hosts/<name>.json` |
 
 One JSON object is what those keys and files point at: `name`, `description`, `path` to the host binary,
-`type: "stdio"`, and the allow list under `allowed_origins` for the Chromium family or `allowed_extensions` for
-Firefox. Nothing else is registered — no service, no LaunchAgent, no startup item
-(`docs/architecture/33-binary-integrity.md` §14) — and the allowlist the host itself reads is a separate file whose
-address is `#/senderPolicy/identity/allowlistFile`, because a writer and a reader of one file must not each invent
-its path.
+`type: "stdio"`, and both allow lists — `allowed_origins` for the Chromium family and `allowed_extensions` for
+Firefox — always present as arrays, since each family reads its own and a null field is a manifest it rejects.
+`connector/cmd/nexora-installer` writes it at `<root>\host\<name>.json`; nothing else is registered — no service, no
+LaunchAgent, no startup item (`docs/architecture/33-binary-integrity.md` §14). The allowlist the host itself reads is
+a separate file whose address is `#/senderPolicy/identity/allowlistFile`, so writer and reader never invent a path.
 
 **The two byte caps are platform facts, not NEXORA's.** Chrome documents 64 MiB for what an extension may write into
 the port and 1 MB for what the host may write back; Firefox gives the same 1 MB from the application and 4 GB toward
