@@ -596,10 +596,11 @@ func TestThisBuildRegistersOnlyTheMethodsItCanAnswer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Four names, each because the fact its result requires is data this process holds: the negotiation's own, the
-	// two version strings, the intent a `config.apply` frame carries, and the servers that apply put in force.
+	// Five names, each because the fact its result requires is data this process holds: the negotiation's own, the
+	// two version strings, the intent a `config.apply` frame carries, the servers that apply put in force, and the
+	// process the supervisor owns.
 	got := s.d.Methods()
-	if want := []string{"config.apply", "connector.hello", "connector.version", "server.test"}; !slices.Equal(got, want) {
+	if want := []string{"config.apply", "connector.hello", "connector.version", "core.status", "server.test"}; !slices.Equal(got, want) {
 		t.Errorf("this build registers %v, want exactly %v", got, want)
 	}
 	for _, name := range got {

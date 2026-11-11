@@ -197,6 +197,11 @@ func newService(cfg config) (*service, error) {
 		return nil, fmt.Errorf("the server.test surface could not be built: %w", err)
 	}
 	handlers["server.test"] = st.Handle
+	cs, err := newCoreStatus(sup, coreDir)
+	if err != nil {
+		return nil, fmt.Errorf("the core.status surface could not be built: %w", err)
+	}
+	handlers["core.status"] = cs.Handle
 	d, err := dispatch.New(dispatch.Config{Handlers: handlers})
 	if err != nil {
 		return nil, err

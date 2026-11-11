@@ -278,8 +278,8 @@ Not a schedule — a dependency graph the states impose:
    The next slice of the same day moved the column without changing its size: `VER-13` left for `no-run`, because
    `packages/state`'s client walks the capped jittered ladder and reconciles by hash on an injected clock and then
    did both against a real host that was killed twice, and `VER-90` entered it — the expectation
-   `config.snapshot`'s result field promises has nowhere to ride in that command's closed `args`, and neither it
-   nor `core.status` is registered, so the component the drift claim is about does not exist.
+   `config.snapshot`'s result field promises has nowhere to ride in that command's closed `args`, and that method
+   remains unregistered. The subsequent `core.status` slice does not close this snapshot obligation.
 
 The queue does not pretend this is fast. It is the reason the queue exists: 72 named obligations with 41 of them
 pointing at one executable matrix is a plan; the same 72 as 194 scattered phrases is a mood.
@@ -362,7 +362,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-86 | the `health-history` store row's `medium` of `disk` is kept nowhere: the built ring dies with the process and nothing writes it to a path | `connector` · assertion | 1 · 1 |
 | VER-89 | a frame below the pipe floor ends the stream instead of answering `VersionMismatch`: the comparison in `connector/internal/envelope`'s `Parse` is live code that the envelope's own lower bound subsumes, and `packages/schema/protocol/framing.json#/versionFloors/tooOld` still owes its answer | `connector` · assertion | 1 · 1 |
 
-| VER-90 | the drift primitive the reconnect step leans on cannot answer: `config.snapshot`'s closed `args` carry no expectation, so `matchesExtensionHash` is null on every permitted answer, and neither it nor `core.status` is registered — a real host answered both with `Internal` | `connector` · LIVE-06 | 1 · 1 |
+| VER-90 | the drift primitive the reconnect step leans on cannot answer: `config.snapshot`'s closed `args` carry no expectation, so `matchesExtensionHash` is null on every permitted answer, and it still has no handler — `core.status` is now registered, but does not provide the missing snapshot comparison | `connector` · LIVE-06 | 1 · 1 |
 
 ### `no-check` — 6
 
@@ -612,6 +612,12 @@ what that run found rather than what it proved: `config.snapshot`'s closed `args
 `core.status` is registered — both answered `Internal`. The distribution moves `no-run` 9 → 10, `connector` 38 → 39,
 `live-row` 40 → 41, 71 rows → 72 and `marker.counted` 193 → 194; `no-code` stays 50, because one row left the column
 as another entered it. `VER-49` does not move: its heartbeat clause still has no wire shape to test.
+
+**Core status.** 2026-11-11: `core.status` now answers the supervisor's live process and retained applied hash and
+last exit. Nine Go tests cover its command surface, a real child lifecycle and a reopened state record; three
+real-host sessions validated six successful replies against the result schema, including a persisted signal and
+an unreadable receipt. `VER-90` remains `no-code`: the missing snapshot handler and expectation field are untouched.
+The distributions and marker count do not move; `docs/PROJECT-STATE.md` §4.57 records the evidence and limitations.
 
 **Open items.**
 

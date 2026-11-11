@@ -1818,7 +1818,7 @@
     },
     {
       "id": "VER-90",
-      "subject": "the drift-detection primitive the reconnect step depends on cannot answer: `config.snapshot`'s args carry no expectation field, so `matchesExtensionHash` is null by construction, and neither it nor `core.status` has a handler in this build",
+      "subject": "the drift-detection primitive the reconnect step depends on cannot answer: `config.snapshot`'s args carry no expectation field, so `matchesExtensionHash` is null by construction, and `config.snapshot` still has no handler in this build",
       "state": "no-code",
       "owner": "connector",
       "closesBy": {
@@ -1831,7 +1831,7 @@
           "anchor": "`config.snapshot` can say whether reality matches the hash the extension holds"
         }
       ],
-      "why": "Measured on 2026-11-11 by driving packages/state/src/client.ts against a real nexora-host spawning a real nexora-connector: config.snapshot and core.status both answer Internal, because only connector.hello, connector.version, config.apply and server.test are registered. The contract half is worse than a missing handler. matchesExtensionHash is described as computed by the Connector against the hash the extension sent, and packages/schema/protocol/commands/config.snapshot.json#/args is a closed object carrying includeMaskedConfig and maxBytes only -- so no caller can send an expectation and the field is null on every answer the schema permits. The client compares locally instead, which is sound for a hash equality because no clock is in it, but it is not the comparison the command doc promises, and docs/architecture/25-native-messaging-protocol.md §11 said the opposite until this slice corrected it. LIVE-06 is the closer because its evidence column already names a config.snapshot drift check: executing it needs the field, then the handler, then a run that detects a drift rather than reporting one it cannot compute."
+      "why": "The initial 2026-11-11 client run against a real nexora-host and nexora-connector found config.snapshot and core.status both answering Internal. A subsequent slice registered core.status and verified process facts and persisted exit state through three real-host sessions; config.snapshot remains unregistered. The contract half is worse than a missing handler. matchesExtensionHash is described as computed by the Connector against the hash the extension sent, and packages/schema/protocol/commands/config.snapshot.json#/args is a closed object carrying includeMaskedConfig and maxBytes only -- so no caller can send an expectation and the field is null on every answer the schema permits. The client compares locally instead, which is sound for a hash equality because no clock is in it, but it is not the comparison the command doc promises, and docs/architecture/25-native-messaging-protocol.md §11 said the opposite until this slice corrected it. LIVE-06 is the closer because its evidence column already names a config.snapshot drift check: executing it needs the field, then the handler, then a run that detects a drift rather than reporting one it cannot compute."
     }
   ]
 }
