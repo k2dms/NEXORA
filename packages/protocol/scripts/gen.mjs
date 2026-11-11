@@ -25,6 +25,10 @@ const framing = read('framing.json');
 const envelopeSchema = read('envelope.schema.json');
 const taxonomy = read('error-taxonomy.json');
 const allowlist = read('command-allowlist.json');
+// The per-method deadline and capability list live in each command document, not in the allowlist. The extension
+// owns the deadline (docs/architecture/25-native-messaging-protocol.md §9), so a client that cannot read them
+// would have to invent them.
+const commandDocs = allowlist.commands.map((entry) => read(join('commands', `${entry.name}.json`)));
 
 const lit = (value) => JSON.stringify(value);
 
@@ -116,6 +120,10 @@ lines.push(`export const minPipeVersion = ${framing.minPipeVersion} as const;`);
 lines.push(`export const protocolVersion = ${framing.protocolVersion} as const;`);
 lines.push(`export const minCompatibleProtocolVersion = ${framing.minCompatibleProtocolVersion} as const;`);
 lines.push('');
+lines.push(`export const hostName = ${lit(framing.senderPolicy.identity.hostName)} as const;`);
+lines.push(`export const reconnectBackoffSeconds = ${lit(framing.reconnect.backoffSeconds)} as const;`);
+lines.push(`export const reconnectJitterPercent = ${framing.reconnect.jitterPercent} as const;`);
+lines.push('');
 lines.push(`export const prefixBytes = ${framing.encoding.lengthPrefix.bytes} as const;`);
 lines.push(`export const prefixByteOrder = ${lit(framing.encoding.lengthPrefix.byteOrder)} as const;`);
 lines.push(`export const prefixIsUnsigned = ${framing.encoding.lengthPrefix.unsigned} as const;`);
@@ -153,6 +161,16 @@ lines.push(
     .join('\n'),
 );
 lines.push('];');
+lines.push('');
+lines.push('// The deadline and the capability gate of every method, from its own command document. A client holds');
+lines.push('// neither list of its own: docs/architecture/20-target-repository-layout.md §3 forbids it.');
+lines.push('export const methodTimeoutMs: Readonly<Record<MethodName, number>> = {');
+lines.push(commandDocs.map((doc) => `  ${lit(doc.name)}: ${doc.timeoutMs},`).join('\n'));
+lines.push('};');
+lines.push('');
+lines.push('export const methodCapabilities: Readonly<Record<MethodName, readonly string[]>> = {');
+lines.push(commandDocs.map((doc) => `  ${lit(doc.name)}: ${lit(doc.capabilities ?? [])},`).join('\n'));
+lines.push('};');
 lines.push('');
 lines.push('// The dispatch skeleton: a host table is not well-typed until every allowlisted method has a handler,');
 lines.push('// which is the type-level form of `deniedByDefault` in protocol/command-allowlist.json.');

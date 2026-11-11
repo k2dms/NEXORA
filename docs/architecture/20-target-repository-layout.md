@@ -15,10 +15,10 @@ A `path:line` citation means the file and the line were opened and read in this 
 `node tools/check-doc-evidence.mjs` enforces it — a missing file, an out-of-range line, or a range whose first
 line carries no characters all fail the check (the `outOfRange`, `unresolved` and `blankTarget` reports in
 `tools/check-doc-evidence.mjs`). Paths that exist in no
-form yet — `nexora/**`, `packages/state/**`, `packages/i18n/**`, `packages/ui/**` — are
+form yet — `nexora/**`, `packages/i18n/**`, `packages/ui/**` — are
 cited WITHOUT a line number, and are pre-registered as future paths inside the checker itself (`FUTURE_PREFIX`
-in `tools/check-doc-evidence.mjs`); `connector/**` left that list on 2026-11-05 and `packages/protocol/**` on
-2026-11-10, when `docs/PROJECT-STATE.md` §4.53 wrote it. Every
+in `tools/check-doc-evidence.mjs`); `connector/**` left that list on 2026-11-05, `packages/protocol/**` on
+2026-11-10 and `packages/state/**` on 2026-11-11 (`docs/PROJECT-STATE.md` §4.53, §4.56). Every
 behavioural assertion with no automated or live check carries `Verified: NO — deferred to Phase 2` inline and belongs to
 `docs/architecture/39-verification-matrix.md`.
 
@@ -34,7 +34,7 @@ E:/NEXORA
 ├─ docs/{README,PROJECT-STATE}.md, audit/, adr/, verification/  EXISTS   Phase 0 + Phase 1 output
 ├─ docs/architecture/                                    PARTIAL  20-40; this file is 20
 ├─ packages/schema/                                      EXISTS   the only executable artefact of Phase 1
-├─ packages/{protocol,state,i18n,ui}/                    PLANNED  four more independent npm roots (§3)
+├─ packages/{protocol,state,i18n,ui}/                    PARTIAL  protocol + state EXIST; i18n + ui PLANNED (§3)
 ├─ connector/                                            EXISTS   own Go module; nothing Go-shaped outside it
 ├─ nexora/extension/                                     PLANNED  own npm root: Vite + Svelte 5 + TypeScript
 ├─ tools/*.mjs                                           EXISTS   three dependency-free guards (§13)
@@ -55,7 +55,7 @@ E:/NEXORA
 | `docs/` | yes | the deliverable of this iteration | `audit/`, `adr/`, `architecture/`, `verification/` | assertions with no named check |
 | `packages/schema/` | yes | normative data contracts; the executable Phase-1 gate | 13 schemas, `protocol/command-allowlist.json` (19 methods), 19 command docs, `examples/` + `examples/invalid/`, `fixtures/protocol/*.jsonl`, `scripts/verify.mjs` | a second copy of any allowlist or entity shape |
 | `packages/protocol/` | yes — `docs/PROJECT-STATE.md` §4.53, 2026-11-10 | TypeScript projection of `packages/schema/protocol/` for both sides of the pipe | the frame codec, generated envelope/error types, the dispatch table skeleton the Go host is tested against (`docs/architecture/25-native-messaging-protocol.md`, `docs/architecture/26-command-surface.md`) | its own method list — `packages/schema/protocol/command-allowlist.json:12` stays normative |
-| `packages/state/` | no | framework-agnostic typed client of the *extension-side* RPC contract, incl. the MV3 cold-start backoff ported verbatim and a form-state layer (ADR-0016) | `subscribe(fn)` compatible with `svelte/store` but not depending on Svelte | any import from `omega-*/src/**` |
+| `packages/state/` | partial — `docs/PROJECT-STATE.md` §4.56, 2026-11-11 | framework-agnostic typed client of the *extension-side* RPC contract, incl. the MV3 cold-start backoff ported verbatim and a form-state layer (ADR-0016) | the ConnectorClient is written (injected port, per-method deadlines, concurrency windows, jittered reconnect, reconcile by hash); `subscribe(fn)` compatible with `svelte/store` and the form-state layer are not | any import from `omega-*/src/**` |
 | `packages/i18n/` | no | `.po` → typed UI catalog compiler plus the `locale → browser lang` mapping table (ADR-0017) | its own `package.json` (a root of its own) | a runtime dependency on `po2crx` |
 | `packages/ui/` | no | design tokens and presentational primitives below the framework (ADR-0016 reversal clause) | the 164 base16 + 3 default theme contract (`docs/audit/08-ui-i18n-and-themes.md:192-203`) | theme CSS copied out of `omega-web/lib/themes/` |
 | `connector/` | yes | the Go module: `cmd/nexora-host` (framing, auth, spawn only), `cmd/nexora-connector`, `cmd/nexora-installer` (manifest, registration, allowlist), `internal/**` for the Core supervisor, config compiler, keystore, prober, and `testdata/pins.json` (ADR-0019) | one `go.mod`; loopback-only bind assertion inside `core.start` (ADR-0006) | a compiled binary in git; the Xray executable; any file the extension zip reads |
@@ -189,7 +189,7 @@ Rules 1-7 of `docs/adr/0018-workspace-roots-and-no-root-package-json.md` are nor
   defaults to `npm test` / `npm run build` at the root can reach the legacy grunt graph, and npm hoisting
   rewrites the `node_modules` layout the prebuilt-bundle reads of §4 depend on. The root is verifiably bare —
   `find . -maxdepth 1 -name package.json` returns nothing, and the only manifests outside vendored and build
-  trees are the five `omega-*/package.json` plus `packages/schema/package.json`.
+  trees are the five `omega-*/package.json` plus one per new root (`packages/schema`, `packages/protocol`, `packages/state`).
 - **Each root is independent and self-describing** (`:35-38`): `npm --prefix packages/schema run verify`
   (`packages/schema/package.json:8` — two `ajv` dependencies, no workspace parent), `connector/go.mod` alone,
   `nexora/extension` its own npm root. A root MUST declare its own dependencies and MUST NOT rely on hoisting

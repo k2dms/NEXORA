@@ -343,8 +343,8 @@ Semiotics, stated because getting them backwards is the classic outage:
 | reconnect succeeded | re-run hello, then reconcile by hash | that nothing changed while we were away |
 
 Reconnect policy (`#/reconnect`): exponential backoff `[1,2,4,8,16,32,60]` s with 30 % jitter — jitter because
-every browser window of one user reconnects at once otherwise — and the reconcile step sends the extension's
-recorded applied hash via `config.snapshot` so a drifted state is detected rather than assumed
+every browser window of one user reconnects at once otherwise — and the reconcile step compares hashes locally
+(`VER-90`: the command's `#/args` carries no expectation field), so a drifted state is detected, not assumed
 (`docs/architecture/30-failure-policy.md`). `Verified: NO — deferred to Phase 2`.
 
 ## 12. Non-goals of the wire protocol
@@ -375,10 +375,10 @@ and no bidirectional streaming RPC semantics.
 | Probes answered exactly once | "probe is answered exactly once" over the fixtures | **GREEN** |
 | Replays byte-identical after clock-strip | "idempotent replay returns the same result" (5 pairs today) | **GREEN** |
 | Every fixture frame validates against the envelope | the replay loop; it prints the frame count on every run | **GREEN** |
-| Sender-side rejection before write | nothing | Verified: NO — deferred to Phase 2 (the client must refuse a >64 MiB write before the port, and the real crossing must show the browser accepting one up to its own cap) |
+| Sender-side rejection before write | the `packages/protocol` codec refuses an oversized write and a peer declaring one; the `packages/state` client refuses a request over the ceiling before the port | Verified: NO — deferred to Phase 2 (the real crossing must still show a browser accepting one up to its own cap) |
 | Heartbeat / missed-heartbeat behaviour | nothing | Verified: NO — deferred to Phase 2 (a liveness test drives the 25 s heartbeat and the three-miss deadline) |
-| Late-answer discard by `id` | nothing | Verified: NO — deferred to Phase 2 (a request-table test drops an answer whose `id` is no longer in flight) |
-| Jittered reconnect actually jitters | nothing | Verified: NO — LIVE-13 |
+| Late-answer discard by `id` | the Go request table and the `packages/state` client each drop an answer whose `id` is no longer in flight, and a duplicate one | Verified: NO — deferred to Phase 2 (no run shows a real host's late answer arriving after a timeout) |
+| Jittered reconnect actually jitters | the `packages/state` harness walks the capped ladder on an injected clock; a live drive against `nexora-host` + `nexora-connector` measured 1009 ms and 1203 ms on the first rung, re-running hello both times | Verified: NO — LIVE-13 (a browser's own port teardown is still unmeasured) |
 
 Trace: ADR-0004, ADR-0005, ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0015, ADR-0019 · Contract:
 `packages/schema/protocol/framing.json`, `packages/schema/protocol/envelope.schema.json`,

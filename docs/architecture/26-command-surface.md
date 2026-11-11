@@ -245,6 +245,7 @@ accidental "delete all credentials" is structurally impossible from a UI bug.
 | `profile.import` rejects a dangling `serverId` | not expressible in the schema | **Verified: NO — deferred to Phase 2** (ProfileRegistry invariant) |
 | `diagnostics.get` output contains no secret | fixtures cannot prove absence over a real keystore | **Verified: NO — deferred to Phase 2** (`LIVE-10`) |
 | `server.test` layer results are not replayed | static half green: assertions "probe is non-replayable: server.test" and "probe is answered exactly once" over `packages/schema/fixtures/protocol/` | **Verified: NO — deferred to Phase 2** for the runtime half (rides on `LIVE-05`) |
+| `config.snapshot` can say whether reality matches the hash the extension holds | `packages/schema/protocol/commands/config.snapshot.json#/args` declares two properties and `additionalProperties: false`, so the expectation `matchesExtensionHash` is computed against cannot be sent; and neither this method nor `core.status` is registered in `connector/cmd/nexora-connector` | **Verified: NO — deferred to Phase 2** (`VER-90`: the field, then the handler, then a run that detects a drift — `LIVE-06` names that check) |
 
 Trace: ADR-0004, ADR-0005, ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0013, ADR-0019, ADR-0020 ·
 Contract: `packages/schema/protocol/command-allowlist.json`, `packages/schema/protocol/commands/`,

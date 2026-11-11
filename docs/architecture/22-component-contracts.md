@@ -35,7 +35,7 @@ its contract column. There is no NEXORA component that reaches into another's da
 
 **Responsibility** — own everything the browser can do and nothing the browser cannot: the options envelope,
 the profile registry façade, the `chrome.proxy.settings` writer, event fan-out to the UI, and the single
-ConnectorClient connection with its reconnect loop.
+ConnectorClient connection with its reconnect loop — `packages/state/src/client.ts`, `docs/PROJECT-STATE.md` §4.56.
 
 **In** — user actions arriving as typed messages from the UI (`docs/architecture/37-ui-architecture.md` §3);
 browser events (`chrome.proxy`, `chrome.runtime.onStartup`, `chrome.tabs`, the request listener); frames from
@@ -51,7 +51,7 @@ snapshots.
    extension, so a hung host cannot hang the worker (`docs/architecture/25-native-messaging-protocol.md` §6).
 3. On worker restart the shell reconciles rather than reconfigures: it compares the applied config hash from
    `config.snapshot` with its own record before issuing any `config.apply`
-   (`packages/schema/protocol/commands/config.snapshot.json#/result`).
+   (`packages/schema/protocol/commands/config.snapshot.json#/result`). The comparison is local — `VER-90`.
 4. It never stores a secret. Secret fields are `keystore://` references at every layer
    (`packages/schema/server.schema.json#/properties`), so a leak of `chrome.storage` cannot produce a credential.
 5. It does not implement transport protocols. Its proxy vocabulary is `http`/`socks5`/`direct`/`system` only

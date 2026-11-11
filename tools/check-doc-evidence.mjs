@@ -25,7 +25,6 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const FUTURE_PREFIX = [
   'nexora/',
-  'packages/state/',
   'packages/i18n/',
   'packages/ui/',
   'docs/audit/99-baseline-report.md',

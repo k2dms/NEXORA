@@ -1,0 +1,13 @@
+{
+  "name": "@nexora/state",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The extension-side typed client of the RPC contract: the one ConnectorClient connection, its deadlines, its request table and its reconnect loop. Framework-agnostic and browser-agnostic — the port and the clock are injected, so the worker's chrome.runtime and a test's fake are the same code path.",
+  "exports": {
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "verify": "node scripts/verify.mjs"
+  }
+}

@@ -82,6 +82,18 @@ jobs:
         working-directory: packages/protocol
         run: npm run verify
 
+      # The third root, and the first one that is a client rather than a contract: it drives the extension half of
+      # the pipe over an injected port and a fake clock, so the deadlines, the concurrency windows, the jittered
+      # reconnect ladder and the reconcile-by-hash step are asserted without a browser (docs/PROJECT-STATE.md §4.56).
+      # It imports packages/protocol by relative path -- there is no workspace parent to resolve a bare specifier.
+      - name: Install the state root
+        working-directory: packages/state
+        run: npm install --no-audit --no-fund
+
+      - name: Extension-side client -- deadlines, windows, reconnect and reconcile (packages/state)
+        working-directory: packages/state
+        run: npm run verify
+
       # The last of these modes is the one the resolution checks cannot see: a `| Cited by |` row whose cited
       # line is real, non-blank and about something else. Of the 52 rows in the six tables that carry a line
       # cite outside docs/adr/, 21 had drifted that way by 2026-11-07, all of them green; docs/PROJECT-STATE.md

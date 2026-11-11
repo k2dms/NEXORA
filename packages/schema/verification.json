@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 193
+    "counted": 194
   },
   "states": {
     "values": [
@@ -440,8 +440,8 @@
     },
     {
       "id": "VER-13",
-      "subject": "reconnect semantics after a port teardown (re-run `connector.hello`, then reconcile by `config.snapshot` hash) have never been executed",
-      "state": "no-code",
+      "subject": "reconnect semantics after a port teardown (re-run `connector.hello`, then reconcile by `config.snapshot` hash) have been executed against a real host and Connector, but never in a browser",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
@@ -461,7 +461,7 @@
           "anchor": "Jittered reconnect actually jitters"
         }
       ],
-      "why": "The reconcile step is what turns 'the pipe came back' into 'the state we believe is the state that is applied'; without it every drift claim is an assumption."
+      "why": "The reconcile step is what turns 'the pipe came back' into 'the state we believe is the state that is applied'; without it every drift claim is an assumption. As of 2026-11-11 both halves run: packages/state/scripts/verify.mjs walks the capped jittered ladder on an injected clock, resets the attempt counter after a good hello, and reconciles by hash on the first session and after a reconnect; and a drive against a real nexora-host spawning a real nexora-connector killed the host twice, measured 1009 ms and 1203 ms on the first rung (both inside the 30 % band around 1000 ms), re-ran connector.hello each time and reported the second reconcile as a mismatch. What has not run is the claim's own subject: a browser tearing down a port on worker eviction, which is LIVE-13 and needs a browser this host does not drive. The reconcile that ran is also the local comparison VER-90 explains, not the one config.snapshot's result field promises."
     },
     {
       "id": "VER-14",
@@ -1815,6 +1815,23 @@
         }
       ],
       "why": "`connector/internal/envelope/envelope.go:148` compares `v` to `contract.MinPipeVersion` and names `VersionMismatch` in the refusal text, and `TestThePipeFloorComparisonCompilesAndRuns` shows the branch is live code. It is also unreachable: the line above it refuses anything outside 1..255, and `packages/schema/protocol/envelope.schema.json#/properties/v/minimum` is the same 1 the floor carries, so no frame can be below the floor without first being malformed -- which `connector/internal/peer/peer.go:167` turns into a stream end, not an answer in reply to the frame's own `id`. `framing.json` declares two floors over one code and the pipe half of that answer is what no build can give until the floor rises above 1, which is the day a second framing exists. This is the residual that `VER-18`'s retirement left behind once its `nothing compares a frame's v yet` stopped being true."
+    },
+    {
+      "id": "VER-90",
+      "subject": "the drift-detection primitive the reconnect step depends on cannot answer: `config.snapshot`'s args carry no expectation field, so `matchesExtensionHash` is null by construction, and neither it nor `core.status` has a handler in this build",
+      "state": "no-code",
+      "owner": "connector",
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-06"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/26-command-surface.md",
+          "anchor": "`config.snapshot` can say whether reality matches the hash the extension holds"
+        }
+      ],
+      "why": "Measured on 2026-11-11 by driving packages/state/src/client.ts against a real nexora-host spawning a real nexora-connector: config.snapshot and core.status both answer Internal, because only connector.hello, connector.version, config.apply and server.test are registered. The contract half is worse than a missing handler. matchesExtensionHash is described as computed by the Connector against the hash the extension sent, and packages/schema/protocol/commands/config.snapshot.json#/args is a closed object carrying includeMaskedConfig and maxBytes only -- so no caller can send an expectation and the field is null on every answer the schema permits. The client compares locally instead, which is sound for a hash equality because no clock is in it, but it is not the comparison the command doc promises, and docs/architecture/25-native-messaging-protocol.md §11 said the opposite until this slice corrected it. LIVE-06 is the closer because its evidence column already names a config.snapshot drift check: executing it needs the field, then the handler, then a run that detects a drift rather than reporting one it cannot compute."
     }
   ]
 }

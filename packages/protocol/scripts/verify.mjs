@@ -19,9 +19,14 @@ import {
   errorCodes,
   extensionToHostBytes,
   frameFormatVersion,
+  hostName,
   hostToExtensionBytes,
+  methodCapabilities,
+  methodTimeoutMs,
   methods,
   prefixBytes,
+  reconnectBackoffSeconds,
+  reconnectJitterPercent,
   retryableErrors,
 } from '../src/contract.ts';
 
@@ -29,6 +34,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, '..');
 const repoRoot = resolve(packageRoot, '..', '..');
 const fixtureDir = join(repoRoot, 'packages', 'schema', 'fixtures', 'protocol');
+const protocolDir = join(repoRoot, 'packages', 'schema', 'protocol');
 const goldenFile = join(packageRoot, 'testdata', 'framed.jsonl');
 const goProjection = join(repoRoot, 'connector', 'internal', 'contract', 'contract_gen.go');
 
@@ -185,6 +191,25 @@ check('the projection closes the method and error lists and declares retryabilit
   assertEqual(errorCodes.length, 23, 'the error taxonomy is twenty-three closed codes');
   assertEqual(Object.keys(retryableErrors).length, errorCodes.length, 'every code declares whether it is retryable');
   assertEqual(typeof frameFormatVersion, 'number', 'the frame version is a number, not a comment');
+});
+
+// The deadline and the gate are the extension's to enforce, so the projection has to carry them verbatim rather
+// than let a client type them again.
+check('the projection carries every method deadline and capability gate from its own command document', () => {
+  assertEqual(Object.keys(methodTimeoutMs).length, methods.length, 'a method has no deadline projected');
+  assertEqual(Object.keys(methodCapabilities).length, methods.length, 'a method has no capability gate projected');
+  for (const name of methods) {
+    const doc = JSON.parse(readFileSync(join(protocolDir, 'commands', `${name}.json`), 'utf8'));
+    assertEqual(methodTimeoutMs[name], doc.timeoutMs, `${name} carries a deadline its command document does not`);
+    assertEqual(JSON.stringify(methodCapabilities[name]), JSON.stringify(doc.capabilities ?? []), `${name} carries a gate its command document does not`);
+  }
+});
+
+check('the projection names the host and the reconnect policy the framing contract declares', () => {
+  const framing = JSON.parse(readFileSync(join(protocolDir, 'framing.json'), 'utf8'));
+  assertEqual(hostName, framing.senderPolicy.identity.hostName, 'the client would connectNative a name the installer did not register');
+  assertEqual(JSON.stringify(reconnectBackoffSeconds), JSON.stringify(framing.reconnect.backoffSeconds), 'the backoff ladder drifted');
+  assertEqual(reconnectJitterPercent, framing.reconnect.jitterPercent, 'the jitter drifted');
 });
 
 // The cross-language half: the Go projection and this one read the same JSON, so a divergence between the two

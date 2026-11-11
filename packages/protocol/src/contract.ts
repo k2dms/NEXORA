@@ -7,6 +7,10 @@ export const minPipeVersion = 1 as const;
 export const protocolVersion = 1 as const;
 export const minCompatibleProtocolVersion = 1 as const;
 
+export const hostName = "com.nexora.connector" as const;
+export const reconnectBackoffSeconds = [1,2,4,8,16,32,60] as const;
+export const reconnectJitterPercent = 30 as const;
+
 export const prefixBytes = 4 as const;
 export const prefixByteOrder = "little-endian" as const;
 export const prefixIsUnsigned = true as const;
@@ -103,6 +107,52 @@ export const unknownMethodBehavior = "UnknownMethod" as const;
 export const availableBeforeHello: readonly MethodName[] = [
   "connector.hello",
 ];
+
+// The deadline and the capability gate of every method, from its own command document. A client holds
+// neither list of its own: docs/architecture/20-target-repository-layout.md §3 forbids it.
+export const methodTimeoutMs: Readonly<Record<MethodName, number>> = {
+  "connector.hello": 5000,
+  "connector.version": 2000,
+  "connector.status": 3000,
+  "connector.health": 5000,
+  "connector.events.subscribe": 5000,
+  "core.start": 15000,
+  "core.stop": 10000,
+  "core.restart": 20000,
+  "core.status": 3000,
+  "core.select": 3000,
+  "config.apply": 30000,
+  "config.snapshot": 5000,
+  "profile.import": 60000,
+  "profile.remove": 10000,
+  "profile.validate": 10000,
+  "subscription.refresh": 120000,
+  "server.test": 30000,
+  "diagnostics.get": 15000,
+  "keystore.purge": 10000,
+};
+
+export const methodCapabilities: Readonly<Record<MethodName, readonly string[]>> = {
+  "connector.hello": [],
+  "connector.version": [],
+  "connector.status": [],
+  "connector.health": ["health.probes"],
+  "connector.events.subscribe": [],
+  "core.start": ["integrity.pinned-core"],
+  "core.stop": [],
+  "core.restart": ["integrity.pinned-core"],
+  "core.status": [],
+  "core.select": [],
+  "config.apply": [],
+  "config.snapshot": ["config.snapshot"],
+  "profile.import": ["chunked.import"],
+  "profile.remove": [],
+  "profile.validate": [],
+  "subscription.refresh": ["chunked.import"],
+  "server.test": ["health.probes"],
+  "diagnostics.get": ["diagnostics.redacted"],
+  "keystore.purge": [],
+};
 
 // The dispatch skeleton: a host table is not well-typed until every allowlisted method has a handler,
 // which is the type-level form of `deniedByDefault` in protocol/command-allowlist.json.
