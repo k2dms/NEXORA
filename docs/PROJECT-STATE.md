@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.61; older scope and inventory paragraphs
+continuation is §4.62; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -4166,6 +4166,32 @@ still open; no ODEC/VER row is closed by this test. Reproduce with the §4.60 bu
 `NEXORA_XRAY=<local 24.11.11 executable> npm --prefix nexora/extension run verify:browser` on an interactive Windows
 desktop; it opens a separate temporary Chrome window. Previous published HEAD: `e680040`.
 
+### 4.62 Real shared-host eviction and natural idle exit (2026-11-12)
+
+**Measured in the existing browser golden.** Chrome 157.0.8103.51 / Xray 24.11.11 passed with Connector PID 14384
+and Core PID 23132. Full browser/host exit first left the active Core alive for 61,252 ms without native hosts
+(32 samples). Before relaunch, three real `nexora-host` sessions adopted that same Connector through real Windows
+pipes. They used the existing framed codec and the operator-only `--sender-origin` affordance inside the sandbox.
+Each new port received HandshakeFailed before its own hello. Two negotiated ports answered concurrent core.status
+requests with the same live PID/profile/hash. The third port closed only the first host, which exited normally;
+the second and third kept answering without replacing Connector or Core. Their explicit stdin EOF also produced
+normal host exits. This measures admission and concurrent adoption of an existing owner, not a cold-start race or
+multi-profile takeover. No production protocol or ownership code changed.
+
+Persistent unpacked relaunch, automatic background/Native Messaging startup, worker recovery, fresh REALITY HTTPS,
+previous-proxy restoration and reconnect/disconnect remained green. After the final explicit disconnect the Core
+was absent while Connector still had its last browser port. Closing Chrome and those hosts started a separate idle
+measurement: Connector exited naturally after 60,153 ms (44 samples), without a process kill, no native host or
+Core reappeared, and its instance record was removed. The harness has a bounded 90-second wait and checks creation
+identity to distinguish exit from PID reuse. Its active-survival and idle-exit assertions are deliberately separate.
+All temporary registration and secret-bearing scratch state were disposed successfully.
+
+**Checks and limits.** The full live browser golden and protocol/state verification (16/20 checks) passed.
+Only the existing test harness and this continuation record changed. Trusted Xray installation, signed/store
+packaging, multiple senders/browser profiles, takeover and the old outer-job lifetime decision remain open;
+ODEC-01, VER-12 and VER-14 are not closed by these protective measurements. Reproduce with the §4.61 interactive
+Windows command; the additional idle phase takes another minute. Previous published HEAD: `27488c5`.
+
 ---
 
 ## 5. Verification state to the letter
@@ -4320,8 +4346,9 @@ desktop; it opens a separate temporary Chrome window. Previous published HEAD: `
 **Current product queue, 2026-11-12:** §4.58/§4.59 delivered manual and subscription selected-server HTTPS;
 §4.60 delivered shared Windows Connector and measured MV3/full-browser recovery; §4.61 proves normal persistent
 unpacked installation without a restart reload. Trusted pinned Xray installation is blocked on a verified signing
-channel or a deliberate trust-policy decision, not a checksum-only receipt. Continue independent live verification
-of idle Connector exit and shared-host concurrency. Complete ODEC-01's multi-profile/takeover and lifetime decision
+channel or a deliberate trust-policy decision, not a checksum-only receipt. §4.62 measures natural idle exit and
+three real same-sender host ports sharing one live owner. Next product slices can reuse existing server.test or
+compiled transports; full multi-profile/takeover and the lifetime decision still belong to ODEC-01. Complete that decision
 before closing VER-12/VER-14; incognito, other browser families and the remaining routing fixtures are still open.
 This product queue supersedes the older sequencing below without retiring its unfinished verification rows.
 

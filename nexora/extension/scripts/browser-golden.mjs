@@ -1,4 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
+import { encodeEnvelope, createFrameDecoder, decodeEnvelope } from '../../../packages/protocol/src/frames.ts';
+import { hostToExtensionBytes, frameFormatVersion, protocolVersion, minCompatibleProtocolVersion } from '../../../packages/protocol/src/contract.ts';
 import { createServer as httpsServer } from 'node:https';
 import { createServer as tcpServer } from 'node:net';
 import { generateKeyPairSync, createHash, randomUUID } from 'node:crypto';
@@ -70,6 +73,7 @@ const workerVersions = new Map();
 const delay = (ms) => new Promise((done) => setTimeout(done, ms));
 const connectorExe = bins + 'nexora-connector.exe';
 const hostExe = bins + 'nexora-host.exe';
+const probeHosts = [];
 const instancePath = local + '/NEXORA/state/connector-instance.json';
 const appliedPath = local + '/NEXORA/state/state.json';
 const runtimeKey = '-nexora.runtimeConnection';
@@ -285,6 +289,35 @@ const nativeHosts = () => processes("Name=\"" + basename(hostExe) + "\"").filter
   assert.ok(item.ExecutablePath, 'cannot verify native-host process image');
   return imageKey(item.ExecutablePath) === imageKey(hostExe);
 });
+const openProbeHost = async () => {
+  const child = spawn(hostExe, ['--sender-origin', 'chrome-extension://' + id + '/'], { stdio: ['pipe', 'pipe', 'ignore'], env });
+  probeHosts.push(child);
+  // The write callback reports pipe errors; retain cleanup instead of Node's unhandled-error exit.
+  child.stdin.on('error', () => {});
+  await once(child, 'spawn');
+  const decoder = createFrameDecoder(hostToExtensionBytes);
+  const replies = (async function* () {
+    for await (const bytes of child.stdout) {
+      for (const payload of decoder.push(bytes)) yield decodeEnvelope(payload);
+    }
+    decoder.end();
+  })();
+  let seq = 0;
+  return { child, async request(method, args = {}) {
+    const requestId = randomUUID();
+    let timer;
+    const deadline = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('native probe timeout: ' + method)), 20000); });
+    try {
+      const write = new Promise((resolve, reject) => child.stdin.write(encodeEnvelope({ v: frameFormatVersion, id: requestId, type: 'request', method, args, seq: seq++, sentAt: new Date().toISOString() }, 'extension-to-host'), (error) => error ? reject(error) : resolve()));
+      const answer = Promise.all([write, replies.next()]).then(([, response]) => response);
+      const { value: reply, done } = await Promise.race([answer, deadline]);
+      assert.equal(done, false, 'native host closed before replying');
+      assert.equal(reply.type, 'response');
+      assert.equal(reply.inReplyTo, requestId);
+      return reply;
+    } finally { clearTimeout(timer); }
+  } };
+};
 const cleanupConnector = async () => {
   let record;
   try { record = JSON.parse(await readFile(instancePath, 'utf8')); }
@@ -553,6 +586,36 @@ try {
   assert.equal(nativeHosts().length, 0, 'native host present at end of ADR5 survival interval');
   await assertSameProcesses();
   const zeroNativePortsMilliseconds = Math.round(performance.now() - quietStart);
+  const extensionVersion = JSON.parse(await readFile(resolve(project, 'dist/chromium/manifest.json'), 'utf8')).version;
+  const hello = { extensionVersion, protocolVersion, minCompatibleProtocolVersion };
+  const firstPort = await openProbeHost();
+  assert.equal((await firstPort.request('core.status')).error?.code, 'HandshakeFailed', 'first probe port inherited negotiation');
+  assert.equal((await firstPort.request('connector.hello', hello)).ok, true);
+  const secondPort = await openProbeHost();
+  assert.equal((await secondPort.request('core.status')).error?.code, 'HandshakeFailed', 'second probe port inherited negotiation');
+  assert.equal((await secondPort.request('connector.hello', hello)).ok, true);
+  const assertNativeCore = (reply) => {
+    assert.equal(reply.ok, true, 'native probe request was refused: ' + JSON.stringify(reply.error));
+    assert.equal(reply.result.running, true);
+    assert.equal(reply.result.pid, appliedBefore.lastStartPid);
+    assert.equal(reply.result.configHash, runtimeBefore.configHash);
+    assert.equal(reply.result.selectedProfileId, runtimeBefore.profileId);
+  };
+  for (const reply of await Promise.all([firstPort.request('core.status'), secondPort.request('core.status')])) assertNativeCore(reply);
+  assert.equal(firstPort.child.exitCode, null, 'first of two ports was evicted too early');
+  assert.equal(secondPort.child.exitCode, null, 'second of two ports was evicted too early');
+  const thirdPort = await openProbeHost();
+  assert.equal((await thirdPort.request('core.status')).error?.code, 'HandshakeFailed', 'third probe port inherited negotiation');
+  await waitChildExit(firstPort.child);
+  assert.equal(firstPort.child.exitCode, 0, 'oldest host did not exit normally after port eviction');
+  assert.equal(secondPort.child.exitCode, null, 'third port evicted the newer host');
+  assert.equal((await thirdPort.request('connector.hello', hello)).ok, true);
+  for (const reply of await Promise.all([secondPort.request('core.status'), thirdPort.request('core.status')])) assertNativeCore(reply);
+  await assertSameProcesses();
+  for (const port of [secondPort, thirdPort]) port.child.stdin.end();
+  for (const port of [secondPort, thirdPort]) { await waitChildExit(port.child); assert.equal(port.child.exitCode, 0, 'native probe host did not exit normally on EOF'); }
+  assert.equal(nativeHosts().length, 0, 'probe hosts survived their port closure');
+  const sharedPorts = { realHostSessions: 3, concurrentAdoption: true, independentHello: true, thirdPortEvictedOnlyOldest: true, connectorAndCoreUnchanged: true, allHostsExitedNormally: true, scope: 'same sender and existing live Connector; operator test sender-origin, not cold-start race or multi-profile takeover' };
   await launchChrome();
   assert.notEqual(chrome.pid, oldChromePID, 'Chrome was not relaunched');
   let automaticWorker;
@@ -577,7 +640,7 @@ try {
   assert.equal(status.view.server.id, selectedServer, 'browser restart lost selected server');
   await assertSameProcesses();
   await proveHTTPS();
-  const recovery = { workerRestart, browserRestart: true, sameUserDataDirAndDebugPort: true, extensionIdStable: true, persistentUnpackedInstallation: true, unpackedReloadedOnRelaunch: false, backgroundAutomaticallyInitialized: true, durableLocalRuntimeSurvived: true, connectorPID: connectorBefore.pid, corePID: appliedBefore.lastStartPid, connectorAndCorePIDsUnchanged: true, selectedServerRestored: true, noDuplicateCore: true, adr5Survived: true, zeroNativePorts: true, zeroNativePortsMilliseconds, zeroPortSamples, zeroNativePortsEvidence: 'no process with the expected test native-host executable during the closed-browser interval', httpsProvenAfterBrowserRestart: true };
+  const recovery = { workerRestart, sharedPorts, browserRestart: true, sameUserDataDirAndDebugPort: true, extensionIdStable: true, persistentUnpackedInstallation: true, unpackedReloadedOnRelaunch: false, backgroundAutomaticallyInitialized: true, durableLocalRuntimeSurvived: true, connectorPID: connectorBefore.pid, corePID: appliedBefore.lastStartPid, connectorAndCorePIDsUnchanged: true, selectedServerRestored: true, noDuplicateCore: true, adr5Survived: true, zeroNativePorts: true, zeroNativePortsMilliseconds, zeroPortSamples, zeroNativePortsEvidence: 'no process with the expected test native-host executable during the closed-browser interval', httpsProvenAfterBrowserRestart: true };
   await delay(2100);
   await evaluate("[...document.querySelector('nexora-connection-panel').shadowRoot.querySelectorAll('button')].find(button=>button.textContent.trim()==='Отключить').click()");
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -609,13 +672,35 @@ try {
   await assert.rejects(readFile(local + '/NEXORA/config/config.json'), { code: 'ENOENT' });
   assert.deepEqual((await evaluate('chrome.proxy.settings.get({incognito:false})')).value, before.value);
   assert.equal(await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)}).then(value=>Object.hasOwn(value,${JSON.stringify(runtimeKey)}))`), false, 'final disconnect did not clear durable local runtime');
-  measurement = { browser: version.Browser, extensionId: id, realNativeMessaging: true, realXrayReality: true, httpsTunneledSource: '127.0.0.2', recovery, durableRuntimeClearedOnDisconnect: true, uuidAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, reconnectAfterStop: true, width320WithoutOverflow: true, screenshot: root + '-connected.png', scope: 'loopback fixture; mechanically prepared test receipt, not trusted production installation; test-only HTTPS certificate exception' };
+  assert.deepEqual(processes('ParentProcessId=' + connectorBefore.pid), [], 'Core survived final disconnect');
+  assert.equal(processAt(connectorBefore.pid)?.CreationDate, connectorProcess.CreationDate, 'Connector exited before its last browser port closed');
+  const idleStart = performance.now();
+  await closeChrome();
+  for (let attempt = 0; attempt < 100 && nativeHosts().length; attempt++) await delay(100);
+  assert.equal(nativeHosts().length, 0, 'native hosts survived final browser shutdown');
+  let idleSamples = 0;
+  let idleExited = false;
+  while (performance.now() - idleStart < 90000) {
+    assert.equal(nativeHosts().length, 0, 'native host appeared during idle shutdown');
+    const current = processAt(connectorBefore.pid);
+    idleSamples++;
+    if (!current || current.CreationDate !== connectorProcess.CreationDate) { idleExited = true; break; }
+    assert.deepEqual(processes('ParentProcessId=' + connectorBefore.pid), [], 'Core restarted during idle shutdown');
+    await delay(500);
+  }
+  assert.ok(idleExited, 'idle Connector did not exit naturally within 90 seconds');
+  const idleShutdownMilliseconds = Math.round(performance.now() - idleStart);
+  assert.ok(idleShutdownMilliseconds >= 58000, 'idle Connector exited before its one-minute grace period');
+  await assert.rejects(readFile(instancePath), { code: 'ENOENT' });
+  const idleShutdown = { naturalExit: true, noCoreOrNativeHosts: true, instanceRecordRemoved: true, millisecondsAfterBrowserClose: idleShutdownMilliseconds, samples: idleSamples };
+  measurement = { browser: version.Browser, extensionId: id, realNativeMessaging: true, realXrayReality: true, httpsTunneledSource: '127.0.0.2', recovery, idleShutdown, durableRuntimeClearedOnDisconnect: true, uuidAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, reconnectAfterStop: true, width320WithoutOverflow: true, screenshot: root + '-connected.png', scope: 'loopback fixture; mechanically prepared test receipt, not trusted production installation; test-only HTTPS certificate exception' };
   }
 } finally {
   const cleanupErrors = [];
   const cleanup = async (action) => { try { await action(); } catch (error) { cleanupErrors.push(error); } };
   await cleanup(async () => {
     try { await closeChrome(); } catch { await stopChild(chrome); socket?.close(); }
+    for (const child of probeHosts) await stopChild(child);
     for (let attempt = 0; attempt < 100 && nativeHosts().length; attempt++) await delay(100);
     assert.equal(nativeHosts().length, 0, 'native hosts still running during cleanup');
   });
