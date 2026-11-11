@@ -59,9 +59,13 @@ func TestFakeCoreAgent(t *testing.T) {
 		t.Skip("helper process for the config.apply tests")
 	}
 	if p := os.Getenv(agentRecord); p != "" {
-		// The record is the proof the parent wanted: the config path the child was *handed*, not the one the
-		// parent meant to send.
-		if err := os.WriteFile(p, []byte(os.Getenv(agentConfig)), 0o600); err != nil {
+		// Publish the complete record before waitForFile can observe it.
+		tmp := p + ".tmp"
+		err := os.WriteFile(tmp, []byte(os.Getenv(agentConfig)), 0o600)
+		if err == nil {
+			err = os.Rename(tmp, p)
+		}
+		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

@@ -1856,7 +1856,7 @@ the `cmd` line moved from hundredths of a second to 0.265 s, because two of the 
 compare-and-swap, then the intent, then the compile, then the file, then the reservation table, then the process —
 "compare-and-swap first … a refusal at any of those points has touched nothing after it" is doc 27 §8's atomicity rule
 restated as a sequence rather than as a rename, and `Handle` keeps the shape of that sentence.
-`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:672`) is the one that makes it
+`TestCompareAndSwapMismatchIsBusy` (`connector/cmd/nexora-connector/config_apply_test.go:676`) is the one that makes it
 observable: after the Busy it asserts the applied-state record was read once and never written
 (`reads != 1 || writes != 0`), Core was never touched (`starts != 0 || stops != 0`) and no config file exists — three
 negative assertions against the packages behind
@@ -1878,7 +1878,7 @@ reader would "fix" the `!= ""` guard into a bug.
 
 **ODEC-36 is a knob, and the knob is required.** `hashSpan` (`:74`) has two live values and a zero value that
 `newConfigApply` refuses (`:126`), so a build that has not read the register cannot answer `config.apply` at all —
-`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:986`) walks all seven
+`TestNewConfigApplyRefusesUndecidedWiring` (`connector/cmd/nexora-connector/config_apply_test.go:995`) walks all seven
 wiring cases including the four nil seams, and each refusal's message names the decision or the directory it is missing.
 The two spans are then measured against each other rather than argued: the same intent gives two different
 lowercase-sha256 strings (`TestHashesDifferBetweenTheTwoSpans`:600), because `internal/apply` reports both digests
@@ -1895,7 +1895,7 @@ argument: `errors.As` on `*keystore.Error` first (`:500`), because a keystore re
 code; then `errors.Is(err, supervisor.ErrIntegrity)` (`:505`), because doc 22 §4's "an unbootable Core is surfaced as
 `IntegrityMismatch`" is a security answer rather than a config one; then the six markers (`:478`), then the `compile: `
 prefix as `InvalidProfile` (`:517`), then `ConfigApplyFailed` (`:522`). `TestRefusalCodesDrivesTheRealRefusals`
-(`connector/cmd/nexora-connector/config_apply_test.go:771`) makes each of the three packages refuse *for real* — a stage
+(`connector/cmd/nexora-connector/config_apply_test.go:775`) makes each of the three packages refuse *for real* — a stage
 of the pipeline, the keystore, the writer, the reservation store, the process owner — and asserts the code plus the
 cause that survived into the message, so a reworded refusal fails a row there instead of quietly changing an answer a
 client acts on. Two rows of that table are worth the sentence: doc 32 §11's missing secret answers `InvalidProfile` (the
@@ -1926,7 +1926,7 @@ deadlock detector fires, and the child exits 2 with `fatal error: all goroutines
 against the *committed* tree, in a clean worktree at `7544baa`: that tree's own compiled test binary run as its `wait`
 mode child exits 2 and prints nothing else, and a 4-second-budget probe of both bodies gives `select {}` → exit 2 with
 the fatal error and `for { time.Sleep(time.Hour) }` → still alive at four seconds. The fix belongs to both files
-(`connector/cmd/nexora-connector/config_apply_test.go:75`, and `stayUp` in
+(`connector/cmd/nexora-connector/config_apply_test.go:79`, and `stayUp` in
 `connector/internal/supervisor/supervisor_test.go:73`) — but the finding is the other half: `go test
 ./connector/internal/supervisor` was green, and stays green, with the dying child, because nothing in that package
 waited for a child to *stay* alive. `Stop`'s `WasRunning` reads the supervisor's own bookkeeping, and
@@ -1935,7 +1935,7 @@ command surface that stops a running Core cannot be tested that way, which is th
 becomes this slice's bug: a test of *ordering* is the first test of *still being alive*.
 
 **Three assertions had to move before the reconciliation test meant anything.** (1) The launch closure picks a record
-slot by spawn count and clamps it (`connector/cmd/nexora-connector/config_apply_test.go:530-534`), because the ladder is
+slot by spawn count and clamps it (`connector/cmd/nexora-connector/config_apply_test.go:534-538`), because the ladder is
 entitled to spawn a third child and a closure that indexed by call count would have handed the third one the second
 record — a proof of a handover that never happened. (2) The test waits for the *first* child's record before issuing the
 second apply (`:530`, 20 s): the second apply ends that process, so a child that had not finished booting would leave no
@@ -1965,7 +1965,7 @@ stale addresses were not in a document citing a document, they were in the recor
 **Queue arithmetic, stated so the next slice can check it.** 79 rows → 80: `VER-32` moves `no-code` → `no-run` (the
 envelope→Xray compiler now has an answer for ADR-0013's promise — `Unrepresentable`
 (`connector/cmd/nexora-connector/config_apply.go:568`) carries the compile's report into the result, proven at
-`connector/cmd/nexora-connector/config_apply_test.go:1079` — and what no test here can show is a real Core holding the
+`connector/cmd/nexora-connector/config_apply_test.go:1083` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
 and `connector.version` only, `connector/cmd/nexora-connector/main.go:79-80`, and `intentSource` has no production
 implementation). `no-code` is therefore 54 → 53 → 54 and `no-run` 5 → 6, `connector` 37+1 → 39 and `decision` 3 → 4.
@@ -3481,7 +3481,7 @@ only from a frame.
 until now — `connector/cmd/nexora-connector/health_probe_test.go:208` shows the same frame move from refusal to a
 green `dns` + `tcp` answer against a real loopback socket once an apply has happened, and that a re-apply of a moved
 server changes what `serverFor` returns; the other two drive the endpoint.
-`connector/cmd/nexora-connector/config_apply_test.go:224` is the fake Core
+`connector/cmd/nexora-connector/config_apply_test.go:228` is the fake Core
 learning to keep the inbound table it was handed, which is what makes the refusal-then-measurement pair writable at
 all. The whole Connector suite passes with `-count=1` (`internal/health` 42 tests, the egress layers over a loopback
 SOCKS5 core), `gofmt -l` and `go vet` clean; schema verification, no-secrets, layout and ADR guards green. doc 22 §8's
@@ -3902,6 +3902,11 @@ backward-clock uptime and eight invalid-receipt cases. `go vet ./...` and `go te
 `connector/`; the focused tests passed ten repeats, the contract harness passed 1234 checks, and the documentation,
 layout and secret guards passed. The child in the lifecycle test is the existing test executable, not Xray; these status measurements
 do not prove remote VLESS/REALITY, a browser launch, selection counters, adoption or parent-death containment.
+
+**Test-only follow-up (2026-11-11).** CI observed the changed-intent test reading an empty child record between
+file creation and its write. The child now writes a sibling temporary file and renames it only after the write
+closes; the reader cannot observe a partial record. The failing test passed 100 repeats; module build, vet and the
+full Go suite passed. Production code is unchanged. Existing citations above are re-aimed; census counts do not move.
 
 **Bookkeeping.** Doc 26's current row, doc 39 and `packages/schema/verification.json` narrow `VER-90` to the missing
 snapshot handler and expectation field; the row stays `no-code`, and no distribution, marker or decision count
