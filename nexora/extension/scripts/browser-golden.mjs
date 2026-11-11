@@ -75,7 +75,7 @@ const appliedPath = local + '/NEXORA/state/state.json';
 const runtimeKey = '-nexora.runtimeConnection';
 const imageKey = (path) => resolve(path).replaceAll('\\', '/').toLowerCase();
 const processes = (filter) => JSON.parse(command('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-  `$ErrorActionPreference='Stop';$items=@(Get-CimInstance Win32_Process -Filter '${filter}' | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine,CreationDate);ConvertTo-Json -InputObject $items -Compress`,
+  `$ErrorActionPreference='Stop';$items=@(Get-CimInstance Win32_Process -Filter '${filter}' | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine,@{Name='CreationDate';Expression={$_.CreationDate.ToUniversalTime().ToString('o')}});ConvertTo-Json -InputObject $items -Compress`,
 ]).trim());
 const processAt = (pid) => {
   assert.ok(Number.isSafeInteger(pid) && pid > 0, 'invalid process PID');
@@ -111,7 +111,7 @@ const call = (method, params = {}, sessionId) => new Promise((resolve, reject) =
 });
 const launchChrome = async () => {
   chrome = spawn(process.env.NEXORA_CHROME ?? join(process.env.PROGRAMFILES ?? 'C:/Program Files', 'Google/Chrome/Application/chrome.exe'), [
-    '--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
+    '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
     ...subscriptionURL ? [] : ['--ignore-certificate-errors'],
     '--enable-unsafe-extension-debugging', '--remote-debugging-port=' + debugPort, '--user-data-dir=' + root + '/browser', 'about:blank',
   ], { stdio: 'ignore', env });
@@ -155,6 +155,109 @@ const evaluate = async (expression) => {
   if (response.exceptionDetails) throw new Error(response.exceptionDetails.text + ': ' + (response.exceptionDetails.exception?.description ?? ''));
   return response.result.value;
 };
+const attachExtensions = async () => {
+  const { targetId } = await call('Target.createTarget', { url: 'chrome://extensions/' });
+  sessionId = (await call('Target.attachToTarget', { targetId, flatten: true })).sessionId;
+  await call('Runtime.enable', {}, sessionId);
+  for (let attempt = 0; attempt < 50; attempt++) {
+    if (await evaluate('typeof chrome.developerPrivate?.getExtensionsInfo === "function"')) return targetId;
+    await delay(100);
+  }
+  throw new Error('Chrome extension manager did not expose its normal installation API');
+};
+const extensionInfos = () => evaluate('new Promise(resolve=>chrome.developerPrivate.getExtensionsInfo({includeDisabled:true,includeTerminated:true},resolve))');
+const installUnpacked = async () => {
+  const targetId = await attachExtensions();
+  await evaluate('new Promise(resolve=>chrome.developerPrivate.updateProfileConfiguration({inDeveloperMode:true},resolve))');
+  const owned = processAt(chrome.pid);
+  assert.ok(owned?.ExecutablePath && owned.CommandLine.includes('--user-data-dir=' + root + '/browser'), 'folder chooser is not owned by the test Chrome');
+  await call('Runtime.evaluate', { expression: 'globalThis.nexoraLoad={pending:true};chrome.developerPrivate.loadUnpacked({populateError:true},error=>globalThis.nexoraLoad={pending:false,error:error?.error??chrome.runtime.lastError?.message??null});true', userGesture: true, returnByValue: true }, sessionId);
+  try {
+    command('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `
+$ErrorActionPreference='Stop'
+$process=Get-CimInstance Win32_Process -Filter 'ProcessId=${owned.ProcessId}'
+if (!$process -or $process.CreationDate.ToUniversalTime().ToString('o') -ne '${owned.CreationDate.replaceAll("'", "''")}' -or $process.ExecutablePath -ne '${owned.ExecutablePath.replaceAll("'", "''")}') { throw 'Test Chrome identity changed before folder selection' }
+Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class FolderOwner {
+  const uint WmSetText = 12, BmClick = 245, GwOwner = 4, AbortIfHung = 2;
+  delegate bool Callback(IntPtr window, IntPtr parameter);
+  [DllImport("user32.dll")] static extern bool EnumWindows(Callback callback, IntPtr parameter);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
+  [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr window, StringBuilder text, int size);
+  [DllImport("user32.dll")] static extern IntPtr GetDlgItem(IntPtr window, int id);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr parameter, string text, uint flags, uint timeout, out UIntPtr result);
+  [DllImport("user32.dll")] static extern bool PostMessage(IntPtr window, uint message, IntPtr first, IntPtr second);
+  public static void Select(IntPtr dialog, uint expected, string path) {
+    if (!IsOwnedBy(dialog, expected)) throw new Exception("Folder chooser owner changed");
+    var field = GetDlgItem(dialog, 1152);
+    var button = GetDlgItem(dialog, 1);
+    if (Class(field) != "Edit" || Class(button) != "Button") throw new Exception("Unexpected folder controls: " + Class(field) + "," + Class(button));
+    UIntPtr result;
+    if (SendMessageTimeout(field, WmSetText, IntPtr.Zero, path, AbortIfHung, 5000, out result) == IntPtr.Zero || result == UIntPtr.Zero) throw new Exception("Folder path could not be set");
+    if (!PostMessage(button, BmClick, IntPtr.Zero, IntPtr.Zero)) throw new Exception("Select-folder button could not be invoked");
+  }
+  public static string Class(IntPtr window) {
+    var text = new StringBuilder(256);
+    GetClassName(window, text, text.Capacity);
+    return text.ToString();
+  }
+  // Chrome hosts the chooser in a utility process; its HWND owner chain identifies the requesting browser.
+  public static bool IsOwnedBy(IntPtr window, uint expected) {
+    while (window != IntPtr.Zero) {
+      uint pid; GetWindowThreadProcessId(window, out pid);
+      if (pid == expected) return true;
+      window = GetWindow(window, GwOwner);
+    }
+    return false;
+  }
+  public static IntPtr[] Windows(uint expected) {
+    var windows = new List<IntPtr>();
+    EnumWindows((window, parameter) => {
+      if (IsWindowVisible(window) && IsOwnedBy(window, expected)) windows.Add(window);
+      return true;
+    }, IntPtr.Zero);
+    return windows.ToArray();
+  }
+}
+'@
+$deadline=[DateTime]::UtcNow.AddSeconds(10)
+do {
+  $windows=@([FolderOwner]::Windows(${owned.ProcessId}))
+  $dialogs=@($windows | Where-Object { [FolderOwner]::Class($_) -eq '#32770' })
+  if ($dialogs.Count -gt 1) { throw 'Ambiguous test Chrome folder chooser' }
+  if (!$dialogs.Count) { Start-Sleep -Milliseconds 100 }
+} while (!$dialogs.Count -and [DateTime]::UtcNow -lt $deadline)
+if (!$dialogs.Count) {
+  $classes=@($windows | ForEach-Object { [FolderOwner]::Class($_) })
+  throw ('Test Chrome folder chooser did not appear; owned native classes: '+($classes -join ','))
+}
+$process=Get-CimInstance Win32_Process -Filter 'ProcessId=${owned.ProcessId}'
+if (!$process -or $process.CreationDate.ToUniversalTime().ToString('o') -ne '${owned.CreationDate.replaceAll("'", "''")}' -or $process.ExecutablePath -ne '${owned.ExecutablePath.replaceAll("'", "''")}') { throw 'Test Chrome identity changed before folder selection' }
+[FolderOwner]::Select($dialogs[0],${owned.ProcessId},'${resolve(project, 'dist/chromium').replaceAll("'", "''")}')
+`]);
+  } catch (error) {
+    throw new Error(error.message + '; Load unpacked callback: ' + JSON.stringify(await evaluate('globalThis.nexoraLoad')));
+  }
+  let result;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    result = await evaluate('globalThis.nexoraLoad');
+    if (!result.pending) break;
+    await delay(100);
+  }
+  assert.equal(result?.pending, false, 'normal Load unpacked did not finish');
+  assert.equal(result.error, null, 'normal Load unpacked refused the artifact: ' + result.error);
+  const entry = (await extensionInfos()).find((item) => item.path && imageKey(item.path) === imageKey(resolve(project, 'dist/chromium')));
+  assert.equal(entry?.state, 'ENABLED', 'normal unpacked extension is not enabled');
+  assert.equal(entry.location, 'UNPACKED', 'extension was not installed through the unpacked channel');
+  await call('Target.closeTarget', { targetId });
+  return entry.id;
+};
 const attachOptions = async () => {
   const { targetId } = await call('Target.createTarget', { url: 'chrome-extension://' + id + '/nexora-options.html' });
   sessionId = (await call('Target.attachToTarget', { targetId, flatten: true })).sessionId;
@@ -165,9 +268,7 @@ const attachOptions = async () => {
     await delay(100);
   }
   await call('Target.closeTarget', { targetId });
-  const error = new Error('options page did not load the expected extension');
-  error.code = 'EXTENSION_NOT_LOADED';
-  throw error;
+  throw new Error('options page did not load the expected extension');
 };
 const rpc = async (action, payload) => evaluate(`new Promise(resolve=>chrome.runtime.sendMessage(${JSON.stringify({ channel: 'nexora.connection.v1', id: randomUUID(), action, payload })},resolve))`);
 const awaitConnected = async () => {
@@ -202,7 +303,7 @@ try {
   await delay(300);
   assert.equal(server.exitCode, null, 'REALITY fixture did not start');
   await launchChrome();
-  ({ id } = await call('Extensions.loadUnpacked', { path: resolve(project, 'dist/chromium') }));
+  id = await installUnpacked();
   installed = true;
   command(bins + 'nexora-installer.exe', ['install', '--host', hostExe, '--origin', 'chrome-extension://' + id + '/']);
   await attachOptions();
@@ -460,25 +561,15 @@ try {
     if (automaticWorker) break;
     await delay(100);
   }
-  let unpackedReloadedOnRelaunch = false;
-  if (!automaticWorker) {
-    // Probe the old ID before reloading: a loaded extension must initialize without an options-page RPC.
-    let extensionStillLoaded = false;
-    try { await attachOptions(); extensionStillLoaded = true; }
-    catch (error) { if (error.code !== 'EXTENSION_NOT_LOADED') throw error; }
-    assert.equal(extensionStillLoaded, false, 'persisted extension did not initialize its background automatically');
-    const loaded = await call('Extensions.loadUnpacked', { path: resolve(project, 'dist/chromium') });
-    assert.equal(loaded.id, id, 'unpacked extension ID changed on relaunch');
-    unpackedReloadedOnRelaunch = true;
-    for (let attempt = 0; attempt < 50; attempt++) {
-      automaticWorker = (await workers())[0];
-      if (automaticWorker) break;
-      await delay(100);
-    }
-  }
-  assert.ok(automaticWorker, 'background did not initialize automatically before attaching new options');
+  assert.ok(automaticWorker, 'persisted extension did not initialize its background automatically before attaching new options');
   for (let attempt = 0; attempt < 50 && !nativeHosts().length; attempt++) await delay(100);
   assert.ok(nativeHosts().length > 0, 'background did not reconnect native messaging automatically before options opened');
+  const managerTarget = await attachExtensions();
+  const persisted = (await extensionInfos()).find((item) => item.id === id);
+  assert.equal(persisted?.state, 'ENABLED', 'normal extension installation did not survive browser restart');
+  assert.equal(persisted.location, 'UNPACKED');
+  assert.equal(imageKey(persisted.path), imageKey(resolve(project, 'dist/chromium')));
+  await call('Target.closeTarget', { targetId: managerTarget });
   await attachOptions();
   assert.equal(await evaluate('chrome.runtime.id'), id, 'extension ID changed after browser restart');
   assert.deepEqual(await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)}).then(value=>value[${JSON.stringify(runtimeKey)}])`), runtimeBefore, 'browser restart lost durable local runtime');
@@ -486,7 +577,7 @@ try {
   assert.equal(status.view.server.id, selectedServer, 'browser restart lost selected server');
   await assertSameProcesses();
   await proveHTTPS();
-  const recovery = { workerRestart, browserRestart: true, sameUserDataDirAndDebugPort: true, extensionIdStable: true, unpackedReloadedOnRelaunch, backgroundAutomaticallyInitialized: true, durableLocalRuntimeSurvived: true, connectorPID: connectorBefore.pid, corePID: appliedBefore.lastStartPid, connectorAndCorePIDsUnchanged: true, selectedServerRestored: true, noDuplicateCore: true, adr5Survived: true, zeroNativePorts: true, zeroNativePortsMilliseconds, zeroPortSamples, zeroNativePortsEvidence: 'no process with the expected test native-host executable during the closed-browser interval', httpsProvenAfterBrowserRestart: true };
+  const recovery = { workerRestart, browserRestart: true, sameUserDataDirAndDebugPort: true, extensionIdStable: true, persistentUnpackedInstallation: true, unpackedReloadedOnRelaunch: false, backgroundAutomaticallyInitialized: true, durableLocalRuntimeSurvived: true, connectorPID: connectorBefore.pid, corePID: appliedBefore.lastStartPid, connectorAndCorePIDsUnchanged: true, selectedServerRestored: true, noDuplicateCore: true, adr5Survived: true, zeroNativePorts: true, zeroNativePortsMilliseconds, zeroPortSamples, zeroNativePortsEvidence: 'no process with the expected test native-host executable during the closed-browser interval', httpsProvenAfterBrowserRestart: true };
   await delay(2100);
   await evaluate("[...document.querySelector('nexora-connection-panel').shadowRoot.querySelectorAll('button')].find(button=>button.textContent.trim()==='Отключить').click()");
   for (let attempt = 0; attempt < 60; attempt++) {

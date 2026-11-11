@@ -8,8 +8,9 @@
 
 Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL → choose a server → connect →
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
-in an isolated test installation. It is not a production release: trusted Core installation and the complete
-shared-owner policy remain unfinished.** The latest continuation is §4.60; older scope and inventory paragraphs
+in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
+release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
+continuation is §4.61; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -4129,6 +4130,42 @@ rebuild the legacy Chromium bundle before packaging NEXORA, then set `NEXORA_XRA
 run `npm --prefix nexora/extension run verify:browser`. The previous published HEAD was `6ff282a`; publish this verified
 slice only with the authorized `git push nexora nexora/architecture:master`, without binaries, secrets or skipped hooks.
 
+### 4.61 Persistent unpacked installation and recovery without reloading (2026-11-12)
+
+**Written and measured.** The existing Windows browser golden now installs through the normal
+`chrome://extensions` developer-mode Load unpacked API and its real native folder chooser, not
+`Extensions.loadUnpacked`. Chrome runs headed with a new temporary profile. The chooser is hosted in another
+process, so native HWND ownership identifies the requesting test browser; PID, executable and ISO creation time
+are checked before selection. Selection refuses ambiguous dialogs and unexpected Edit/Button controls. It sends
+input only to the verified chooser, without global keystrokes, focus stealing, Preferences edits or sandbox flags.
+The temporary profile's extension-manager result confirms the exact artifact path, ENABLED state and UNPACKED channel.
+
+The final successful normal-install run used Chrome 157.0.8103.51 and Xray 24.11.11. After full browser/host exit,
+Connector PID 2976 and Core PID 26696 survived 61,249 ms with no test native-host processes (32 samples). Relaunch
+used the same profile and debug port. No load/reload call ran after relaunch: the MV3 background and Native Messaging
+initialized before opening options, the same extension ID and durable runtime survived, and fresh HTTPS passed
+through REALITY with source 127.0.0.2. Worker stop/recovery, exact previous-proxy restoration, compiled-config and
+runtime removal, reconnect after stop and the 320 px UI also passed. Cleanup waited for the owned processes,
+removed temporary HKCU registration and disposed the secret-bearing sandbox.
+
+**Smallest fix.** No product-source change or new startup listener was needed. The defect was the harness's
+transient installation route and its PID-only/UI Automation dialog search. Native EnumWindows, HWND owners and
+standard dialog messages supply the normal persistent developer installation. The old CDP-reload fallback is gone;
+§4.60 remains the dated evidence of that older transient run, not a persistent-install claim.
+
+**Trust investigation.** Read-only inspection of upstream v24.11.11 and v26.11.9 release assets/workflows found ZIPs
+and `.dgst` checksums, but no minisign, Sigstore or artifact-attestation generation. Release-archive attestation
+lookups returned 404. A GitHub-verified source commit does not authenticate a binary ZIP. The current pinned
+signature gate therefore remains blocked; no production key, pins, receipt writer or unsigned fallback was added.
+
+**Checks and limits.** The live browser golden, all 32 controller tests and Svelte checks passed; no new dependency
+or binary was added. This is a persistent unpacked development installation, not a store/signed production package.
+The local test receipt and HTTPS certificate exception remain test-only. Browser-level proxy protection is not a
+system-wide kill switch. Incognito, other browsers, idle Connector exit and full shared-profile/takeover policy are
+still open; no ODEC/VER row is closed by this test. Reproduce with the §4.60 build prerequisites and
+`NEXORA_XRAY=<local 24.11.11 executable> npm --prefix nexora/extension run verify:browser` on an interactive Windows
+desktop; it opens a separate temporary Chrome window. Previous published HEAD: `e680040`.
+
 ---
 
 ## 5. Verification state to the letter
@@ -4281,8 +4318,10 @@ slice only with the authorized `git push nexora nexora/architecture:master`, wit
 ## 6. The exact next steps (task #6 → #11)
 
 **Current product queue, 2026-11-12:** §4.58/§4.59 delivered manual and subscription selected-server HTTPS;
-§4.60 delivered shared Windows Connector and measured MV3/full-browser recovery. Next is trusted pinned Xray
-installation without a mechanically prepared receipt. Complete ODEC-01's multi-profile/takeover and lifetime decision
+§4.60 delivered shared Windows Connector and measured MV3/full-browser recovery; §4.61 proves normal persistent
+unpacked installation without a restart reload. Trusted pinned Xray installation is blocked on a verified signing
+channel or a deliberate trust-policy decision, not a checksum-only receipt. Continue independent live verification
+of idle Connector exit and shared-host concurrency. Complete ODEC-01's multi-profile/takeover and lifetime decision
 before closing VER-12/VER-14; incognito, other browser families and the remaining routing fixtures are still open.
 This product queue supersedes the older sequencing below without retiring its unfinished verification rows.
 
