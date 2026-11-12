@@ -23,6 +23,13 @@ function fixture() {
     const list = subscriptionServers(source.id);
     return { refreshed: [{ subscriptionId: source.id, format: 'vless-base64', sha256: 'b'.repeat(64), serverCount: list.length, servers: list }], unchanged: [], failed: [], skipped: [] };
   };
+  let probeResponse: (serverId: string) => unknown | Promise<unknown> = (serverId) => ({
+    serverId, overall: 'pass', layers: [
+      { layer: 'dns', state: 'pass', rttMs: 1.25 },
+      { layer: 'tcp', state: 'pass', rttMs: 2 },
+      { layer: 'core-outbound', state: 'pass', rttMs: 3 },
+    ],
+  });
   let record: RuntimeRecord | null = null;
   const previous: ProxyValue = { mode: 'pac_script', pacScript: { data: 'function FindProxyForURL(){return "DIRECT";}', mandatory: true } };
   let proxy = previous;
@@ -45,7 +52,7 @@ function fixture() {
           let result: unknown;
           let code: string | null = null;
           switch (frame.method) {
-            case 'connector.hello': result = { protocolVersion: 1, minCompatibleProtocolVersion: 1, capabilities: ['chunked.import', 'keystore.ref', 'multi.server'] }; break;
+            case 'connector.hello': result = { protocolVersion: 1, minCompatibleProtocolVersion: 1, capabilities: ['chunked.import', 'keystore.ref', 'multi.server', 'health.probes'] }; break;
             case 'profile.import':
               if (denied) { code = denied; break; }
               result = { imported: { profileIds: [], serverIds: [] }, rejected: [], secretsExtracted: 1 }; break;
@@ -59,6 +66,10 @@ function fixture() {
               coreInbounds = [{ listen: '127.0.0.1', port: 20100, tag: 'in-srv-' + frame.args.intent.servers[0].id.replaceAll('-', '').slice(0, 8) }];
               result = { applied: true, configHash: 'a'.repeat(64), inboundPorts: coreInbounds };
               break;
+            case 'server.test':
+              if (denied) { code = denied; break; }
+              void Promise.resolve(probeResponse(frame.args.serverId)).then((result) => listener({ type: 'response', inReplyTo: frame.id, ok: true, result }));
+              return;
             case 'core.status': result = { running, configHash: 'a'.repeat(64), coreVersion: '24.11.11', selectedProfileId: running ? coreProfile : null, inboundPorts: running ? coreInbounds : [], ...statusOverride }; break;
             case 'core.stop':
               if (denied) { code = denied; break; }
@@ -92,6 +103,7 @@ function fixture() {
     connection, env, events, messages, previous, proxy: () => proxy, stored: () => selection, record: () => record,
     subscription: () => subscription, servers: () => servers,
     refreshWith: (response: typeof refreshResponse) => { refreshResponse = response; },
+    probeWith: (response: typeof probeResponse) => { probeResponse = response; },
     statusWith: (value: Record<string, unknown>) => { statusOverride = value; },
     deny: (code: string | null) => { denied = code; }, kill: () => { running = false; },
   };
@@ -793,4 +805,289 @@ test('an interrupted disconnect retains its previous proxy until explicit comple
   assert.equal((await readyStatus(restarted)).phase, 'blocked');
   assert.equal((await restarted.action('disconnect')).phase, 'disconnected');
   assert.deepEqual(f.proxy(), f.previous);
+});
+
+test('test-server probes only the selected subscription server without changing the live session', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  const added = await f.connection.action('subscribe', { url: subscriptionURL });
+  const selected = added.servers[2]!;
+  await f.connection.action('select', { serverId: selected.id });
+  assert.equal((await f.connection.action('connect')).phase, 'connected');
+  const stored = structuredClone([f.stored(), f.subscription(), f.servers(), f.record(), f.proxy()]);
+  const messages = f.messages.length;
+  const events = f.events.length;
+  let writes = 0;
+  const write = f.env.writeRuntime;
+  f.env.writeRuntime = async (value) => { writes++; await write(value); };
+  const view = await f.connection.action('test-server');
+  const check = { serverId: selected.id, layers: [
+    { layer: 'dns', state: 'pass', rttMs: 1.25 },
+    { layer: 'tcp', state: 'pass', rttMs: 2 },
+    { layer: 'core-outbound', state: 'pass', rttMs: 3 },
+  ] };
+  assert.equal(view.phase, 'connected');
+  assert.equal(view.pending, false);
+  assert.equal(view.error, null);
+  assert.deepEqual(view.check, check);
+  assert.deepEqual([f.stored(), f.subscription(), f.servers(), f.record(), f.proxy()], stored);
+  assert.equal(writes, 0);
+  const requests = f.messages.slice(messages);
+  assert.deepEqual(requests.filter((message) => message.method === 'server.test').map((message) => message.args), [
+    { serverId: selected.id, layers: ['dns', 'tcp', 'core-outbound'], repeat: 1 },
+  ]);
+  assert.ok(requests[0]?.method === 'core.status');
+  assert.equal(requests.at(-1)?.method, 'core.status');
+  assert.ok(f.events.slice(events).every((event) => ['core.status', 'server.test'].includes(event)));
+  assert.deepEqual((await f.connection.action('status')).check, check);
+  view.check!.serverId = crypto.randomUUID();
+  view.check!.layers[0]!.rttMs = 999;
+  view.check!.layers.push({ layer: 'tcp', state: 'fail', rttMs: 0 });
+  const snapshot = f.connection.snapshot();
+  assert.deepEqual(snapshot.check, check);
+  snapshot.check!.layers[0]!.state = 'fail';
+  snapshot.check!.layers.pop();
+  assert.deepEqual(f.connection.snapshot().check, check);
+});
+
+test('pending test-server clears the old check and serializes all non-status actions', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  const previous = (await f.connection.action('test-server')).check;
+  assert.ok(previous);
+  let finish!: (result: unknown) => void;
+  let started!: () => void;
+  const began = new Promise<void>((resolve) => { started = resolve; });
+  f.probeWith(() => new Promise<unknown>((resolve) => { finish = resolve; started(); }));
+  const checking = f.connection.action('test-server');
+  await Promise.race([began, checking.then(() => assert.fail('server.test must remain pending'))]);
+  const stored = structuredClone([f.stored(), f.record(), f.proxy()]);
+  const messages = f.messages.length;
+  const events = f.events.length;
+  const status = await f.connection.action('status');
+  assert.equal(status.pending, true);
+  assert.equal(status.phase, 'connected');
+  assert.equal(status.check, null);
+  for (const action of ['test-server', 'save', 'subscribe', 'refresh', 'select', 'connect', 'disconnect', 'open-site'] as const) {
+    const view = await f.connection.action(action, action === 'save' ? form() : { serverId: crypto.randomUUID(), url: 'https://example.test/' });
+    assert.match(view.error!, /Дождитесь/);
+    assert.equal(view.pending, true);
+    assert.equal(view.phase, 'connected');
+    assert.equal(view.check, null);
+  }
+  assert.equal(f.messages.length, messages);
+  assert.equal(f.events.length, events);
+  assert.deepEqual([f.stored(), f.record(), f.proxy()], stored);
+  finish({ ...previous, overall: 'pass' });
+  const view = await checking;
+  assert.equal(view.pending, false);
+  assert.equal(view.error, null);
+  assert.deepEqual(view.check, previous);
+});
+
+test('test-server refuses disconnected, blocked, foreign Core and unowned proxy proofs before probing', async (t) => {
+  for (const cause of ['disconnected', 'blocked', 'stopped', 'config', 'profile', 'missing-profile', 'missing-inbound', 'foreign-inbound', 'ambiguous-inbound', 'proxy-control', 'proxy-value'] as const) {
+    await t.test(cause, async (t) => {
+      const f = fixture();
+      t.after(() => f.connection.client.stop());
+      await f.connection.action('save', form());
+      if (cause !== 'disconnected') await f.connection.action('connect');
+      const proxy = structuredClone(f.proxy());
+      if (cause === 'blocked') { f.kill(); await f.connection.action('status'); }
+      if (cause === 'stopped') f.kill();
+      if (cause === 'config') f.statusWith({ configHash: 'b'.repeat(64) });
+      if (cause === 'profile') f.statusWith({ selectedProfileId: crypto.randomUUID() });
+      if (cause === 'missing-profile') f.statusWith({ selectedProfileId: null });
+      if (cause === 'missing-inbound') f.statusWith({ inboundPorts: [] });
+      if (cause === 'foreign-inbound') f.statusWith({ inboundPorts: [{ listen: '0.0.0.0', port: 20100, tag: 'foreign' }] });
+      if (cause === 'ambiguous-inbound') {
+        const tag = 'in-srv-' + f.stored()!.server.id.replaceAll('-', '').slice(0, 8);
+        f.statusWith({ inboundPorts: Array.from({ length: 2 }, () => ({ listen: '127.0.0.1', port: 20100, tag })) });
+      }
+      if (cause === 'proxy-control') f.env.getProxy = async () => ({ value: f.proxy(), levelOfControl: 'controlled_by_other_extensions' });
+      if (cause === 'proxy-value') f.env.getProxy = async () => ({ value: { mode: 'direct' }, levelOfControl: 'controlled_by_this_extension' });
+      const events = f.events.length;
+      const view = await f.connection.action('test-server');
+      assert.ok(view.error);
+      assert.equal(view.check, null);
+      assert.equal(view.phase, cause === 'disconnected' ? 'disconnected' : 'blocked');
+      assert.ok(!f.events.includes('server.test'));
+      assert.ok(f.events.slice(events).every((event) => event === 'core.status'));
+      assert.deepEqual(f.proxy(), proxy);
+    });
+  }
+});
+
+test('test-server preserves failed, timeout and skipped rows while whitelisting public measurements', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  const serverId = f.stored()!.server.id;
+  const result = { serverId, overall: 'fail', raw: subscriptionURL, egressIp: '203.0.113.7', matchesExpectedEgress: true, layers: [
+    { layer: 'dns', state: 'fail', rttMs: 0, code: 'private-access-secret', detail: subscriptionURL, raw: subscriptionURL },
+    { layer: 'tcp', state: 'timeout', rttMs: null, jitterMs: 100, detail: 'private-access-secret' },
+    { layer: 'core-outbound', state: 'skipped', detail: subscriptionURL },
+  ] };
+  f.probeWith(() => result);
+  const stored = structuredClone([f.stored(), f.record(), f.proxy()]);
+  const view = await f.connection.action('test-server');
+  const check = { serverId, layers: [
+    { layer: 'dns', state: 'fail', rttMs: 0 },
+    { layer: 'tcp', state: 'timeout', rttMs: null },
+    { layer: 'core-outbound', state: 'skipped', rttMs: null },
+  ] };
+  assert.equal(view.error, null);
+  assert.equal(view.phase, 'connected');
+  assert.deepEqual(view.check, check);
+  assert.deepEqual([f.stored(), f.record(), f.proxy()], stored);
+  for (const secret of ['private-path-secret', 'query-secret', 'fragment-secret', 'private-access-secret', '203.0.113.7']) {
+    assert.ok(!JSON.stringify([view, f.connection.snapshot()]).includes(secret));
+  }
+  result.layers[0]!.rttMs = 999;
+  result.serverId = crypto.randomUUID();
+  assert.deepEqual(f.connection.snapshot().check, check);
+});
+
+test('refused test-server requests clear a previous check without leaking native error details', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  for (const code of ['CoreNotRunning', 'AuthFailed', 'Timeout', 'Busy', 'Internal']) {
+    f.deny(null);
+    assert.ok((await f.connection.action('test-server')).check);
+    const stored = structuredClone([f.stored(), f.record(), f.proxy()]);
+    f.deny(code);
+    const view = await f.connection.action('test-server');
+    assert.ok(view.error);
+    assert.equal(view.check, null);
+    assert.equal(view.phase, 'connected');
+    assert.equal(view.pending, false);
+    assert.ok(!JSON.stringify([view, f.connection.snapshot()]).includes('private cause'));
+    assert.deepEqual([f.stored(), f.record(), f.proxy()], stored);
+  }
+});
+
+test('malformed, foreign, duplicate, unknown and missing probe results clear the check safely', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  const good = { serverId: f.stored()!.server.id, overall: 'pass', layers: [
+    { layer: 'dns', state: 'pass', rttMs: 1.25 },
+    { layer: 'tcp', state: 'pass', rttMs: 2 },
+    { layer: 'core-outbound', state: 'pass', rttMs: 3 },
+  ] };
+  const malformed: unknown[] = [
+    undefined, null, subscriptionURL, [], {}, { layers: good.layers },
+    { ...good, serverId: crypto.randomUUID() }, { ...good, serverId: subscriptionURL },
+    { ...good, layers: undefined }, { ...good, layers: {} }, { ...good, layers: [] },
+    { ...good, layers: good.layers.slice(0, 2) },
+    { ...good, layers: [good.layers[0], good.layers[0], good.layers[2]] },
+    ...['unknown', 'proxied-http', 'egress-ip'].map((layer) => ({ ...good, layers: [...good.layers.slice(0, 2), { layer, state: 'pass', rttMs: 1 }] })),
+    ...[undefined, 'unknown', true].map((state) => ({ ...good, layers: [{ ...good.layers[0], state }, ...good.layers.slice(1)] })),
+    { ...good, layers: [null, ...good.layers.slice(1)] },
+    ...[-1, NaN, Infinity, -Infinity, '1', true].map((rttMs) => ({ ...good, layers: [{ ...good.layers[0], rttMs }, ...good.layers.slice(1)] })),
+  ];
+  const stored = structuredClone([f.stored(), f.record(), f.proxy()]);
+  for (const [index, result] of malformed.entries()) {
+    f.probeWith(() => good);
+    assert.ok((await f.connection.action('test-server')).check);
+    f.probeWith(() => result && typeof result === 'object' && !Array.isArray(result) ? { ...result, raw: subscriptionURL, detail: 'private-access-secret' } : result);
+    const view = await f.connection.action('test-server');
+    assert.ok(view.error, `malformed result ${index} must report a safe error`);
+    assert.equal(view.check, null);
+    assert.equal(f.connection.snapshot().check, null);
+    assert.equal(view.phase, 'connected');
+    assert.equal(view.pending, false);
+    for (const secret of ['private-path-secret', 'query-secret', 'fragment-secret', 'private-access-secret']) assert.ok(!JSON.stringify([view, f.connection.snapshot()]).includes(secret));
+    assert.deepEqual([f.stored(), f.record(), f.proxy()], stored);
+  }
+});
+
+test('late probe results are discarded after Core, config, proxy control or revision changes', async (t) => {
+  for (const cause of ['stopped', 'config', 'proxy-control', 'revision'] as const) {
+    await t.test(cause, async (t) => {
+      const f = fixture();
+      t.after(() => f.connection.client.stop());
+      await f.connection.action('save', form());
+      await f.connection.action('connect');
+      const previous = (await f.connection.action('test-server')).check;
+      assert.ok(previous);
+      let finish!: (result: unknown) => void;
+      let started!: () => void;
+      const began = new Promise<void>((resolve) => { started = resolve; });
+      f.probeWith(() => new Promise<unknown>((resolve) => { finish = resolve; started(); }));
+      const checking = f.connection.action('test-server');
+      await Promise.race([began, checking.then(() => assert.fail('server.test must remain pending'))]);
+      const proxy = structuredClone(f.proxy());
+      const events = f.events.length;
+      if (cause === 'stopped') f.kill();
+      if (cause === 'config') f.statusWith({ configHash: 'b'.repeat(64) });
+      if (cause === 'proxy-control') f.env.getProxy = async () => ({ value: f.proxy(), levelOfControl: 'controlled_by_other_extensions' });
+      if (cause === 'revision') await f.connection.preserveProxy({ mode: 'direct' });
+      finish({ ...previous, overall: 'pass', raw: subscriptionURL });
+      const view = await checking;
+      assert.ok(view.error);
+      assert.equal(view.check, null);
+      assert.equal(f.connection.snapshot().check, null);
+      assert.equal(view.pending, false);
+      if (cause !== 'revision') assert.equal(view.phase, 'blocked');
+      assert.deepEqual(f.proxy(), proxy);
+      assert.ok(f.events.slice(events).every((event) => ['core.status', ...(cause === 'revision' ? ['set-proxy'] : [])].includes(event)));
+      assert.ok(!JSON.stringify(view).includes('query-secret'));
+    });
+  }
+});
+
+test('non-status actions and a newly blocked session clear the previous probe check', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  await f.connection.action('connect');
+  for (const action of ['save', 'subscribe', 'refresh', 'select', 'connect', 'open-site'] as const) {
+    assert.ok((await f.connection.action('test-server')).check);
+    const view = await f.connection.action(action, action === 'save' ? form() : { serverId: crypto.randomUUID(), url: 'https://example.test/' });
+    assert.equal(view.check, null);
+    assert.equal(view.phase, 'connected');
+  }
+  assert.ok((await f.connection.action('test-server')).check);
+  f.kill();
+  const blocked = await f.connection.action('status');
+  assert.equal(blocked.phase, 'blocked');
+  assert.equal(blocked.check, null);
+  assert.equal(f.proxy().mode, 'fixed_servers');
+});
+
+test('checks are transient across disconnect, reconnect and controller restart', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await f.connection.action('save', form());
+  assert.equal(f.connection.snapshot().check, null);
+  await f.connection.action('connect');
+  assert.ok((await f.connection.action('test-server')).check);
+  assert.equal((await f.connection.action('disconnect')).check, null);
+  const reconnected = await f.connection.action('connect');
+  assert.equal(reconnected.phase, 'connected');
+  assert.equal(reconnected.check, null);
+  assert.ok((await f.connection.action('test-server')).check);
+  f.connection.client.stop();
+  assert.equal(f.connection.snapshot().check, null);
+  const restarted = new Connection(f.env);
+  t.after(() => restarted.client.stop());
+  const loaded = await readyStatus(restarted);
+  assert.equal(loaded.phase, 'connected');
+  assert.equal(loaded.check, null);
+  assert.ok((await restarted.action('test-server')).check);
+  restarted.client.stop();
+  assert.equal(restarted.snapshot().check, null);
+  restarted.client.start();
+  const recovered = await readyStatus(restarted);
+  assert.equal(recovered.phase, 'connected');
+  assert.equal(recovered.check, null);
+  assert.equal(f.messages.filter((message) => message.method === 'server.test').length, 3);
+  assert.equal(f.messages.filter((message) => message.method === 'config.apply').length, 2);
 });

@@ -2,7 +2,7 @@ import { channel, type Action, type ConnectionView } from './model';
 
 export function request(action: Action, payload?: unknown): Promise<ConnectionView> {
   if (!globalThis.chrome?.runtime?.id) {
-    return Promise.resolve({ phase: 'disconnected', connector: 'stopped', server: null, servers: [], subscription: null, warning: null, pending: false, coreVersion: null, error: 'Откройте этот экран из установленного расширения NEXORA. Обычная вкладка не имеет доступа к Local Connector.' });
+    return Promise.resolve({ phase: 'disconnected', connector: 'stopped', server: null, servers: [], subscription: null, warning: null, pending: false, check: null, coreVersion: null, error: 'Откройте этот экран из установленного расширения NEXORA. Обычная вкладка не имеет доступа к Local Connector.' });
   }
   const id = crypto.randomUUID();
   return new Promise((resolve, reject) => {

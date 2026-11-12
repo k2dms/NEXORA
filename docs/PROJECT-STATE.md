@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.63; older scope and inventory paragraphs
+continuation is §4.64; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -4234,6 +4234,51 @@ path/Host, fresh HTTPS and sandbox disposal. Its screenshot was inspected. The f
 then unit-tested and the local binary rebuilt again; that parser-only change does not run in the mechanically seeded
 golden. Reproduce WS mode with `NEXORA_WS_FIXTURE=1 NEXORA_XRAY=E:/NEXORA/tmp/xray-extract/xray.exe npm --prefix
 nexora/extension run verify:browser` on the interactive Windows desktop. Previous published HEAD: `7154bc2`.
+
+### 4.64 Manual layered diagnostics for the connected selected server (2026-11-12)
+
+**Implemented using the existing command.** The extension exposes a strict test-server action only for the
+currently proven connected selection. Existing core.status and browser proxy readback precede and follow one
+server.test request for DNS, TCP and core-outbound with repeat 1. The UI calls the last layer “Ответ SOCKS Core”:
+a SOCKS acceptance is not evidence of a VLESS handshake, HTTPS transfer or observed egress IP. No HTTP endpoint is
+invented, and the existing default settings still have no egress probe endpoint.
+
+Only the matching server ID and exactly ordered known layer/state/finite nonnegative RTT fields enter the public
+view. Native details, codes, overall results and egress fields are discarded. Results are cloned, transient and
+cleared on non-status actions, Connector state changes and loss of Core/proxy proof; disconnect, reconnect and
+controller restart do not revive them. Late results after revision or session changes are refused. Existing busy
+serialization blocks overlapping actions, including disconnect during the bounded command request. The action
+never applies configuration, stops Core, changes credentials or resets the browser proxy.
+
+**Measured REALITY UI path.** Chrome 157.0.8103.51 / Xray 24.11.11 passed real Native Messaging UI clicks and
+rendered all three successful layers. The first TCP measurement was 2.671 ms and SOCKS 0.522 ms; these are fixture
+observations, not Internet latency. Configuration bytes, durable runtime and the proxy were identical before and
+after successful probing. After stopping only the harness-owned server, DNS passed, TCP failed and SOCKS was
+skipped while Core/proxy ownership remained connected. The 320px success and failure screenshots were inspected.
+Fresh tunneled HTTPS was independently proved before and after MV3/full-browser recovery; Connector PID 23916
+and Core PID 19716 survived 61,326 ms without hosts (33 samples). Three actual host ports retained independent
+hello and oldest-only eviction. Explicit disconnect restored the previous proxy and removed configuration and
+runtime; reconnect did not revive old diagnostics. Natural idle exit took 60,408 ms (45 samples), and the sandbox
+and temporary registration were disposed.
+
+**Measured WebSocket UI path.** The same Chrome/Xray pair with a WS-none loopback fixture and a mechanically seeded
+list passed the same flow: all three layers pass (TCP 2.089 ms, SOCKS 0.598 ms), three host ports with oldest-only
+eviction, MV3 worker stop and full-browser restart recovery with Connector PID 22268 and Core PID 23068 unchanged,
+fresh HTTPS proved after restart, 61,214 ms with zero native ports (32 samples), config/proxy/runtime byte-identical
+around probing, and after stopping only the harness-owned server TCP failed while SOCKS was skipped and ownership
+stayed connected. Explicit disconnect restored the previous proxy and cleared the durable runtime; the 320px
+screenshots were inspected. Natural idle exit took 60,509 ms (43 samples). The first WS run passed every functional
+phase but its idle-exit assertion exceeded the 90 s harness budget while this host was under concurrent npm,
+PowerShell and browser tooling load; the same binary measured ~60.4 s idle in the REALITY run and 60.5 s in this
+clean re-run, so no production change was made for that flake.
+
+**Checks and limits.** Main-run extension tests passed 58/58, including pending serialization, failed/skipped/
+timeout rows, malformed or credential-bearing responses, proof mismatches, late responses and cloned snapshots.
+Svelte check/build, harness syntax, whitespace and secret guard passed. The ordinary Vite page safely reported
+missing extension context without console warnings/errors. Go production, schemas, installation and ownership
+policy were not changed. The runtime uses loopback fixtures and a mechanically prepared test receipt, not trusted
+production installation. WS-TLS, remote WS feed fetching, an HTTPS/egress diagnostic endpoint, multi-profile
+ownership and ODEC-01/VER-12/VER-14 remain unproved. Previous published HEAD: `4488afa`.
 
 ---
 

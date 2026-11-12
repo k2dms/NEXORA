@@ -567,6 +567,30 @@ try {
     assert.equal(candidates[0].CreationDate, coreProcess.CreationDate, 'Core process exited or PID was reused');
     assert.ok(candidates[0].ExecutablePath && imageKey(candidates[0].ExecutablePath) === imageKey(xray));
   };
+  const checkServer = async () => {
+    await delay(2100);
+    const configBefore = await readFile(local + '/NEXORA/config/config.json');
+    const proxyBefore = (await evaluate('chrome.proxy.settings.get({incognito:false})')).value;
+    const recordBefore = await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)})`);
+    await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#test-server').click()");
+    for (let attempt = 0; attempt < 160; attempt++) {
+      status = await rpc('status');
+      if (status.view.check && !status.view.pending) break;
+      if (status.view.error) throw new Error('layered probe failed: ' + status.view.error);
+      await delay(100);
+    }
+    assert.equal(status.view.phase, 'connected');
+    assert.equal(status.view.check?.serverId, selectedServer);
+    assert.deepEqual(status.view.check.layers.map((row) => [row.layer, row.state]), [['dns', 'pass'], ['tcp', 'pass'], ['core-outbound', 'pass']]);
+    assert.ok(status.view.check.layers.every((row) => Number.isFinite(row.rttMs) && row.rttMs >= 0));
+    await delay(100);
+    assert.equal(await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelectorAll('#server-check .check-row').length"), 3);
+    assert.match(await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#server-check').textContent"), /не подтверждают передачу HTTPS/);
+    assert.deepEqual(await readFile(local + '/NEXORA/config/config.json'), configBefore);
+    assert.deepEqual((await evaluate('chrome.proxy.settings.get({incognito:false})')).value, proxyBefore);
+    assert.deepEqual(await evaluate(`chrome.storage.local.get(${JSON.stringify(runtimeKey)})`), recordBefore);
+    return status.view.check.layers;
+  };
   const proveHTTPS = async () => {
     await delay(2100);
     const start = arrivals.length;
@@ -586,6 +610,8 @@ try {
     assert.equal(text, 'nexora-local-https-ok');
     await call('Target.closeTarget', { targetId: site.targetId });
   };
+  const layeredProbe = await checkServer();
+  await assertSameProcesses();
   await proveHTTPS();
   const workerRestart = { stopped: false, recovered: false, method: null, reason: null };
   const oldWorker = (await workers())[0];
@@ -718,10 +744,31 @@ try {
     await delay(100);
   }
   assert.equal(status.view.phase, 'connected', 'connect-after-stop failed: ' + JSON.stringify(status));
+  assert.equal(status.view.check, null, 'reconnect revived a previous probe');
+  await checkServer();
   await call('Emulation.setDeviceMetricsOverride', { width: 320, height: 900, deviceScaleFactor: 1, mobile: false }, sessionId);
   assert.equal(await evaluate('document.documentElement.scrollWidth <= 320'), true, 'connection UI overflows at 320px');
   const shot = await call('Page.captureScreenshot', { captureBeyondViewport: true }, sessionId);
   await writeFile(root + '-connected.png', Buffer.from(shot.data, 'base64'));
+  await stopChild(server);
+  server = null;
+  await delay(2100);
+  await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#test-server').click()");
+  for (let attempt = 0; attempt < 160; attempt++) {
+    status = await rpc('status');
+    if (status.view.check && !status.view.pending) break;
+    if (status.view.error) throw new Error('failed-server probe did not answer: ' + status.view.error);
+    await delay(100);
+  }
+  assert.equal(status.view.phase, 'connected', 'server failure changed Core/proxy ownership');
+  const failedProbe = status.view.check;
+  assert.equal(failedProbe?.serverId, selectedServer);
+  assert.deepEqual(failedProbe.layers.map((row) => [row.layer, row.state]), [['dns', 'pass'], ['tcp', 'fail'], ['core-outbound', 'skipped']]);
+  await delay(100);
+  assert.match(await evaluate("document.querySelector('nexora-connection-panel').shadowRoot.querySelector('#server-check').textContent"), /Ошибка/);
+  assert.equal(await evaluate('document.documentElement.scrollWidth <= 320'), true, 'failed-probe UI overflows at 320px');
+  const failedShot = await call('Page.captureScreenshot', { captureBeyondViewport: true }, sessionId);
+  await writeFile(root + '-failed-check.png', Buffer.from(failedShot.data, 'base64'));
   await delay(2100);
   status = await rpc('disconnect');
   assert.equal(status.view.phase, 'disconnected', JSON.stringify(status));
@@ -749,7 +796,7 @@ try {
   assert.ok(idleShutdownMilliseconds >= 58000, 'idle Connector exited before its one-minute grace period');
   await assert.rejects(readFile(instancePath), { code: 'ENOENT' });
   const idleShutdown = { naturalExit: true, noCoreOrNativeHosts: true, instanceRecordRemoved: true, millisecondsAfterBrowserClose: idleShutdownMilliseconds, samples: idleSamples };
-  measurement = { browser: version.Browser, extensionId: id, realNativeMessaging: true, realXrayReality: !wsFixture, realXrayWebSocket: wsFixture, webSocketListMechanicallySeeded: wsFixture, httpsTunneledSource: '127.0.0.2', recovery, idleShutdown, durableRuntimeClearedOnDisconnect: true, uuidAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, reconnectAfterStop: true, width320WithoutOverflow: true, screenshot: root + '-connected.png', scope: 'loopback fixture; mechanically prepared test receipt, not trusted production installation; test-only HTTPS certificate exception' };
+  measurement = { browser: version.Browser, extensionId: id, realNativeMessaging: true, realXrayReality: !wsFixture, realXrayWebSocket: wsFixture, webSocketListMechanicallySeeded: wsFixture, httpsTunneledSource: '127.0.0.2', layeredProbe, failedProbe: failedProbe.layers, failedProbeScreenshot: root + '-failed-check.png', recovery, idleShutdown, durableRuntimeClearedOnDisconnect: true, uuidAbsentFromLocalSyncAndBlob: true, previousProxyRestored: true, materializedConfigRemovedOnStop: true, reconnectAfterStop: true, width320WithoutOverflow: true, screenshot: root + '-connected.png', scope: 'loopback fixture; mechanically prepared test receipt, not trusted production installation; test-only HTTPS certificate exception' };
   }
 } finally {
   const cleanupErrors = [];

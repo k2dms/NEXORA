@@ -2,7 +2,7 @@ import type { Json } from '../../../packages/protocol/src/contract.ts';
 import { ConnectorClient, type Port } from '../../../packages/state/src/client.ts';
 import settings from '../../../packages/schema/examples/settings.default.json' with { type: 'json' };
 import failurePolicy from '../../../packages/schema/examples/failure-policy.default.json' with { type: 'json' };
-import type { Action, ConnectionView, SavedProfile, SavedServer, SavedSubscription, ServerForm, SubscriptionResult } from './model.ts';
+import type { Action, ConnectionView, SavedProfile, SavedServer, SavedSubscription, ServerCheck, ServerForm, SubscriptionResult } from './model.ts';
 
 export type Selection = { server: SavedServer; profile: SavedProfile };
 export type ProxyValue = chrome.proxy.ProxyConfig;
@@ -134,7 +134,7 @@ export class Connection {
   private busy = false;
   private revision = 0;
   private proxyWork: Promise<void> = Promise.resolve();
-  private view: ConnectionView = { phase: 'disconnected', connector: 'idle', server: null, servers: [], subscription: null, warning: null, pending: false, error: null, coreVersion: null };
+  private view: ConnectionView = { phase: 'disconnected', connector: 'idle', server: null, servers: [], subscription: null, warning: null, pending: false, check: null, error: null, coreVersion: null };
 
   private readonly env: Environment;
 
@@ -144,6 +144,7 @@ export class Connection {
       connect: () => env.connectNative(), extensionVersion: env.version,
       onState: (state) => {
         this.revision++;
+        this.view.check = null;
         this.view.connector = state;
         if ((state === 'waiting' || state === 'incompatible' || state === 'stopped') && this.runtime?.active) {
           this.view.phase = 'blocked';
@@ -203,6 +204,7 @@ export class Connection {
     if (this.busy) return { ...this.snapshot(), error: 'Дождитесь завершения текущего действия.' };
     this.busy = true;
     this.view.error = null;
+    this.view.check = null;
     try {
       switch (action) {
         case 'save': {
@@ -229,6 +231,7 @@ export class Connection {
         case 'select': await this.select(payload); break;
         case 'connect': await this.connect(); break;
         case 'disconnect': await this.disconnect(); break;
+        case 'test-server': await this.testServer(); break;
         case 'open-site':
           if (this.view.phase !== 'connected') throw new Error('Подключитесь перед открытием сайта.');
           await this.refresh();
@@ -410,6 +413,28 @@ export class Connection {
     }
   }
 
+  private async testServer(): Promise<void> {
+    if (this.view.phase !== 'connected') throw new Error('Подключитесь перед проверкой сервера.');
+    await this.refresh();
+    if (this.view.phase !== 'connected' || !this.selection || !this.runtime?.active) throw new Error('Сеанс Core не подтверждён. Проверка не начата.');
+    const selection = this.selection;
+    const record = this.runtime;
+    const revision = this.revision;
+    const layers = ['dns', 'tcp', 'core-outbound'] as const;
+    const result = await this.client.request('server.test', { serverId: selection.server.id, layers: [...layers], repeat: 1 }) as { serverId?: unknown; layers?: unknown } | null;
+    if (this.revision !== revision || this.view.phase !== 'connected' || this.runtime !== record || this.client.state !== 'ready') throw new Error('Сеанс изменился. Результат проверки отброшен.');
+    if (!result || result.serverId !== selection.server.id || !Array.isArray(result.layers) || result.layers.length !== layers.length) throw new Error('Connector вернул некорректный результат проверки.');
+    const measures = result.layers.map((value, index) => {
+      const row = value as Record<string, unknown> | null;
+      if (!row || row.layer !== layers[index] || !['pass', 'fail', 'skipped', 'timeout'].includes(row.state as string) ||
+        (row.rttMs !== undefined && row.rttMs !== null && (typeof row.rttMs !== 'number' || !Number.isFinite(row.rttMs) || row.rttMs < 0))) throw new Error('Connector вернул некорректный результат проверки.');
+      return { layer: layers[index]!, state: row.state as ServerCheck['layers'][number]['state'], rttMs: typeof row.rttMs === 'number' ? row.rttMs : null };
+    });
+    await this.refresh();
+    if (this.revision !== revision + 1 || this.view.phase !== 'connected' || this.runtime !== record || this.selection !== selection || this.client.state !== 'ready') throw new Error('Сеанс изменился. Результат проверки отброшен.');
+    this.view.check = { serverId: selection.server.id, layers: measures };
+  }
+
   private async disconnect(): Promise<void> {
     this.revision++;
     if (!this.runtime || typeof this.runtime.configHash !== 'string' || !configHash.test(this.runtime.configHash)) throw new Error('Нет подтверждённой записи сеанса. Прокси не сброшен; восстановите настройки вручную после остановки Core.');
@@ -455,6 +480,7 @@ export class Connection {
       if (error) {
         this.view.phase = 'blocked';
         this.view.error = error;
+        this.view.check = null;
         return;
       }
       await this.proxyOperation(async () => {
@@ -473,6 +499,7 @@ export class Connection {
       if (!current() || !record?.active) return;
       this.view.phase = 'blocked';
       this.view.error = 'Состояние Core или управление локальным прокси не подтверждено. Закройте вкладки; прокси не сброшен.';
+      this.view.check = null;
     }
   }
 
@@ -491,6 +518,7 @@ export class Connection {
       if (!current()) return;
       this.view.phase = 'blocked';
       this.view.error = 'Настройки прокси изменены извне. Защита не подтверждена: закройте вкладки и восстановите управление прокси.';
+      this.view.check = null;
     }
   }
 
@@ -498,7 +526,7 @@ export class Connection {
     const server = this.selection?.server;
     const source = this.subscription;
     return {
-      ...this.view, pending: this.busy, servers: structuredClone(this.servers),
+      ...this.view, pending: this.busy, check: structuredClone(this.view.check), servers: structuredClone(this.servers),
       subscription: source ? {
         id: source.id, displayName: source.displayName, serverCount: this.servers.filter((item) => item.subscriptionId === source.id).length,
         consecutiveFailures: source.status.consecutiveFailures, lastAttemptAt: source.status.lastAttemptAt,

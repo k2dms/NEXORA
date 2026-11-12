@@ -61,6 +61,8 @@
   const canConnect = $derived(editable && !!view?.server && !replacing);
   const canDisconnect = $derived(!pending && !view?.pending && (view?.phase === 'connected' || view?.phase === 'blocked'));
   const canOpen = $derived(view?.phase === 'connected' && !pending && !view.pending && !statusError);
+  const checkLabels = { dns: 'DNS', tcp: 'TCP сервера', 'core-outbound': 'Ответ SOCKS Core' };
+  const checkStates = { pass: 'Ответ получен', fail: 'Ошибка', skipped: 'Не проверено', timeout: 'Время истекло' };
   const selectedServer = $derived(view?.servers.find((server) => server.id === view?.server?.id));
   const phaseLabel = $derived(view ? phaseLabels[view.phase] : 'Состояние неизвестно');
 
@@ -108,7 +110,7 @@
     if (['save', 'subscribe', 'refresh', 'select'].includes(action) && !editable) return;
     if (action === 'connect' && !canConnect) return;
     if (action === 'disconnect' && !canDisconnect) return;
-    if (action === 'open-site' && !canOpen) return;
+    if ((action === 'open-site' || action === 'test-server') && !canOpen) return;
 
     const ticket = ++revision;
     const secretInput = uuidInput;
@@ -331,6 +333,22 @@
           {pending === 'disconnect' || view.phase === 'disconnecting' ? 'Отключение…' : 'Отключить'}
         </button>
       </div>
+      <button id="test-server" class="text-button" type="button" disabled={!canOpen} onclick={() => void perform('test-server')}>
+        {pending === 'test-server' ? 'Проверка…' : 'Проверить сервер'}
+      </button>
+      <div id="server-check" aria-live="polite">
+        <p class="field-hint">DNS, TCP и ответ SOCKS Core. Эти проверки не подтверждают передачу HTTPS и внешний IP.</p>
+        {#if view.check}
+          <dl class="diagnostics">
+            {#each view.check.layers as row (row.layer)}
+              <div class="check-row">
+                <dt>{checkLabels[row.layer]}</dt>
+                <dd>{checkStates[row.state]}{row.rttMs === null ? '' : ` · ${row.rttMs.toFixed(1)} мс`}</dd>
+              </div>
+            {/each}
+          </dl>
+        {/if}
+      </div>
       <button class="text-button" type="button" disabled={!editable} aria-expanded={replacing} aria-controls="server-form" onclick={toggleReplacement}>
         {replacing ? 'Отменить замену' : 'Заменить сервер'}
       </button>
@@ -417,7 +435,7 @@
   </section>
 
   <footer>
-    <p>Состояние сообщает Connector. Доступность сайтов, внешний IP и задержка здесь не проверяются. Это не системный VPN.</p>
+    <p>Состояние сообщает Connector. Проверка сервера показывает время отдельных этапов, не задержку до сайта. Доступность HTTPS и внешний IP не проверяются. Это не системный VPN.</p>
     <p class="legacy-note">Прежние настройки сохранены. <a href="options.html" target="_blank" rel="noopener">Открыть настройки</a></p>
   </footer>
 </main>

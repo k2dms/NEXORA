@@ -68,7 +68,7 @@ const connection = new Connection({
   async openSite(url) { await chrome.tabs.create({ url }); },
 });
 
-const actions = new Set<Action>(['status', 'save', 'subscribe', 'refresh', 'select', 'connect', 'disconnect', 'open-site']);
+const actions = new Set<Action>(['status', 'save', 'subscribe', 'refresh', 'select', 'connect', 'disconnect', 'open-site', 'test-server']);
 const answers = new Map<string, Promise<unknown>>();
 chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
   if (!message || typeof message !== 'object' || !('channel' in message) || message.channel !== channel) return;

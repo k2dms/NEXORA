@@ -66,6 +66,11 @@ export type SavedProfile = {
   failurePolicy: { coreDeath: { action: 'block' } };
 };
 
+export type ServerCheck = {
+  serverId: string;
+  layers: { layer: 'dns' | 'tcp' | 'core-outbound'; state: 'pass' | 'fail' | 'skipped' | 'timeout'; rttMs: number | null }[];
+};
+
 export type ConnectionView = {
   phase: 'disconnected' | 'connecting' | 'connected' | 'blocked' | 'disconnecting';
   connector: 'idle' | 'connecting' | 'ready' | 'waiting' | 'incompatible' | 'stopped';
@@ -74,11 +79,12 @@ export type ConnectionView = {
   subscription: { id: string; displayName: string; serverCount: number; consecutiveFailures: number; lastAttemptAt?: string; lastSuccessAt?: string; temporary: boolean } | null;
   warning: string | null;
   pending: boolean;
+  check: ServerCheck | null;
   error: string | null;
   coreVersion: string | null;
 };
 
-export type Action = 'status' | 'save' | 'subscribe' | 'refresh' | 'select' | 'connect' | 'disconnect' | 'open-site';
+export type Action = 'status' | 'save' | 'subscribe' | 'refresh' | 'select' | 'connect' | 'disconnect' | 'open-site' | 'test-server';
 export const channel = 'nexora.connection.v1';
 export const selectedKey = '-nexora.selectedProfile';
 export const runtimeKey = '-nexora.runtimeConnection';
