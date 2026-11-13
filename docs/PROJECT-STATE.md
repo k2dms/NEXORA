@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.67; older scope and inventory paragraphs
+continuation is §4.68; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5220,6 +5220,23 @@ states the answer where it used to say the shape was still owed, §13's floor ro
 additions pushed down (main.go :150-151 → :161-162, :208 → :235, with the move named in place).
 
 **Gates.** All seven green.
+
+### 4.68 The tag collision meets an unsorted feed — `VER-70` retired (2026-11-14)
+
+**The assertion.** The eight-hex collision test now reads the shipped canonical examples instead of private ids:
+`connector/internal/compile/tag_collision_test.go` proves the five server documents compile as one batch with
+every stored tag equal to its derived one (doc 23 §6's derived-never-stored promise over real schema-valid
+documents), and that the twin of the canonical vision server — its id sharing the first eight hex characters,
+built by mutating the shipped document the way a generated-uuid feed would collide — is refused in two different
+arrival orders, each refusal naming both server ids and the shared `srv-3f2a1c9e` tag. The order-independence is
+the feed half of the claim: the batch arrives whole and arbitrarily sorted, and the refusal names the same three
+strings either way.
+
+**Corpus.** `VER-70` retired in the same commit — matrix 70 → 69 rows, 21 tombstones, `no-code` 48 → 47,
+`connector` 37 → 36, `assertion` 15 → 14, `marker.counted` 192 → 191 (the partition is 141 + 26 + 24).
+Doc 23 §10's collision row reads `GREEN` with the new test named beside the one that started it.
+
+**Gates.** All seven green; the full Go suite green in every package.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 192
+    "counted": 191
   },
   "states": {
     "values": [
@@ -329,6 +329,12 @@
         "closed": "2026-11-14",
         "was": "a frame below the pipe floor ends the stream instead of answering VersionMismatch: the comparison in connector/internal/envelope's Parse is live code that the envelope's own lower bound subsumes, and framing.json#/versionFloors/tooOld still owes its answer",
         "artefact": "the answer is written for both transports: envelope.ParseWithFloor carries the refused frame's parsed id on the Invalid error (RejectedID), and internal/peer's Serve plus the connector's line mode answer VersionMismatch in reply to that id — carrying this build's FrameFormatVersion, never the sender's failed one — before ending the stream, because a sender below the floor speaks a framing this build cannot continue reading in step. The branch is live code a test can reach: peer.Config.PipeFloor and the service's pipeFloor state the floor a test needs, since the shipped floor of 1 is subsumed by the envelope's 1..255 bound. Three tests pin it: the peer answers then ends, an id-less below-floor frame gets no answer, and the line mode answers the same way. The production firing is still the day the floor rises above 1, which is the day a second framing exists"
+      },
+      {
+        "id": "VER-70",
+        "closed": "2026-11-14",
+        "was": "tag uniqueness over the whole server set is a compile error naming both ids in stage 1; it has never met a registry that arrives unsorted from a subscription import",
+        "artefact": "connector/internal/compile/tag_collision_test.go drives the whole claim from the shipped canonical examples: the five server documents compile as one batch with every stored tag equal to its derived one, and the twin of the canonical vision server — its id sharing the first eight hex, built by mutating the shipped document rather than from a private fixture — is refused in two different arrival orders, each refusal naming both server ids and the shared srv-3f2a1c9e tag. The order-independence is the feed half of the claim: the batch arrives whole and arbitrarily sorted, and the refusal names the same three strings either way"
       }
     ]
   },
@@ -1616,23 +1622,6 @@
         }
       ],
       "why": "The lossiness is by construction (doc 29 §5); the promise is that the user is told, which needs a parser and a screen."
-    },
-    {
-      "id": "VER-70",
-      "subject": "tag uniqueness over the whole server set is a compile error naming both ids in stage 1; it has never met a registry that arrives unsorted from a subscription import",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "the eight-hex collision test over the canonical server examples"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/23-unified-server-model.md",
-          "anchor": "Tag collision across the server set is a compile error"
-        }
-      ],
-      "why": "Deterministic tags are what make byte-stability and Core logs usable; a silent suffix would break both and be invisible until two tunnels crossed. `connector/internal/compile/resolve.go` checks the whole set, not one profile, and names both server ids and the shared tag when they clash (`TestATagCollisionNamesBothServers`), which is the claim doc 23 §10 makes; the row stays open because the collision this predicts arrives from a feed, where two URLs sharing the first eight hex characters of a generated uuid is a subscription-refresh event rather than a unit test, and because the promise doc 23 §6 makes is that the tag is *derived*, never stored -- a server whose stored `tag` disagrees with its id is refused today, and no real import has tried."
     },
     {
       "id": "VER-71",
