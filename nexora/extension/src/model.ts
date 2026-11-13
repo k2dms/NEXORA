@@ -66,9 +66,12 @@ export type SavedProfile = {
   failurePolicy: { coreDeath: { action: 'block' } };
 };
 
+export type ServerCheckLayer = 'dns' | 'tcp' | 'core-outbound' | 'proxied-http';
 export type ServerCheck = {
   serverId: string;
-  layers: { layer: 'dns' | 'tcp' | 'core-outbound'; state: 'pass' | 'fail' | 'skipped' | 'timeout'; rttMs: number | null }[];
+  layers: { layer: ServerCheckLayer; state: 'pass' | 'fail' | 'skipped' | 'timeout'; rttMs: number | null }[];
+  egressIp?: string | null;
+  matchesExpectedEgress?: boolean | null;
 };
 
 export type ConnectionView = {

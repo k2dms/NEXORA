@@ -825,7 +825,8 @@ test('test-server probes only the selected subscription server without changing 
     { layer: 'dns', state: 'pass', rttMs: 1.25 },
     { layer: 'tcp', state: 'pass', rttMs: 2 },
     { layer: 'core-outbound', state: 'pass', rttMs: 3 },
-  ] };
+    { layer: 'proxied-http', state: 'pass', rttMs: 4 },
+  ], egressIp: null, matchesExpectedEgress: null };
   assert.equal(view.phase, 'connected');
   assert.equal(view.pending, false);
   assert.equal(view.error, null);
@@ -834,7 +835,7 @@ test('test-server probes only the selected subscription server without changing 
   assert.equal(writes, 0);
   const requests = f.messages.slice(messages);
   assert.deepEqual(requests.filter((message) => message.method === 'server.test').map((message) => message.args), [
-    { serverId: selected.id, layers: ['dns', 'tcp', 'core-outbound'], repeat: 1 },
+    { serverId: selected.id, layers: ['dns', 'tcp', 'core-outbound', 'proxied-http'], repeat: 1 },
   ]);
   assert.ok(requests[0]?.method === 'core.status');
   assert.equal(requests.at(-1)?.method, 'core.status');

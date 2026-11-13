@@ -420,7 +420,7 @@ export class Connection {
     const selection = this.selection;
     const record = this.runtime;
     const revision = this.revision;
-    const layers = ['dns', 'tcp', 'core-outbound'] as const;
+    const layers = ['dns', 'tcp', 'core-outbound', 'proxied-http'] as const;
     const result = await this.client.request('server.test', { serverId: selection.server.id, layers: [...layers], repeat: 1 }) as { serverId?: unknown; layers?: unknown } | null;
     if (this.revision !== revision || this.view.phase !== 'connected' || this.runtime !== record || this.client.state !== 'ready') throw new Error('Сеанс изменился. Результат проверки отброшен.');
     if (!result || result.serverId !== selection.server.id || !Array.isArray(result.layers) || result.layers.length !== layers.length) throw new Error('Connector вернул некорректный результат проверки.');
@@ -430,9 +430,11 @@ export class Connection {
         (row.rttMs !== undefined && row.rttMs !== null && (typeof row.rttMs !== 'number' || !Number.isFinite(row.rttMs) || row.rttMs < 0))) throw new Error('Connector вернул некорректный результат проверки.');
       return { layer: layers[index]!, state: row.state as ServerCheck['layers'][number]['state'], rttMs: typeof row.rttMs === 'number' ? row.rttMs : null };
     });
+    const egressIp = typeof (result as Record<string, unknown>).egressIp === 'string' ? (result as Record<string, unknown>).egressIp as string : null;
+    const matches = typeof (result as Record<string, unknown>).matchesExpectedEgress === 'boolean' ? (result as Record<string, unknown>).matchesExpectedEgress as boolean : null;
     await this.refresh();
     if (this.revision !== revision + 1 || this.view.phase !== 'connected' || this.runtime !== record || this.selection !== selection || this.client.state !== 'ready') throw new Error('Сеанс изменился. Результат проверки отброшен.');
-    this.view.check = { serverId: selection.server.id, layers: measures };
+    this.view.check = { serverId: selection.server.id, layers: measures, egressIp, matchesExpectedEgress: matches };
   }
 
   private async disconnect(): Promise<void> {

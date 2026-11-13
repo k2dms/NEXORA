@@ -61,7 +61,7 @@
   const canConnect = $derived(editable && !!view?.server && !replacing);
   const canDisconnect = $derived(!pending && !view?.pending && (view?.phase === 'connected' || view?.phase === 'blocked'));
   const canOpen = $derived(view?.phase === 'connected' && !pending && !view.pending && !statusError);
-  const checkLabels = { dns: 'DNS', tcp: 'TCP сервера', 'core-outbound': 'Ответ SOCKS Core' };
+  const checkLabels = { dns: 'DNS', tcp: 'TCP сервера', 'core-outbound': 'Ответ SOCKS Core', 'proxied-http': 'HTTP через туннель' };
   const checkStates = { pass: 'Ответ получен', fail: 'Ошибка', skipped: 'Не проверено', timeout: 'Время истекло' };
   const selectedServer = $derived(view?.servers.find((server) => server.id === view?.server?.id));
   const phaseLabel = $derived(view ? phaseLabels[view.phase] : 'Состояние неизвестно');
@@ -346,6 +346,10 @@
                 <dd>{checkStates[row.state]}{row.rttMs === null ? '' : ` · ${row.rttMs.toFixed(1)} мс`}</dd>
               </div>
             {/each}
+                {#if view.check.egressIp}
+                  <dt>Публичный IP</dt>
+                  <dd>{view.check.egressIp}{#if view.check.matchesExpectedEgress === false} <span class="warn">не совпадает</span>{/if}</dd>
+                {/if}
           </dl>
         {/if}
       </div>
