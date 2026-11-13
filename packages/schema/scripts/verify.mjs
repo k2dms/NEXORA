@@ -12,6 +12,7 @@ import { existsSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { createHash } from 'node:crypto';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
@@ -656,11 +657,50 @@ check(replayPairs >= 4, 'idempotent replay is exercised', `${replayPairs} replay
         `args.contentHash is the hash of the whole this slice belongs to: ${key}#${m.frame.seq}`,
         `args=${m.frame.args?.contentHash} chunk=${chunk.contentHash}`,
       );
+      check(
+        typeof m.frame.args?.payload === 'string' && /^[A-Za-z0-9+/]*={0,2}$/.test(m.frame.args.payload),
+        `a chunk slice carries its fragment in args.payload: ${key}#${m.frame.seq}`,
+        `payload=${typeof m.frame.args?.payload} len=${m.frame.args?.payload?.length ?? 'n/a'}`,
+      );
     }
 
     if (hashes.size === 1) {
       cleanGroups++;
       check(true, `chunk group carries one contentHash throughout: ${key}`, '');
+      // The VER-76 assertion, now written: reassembled slice bodies hash to the
+      // document the sender declared. The fragments are the byte string the
+      // atomicity rule is about, so the group-level check hashes the
+      // concatenation, not any single slice.
+      const ordered = [...members].sort((a, b) => a.frame.chunk.chunkSeq - b.frame.chunk.chunkSeq);
+      let reassembled;
+      try {
+        reassembled = Buffer.concat(ordered.map((m) => Buffer.from(m.frame.args.payload, 'base64')));
+      } catch {
+        reassembled = null;
+      }
+      check(
+        reassembled !== null,
+        `every slice fragment decodes as base64: ${key}`,
+        'a fragment Buffer.from() refused',
+      );
+      const reassembledHash = reassembled === null ? '' : createHash('sha256').update(reassembled).digest('hex');
+      check(
+        reassembledHash === members[0].frame.chunk.contentHash,
+        `reassembled slice bodies hash to the declared contentHash: ${key}`,
+        `sha256(${reassembled?.length ?? 0} bytes)=${reassembledHash.slice(0, 16)}… declared ${members[0].frame.chunk.contentHash.slice(0, 16)}…`,
+      );
+      check(
+        (() => {
+          try {
+            JSON.parse(reassembled.toString('utf8'));
+            return true;
+          } catch {
+            return false;
+          }
+        })(),
+        `the reassembled bytes are a UTF-8 JSON document: ${key}`,
+        'reassembly produced bytes JSON.parse refuses',
+      );
     } else {
       splitGroups++;
       const answers = members[0].frames.filter(
@@ -3719,14 +3759,14 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 50 && count('state', 'no-check') === 6 && count('state', 'no-run') === 10 &&
-      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 4 && verif.matrix.length === 72,
+    count('state', 'no-code') === 49 && count('state', 'no-check') === 6 && count('state', 'no-run') === 10 &&
+      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 4 && verif.matrix.length === 71,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
   );
   check(
-    count('owner', 'connector') === 39 && count('owner', 'extension') === 11 && count('owner', 'packages') === 3 &&
+    count('owner', 'connector') === 38 && count('owner', 'extension') === 11 && count('owner', 'packages') === 3 &&
       count('owner', 'ui') === 3 && count('owner', 'contracts') === 5 && count('owner', 'tools') === 3 &&
       count('owner', 'ci') === 4 && count('owner', 'human') === 1 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
@@ -3735,7 +3775,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
   );
   check(
-    kindCount('live-row') === 41 && kindCount('new-live-row') === 1 && kindCount('assertion') === 17 &&
+    kindCount('live-row') === 41 && kindCount('new-live-row') === 1 && kindCount('assertion') === 16 &&
       kindCount('gate') === 4 && kindCount('tool') === 2 && kindCount('ci-step') === 3 &&
       kindCount('decision') === 1 && kindCount('external-measurement') === 3,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',

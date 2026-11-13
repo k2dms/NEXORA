@@ -22,10 +22,10 @@
         ] }
       },
       {
-        "description": "A chunked import cannot be verified without the hash of the whole, so contentHash is mandatory on every slice frame. The Connector rejects a reassembled payload whose hash differs (IntegrityMismatch) rather than importing an unknown subset. The slice fields are nested under `chunk` -- the same shape protocol/envelope.schema.json#/properties/chunk uses for the frame carrying this call; that object is authoritative and scripts/verify.mjs asserts this mirror is structurally identical to it. Group rules the same script enforces over protocol/fixtures/protocol/*.jsonl: every slice of one import (same envelope.id) declares the same chunkCount, its chunkSeq values cover 0..chunkCount-1 exactly once, and args.contentHash equals args.chunk.contentHash; a group that disagrees about contentHash must be answered by IntegrityMismatch.",
+        "description": "A chunked import cannot be verified without the hash of the whole, so contentHash and the slice body are mandatory on every slice frame. Fragment model: each slice carries its fragment of the serialized import document as base64 in `payload`, and `chunk.contentHash` is sha256 over the concatenation of the decoded fragments of the group in chunkSeq order -- the hash of the reassembled bytes, not of any single slice. The Connector rejects a reassembled payload whose hash differs (IntegrityMismatch) rather than importing an unknown subset. The slice fields are nested under `chunk` -- the same shape protocol/envelope.schema.json#/properties/chunk uses for the frame carrying this call; that object is authoritative and scripts/verify.mjs asserts this mirror is structurally identical to it. Group rules the same script enforces over protocol/fixtures/protocol/*.jsonl: every slice of one import (same envelope.id) declares the same chunkCount, its chunkSeq values cover 0..chunkCount-1 exactly once, args.contentHash equals args.chunk.contentHash, and the reassembled `payload` fragments hash to the declared contentHash; a group that disagrees about contentHash must be answered by IntegrityMismatch.",
         "if": { "required": ["chunk"] },
         "then": {
-          "required": ["contentHash"],
+          "required": ["contentHash", "payload"],
           "properties": {
             "chunk": {
               "type": "object",
@@ -35,11 +35,16 @@
                 "contentHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
                 "chunkSeq": { "type": "integer", "minimum": 0 },
                 "chunkCount": { "type": "integer", "minimum": 2 },
-                "encoding": { "enum": ["base64", "json"] }
+                "encoding": { "enum": ["base64"] }
               }
             }
           }
         }
+      },
+      {
+        "description": "The slice body exists only on a chunked frame. A single-frame import carries its document in `profiles`, `servers` and `subscriptions` directly; a `payload` beside a frame that does not declare `chunk` has no reassembly to belong to and is rejected rather than ignored.",
+        "if": { "not": { "required": ["chunk"] } },
+        "then": { "not": { "required": ["payload"] } }
       },
       {
         "description": "A credential never travels on a chunked frame. A slice is reassembled in the extension's import-staging namespace, which lives in chrome.storage.local and is protected by nothing but its expiry -- so a value split across slices would sit in the one buffer DPAPI does not reach (docs/architecture/32 §6). The payload that carries `credentials` MUST arrive whole in a single frame, which is why the field is bounded at 512 entries and each value at 4 KiB: hand-entered material and a legacy backup's auth maps both fit, a feed body does not and must not be here.",
@@ -67,9 +72,14 @@
       },
       "mode": { "enum": ["merge", "replace"], "default": "merge" },
       "contentHash": { "type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$" },
+      "payload": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+        "description": "The slice body: a base64 fragment of the serialized import document, one fragment per chunked frame. The reassembled bytes are a UTF-8 JSON object shaped like a single-frame `profile.import` args without `chunk`, `payload`, `contentHash` and `credentials` -- the profiles, servers, subscriptions and mode the command applies -- and the Connector validates each field against the same schema this command references before anything is written. Required on a chunked frame and forbidden beside a frame without `chunk` (the second and fourth allOf clauses). `chunk.contentHash` is sha256 over the concatenation of the decoded fragments of the group in chunkSeq order; the `encoding: \"base64\"` member names exactly this arrangement."
+      },
       "chunk": {
         "type": ["object", "null"],
-        "description": "Mirror of protocol/envelope.schema.json#/properties/chunk for the frame carrying this slice: same four fields, nested under `chunk`, with the values the envelope copy carries. The Connector echoes it so the caller can verify completeness. Constrained field-by-field by the allOf above when present; a frame whose envelope `chunk` and `args.chunk` disagree is rejected, not reconciled."
+        "description": "Mirror of protocol/envelope.schema.json#/properties/chunk for the frame carrying this slice: same four fields, nested under `chunk`, with the values the envelope copy carries. The object is slice metadata only -- the fragment itself rides in `payload`. The Connector echoes it so the caller can verify completeness. Constrained field-by-field by the allOf above when present; a frame whose envelope `chunk` and `args.chunk` disagree is rejected, not reconciled."
       },
       "backupBeforeWrite": {
         "type": "boolean",

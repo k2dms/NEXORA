@@ -181,12 +181,11 @@
         },
         "encoding": {
           "enum": [
-            "base64",
-            "json"
+            "base64"
           ]
         }
       },
-      "description": "Present when a payload exceeds the frame limit of the direction it travels (protocol/framing.json#/limits: 1 MB host-to-extension, 64 MiB extension-to-host). profile.import is the only such sender today -- a subscription feed body is fetched inside the Connector and so never crosses this frame boundary in the extension-to-host direction, docs/architecture/29 §2. The slice fields live nested here, under `chunk`, and NOT at the top level of the frame: `chunkCount` >= 2 because a single-slice payload is not a chunked transfer and must be sent as one frame. The receiver MUST reject a reassembled payload whose hash differs: IntegrityMismatch. protocol/commands/profile.import.json mirrors this object inside its args, and scripts/verify.mjs asserts the two mirrors are structurally identical (same required names, same per-field constraints) so the frame contract and the command contract cannot drift apart; for a chunked profile.import the two copies must also carry byte-identical values in the same frame."
+      "description": "Present when a payload exceeds the frame limit of the direction it travels (protocol/framing.json#/limits: 1 MB host-to-extension, 64 MiB extension-to-host). profile.import is the only such sender today -- a subscription feed body is fetched inside the Connector and so never crosses this frame boundary in the extension-to-host direction, docs/architecture/29 §2. The slice fields live nested here, under `chunk`, and NOT at the top level of the frame: `chunkCount` >= 2 because a single-slice payload is not a chunked transfer and must be sent as one frame. Fragment model: the slice BODY is not a field of this object -- the object is metadata only. Each slice carries its fragment as base64 in `args.payload` of the command frame (protocol/commands/profile.import.json), `encoding: \"base64\"` names that arrangement, and `contentHash` is sha256 over the concatenation of the decoded fragments of the group in chunkSeq order -- the hash of the reassembled bytes, not of any single slice. The receiver MUST reject a reassembled payload whose hash differs: IntegrityMismatch. protocol/commands/profile.import.json mirrors this object inside its args, and scripts/verify.mjs asserts the two mirrors are structurally identical (same required names, same per-field constraints) so the frame contract and the command contract cannot drift apart; for a chunked profile.import the two copies must also carry byte-identical values in the same frame."
     }
   },
   "allOf": [

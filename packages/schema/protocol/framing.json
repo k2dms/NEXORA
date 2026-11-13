@@ -50,6 +50,7 @@
     ],
     "mechanism": {
       "field": "envelope.chunk",
+    "sliceBody": "each slice of one group carries its fragment as base64 in args.payload of the command frame (protocol/commands/profile.import.json#/args/properties/payload); chunk.contentHash is sha256 over the concatenation of the decoded fragments in chunkSeq order -- the hash of the reassembled bytes, not of any single slice",
       "ordering": "chunks of one contentHash must arrive in chunkSeq order; a gap fails the whole import with IntegrityMismatch rather than partially applying",
       "atomicity": "reassembly completes, hashes, validates, and only then replaces the previous good set (validate-then-apply)",
       "cap": "total reassembled bytes bounded by subscription-source limits.maxBytes"

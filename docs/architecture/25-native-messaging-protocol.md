@@ -171,9 +171,15 @@ Group rules, asserted over the fixtures rather than described (the "chunk groups
    whole import with `IntegrityMismatch` rather than partially applying (`#/oversizedPayloads/mechanism/ordering`);
 3. one `contentHash` per group;
 4. within a frame, the envelope copy and the `args` copy of the slice are byte-identical;
-5. reassembly completes, hashes, validates, and only then replaces the previous good set — validate-then-apply
+5. the slice body rides in `args.payload` — a base64 fragment of the serialized import document, one fragment
+   per slice frame, required on a chunked frame and rejected beside a frame without `chunk`
+   (`protocol/commands/profile.import.json#/args/properties/payload`, `#/oversizedPayloads/mechanism/sliceBody`);
+6. `chunk.contentHash` is sha256 over the concatenation of the decoded fragments of the group in `chunkSeq`
+   order — the hash of the reassembled bytes, not of any single slice; `verify.mjs` reassembles the recorded
+   group and hashes it (`#/oversizedPayloads/mechanism/sliceBody`);
+7. reassembly completes, hashes, validates, and only then replaces the previous good set — validate-then-apply
    (`#/oversizedPayloads/mechanism/atomicity`);
-6. total reassembled bytes are bounded by `packages/schema/subscription-source.schema.json#/properties/limits`,
+8. total reassembled bytes are bounded by `packages/schema/subscription-source.schema.json#/properties/limits`,
    so chunking cannot be used to smuggle an arbitrarily large payload past the size guard.
 
 Rejected alternative, with its reason kept in the data: **out-of-band file handoff** (extension writes a temp
@@ -181,32 +187,27 @@ file, host reads it) — `#/oversizedPayloads/alternativesRejected`. It leaks us
 temp path, needs a second cleanup mechanism, and gives the pipe two protocols instead of one. This closes the
 plan's open question §7 п.9 in favour of chunking.
 
-**The one thing §5 does not decide.** Everything above is slice *metadata*, and the fixtures and
-`packages/schema/scripts/verify.mjs` assert all of it. What no file in `packages/schema/` states is the slice
-**body** — where the bytes ride. `packages/schema/protocol/envelope.schema.json#/properties/chunk/additionalProperties`
-is `false`, so nothing travels inside `chunk`; `packages/schema/protocol/commands/profile.import.json#/args/properties`
-offers `profiles`, `servers`, `mode`, `contentHash`, `chunk`, `backupBeforeWrite`, `credentials`, and the only two
-list fields are typed as arrays of whole documents (`#/args/properties/profiles/items/$ref` points at the profile
-schema), so a byte fragment cannot be put in them and still validate. The recorded group does not choose between
-them. `packages/schema/fixtures/protocol/import-chunked.jsonl` sends `chunkCount: 3` whose first two slices carry
-`args.profiles: []`, no `args.servers` at all, and `encoding: "base64"` — a string encoding of bytes no field
-holds — while the third carries the entire document as structured `profiles` and `servers`, and all three repeat
-one whole-document `args.contentHash`. That is consistent with three shapes of exchange, and the data used to remove
-one of them: (a) the earlier slices are announcements and only the last frame travels. That exclusion rested on
-`packages/schema/protocol/framing.json#/oversizedPayloads/mechanism/cap` counting "total reassembled bytes" beside
-`packages/schema/protocol/envelope.schema.json#/properties/chunk/description` speaking of a payload that exceeds the
-frame limit — and on the 1 MB figure §4 once carried for this direction. With the direction corrected to 64 MiB
-(§2.1) the whole-document final frame is writable, so (a) is not excluded by the cap and the question is three
-readings wide rather than two. (b) each slice carries a fragment of the serialized document and
-`contentHash` hashes the concatenation of the decoded bytes — what rules 2, 5 and 6 above assume, and the one
-reading with no field to write a fragment into. (c) each slice carries a valid *subset* of the profile and server
-arrays and `contentHash` hashes the canonical serialization of the union — every frame then stays individually
-schema-valid, but `encoding: "base64"` on a frame of JSON objects becomes meaningless, `json` is the other member
-of that enum for a reason, and "canonical" is a byte form no file in this repository defines. (b) and (c)
-disagree about which byte string `chunk.contentHash` names, and the atomicity rule is written against exactly that
-string, so reassembly cannot be written from this document without guessing. This defers to `docs/architecture/40-open-decisions.md`,
-whose entry for it is the question `connector/internal/chunk` is waiting on; the human wording of the same question
-is `docs/PROJECT-STATE.md` §9.
+**The slice body — decided.** The paragraph this section used to end with asked where the bytes
+ride, because `chunk` was metadata only and no field could hold a fragment (`chunk`'s
+`additionalProperties` is `false`; the list fields are arrays of whole documents). It was the register's
+`ODEC-34`, and it is answered as the register's second option, the **fragment model**: each slice carries
+its fragment as base64 in the new `args.payload` field of `profile.import`
+(`protocol/commands/profile.import.json#/args/properties/payload`), `encoding` keeps the one member that
+names a real arrangement — `"base64"` — and `chunk.contentHash` is sha256 over the concatenation of the
+decoded fragments of the group in `chunkSeq` order. The reassembled bytes are a UTF-8 JSON object shaped
+like a single-frame `profile.import` args without `chunk`, `payload`, `contentHash` and `credentials`,
+and each of its fields is validated against the same schema the command already references before anything is
+written — rule 7's validate-then-apply is now written against a byte string the schema defines. The other two
+options are excluded, recorded so the exclusion is not re-litigated: the announcement reading rested on a final
+frame carrying the whole document structured, which is exactly the shape the recorded fixture used to show; and
+the subset reading needed `encoding: "base64"` on a frame of JSON objects to mean something, plus a canonical
+byte form this repository has never defined. The recorded group in
+`packages/schema/fixtures/protocol/import-chunked.jsonl` now shows the decided shape: three slices, each with
+`args.profiles: []` and a real base64 fragment in `args.payload`, and `verify.mjs` reassembles the
+fragments, hashes the concatenation and refuses a group whose body does not hash to the declared
+`contentHash` — which is also the assertion `VER-76` closed against. `connector/internal/chunk` is the
+receiver half: `chunk.New` opens a group, `Add` takes one fragment, `Bytes` reassembles and verifies, and
+a hash mismatch is `ErrIntegrityMismatch` — never a partial apply.
 
 ## 6. Envelope
 
@@ -227,7 +228,7 @@ Required: `["v","id","type","sentAt"]` — `packages/schema/protocol/envelope.sc
 | `sentAt` | date-time | always | clocks are stripped before replay comparison (ADR-0008) |
 | `seq` | integer ≥ 0 or null | per sender | gap detection only; no cross-sender ordering is assumed (`#/ordering/rule`) |
 | `progress` | `{stage, done, total?, event?}` | progress frames | `stage` and `done` required |
-| `chunk` | `{contentHash, chunkSeq, chunkCount, encoding}` | slice frames | §5 |
+| `chunk` | `{contentHash, chunkSeq, chunkCount, encoding}` | slice frames | §5 — the fragment rides in `args.payload` |
 
 Type rules (`packages/schema/protocol/envelope.schema.json#/allOf`, three clauses): a `request` MUST carry
 `method` and MUST NOT carry `result`, `ok` or `error`; a `response` MUST carry `ok` and `inReplyTo`, MUST NOT
@@ -367,7 +368,7 @@ and no bidirectional streaming RPC semantics.
 | A frame whose `v` is below the pipe floor is refused before dispatch, by the code `framing.json` names | `connector/internal/envelope`'s `Parse` compares `v` to `contract.MinPipeVersion` and `TestThePipeFloorComparisonCompilesAndRuns` pins that the branch runs — but it cannot fire while `packages/schema/protocol/envelope.schema.json#/properties/v/minimum` is the same 1 the floor carries | Verified: NO — deferred to Phase 2 (`VER-89`: today such a frame is an invalid envelope and ends the stream; `#/versionFloors/tooOld` asks for a `VersionMismatch` answer in reply to the frame's own `id`, which is the assertion the front door owes the day the floor rises above 1) |
 | Chunk shape is one object mirrored in `profile.import` | "the envelope chunk shape and profile.import args.chunk are one shape" assertion | **GREEN** |
 | Chunk groups complete and non-vacuous | the chunk-group block with its absent-group, clean-group and split-hash guards | **GREEN** |
-| Slice bodies reassemble to the document the sender hashed | nothing | Verified: NO — deferred to Phase 2 (the contract says what a slice *is* and never says where its bytes ride — see §5's last paragraph; the reassembly test is the assertion this row promises) |
+| Slice bodies reassemble to the document the sender hashed | the chunk-group block's "reassembled slice bodies hash to the declared contentHash" and "the reassembled bytes are a UTF-8 JSON document"; the receiver half is `connector/internal/chunk` (`Bytes` verifies before returning) | **GREEN** |
 | Nothing dispatchable pre-hello but `connector.hello` | "nothing is dispatchable before negotiation except connector.hello" | **GREEN** |
 | Capability registry and recorded hello are the same set | the capability equality assertions | **GREEN** |
 | Every cited error code exists | "cites only taxonomy codes" + fixture-level taxonomy checks | **GREEN** |

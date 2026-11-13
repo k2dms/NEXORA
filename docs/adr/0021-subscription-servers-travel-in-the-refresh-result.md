@@ -72,8 +72,8 @@ resting on a premise, and to take `VER-61` out of a queue that cannot close a `n
 Cheaper: the delivery boundary stops being a question, so `docs/architecture/29` §2's frame contract now rests
 on a decided clause instead of a premise, `VER-61` leaves the queue, and the four documents that deferred to
 `ODEC-33` have an answer to cite. It also takes subscriptions off the critical path of `connector/internal/chunk`:
-the reassembly that `docs/architecture/40-open-decisions.md` `ODEC-34` still holds is a `profile.import` problem
-and nothing in this decision waits on it.
+the reassembly this decision left to `profile.import` alone was answered since 2026-11-14 — the fragment
+model of `docs/architecture/25-native-messaging-protocol.md` §5 — and nothing in this decision waited on it.
 
 Harder: a refresh is one frame containing every parsed server, so the whole list is paid for at once — no
 streaming, no partial page, and a 4 096-item ceiling that is now a delivery constraint as well as a data one.

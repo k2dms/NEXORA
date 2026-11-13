@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 55
+    "counted": 53
   },
   "notADeferral": [
     {
@@ -879,33 +879,6 @@
       ]
     },
     {
-      "id": "ODEC-34",
-      "question": "In a chunked `profile.import`, what are the bytes of a slice, and which byte string does `chunk.contentHash` hash?",
-      "decidedBy": "contract",
-      "blocks": {
-        "verification": [
-          "VER-76"
-        ],
-        "compatibility": []
-      },
-      "why": "doc 25 §5 is complete about slice metadata and silent about the slice body, and the silence is not a gap in the prose -- it is a gap in `packages/schema`. `protocol/envelope.schema.json#/properties/chunk` allows four fields and no others, and `protocol/commands/profile.import.json#/args/properties/profiles/items` is a `$ref` to the profile schema, so a byte fragment cannot be sent through the only two list fields that exist. The recorded group in `fixtures/protocol/import-chunked.jsonl` then carries the whole document in its last slice and empty arrays in the others, all three declaring `encoding: \"base64\"`. Choosing an answer is one contract addition plus its examples; refusing to choose leaves `connector/internal/chunk` unwritable and, worse, leaves `#/oversizedPayloads/mechanism/atomicity` asserting the hash of a byte string nobody has defined -- which is exactly the reassembly bug ADR-0008's replay discipline exists to prevent.",
-      "options": [
-        "announcement model: only the final slice carries the document and the earlier ones announce it -- live again since 2026-11-10, because the corrected `framing.json#/limits/extensionToHostBytes` is 64 MiB and doc 25 §5 had excluded this reading on the 1 MiB figure it no longer carries",
-        "fragment model: a new `args.payload` string of base64 per slice, `contentHash` over the concatenation of the decoded bytes -- what doc 25 §5's rules 2, 5 and 6 already assume, and the only reading that actually bounds a frame",
-        "subset model: each slice carries a valid subset of `profiles` and `servers`, `contentHash` over the canonical serialization of the union -- keeps every frame individually schema-valid, but makes `encoding: \"base64\"` meaningless on a frame of JSON objects, leaves the enum's other member (`json`) as the natural fit, and requires a canonical byte form this repository has never defined"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "cannot be written from this document without guessing"
-        },
-        {
-          "doc": "docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md",
-          "anchor": "`ODEC-34` still holds is a `profile.import`"
-        }
-      ]
-    },
-    {
       "id": "ODEC-37",
       "question": "Which core-routing predicates still lack positive runtime evidence in Xray 24.11.11 -- quic's decryptable Initial packet and a fakedns match beside a FakeDNS engine -- now that invert has no negation to lower and the loopback-tested HTTP, TLS, BitTorrent and WebSocket Upgrade cases are measured?",
       "decidedBy": "upstream",
@@ -1086,6 +1059,18 @@
         "artefact": "the third option its own entry listed, as a contract addition: packages/schema/failure-policy.schema.json#/properties/coreDeath/allOf ties the ladder length to the attempt count exactly with ten if/then branches, and connector/internal/supervisor mirrors the refusal; VER-29 stays open because it closes by LIVE-03, not by this decision -- the gate is lifted, the live run is still owed",
         "freed": {
           "verification": [],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-34",
+        "decided": "2026-11-14",
+        "was": "in a chunked profile.import, what are the bytes of a slice, and which byte string does chunk.contentHash hash",
+        "artefact": "the second of its three options: the fragment model. A new args.payload field on profile.import carries the slice body -- a base64 fragment of the serialized import document, one fragment per slice frame, required on a chunked frame and rejected beside a frame without chunk. chunk.contentHash is sha256 over the concatenation of the decoded fragments of the group in chunkSeq order, and the reassembled bytes are a UTF-8 JSON object shaped like a single-frame import args without chunk, payload, contentHash and credentials, validated per-field against the same schemas the command references. The announcement reading was excluded because it was exactly the shape the old fixture showed -- the whole document structured in the last frame, a payload that exceeds the frame limit never chunked; the subset reading was excluded because it left encoding:\"base64\" meaningless on a frame of JSON objects and needed a canonical byte form the repository has never defined. The receiver half is connector/internal/chunk (New/Add/Bytes, ErrIntegrityMismatch); the fixture-level assertion is verify.mjs reassembling the recorded group and hashing it. VER-76 retired in the same commit",
+        "freed": {
+          "verification": [
+            "VER-76"
+          ],
           "compatibility": []
         }
       }

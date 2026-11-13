@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.64; older scope and inventory paragraphs
+continuation is §4.66; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5039,7 +5039,7 @@ written before any behaviour existed. What each next milestone has to make true:
 | 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
 | 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
 | 8 | What carries the heartbeat? `packages/schema/protocol/framing.json#/liveness` gives the interval (25 s), the miss count (3) and a **direction** (`host-to-extension`), and `packages/schema/protocol/envelope.schema.json#/properties/type` has four values — `request`, `response`, `event`, `progress` — none of them a beat. So either the beat is an envelope frame the data has not named (which one, given the closed object and the four type rules), or `nexora-host` keeps the port open without writing and only the extension counts, or the beat belongs to the local pipe instead and the direction value is wrong. Until one of those is chosen, no Go peer can claim the third clause of `VER-49`'s closer, and the peer in §4.7 counts *any* inbound frame as a beat arrived — a proxy, not the contract | `VER-49`, §11 of `docs/architecture/25-native-messaging-protocol.md`, the watchdog in `connector/internal/peer/` |
-| 9 | What are the bytes of a chunk slice, and which byte string does `chunk.contentHash` hash? §4.11 read the contract to write `connector/internal/chunk` and found the metadata complete and the body absent: the envelope's `chunk` object is closed at four fields, `profile.import`'s only list fields are arrays of whole documents, and the recorded group declares `encoding: "base64"` on two frames that hold no bytes. The data does exclude one reading — announcements-only, because that leaves the whole document in one frame over §4's sender cap — and does not choose between the two survivors: a fragment field plus a hash over the concatenation, or per-slice valid subsets plus a hash over a canonical serialization of the union that nothing in this repository defines. Whichever is chosen, `#/oversizedPayloads/mechanism/atomicity` and the gap rule start meaning a specific byte string instead of an intended one | `VER-76`, `ODEC-34`, `connector/internal/chunk`, §5 of `docs/architecture/25-native-messaging-protocol.md` |
+| 9 | **Answered on 2026-11-14, and the number stays.** The question was what the bytes of a chunk slice are and which byte string `chunk.contentHash` hashes (`ODEC-34`, §4.11's find, and the row this ledger once refused to supply an answer for). It is answered by the fragment model: `profile.import` gains `args.payload`, each slice carries its fragment as base64 there, and `chunk.contentHash` is sha256 over the concatenation of the decoded fragments in `chunkSeq` order. The id is retired in `packages/schema/open-decisions.json#/retired`, the row it gated in `packages/schema/verification.json#/retired`, and `connector/internal/chunk` — the package this question stopped — is written and tested. §4.66 carries the change | nothing: the row that needed it, `VER-76`, is retired beside it |
 **This list ran to nine rows, dropped to eight, and is at nine again.** It dropped when §4.10 deleted the ninth it had
 — whether a name the allowlist does not publish is refused by the codec or by the front door was raised here as a
 choice between two defensible readings and turned out not to be one: `docs/adr/0007-typed-versioned-command-allowlist.md`
@@ -5052,10 +5052,11 @@ entry carries the position. The ninth row that replaced it came from the opposit
 contract, found an answer that was *not* in it, and refused to supply one. It is a `contract` question — the two
 survivors cost a field and its examples, not a person — and it is in this list because the next agent to touch
 `connector/internal/chunk` would otherwise meet a green chunk block and an unwritable package, and the cheapest answer
-available to them would be a guess in a commit message. What remains is eight questions in nine slots, and two of them
-have Go waiting:
-the eighth, `VER-49`'s heartbeat clause, which §4.7 declined to fake, and the ninth, which stopped §4.11 before a line
-of §6's queue was written. The vacant slot is the fourth, and it is vacant in a new way: this list has deleted a row
+available to them would be a guess in a commit message. The ninth stopped being a question on 2026-11-14: §4.66
+answered it the way §4.11 refused to — the register's second option, written as a field plus its verifier and its
+receiver package — and it now reads like the fourth, keeping its number and naming its answer. What remains is seven
+questions in nine slots, and one of them has Go waiting: the eighth, `VER-49`'s heartbeat clause, which §4.7 declined
+to fake. The vacant slot is the fourth, and it is vacant in a new way: this list has deleted a row
 only when that row was the last one, so the ordinals after it never moved, and §9.4 is the first answered question with
 rows behind it. Keeping its number was not a style choice. The ordinals after it are cited by name — `§9.5` by the
 `core.select` row in `docs/architecture/39-verification-matrix.md` and by `packages/schema/verification.json`, `§9.6`
@@ -5131,14 +5132,64 @@ sixth stopped thing arrived the same way `ODEC-40` did, by reading the shipped c
 so the queue's first answer by decision is now also the queue's example of an answer that leaves a row behind. §4.30
 made that example a closure: `ODEC-40` was answered by the first option its own entry listed, `VER-81` left the queue
 with it, and the register's cheapest question is the first one a Phase-2 commit deleted rather than a person. The
-corpus is 194 labelled lines over 45 documents, the queue is 72 rows with sixteen tombstones, and the register is 36
-questions over 59 sites with nine retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
+corpus is 193 labelled lines over 45 documents, the queue is 71 rows with seventeen tombstones, and the register is 31
+questions over 53 sites with fourteen retirements — `docs/adr/0004-native-messaging-only-no-loopback-http-control.md`,
 `docs/adr/0005-two-process-connector.md` and `docs/adr/0008-idempotency-and-replay.md` still address
 `packages/schema/protocol/framing.json` at six line numbers, and the new floor is at 177, which is what §10 now says
 about that file. §4.33 registers the queue's first row whose subject is the corpus's own citation form rather than a
 promise about behaviour: 568 `§N` anchors under `docs/`, 8 of them naming a section the document they name does not
 have, all re-aimed by hand, and `VER-83` as the pass that would have refused them.
-Plus the decisions in §7 and the eight questions standing in §9's nine slots, which are not work an agent may finish;
-the note under that table says why the fourth stopped being a question, and why its number stayed.
+### 4.65 The egress diagnostics layer reaches the UI (2026-11-14)
+
+**Implemented; committed as 548e901.** The extension's `test-server` action now requests the fourth layer
+(`proxied-http`) together with the three it already ran, and captures the answer-only egress fields the command
+returns: `egressIp` and `matchesExpectedEgress`. `ServerCheck.layers` gained the `proxied-http` member and
+`ServerCheck` the two optional egress fields; ConnectionPanel renders a separate "HTTP через туннель" layer row and,
+when the configured egress probe answered, the observed egress IP with its match verdict. No new command, no new
+frame, no new setting: the request still goes out as one `server.test` with `layers: ['dns','tcp','core-outbound',
+'proxied-http']`, `repeat: 1`, for the proven connected selection only. The egress pair is null whenever
+`core.egressProbe.endpoint` is not configured — the default — so the UI shows four layers and no IP line, which is
+the honest state of a machine with no probe endpoint. Extension test count rose 54 → 55, all green; the Go suite
+does not change (this slice is the consumer side of §4.63's diagnostics plumbing).
+
+### 4.66 The chunk slice body: `ODEC-34` and `VER-76` decided by the fragment model (2026-11-14)
+
+**The contract answer.** `ODEC-34` is answered by the second of its own three options: the **fragment model**.
+`profile.import` gains `args.payload` — a base64 fragment of the serialized import document, one fragment per
+slice frame, required on a chunked frame (second `allOf` clause) and rejected beside a frame without `chunk`
+(new fourth clause). `chunk.contentHash` is sha256 over the **concatenation of the decoded fragments of the group
+in `chunkSeq` order** — the hash of the reassembled bytes, not of any single slice. The reassembled bytes are a
+UTF-8 JSON object shaped like a single-frame `profile.import` args without `chunk`, `payload`,
+`contentHash` and `credentials`, each field validated against the same schema the command already references
+before anything is written. `encoding` narrows to its one real member, `"base64"`, in both the envelope and the
+command mirror. `packages/schema/protocol/framing.json#/oversizedPayloads/mechanism` gains `sliceBody`; the envelope `chunk` description
+states the arrangement; `args.chunk`'s description notes the object is metadata only.
+
+**The assertion.** `verify.mjs`'s chunk block now reassembles the recorded group itself: every slice must carry a
+base64-shaped `args.payload`, and a clean group's fragments, concatenated in `chunkSeq` order and hashed, must
+equal the declared `contentHash` — plus the reassembled bytes must parse as UTF-8 JSON. The recorded fixture group
+was rewritten from the announcement shape (whole document structured in the last frame) to three real fragments of a
+929-byte document; the negative scene keeps its hash disagreement and now carries real fragments too. Check count
+1230 → 1247.
+
+**The receiver half.** `connector/internal/chunk` is written: `New(hash, count)` refuses `chunkCount < 2` and a
+non-sha256-hex hash; `Add(seq, payload)` refuses out-of-range, duplicate and non-base64 fragments; `Bytes()`
+refuses until complete and verifies the concatenation against the declared hash, returning
+`ErrIntegrityMismatch` (never a partial apply) on a mismatch. Seven tests cover the happy out-of-order path,
+hash mismatch, incompleteness, duplicate and range refusals, bad base64 and bad `New` arguments.
+
+**The corpus.** Doc 25 §5's rules grow to eight (the body rule and the concatenation-hash rule are new), and the
+section's last paragraph — "The one thing §5 does not decide" — is replaced by the decided statement with both
+excluded readings recorded. Doc 40 loses the `ODEC-34` index row, its rationale item 6 becomes the answer, and every
+tally moves (31 questions, 53 sites in 14 documents, 9 `contract`). Doc 39's tallies move with `VER-76`'s
+departure (71 rows, 19 retired, `no-code` 49, `connector` 38, `assertion` 16, marker 193). §9's ninth row
+above reads like the fourth now: answered, number kept. `citation.counted` 55 → 53.
+
+**Gates.** All seven green: schema verify (1247 checks), doc-evidence (2381 path:line citations), no-secrets,
+ADR shape (22 ADRs), layout guards, legacy backup, and the full Go suite with `internal/chunk`'s seven tests
+(`ok` in every package).
+
+Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
+the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 194
+    "counted": 193
   },
   "states": {
     "values": [
@@ -317,6 +317,12 @@
         "closed": "2026-11-07",
         "was": "the thirteen commands that do not declare `BadRequest` have no honest member of their `#/errors` for a malformed-args refusal",
         "artefact": "ODEC-43 answered: the closest declared meaning, chosen per command and recorded at the site -- the status quo. The shipped code and its tests already follow this reading; the taxonomy gap is real and named rather than hidden"
+      },
+      {
+        "id": "VER-76",
+        "closed": "2026-11-14",
+        "was": "chunk reassembly has no slice body: the contract says what a slice is and never says where its bytes ride",
+        "artefact": "the fragment model (ODEC-34): args.payload on profile.import carries the base64 fragment per slice frame, chunk.contentHash hashes the concatenation of the decoded fragments in chunkSeq order, and the reassembled bytes are the import document. The closing assertion is written and green: the chunk block in scripts/verify.mjs reassembles the recorded group, hashes the concatenation and requires sha256 == the declared contentHash, and requires the bytes to parse as UTF-8 JSON. The receiver half connector/internal/chunk.Bytes verifies the same hash before returning anything, mapping a mismatch to ErrIntegrityMismatch"
       }
     ]
   },
@@ -1718,23 +1724,6 @@
         }
       ],
       "why": "A rule that silently expands to a CIDR list is a rule the user cannot audit; the row is the promise that they will be able to."
-    },
-    {
-      "id": "VER-76",
-      "subject": "chunk reassembly has no slice body: the contract says what a slice is and never says where its bytes ride",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "reassembled slice bodies hash to the document the sender declared"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "Slice bodies reassemble to the document the sender hashed"
-        }
-      ],
-      "why": "Every clause of doc 25 §5 that verify.mjs asserts is slice metadata, and the recorded group is consistent with three different byte-level readings -- announcements-only, a fragment field that does not exist, or a valid subset of the typed `profiles`/`servers` arrays -- which disagree about the exact byte string `chunk.contentHash` names. The gap-to-`IntegrityMismatch` rule and validate-then-apply are both written against that string, so `connector/internal/chunk` is not a package awaiting code but a package awaiting a contract answer (`ODEC-34`)."
     },
     {
       "id": "VER-83",
