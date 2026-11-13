@@ -397,3 +397,104 @@ func TestAnInvalidInboundFrameEndsTheStream(t *testing.T) {
 		t.Error("a rejected frame reached the handler")
 	}
 }
+
+// A frame whose v is below the pipe floor is the one rejected frame the contract asks to answer, not only to end
+// on: framing.json#/versionFloors/tooOld names VersionMismatch, in reply to the frame's own id (VER-89). The
+// production floor is 1, which the 1..255 bound subsumes, so the day the floor rises above 1 this branch is the
+// one that fires; the answer's own v is this build's framing version, never the sender's failed one.
+func TestABelowFloorFrameIsAnsweredVersionMismatchBeforeTheStreamEnds(t *testing.T) {
+	mine, theirs := newPipe(t)
+	// The sender's end stays open past Serve's exit, so the answer is readable even after the stream ends.
+	theirsAlive := theirs
+
+	reached := false
+	cfg := ToHost()
+	cfg.Handler = func(*envelope.Frame) { reached = true }
+	// The shipped floor is 1, which the 1..255 bound subsumes, so this test states the floor it needs: 2. That
+	// is the constructor override's whole purpose — the branch is live code, provable today, firing in
+	// production the day the floor rises above 1 (VER-89).
+	cfg.PipeFloor = 2
+	p := New(mine, cfg)
+	done := make(chan error, 1)
+	go func() { done <- p.Serve() }()
+
+	// v=1 is inside 1..255 and below a floor of 2: the exact shape the production branch cannot produce while
+	// the shipped floor is 1. The id is parseable, which is what makes the frame answerable.
+	old := []byte(`{"v":1,"id":"req-oldframed1","type":"request","method":"connector.version","sentAt":"2026-11-14T10:00:00Z"}`)
+	if err := frames.Write(theirsAlive, old, contract.HostToExtensionBytes); err != nil {
+		t.Fatalf("writing a below-floor frame: %v", err)
+	}
+
+	// Read the answer from the sender's end in the background: Serve closes its pipe on exit, so the read must
+	// be running before the stream ends.
+	answers := make(chan []byte, 1)
+	readErr := make(chan error, 1)
+	go func() {
+		// The answer crosses a length-prefixed pipe, so the reader decodes a frame, not raw bytes.
+		data, err := frames.Read(theirsAlive, contract.HostToExtensionBytes)
+		if err != nil {
+			readErr <- err
+			return
+		}
+		answers <- data
+	}()
+
+	err := <-done
+	if err == nil || !strings.Contains(err.Error(), "inbound frame rejected") {
+		t.Fatalf("Serve = %v, want the rejection that ends the stream", err)
+	}
+	if reached {
+		t.Error("a below-floor frame reached the handler")
+	}
+	var answer []byte
+	select {
+	case answer = <-answers:
+	case e := <-readErr:
+		t.Fatalf("reading the VersionMismatch answer: %v", e)
+	}
+	f, perr := envelope.Parse(answer)
+	if perr != nil {
+		t.Fatalf("the answer is not a valid envelope: %v (%q)", perr, answer)
+	}
+	if f.Type != envelope.TypeResponse || f.InReplyTo == nil || *f.InReplyTo != "req-oldframed1" {
+		t.Fatalf("the answer does not reply to the frame's own id: %+v", f)
+	}
+	if f.OK == nil || *f.OK {
+		t.Fatal("the answer is not an error response")
+	}
+	if f.Error == nil || f.Error.Code != "VersionMismatch" {
+		t.Fatalf("the answer's code is %v, want VersionMismatch", f.Error)
+	}
+	if f.V != contract.FrameFormatVersion {
+		t.Fatalf("the answer's v is %d, want this build's framing version %d", f.V, contract.FrameFormatVersion)
+	}
+}
+
+// A below-floor frame with no parseable id has nothing to reply to: the stream end is the whole answer.
+func TestABelowFloorFrameWithoutAnIdGetsNoAnswer(t *testing.T) {
+	mine, theirs := newPipe(t)
+	// Keep the sender's end reading so the answer, if one were wrongly sent, would not block Serve.
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			if _, err := theirs.Read(buf); err != nil {
+				return
+			}
+		}
+	}()
+
+	cfg := ToHost()
+	p := New(mine, cfg)
+	done := make(chan error, 1)
+	go func() { done <- p.Serve() }()
+
+	// The id is absent, so no id exists to reply to; VersionMismatch is still the rejection reason.
+	old := []byte(`{"v":1,"type":"request","method":"connector.version","sentAt":"2026-11-14T10:00:00Z"}`)
+	if err := frames.Write(theirs, old, contract.HostToExtensionBytes); err != nil {
+		t.Fatalf("writing an id-less below-floor frame: %v", err)
+	}
+	err := <-done
+	if err == nil || !strings.Contains(err.Error(), "inbound frame rejected") {
+		t.Fatalf("Serve = %v, want the rejection that ends the stream", err)
+	}
+}

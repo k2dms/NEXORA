@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 193
+    "counted": 192
   },
   "states": {
     "values": [
@@ -323,6 +323,12 @@
         "closed": "2026-11-14",
         "was": "chunk reassembly has no slice body: the contract says what a slice is and never says where its bytes ride",
         "artefact": "the fragment model (ODEC-34): args.payload on profile.import carries the base64 fragment per slice frame, chunk.contentHash hashes the concatenation of the decoded fragments in chunkSeq order, and the reassembled bytes are the import document. The closing assertion is written and green: the chunk block in scripts/verify.mjs reassembles the recorded group, hashes the concatenation and requires sha256 == the declared contentHash, and requires the bytes to parse as UTF-8 JSON. The receiver half connector/internal/chunk.Bytes verifies the same hash before returning anything, mapping a mismatch to ErrIntegrityMismatch"
+      },
+      {
+        "id": "VER-89",
+        "closed": "2026-11-14",
+        "was": "a frame below the pipe floor ends the stream instead of answering VersionMismatch: the comparison in connector/internal/envelope's Parse is live code that the envelope's own lower bound subsumes, and framing.json#/versionFloors/tooOld still owes its answer",
+        "artefact": "the answer is written for both transports: envelope.ParseWithFloor carries the refused frame's parsed id on the Invalid error (RejectedID), and internal/peer's Serve plus the connector's line mode answer VersionMismatch in reply to that id — carrying this build's FrameFormatVersion, never the sender's failed one — before ending the stream, because a sender below the floor speaks a framing this build cannot continue reading in step. The branch is live code a test can reach: peer.Config.PipeFloor and the service's pipeFloor state the floor a test needs, since the shipped floor of 1 is subsumed by the envelope's 1..255 bound. Three tests pin it: the peer answers then ends, an id-less below-floor frame gets no answer, and the line mode answers the same way. The production firing is still the day the floor rises above 1, which is the day a second framing exists"
       }
     ]
   },
@@ -1787,23 +1793,6 @@
         }
       ],
       "why": "The check is green where it has run: the package's own tests, and a drive over the real release asset that hashes the binary in tens of milliseconds and refuses a one-byte tamper. Where the claim needs it nothing runs: no registered command reaches the spawn path, and the receipt's writer is the installer VER-42 waits for, whose signature half is pinned open twice (ODEC-22, ODEC-25)."
-    },
-    {
-      "id": "VER-89",
-      "subject": "a frame whose `v` is below the pipe floor ends the stream instead of the `VersionMismatch` answer `packages/schema/protocol/framing.json#/versionFloors/tooOld` asks for, and the comparison that would give it cannot fire while the envelope's own lower bound equals the floor",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "a frame below the pipe floor is answered VersionMismatch in reply to its own id"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "A frame whose `v` is below the pipe floor is refused before dispatch"
-        }
-      ],
-      "why": "`connector/internal/envelope/envelope.go:148` compares `v` to `contract.MinPipeVersion` and names `VersionMismatch` in the refusal text, and `TestThePipeFloorComparisonCompilesAndRuns` shows the branch is live code. It is also unreachable: the line above it refuses anything outside 1..255, and `packages/schema/protocol/envelope.schema.json#/properties/v/minimum` is the same 1 the floor carries, so no frame can be below the floor without first being malformed -- which `connector/internal/peer/peer.go:167` turns into a stream end, not an answer in reply to the frame's own `id`. `framing.json` declares two floors over one code and the pipe half of that answer is what no build can give until the floor rises above 1, which is the day a second framing exists. This is the residual that `VER-18`'s retirement left behind once its `nothing compares a frame's v yet` stopped being true."
     },
     {
       "id": "VER-90",

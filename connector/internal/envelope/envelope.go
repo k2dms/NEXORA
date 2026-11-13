@@ -105,8 +105,17 @@ type Violation struct {
 func (v Violation) String() string { return v.Field + ": " + v.Reason }
 
 // Invalid is the error Parse and Validate return: the complete list of broken rules, never just the first.
+// BelowPipeFloor is non-zero when one of the violations is the pipe-floor comparison of
+// protocol/framing.json#/versionFloors — a frame whose v carries a parseable id and an
+// older framing than this build accepts. That frame is answerable: framing.json#/versionFloors/tooOld
+// names VersionMismatch as its answer, in reply to the frame's own id (VER-89).
 type Invalid struct {
-	Violations []Violation
+	Violations     []Violation
+	BelowPipeFloor int
+	// RejectedID is the id the frame carried, when it parsed — a below-floor frame is answerable in reply
+	// to its own id, and Parse returns no frame on error, so the id travels on the error instead.
+	RejectedID    string
+	RejectedTrace *string
 }
 
 func (e *Invalid) Error() string {
@@ -119,6 +128,13 @@ func (e *Invalid) Error() string {
 
 // Parse decodes one frame payload and validates it.
 func Parse(data []byte) (*Frame, error) {
+	return ParseWithFloor(data, contract.MinPipeVersion)
+}
+
+// ParseWithFloor runs the same rule set at an explicit pipe floor. Parse is this function at the build's
+// contract floor; the explicit form exists so a test can prove the below-floor branch the day's floor of 1
+// otherwise subsumes behind the 1..255 bound (VER-89).
+func ParseWithFloor(data []byte, floor int) (*Frame, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 || trimmed[0] != '{' {
 		return nil, &Invalid{Violations: []Violation{{Field: "(frame)", Reason: "a frame is one JSON object, never an array, a scalar or a newline-delimited stream"}}}
@@ -130,6 +146,7 @@ func Parse(data []byte) (*Frame, error) {
 
 	var v []Violation
 	add := func(field, reason string) { v = append(v, Violation{Field: field, Reason: reason}) }
+	belowFloor := 0
 
 	f := &Frame{present: map[string]bool{}}
 	for k := range raw {
@@ -145,8 +162,9 @@ func Parse(data []byte) (*Frame, error) {
 		add("v", "must be an integer")
 	} else if f.V < 1 || f.V > 255 {
 		add("v", fmt.Sprintf("%d is outside 1..255", f.V))
-	} else if f.V < contract.MinPipeVersion {
-		add("v", fmt.Sprintf("%d is below the pipe floor %d (VersionMismatch; framing.json#/versionFloors/pipe) — the sender speaks an older framing than this build accepts", f.V, contract.MinPipeVersion))
+	} else if f.V < floor {
+		belowFloor = f.V
+		add("v", fmt.Sprintf("%d is below the pipe floor %d (VersionMismatch; framing.json#/versionFloors/pipe) — the sender speaks an older framing than this build accepts", f.V, floor))
 	}
 
 	if r, ok := raw["id"]; !ok {
@@ -276,7 +294,7 @@ func Parse(data []byte) (*Frame, error) {
 	v = append(v, chunkMirror(f)...)
 
 	if len(v) > 0 {
-		return nil, &Invalid{Violations: v}
+		return nil, &Invalid{Violations: v, BelowPipeFloor: belowFloor, RejectedID: f.ID, RejectedTrace: f.TraceID}
 	}
 	return f, nil
 }

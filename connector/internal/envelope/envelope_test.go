@@ -3,6 +3,7 @@ package envelope
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -326,5 +327,36 @@ func TestConstructedFramesCannotSilentlyBreakTheTypeRules(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "inReplyTo") || !strings.Contains(err.Error(), "result") {
 		t.Fatalf("violations are %v, want both the missing inReplyTo and the missing result", err)
+	}
+}
+
+// ParseWithFloor is the form the below-floor answer path reads: Parse is this function at the contract's
+// floor, and the explicit form proves the branch a shipped floor of 1 subsumes behind the 1..255 bound (VER-89).
+func TestParseWithFloorRefusesBelowTheStatedFloorAndKeepsTheId(t *testing.T) {
+	frame := []byte(`{"v":1,"id":"req-oldfloorx","type":"request","method":"connector.version","sentAt":"2026-11-14T10:00:00Z"}`)
+	_, err := ParseWithFloor(frame, 2)
+	var inv *Invalid
+	if !errors.As(err, &inv) {
+		t.Fatalf("ParseWithFloor(floor 2) = %v, want *Invalid", err)
+	}
+	if inv.BelowPipeFloor != 1 {
+		t.Fatalf("BelowPipeFloor = %d, want 1", inv.BelowPipeFloor)
+	}
+	if inv.RejectedID != "req-oldfloorx" {
+		t.Fatalf("RejectedID = %q, want the frame's own id: an answerable frame must be answerable", inv.RejectedID)
+	}
+	if !strings.Contains(err.Error(), "below the pipe floor 2") {
+		t.Errorf("the violation does not name the stated floor: %v", err)
+	}
+	// At the stated floor the same frame is accepted, and Parse is ParseWithFloor at the contract's floor.
+	f, err := ParseWithFloor(frame, 1)
+	if err != nil {
+		t.Fatalf("ParseWithFloor(floor 1) refused a frame at the floor: %v", err)
+	}
+	if f.V != 1 {
+		t.Fatalf("v is %d, want 1", f.V)
+	}
+	if _, err := Parse(frame); err != nil {
+		t.Fatalf("Parse refused a frame at the shipped floor: %v", err)
 	}
 }

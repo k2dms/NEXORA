@@ -36,10 +36,11 @@ and answers `ODEC-02` (2026-11-06). A comparison is written too — `connector/i
 frame whose `v` is below `contract.MinPipeVersion`, and `TestThePipeFloorComparisonCompilesAndRuns` pins that the
 branch runs — but the comparison cannot fire yet: `packages/schema/protocol/envelope.schema.json#/properties/v`
 starts at the same 1 the floor carries, so every schema-valid frame is at or above the floor, and a frame below it is
-already invalid on shape. What the front door still owes is the *shape* of that refusal, recorded as §13's floor row
-and queued as `VER-89`:
-`#/versionFloors/tooOld` names `VersionMismatch` for both floors, and §7 makes the mismatch a visible reason, while an
-invalid envelope today ends the stream and answers nothing. The other half of the same silence
+already invalid on shape. The shape of that refusal is written (§13's floor row records it, and `VER-89`
+closed with it): `#/versionFloors/tooOld` names `VersionMismatch` for both floors, and a frame below the pipe floor
+is answered `VersionMismatch` in reply to its own `id` — the one rejected frame the front door answers rather than
+only ending on — before the stream ends, because a sender below the floor speaks a framing this build cannot continue
+reading in step. The other half of the same silence
 is still queued: **how the sender identity crosses hop 2, and what hop 2's message schema is at all.**
 
 Four statements this corpus already makes close on each other there. (i) §2 above: the envelope crosses untranslated,
@@ -365,7 +366,7 @@ and no bidirectional streaming RPC semantics.
 | Envelope `required` is exactly `v,id,type,sentAt` | `#/required` + ajv compile of every fixture frame | **GREEN** |
 | `request`/`response`/`event` field discipline | `#/allOf` + the two must-reject envelope examples | **GREEN** |
 | The sender identity crosses hop 2 by a named mechanism, and hop 2 has a contract of its own | the sender is which pipe the host opened, injected at spawn; the pipe carries the same envelope, guarded by `pipeVersion` | Verified as data — ADR-0022 states the boundary; the runtime half is the live rows, still `SKIPPED` |
-| A frame whose `v` is below the pipe floor is refused before dispatch, by the code `framing.json` names | `connector/internal/envelope`'s `Parse` compares `v` to `contract.MinPipeVersion` and `TestThePipeFloorComparisonCompilesAndRuns` pins that the branch runs — but it cannot fire while `packages/schema/protocol/envelope.schema.json#/properties/v/minimum` is the same 1 the floor carries | Verified: NO — deferred to Phase 2 (`VER-89`: today such a frame is an invalid envelope and ends the stream; `#/versionFloors/tooOld` asks for a `VersionMismatch` answer in reply to the frame's own `id`, which is the assertion the front door owes the day the floor rises above 1) |
+| A frame whose `v` is below the pipe floor is refused before dispatch, by the code `framing.json` names | `connector/internal/peer`'s `Serve` and the line mode both answer `VersionMismatch` in reply to the frame's own `id` and only then end the stream; `envelope.ParseWithFloor` carries the refused frame's `id` on the error, and the peer tests run the branch at a stated floor of 2 because the shipped floor of 1 is subsumed by the 1..255 bound | Verified as code — the answer path is live and pinned (`VER-89` retired with it); the branch fires in production the day `packages/schema/protocol/envelope.schema.json#/properties/v/minimum` rises above the floor it currently equals, which is the day a second framing exists |
 | Chunk shape is one object mirrored in `profile.import` | "the envelope chunk shape and profile.import args.chunk are one shape" assertion | **GREEN** |
 | Chunk groups complete and non-vacuous | the chunk-group block with its absent-group, clean-group and split-hash guards | **GREEN** |
 | Slice bodies reassemble to the document the sender hashed | the chunk-group block's "reassembled slice bodies hash to the declared contentHash" and "the reassembled bytes are a UTF-8 JSON document"; the receiver half is `connector/internal/chunk` (`Bytes` verifies before returning) | **GREEN** |

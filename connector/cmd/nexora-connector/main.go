@@ -61,6 +61,10 @@ type config struct {
 	senderIDs    []string
 	instanceRoot string
 	hostExe      string
+
+	// pipeFloor overrides the pipe version serveLines parses against. Tests set it; production leaves it 0,
+	// which means contract.MinPipeVersion (VER-89).
+	pipeFloor int
 }
 
 // duplex joins the connector's two descriptors into the single io.ReadWriteCloser internal/peer takes: Native
@@ -94,6 +98,11 @@ type service struct {
 	// stream ends instead of an answer is carried out of Serve as the error the caller prints.
 	p    *peer.Peer
 	stop error
+
+	// pipeFloor is the version serveLines parses inbound frames against. Tests set it for the same reason the
+	// peer's Config takes one: the shipped floor of 1 is subsumed by the 1..255 bound, so the below-floor
+	// answer branch (VER-89) cannot be produced against the shipped floor.
+	pipeFloor int
 }
 
 // nexoraRoot is the per-user tree of doc 34 §7: %LOCALAPPDATA%\NEXORA. The same root the keystore's
@@ -143,6 +152,7 @@ func binaryName() string {
 }
 
 func newService(cfg config) (*service, error) {
+
 	responder, err := hello.New(hello.Facts{ConnectorVersion: cfg.version})
 	if err != nil {
 		return nil, err
@@ -242,7 +252,7 @@ func newService(cfg config) (*service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &service{ctx: context.Background(), d: d, sess: new(hello.Session), senderID: cfg.senderID, allowlisted: cfg.allowlisted, core: sup}, nil
+	return &service{ctx: context.Background(), d: d, sess: new(hello.Session), senderID: cfg.senderID, allowlisted: cfg.allowlisted, core: sup, pipeFloor: cfg.pipeFloor}, nil
 }
 
 // respond is the one dispatch path the two transports share, so --jsonl cannot diverge from the contract's own:
@@ -307,10 +317,20 @@ func (s *service) serveLines(pipe io.ReadWriteCloser) error {
 		if len(line) == 0 {
 			continue
 		}
-		f, err := envelope.Parse(line)
+		f, err := envelope.ParseWithFloor(line, s.pipeFloor)
 		if err != nil {
 			// internal/peer ends the stream on a frame the codec rejects, and this mode follows it rather than
-			// inventing a second answer to a desynchronised pipe.
+			// inventing a second answer to a desynchronised pipe. The one contract-mandated exception is the
+			// below-pipe-floor frame (VER-89): it is answered VersionMismatch in reply to its own id before
+			// the same stream end, so the two transports tell an old sender the same thing.
+			var inv *envelope.Invalid
+			if errors.As(err, &inv) && inv.BelowPipeFloor > 0 {
+				if answer := peer.VersionMismatchAnswer(inv, s.pipeFloor); answer != nil {
+					if data, mErr := answer.Marshal(); mErr == nil {
+						_, _ = fmt.Fprintf(pipe, "%s\n", data)
+					}
+				}
+			}
 			return fmt.Errorf("inbound frame rejected: %w", err)
 		}
 		res, stop := s.respond(f)

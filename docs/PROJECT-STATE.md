@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.66; older scope and inventory paragraphs
+continuation is §4.67; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -1969,7 +1969,7 @@ envelope→Xray compiler now has an answer for ADR-0013's promise — `Unreprese
 (`connector/cmd/nexora-connector/config_apply.go:567`) carries the compile's report into the result, proven at
 `connector/cmd/nexora-connector/config_apply_test.go:1096` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
-and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:150-151`, and `intentSource` had no production
+and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:161-162` (re-anchored from :150-151, which the pipe-floor field's addition to the config and service structs pushed down), and `intentSource` had no production
 implementation). `no-code` is therefore 54 → 53 → 54 and `no-run` 5 → 6, `connector` 37+1 → 39 and `decision` 3 → 4.
 `marker.counted` 206 → 207 for doc 27 §9's one new label (the partition is 157 + 26 + 24), and the register 38 → 39
 entries over 59 → 60 sites with `contract` 14 → 15. `verify.mjs`'s literals moved to those numbers; the check count did
@@ -3885,7 +3885,7 @@ its handler (`connector/cmd/nexora-connector/core_status.go:59`) answers `runnin
 containment, and retains the applied hash and last exit when Core is down. Missing process facts are null, not
 zero-valued claims; an unreadable receipt leaves the version null without suppressing process facts. The existing
 empty closed args object accepts omitted args, null or `{}` and refuses extra fields with the command's declared
-`Internal` code. `connector/cmd/nexora-connector/main.go:208` registers the fifth implemented method. Optional
+`Internal` code. `connector/cmd/nexora-connector/main.go:235` registers the fifth implemented method (re-anchored from :208, which the same slice's additions pushed down). Optional
 `activeServerTag` and `stats` are absent because there is no selection or counter producer; no new obligation is
 invented for fields the result does not require.
 
@@ -5188,6 +5188,38 @@ above reads like the fourth now: answered, number kept. `citation.counted` 55 �
 **Gates.** All seven green: schema verify (1247 checks), doc-evidence (2381 path:line citations), no-secrets,
 ADR shape (22 ADRs), layout guards, legacy backup, and the full Go suite with `internal/chunk`'s seven tests
 (`ok` in every package).
+
+### 4.67 The below-floor frame is answered `VersionMismatch` — `VER-89` retired (2026-11-14)
+
+**The answer.** A frame whose `v` is below the pipe floor is the one rejected frame the contract asks to answer
+rather than only to end on (`packages/schema/protocol/framing.json#/versionFloors/tooOld`). Both transports now do:
+`envelope.ParseWithFloor` carries the refused frame's parsed `id` on the `Invalid` error (`RejectedID`, plus
+`RejectedTrace` and `BelowPipeFloor`), and `internal/peer`'s `Serve` plus the connector's line mode answer
+`VersionMismatch` in reply to that id — carrying this build's `FrameFormatVersion`, never the sender's failed one —
+before ending the stream, because a sender below the floor speaks a framing this build cannot continue reading in
+step. An id-less below-floor frame has nothing to reply to and gets the stream end as its whole answer.
+
+**How the branch is provable at floor 1.** The shipped floor equals the envelope's own lower bound, so no
+schema-valid frame can be below it — the row's own finding. `peer.Config.PipeFloor` and the service's `pipeFloor`
+are constructor overrides a test states: production defaults to `contract.MinPipeVersion`, tests run at floor 2 and
+prove the branch is live code, not a dead comparison. The production firing is still the day the floor rises above
+1, which is the day a second framing exists — stated in §13's floor row, which is now a verified-as-code verdict instead
+of the deferred one it carried.
+
+**Tests.** Three new: the peer answers `VersionMismatch` in reply to the frame's own id and then ends the stream
+(`TestABelowFloorFrameIsAnsweredVersionMismatchBeforeTheStreamEnds`); an id-less below-floor frame gets no answer
+(`TestABelowFloorFrameWithoutAnIdGetsNoAnswer`); and the line mode answers the same way
+(`TestABelowFloorLineIsAnsweredVersionMismatchBeforeTheStreamEnds`, floor 2 through the config override), plus
+`TestParseWithFloorRefusesBelowTheStatedFloorAndKeepsTheId` pinning that the refused id travels on the error. Full
+Go suite green in every package; gofmt and vet clean.
+
+**Corpus.** `VER-89` retired in the same commit — matrix 71 → 70 rows, 20 tombstones, `no-code` 49 → 48,
+`connector` 38 → 37, `assertion` 16 → 15, `marker.counted` 193 → 192 (the partition is 142 + 26 + 24). Doc 25 §2
+states the answer where it used to say the shape was still owed, §13's floor row reads `Verified as code`, and doc
+39's tallies move with the row. Two PROJECT-STATE line citations re-anchored for the lines this slice's struct
+additions pushed down (main.go :150-151 → :161-162, :208 → :235, with the move named in place).
+
+**Gates.** All seven green.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

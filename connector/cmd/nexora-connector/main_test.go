@@ -733,3 +733,32 @@ func TestServiceWithoutAProtectorOverrideRefusesUnsupportedPlatforms(t *testing.
 		t.Fatalf("default protector returned %v, want the unsupported-platform refusal", err)
 	}
 }
+
+// A frame below the pipe floor is the one rejected frame the contract asks to answer, not only to end on
+// (VER-89): framing.json#/versionFloors/tooOld names VersionMismatch, in reply to the frame's own id. The
+// shipped floor is 1, which the 1..255 bound subsumes, so the test states the floor it needs — the same
+// constructor override the peer's Config takes — and proves both transports tell an old sender the same thing.
+func TestABelowFloorLineIsAnsweredVersionMismatchBeforeTheStreamEnds(t *testing.T) {
+	cfg := jsonlConfig(t, true)
+	cfg.pipeFloor = 2
+
+	old := `{"v":1,"id":"req-oldline01","type":"request","method":"connector.version","sentAt":"2026-11-14T10:00:00Z"}`
+	lines, err := runJSONL(t, cfg, old)
+	if err == nil {
+		t.Fatal("a below-floor line ended the run without a rejection")
+	}
+	if !strings.Contains(err.Error(), "inbound frame rejected") {
+		t.Fatalf("run = %v, want the rejection that ends the stream", err)
+	}
+	if len(lines) != 1 {
+		t.Fatalf("%d answer lines, want exactly one: %v", len(lines), lines)
+	}
+	res, perr := envelope.Parse([]byte(lines[0]))
+	if perr != nil {
+		t.Fatalf("the answer is not a valid envelope: %v", perr)
+	}
+	checkRefusal(t, res, "req-oldline01", "VersionMismatch")
+	if res.V != contract.FrameFormatVersion {
+		t.Fatalf("the answer's v is %d, want this build's framing version %d", res.V, contract.FrameFormatVersion)
+	}
+}

@@ -63,6 +63,11 @@ type Config struct {
 	// Handler receives every inbound frame that is not the answer to one of our requests: requests we serve,
 	// events, and progress.
 	Handler func(*envelope.Frame)
+	// PipeFloor is the pipe version this endpoint parses inbound frames against. Zero means the contract's
+	// MinPipeVersion. It is a constructor override, not a runtime knob: a test needs it because the shipped
+	// floor of 1 is subsumed by the envelope's 1..255 bound, so the below-floor answer branch (VER-89) cannot
+	// be produced by any frame the schema accepts until a real floor above 1 ships.
+	PipeFloor int
 }
 
 // ToExtension is the host's endpoint facing the browser: it may send the host-to-extension ceiling and must
@@ -135,6 +140,9 @@ func New(pipe io.ReadWriteCloser, cfg Config) *Peer {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
+	if cfg.PipeFloor == 0 {
+		cfg.PipeFloor = contract.MinPipeVersion
+	}
 	// A freshly opened pipe has just been heard from; a peer that never speaks still has to miss three beats.
 	now := cfg.Now()
 	return &Peer{
@@ -164,12 +172,49 @@ func (p *Peer) Serve() error {
 			}
 			return err
 		}
-		f, err := envelope.Parse(data)
+		f, err := envelope.ParseWithFloor(data, p.cfg.PipeFloor)
 		if err != nil {
+			// A frame below the pipe floor is the one rejected frame the contract asks to answer rather than
+			// only to end on: framing.json#/versionFloors/tooOld names VersionMismatch, in reply to the
+			// frame's own id (VER-89). The stream still ends — a sender below the floor speaks a framing
+			// this build cannot continue reading in step — but it is told why, by the code the contract
+			// names, before the port closes.
+			var inv *envelope.Invalid
+			if errors.As(err, &inv) && inv.BelowPipeFloor > 0 {
+				if answer := VersionMismatchAnswer(inv, p.cfg.PipeFloor); answer != nil {
+					_ = p.Send(answer)
+				}
+			}
 			return fmt.Errorf("peer: inbound frame rejected: %w", err)
 		}
 		p.deliver(f)
 	}
+}
+
+// versionMismatchAnswer builds the VersionMismatch answer a below-floor frame is owed. The reply carries this
+// build's own framing version — answering in the sender's v would be speaking the framing that just failed — and
+// is only sent when the rejected frame carried a parseable id: an id-less frame has nothing to reply to, and the
+// stream end is the whole answer it gets.
+// VersionMismatchAnswer is the exported form: serveLines answers the same frame the framed mode does,
+// so both transports tell a below-floor sender the same thing by the code the contract names.
+func VersionMismatchAnswer(inv *envelope.Invalid, floor int) *envelope.Frame {
+	if inv == nil || inv.RejectedID == "" {
+		return nil
+	}
+	head := &envelope.Frame{
+		V:       contract.FrameFormatVersion,
+		ID:      inv.RejectedID,
+		TraceID: inv.RejectedTrace,
+	}
+	res, err := head.Fail("VersionMismatch", fmt.Sprintf(
+		"frame v %d is below the pipe floor %d this build accepts (framing.json#/versionFloors/pipe); the port closes after this answer",
+		inv.BelowPipeFloor, floor))
+	if err != nil {
+		// VersionMismatch is in the taxonomy, so this is unreachable; a refusal to answer a version
+		// failure with a broken frame is still the safe arm.
+		return nil
+	}
+	return res
 }
 
 // deliver resolves a request we issued, or hands the frame to the handler. A response whose id is no longer in
