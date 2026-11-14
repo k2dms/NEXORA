@@ -251,8 +251,7 @@
       "decidedBy": "adr",
       "blocks": {
         "verification": [
-          "VER-69",
-          "VER-71"
+          "VER-69"
         ],
         "compatibility": []
       },

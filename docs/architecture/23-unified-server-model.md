@@ -274,7 +274,7 @@ one inbound with internal routing — is considered and rejected there, not here
 | Tag collision across the server set is a compile error | `connector/internal/compile/resolve.go` refuses a second server whose derived tag is taken, naming both ids — `TestATagCollisionNamesBothServers`, and the eight-hex collision test over the canonical examples proves a twinned feed document arriving unsorted is refused in either order while the clean five-server batch compiles | **GREEN** (`VER-70` retired with it) |
 | The generated config file is owner-only on disk | nothing | Verified: NO — LIVE-18 |
 | A non-VLESS server in a legacy subscription is reported, not dropped | nothing (parser does not exist) | Verified: NO — `LIVE-14` carries the import; `docs/architecture/39-verification-matrix.md` will own the row |
-| `protocol` enum expansion requires an ADR | `connector/internal/compile/outbound.go` refuses any protocol other than `vless` before it emits | Verified: NO — process rule, `docs/adr/README.md` |
+| `protocol` enum expansion requires an ADR | `connector/internal/compile/outbound.go` refuses any protocol other than `vless` before it emits, and the schema literals are pinned by `packages/schema/scripts/verify.mjs` — "the protocol enum equals the five shipped transports, and only an ADR changes it" — with the process rule stated in both enums' descriptions | **GREEN** (`VER-71` retired with it) |
 
 Trace: ADR-0003, ADR-0006, ADR-0008, ADR-0010, ADR-0012, ADR-0013, ADR-0019 · Contract:
 `packages/schema/server.schema.json`, `packages/schema/connector-profile.schema.json`,

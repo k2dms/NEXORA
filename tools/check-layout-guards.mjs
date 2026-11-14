@@ -209,23 +209,46 @@ async function checkWatcherScope(root, tracked) {
   return bad;
 }
 
+// SEC-3 (docs/architecture/31-security-model.md §12, VER-58): NEXORA must not widen the
+// proxy-resolution context, and the cheapest negative to enforce is a diff against the shipped
+// manifests: web_accessible_resources is the one key whose absence the audit records as load-bearing
+// (docs/audit/10-manifest-packaging-distribution.md §1), so any tracked manifest that names it — as a
+// key or as text — is refused.
+async function checkManifests(root, tracked) {
+  const bad = [];
+  let scanned = 0;
+  for (const f of tracked) {
+    if (!/manifest[^/]*\.json$/.test(f)) continue;
+    const text = await readFile(join(root, f), 'utf8').catch(() => null);
+    if (text === null) continue;
+    scanned += 1;
+    if (text.includes('web_accessible_resources')) {
+      bad.push(`${f} names web_accessible_resources — the shipped manifests leave it absent, and adding it widens the proxy-resolution context to every page (docs/architecture/31-security-model.md §12)`);
+    }
+  }
+  return { bad, scanned };
+}
+
 async function run(root, lister) {
   const rows = await readCouplingTable(root);
   const coupling = await checkCoupling(root, rows);
   const locales = await checkLocaleChain(root);
   const tracked = await lister(root);
+  const manifests = await checkManifests(root, tracked);
   const problems = [
     ...(await checkRootBare(root)).map((b) => `root-bare: ${b}`),
     ...coupling.bad.map((b) => `coupling: ${b}`),
     ...(await checkLegacyRoots(root)).map((b) => `legacy-roots: ${b}`),
     ...locales.bad.map((b) => `locale-chain: ${b}`),
     ...(await checkWatcherScope(root, tracked)).map((b) => `watcher-scope: ${b}`),
+    ...manifests.bad.map((b) => `sec3-manifest: ${b}`),
   ];
   const notes = [
     `${rows.length} coupling rows over ${coupling.fileCount} distinct files (the audit's headline counts 11; this census counts ${coupling.fileCount})`,
     `rows ${Object.keys(NAME_FREE).join(', ')} are name-free and checked by their declared token instead of "omega"`,
     `${locales.occurrences} po paths read by po2crx.coffee, ${locales.distinct} distinct, all present`,
     `${tracked.filter((f) => /^Gruntfile\./.test(f.split('/').pop())).length} Gruntfiles tracked, all inside the six legacy roots`,
+    `${manifests.scanned} manifest files scanned; web_accessible_resources absent from all`,
   ];
   return { problems, notes };
 }
@@ -278,6 +301,8 @@ const BASE = [
   ['omega-web/package.json', FIX_PKG('omega-web')],
   ['omega-web/grunt/watch.coffee', FIX_WATCH],
   ['packages/schema/package.json', '{"name": "@nexora/schema"}\n'],
+  ['omega-target-chromium-extension/overlay/manifest.json', '{"manifest_version": 2, "name": "x"}\n'],
+  ['omega-target-chromium-extension/overlay/manifest-firefox.json', '{"manifest_version": 2, "name": "x-fx"}\n'],
 ];
 
 const sub = (files, want, text) => files.map(([f, t]) => (f === want ? [f, text] : [f, t]));
@@ -321,6 +346,7 @@ async function selftest() {
   add('a new root grows a Gruntfile', [...BASE, ['packages/ui/Gruntfile.coffee', 'module.exports = () ->\n']], 1);
   add('a watcher glob reaches a new root', sub(BASE, 'omega-web/grunt/watch.coffee', "module.exports =\n  nexora:\n    files: ['packages/ui/**/*']\n"), 1);
   add('a watcher glob escapes to an undeclared sibling', sub(BASE, 'omega-web/grunt/watch.coffee', "module.exports =\n  other:\n    files: ['../omega-other/**/*']\n"), 1);
+  add('a manifest grows web_accessible_resources', [...BASE, ['omega-target-chromium-extension/overlay/manifest.json', '{"manifest_version": 2, "web_accessible_resources": ["img/*"]}\n']], 1);
 
   let failed = 0;
   for (const c of cases) {
@@ -347,7 +373,7 @@ async function selftest() {
   console.log(
     `SELFTEST OK: ${cases.length - 1} injected defects refused and the clean fixture passed — one per rule: ` +
       'a root manifest, a moved file, a drifted line, an edited-out coupling, a renamed package, a missing locale, ' +
-      'a Gruntfile in a new root and two watcher globs out of scope.',
+      'a Gruntfile in a new root, two watcher globs out of scope and a widened manifest.',
   );
 }
 

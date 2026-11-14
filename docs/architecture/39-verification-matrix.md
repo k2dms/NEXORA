@@ -55,7 +55,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
 
 | # | Question a document could not answer itself | Answered by |
 |---|---|---|
-| 1 | Who owns the 174 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
+| 1 | Who owns the 172 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
 | 2 | Is a deferral the same thing as unfinished work? | No: §4 splits it five ways; the split *is* the useful content |
 | 3 | Can a document claim a check exists when it does not? | §6 — anchors resolve or the run fails |
 | 4 | Can one obligation be counted twice, so the queue looks shorter than it is? | §6 — the same partition check refuses it |
@@ -95,18 +95,19 @@ would have to be re-derived from the design, which is how a verification matrix 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
 | `no-code` | 40 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
-| `no-check` | 4 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
+| `no-check` | 2 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
 | `no-run` | 11 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 3 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 4 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **40 of 62 rows are `no-code`**: this iteration's claims are overwhelmingly
-blocked on the Connector, the compiler and the UI existing, not on tests being clever. 4 `no-check` rows read as
+The distribution is the finding. **40 of 60 rows are `no-code`**: this iteration's claims are overwhelmingly
+blocked on the Connector, the compiler and the UI existing, not on tests being clever. 2 `no-check` rows read as
 the part closable before Phase 2 writes a line of product code, and four of them — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
 open: deleting a row around its gate either leaves the gate blocking nothing or leaves it naming a row that no
-longer exists, and `verify.mjs` refuses both. The fifth, `VER-58`, is a guard over files already on disk whose
-injection half needs a `nexora/**` that is empty — the same emptiness §8 declines to count as evidence. The sixth,
+longer exists, and `verify.mjs` refuses both. The fifth, `VER-58`, is a guard over files already on disk — its manifest half closed 2026-11-14
+(`sec3-manifest` in `tools/check-layout-guards.mjs`), while the injection half needs a `nexora/**` that is
+empty — the same emptiness §8 declines to count as evidence. The sixth,
 `VER-85`, is the corpus files existing on both sides of the question — thirteen command docs without a
 code for a malformed request, two shipped analogies recorded at their sites — and what is absent is the rule that
 says which of the register's three options they follow. The column
@@ -121,15 +122,15 @@ That ordering is not advice; it is what the states say.
 
 ## 5. Nine owners, eight closing mechanisms
 
-`owners` — who can close the row: `connector` 34, `extension` 9, `contracts` 5, `ci` 2, `packages` 3,
-`ui` 3, `external` 3, `tools` 2, `human` 1.
+`owners` — who can close the row: `connector` 34, `extension` 9, `contracts` 4, `ci` 2, `packages` 3,
+`ui` 3, `external` 3, `tools` 1, `human` 1.
 
-`closingKinds` — with what: `live-row` 42, `assertion` 9, `decision` 1, `gate` 2, `ci-step` 2,
-`external-measurement` 4, `tool` 2, `new-live-row` 0.
+`closingKinds` — with what: `live-row` 42, `assertion` 8, `decision` 1, `gate` 2, `ci-step` 2,
+`external-measurement` 4, `tool` 1, `new-live-row` 0.
 
 Three consequences worth stating out loud:
 
-- **42 of 62 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **42 of 60 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -139,7 +140,7 @@ Three consequences worth stating out loud:
   on `core.select`, `LIVE-08` on containment, `LIVE-02` on determinism, `LIVE-11` on a 404, `LIVE-06` on fail-closed
   inside the live matrix itself); each now names its own closer or the right row, which is the same failure mode
   caught one tier down.
-- **9 rows promise a named assertion** — in `packages/schema/scripts/verify.mjs`, in the Connector's test suite, or
+- **8 rows promise a named assertion** — in `packages/schema/scripts/verify.mjs`, in the Connector's test suite, or
   in the client's — **and every one of them promises an assertion this run does not yet make.** The harness checks
   that (`every row that promises an assertion promises one this run does not yet make`). It is what keeps the queue
   from becoming a graveyard: adding the assertion and leaving the row pointing at it is a build failure, so closing
@@ -167,7 +168,7 @@ The harness then refuses three failures no prose review can see:
 | one line claimed by two rows | both rows read correctly, and the queue is a lie about its length | `no deferred claim is counted as owned by two rows, or by a row and the vocabulary` |
 | a row deleted so its obligation disappears with it | the queue gets shorter and nobody can say which claim it lost | `every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it` |
 
-Plus the exact-partition assertion: rows (123) + vocabulary (26) + inherited live rows (25) = 174 = the number the
+Plus the exact-partition assertion: rows (121) + vocabulary (26) + inherited live rows (25) = 172 = the number the
 corpus is re-read to, which `marker.counted` declares and the run compares. An unowned line is unowned work. A
 stale anchor is finished work nobody deleted. A double claim is the queue lying about its own size — and 144 of
 these claims come from 38 documents, 18 of which carry more than one, so the arithmetic cannot be done
@@ -217,7 +218,7 @@ Not a schedule — a dependency graph the states impose:
    is a phantom. What is actually left in this step is three rows, and each is smaller than it reads: `VER-66` needs
    a body detector the entity schemas have no field for — the register question closest to it in shape, `ODEC-40`,
    was answered on 2026-11-07 and left, while this one is still open — `VER-19`
-   now needs a live cross-port replay/adoption fixture, not the implemented process-local bounds, and `VER-58`'s injection half is a
+   now needs a live cross-port replay/adoption fixture, not the implemented process-local bounds, and `VER-58`'s manifest half is a scan over the two shipped manifests, which closed 2026-11-14, and its injection half is a
    scan over a `nexora/**` that is empty — the emptiness §8 refuses to count as evidence, which is exactly why
    `VER-02` and `VER-03` stayed open until the roots held real code: they closed 2026-11-14, the day the
    extension sources made the same greps non-vacuous (`docs/PROJECT-STATE.md` §4.71).
@@ -282,7 +283,7 @@ Not a schedule — a dependency graph the states impose:
    remains unregistered. The subsequent `core.status` slice does not close this snapshot obligation.
 
 The queue does not pretend this is fast. It is the reason the queue exists: 72 named obligations with 41 of them
-pointing at one executable matrix is a plan; the same 61 as 174 scattered phrases is a mood.
+pointing at one executable matrix is a plan; the same 60 as 172 scattered phrases is a mood.
 
 ---
 
@@ -303,7 +304,7 @@ pointing at one executable matrix is a plan; the same 61 as 174 scattered phrase
 
 ## 10. The queue
 
-62 rows, grouped by state; the 30 ids this queue has closed are in `packages/schema/verification.json#/retired`,
+60 rows, grouped by state; the 32 ids this queue has closed are in `packages/schema/verification.json#/retired`,
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
@@ -363,8 +364,6 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 |---|---|---|---|
 | VER-20 | `UnsupportedCombination` is absent from the taxonomy, so a user-supplied port overlap has no right code | `contracts` · assertion | 3 · 4 |
 | VER-56 | no tool reads the shipped manifest: the permission target column is unmeasured | `tools` · tool | 1 · 2 |
-| VER-58 | SEC-3's negatives are unguarded: no `web_accessible_resources`, no injected fetched text | `tools` · tool | 1 · 1 |
-| VER-71 | `protocol` enum expansion requires an ADR, and that process rule is asserted by nothing | `contracts` · assertion | 1 · 1 |
 | VER-85 | which code answers a malformed request is decided per command by analogy — `HandshakeFailed` in `connector.hello`, `HealthCheckFailed` in `server.test` — and thirteen of nineteen command docs declare no `BadRequest` | `contracts` · decision (`ODEC-43`) | 1 · 1 |
 
 ### `no-run` — 10
@@ -447,7 +446,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-92` beyond the contract layer — 62 live, 30 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-92` beyond the contract layer — 60 live, 32 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO — deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 
@@ -473,7 +472,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 2. A row is closed by its artefact, and closing deletes the row in the same commit.
 3. Nothing in this document or its data asserts that a check ran. `no-run` is a state, not a result.
 4. The live matrix owns the live rows; this document owns what the rest of the corpus owes them.
-5. The count `174` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
+5. The count `172` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
    when a row is honestly closed. Nothing outside `packages/schema/verification.json#/marker/counted` may depend on it.
 6. This document's §11 table is checked by an assertion whose label is `"every mechanism doc 39 names is a check
    this run actually makes"` — it lives outside the table so it cannot certify itself.
@@ -612,7 +611,7 @@ The distributions and marker count do not move; `docs/PROJECT-STATE.md` §4.57 r
 
 **Open items.**
 
-1. 9 rows promise a named assertion. 14 of them can only be written once the code they test exists; `VER-20`
+1. 8 rows promise a named assertion. 14 of them can only be written once the code they test exists; `VER-20`
    and `VER-71` promise an assertion over a contract already on disk, and `VER-19` and `VER-66` need one
    fixture file each. Two more (`VER-56`, `VER-58`) promise a guard under `tools/` over files already on disk —
    `VER-01` was the sixth of that older list and `VER-04`, `VER-05`, `VER-07` its seventh, eighth and ninth, and all

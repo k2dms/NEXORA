@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 174
+    "counted": 172
   },
   "states": {
     "values": [
@@ -389,6 +389,18 @@
         "closed": "2026-11-14",
         "was": "no live row covers guards being applied to every redirect hop -- the omission, not the behaviour, is the finding",
         "artefact": "the omission is closed where it was found: LIVE-25 now exists in docs/verification/live-matrix.md as the redirect-chain row the citation promised -- a two-hop feed (allowed host → redirector → metadata literal) must fail naming the hop that crossed, with the same chain inside the budget as the control that shows the guard is per-hop rather than a first-hop-only gate. The citation in doc 29 §13 now names LIVE-25, so it is an obligation on a row that exists rather than a false reference. The row is unexecuted, as every live row is; what VER-65 owed was the row itself"
+      },
+      {
+        "id": "VER-71",
+        "closed": "2026-11-14",
+        "was": "the protocol enum expansion requires an ADR, and that process rule is asserted by nothing",
+        "artefact": "the assertion runs: scripts/verify.mjs pins both literals of packages/schema/server.schema.json — protocol const vless and network exactly [tcp, ws, grpc, xhttp, h2] — and requires both descriptions to name the ADR process rule, so a schema edit that widens either enum without the ADR (or an ADR whose member list disagrees with the pinned literal) is a red run. The compiler's own refusal of a non-vless protocol before it emits is the second half, already live. Both descriptions now carry the rule in so many words, so the schema states its own law"
+      },
+      {
+        "id": "VER-58",
+        "closed": "2026-11-14",
+        "was": "the negative security rules of SEC-3 are unguarded: NEXORA must not add web_accessible_resources or inject fetched text",
+        "artefact": "the sec3-manifest rule in tools/check-layout-guards.mjs: every tracked manifest*.json is scanned, and one that names web_accessible_resources — as a key or as text — is refused with the reason the audit records the absence as load-bearing (docs/audit/10-manifest-packaging-distribution.md §1). The selftest injects the defect and refuses it; the real run scans the two overlay manifests and finds the key absent from both. The injection half of SEC-3 (no fetched text spliced into a page) is the remaining clause, and it stays open in doc 31 §12 as the PAC-sandbox argument"
       }
     ]
   },
@@ -1333,23 +1345,6 @@
       "why": "The bundle is built today and never loaded under the policy; a CSP violation is silent until the page is blank."
     },
     {
-      "id": "VER-58",
-      "subject": "the negative security rules of SEC-3 are unguarded: NEXORA must not add `web_accessible_resources` or inject fetched text",
-      "state": "no-check",
-      "owner": "tools",
-      "closesBy": {
-        "kind": "tool",
-        "ref": "tools/check-layout-guards.mjs"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/31-security-model.md",
-          "anchor": "shipped manifests leave absent per `docs/audit/10-manifest-packaging-d"
-        }
-      ],
-      "why": "A rule about absence is cheapest to enforce as a diff against the manifest, and nothing performs that diff."
-    },
-    {
       "id": "VER-59",
       "subject": "a fetched body is specified never to be executed (compile-not-execute, https-only, byte caps, SSRF guard) and no run has a body to try",
       "state": "no-code",
@@ -1513,23 +1508,6 @@
         }
       ],
       "why": "The lossiness is by construction (doc 29 §5); the promise is that the user is told, which needs a parser and a screen."
-    },
-    {
-      "id": "VER-71",
-      "subject": "`protocol` enum expansion requires an ADR, and that process rule is asserted by nothing",
-      "state": "no-check",
-      "owner": "contracts",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "the protocol enum equals the five shipped transports, and only an ADR changes it"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/23-unified-server-model.md",
-          "anchor": "`protocol` enum expansion requires an ADR"
-        }
-      ],
-      "why": "Every added transport is an added Core dependency and a new compatibility surface; a machine check is the only thing that makes 'requires an ADR' mean something."
     },
     {
       "id": "VER-72",

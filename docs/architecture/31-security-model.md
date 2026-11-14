@@ -345,8 +345,10 @@ four-step comment-termination hack documented at `omega-pac/src/profiles.coffee:
 SEC-3 bounds it honestly: the splice executes in the proxy-resolution context, which is not the extension's
 authority — it cannot call `chrome.proxy` or read storage. The model's requirement is the *negative* one: NEXORA
 MUST NOT widen that context (no injection of fetched text into a page, no `web_accessible_resources`, which both
-shipped manifests leave absent per `docs/audit/10-manifest-packaging-distribution.md` §1). `Verified: NO —
-deferred to Phase 2` in the sense that the guarantee is today an argument about Chromium's PAC sandbox, not a test.
+shipped manifests leave absent per `docs/audit/10-manifest-packaging-distribution.md` §1 — and that negative is
+now a guard: `tools/check-layout-guards.mjs`'s `sec3-manifest` rule refuses any tracked manifest that names
+`web_accessible_resources`, with a selftest case that injects the defect (`VER-58` retired with it). The
+PAC-sandbox argument is the remaining half, and it stays an argument until a test exists for it.
 
 **A failed refresh must not destroy the last good set** (`docs/architecture/29-subscriptions-and-servers.md` §
 failure table, LIVE-12): integrity and availability, stated in the master brief and enforced by the result shape

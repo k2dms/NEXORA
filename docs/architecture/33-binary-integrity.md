@@ -59,7 +59,7 @@ green today.
 | `docs/architecture/30-failure-policy.md:382` | how Core is fetched and verified | §5, §6 |
 | `docs/architecture/31-security-model.md:26` | binary provenance | §3, §14 |
 | `docs/architecture/31-security-model.md:59` | the pin attestation as the Connector→Core trust boundary | §3, §6 |
-| `docs/architecture/31-security-model.md:402` | a Core vulnerability: pinned, verified, user-initiated | §8, §11, §16 |
+| `docs/architecture/31-security-model.md:404` | a Core vulnerability: pinned, verified, user-initiated | §8, §11, §16 |
 | `docs/architecture/32-secrets-keystore-masking.md:400` | cleanup of the compiled config after an unclean kill | §7, §15 |
 
 ## 3. The trust chain, link by link

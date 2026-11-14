@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.76; older scope and inventory paragraphs
+continuation is §4.77; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5426,6 +5426,30 @@ and `ODEC-07`'s gate list names `VER-59` and `VER-92`. The row is unexecuted, as
 123 + 26 + 25, and the live-inheritance check's own count moved with the matrix).
 
 **Gates.** All seven green.
+
+### 4.77 The process rule means something — `VER-71` and `VER-58` retired (2026-11-14)
+
+**`VER-71`.** The protocol-enum process rule is now asserted: `scripts/verify.mjs` pins both literals of
+`packages/schema/server.schema.json` — `protocol` const `vless` and `network` exactly
+`[tcp, ws, grpc, xhttp, h2]` — and requires both descriptions to name the ADR process rule, so a schema edit
+that widens either enum without the ADR (or an ADR whose member list disagrees with the pinned literal) is a
+red run. The compiler's own refusal of a non-vless protocol before it emits is the second half, already live.
+Both descriptions now carry the rule in so many words, so the schema states its own law.
+
+**`VER-58`.** `tools/check-layout-guards.mjs` grew the `sec3-manifest` rule: every tracked
+`manifest*.json` is scanned, and one that names `web_accessible_resources` — as a key or as text — is
+refused with the reason the audit records the absence as load-bearing. The selftest injects the defect and
+refuses it; the real run scans the two overlay manifests and finds the key absent from both. The injection
+half of SEC-3 (no fetched text spliced into a page) stays open in doc 31 §12 as the PAC-sandbox argument,
+which is why the row's subject retired and that half did not.
+
+**Corpus.** `VER-71` and `VER-58` retired — matrix 62 → 60 rows, 32 tombstones, `no-check` 4 → 2,
+`contracts` 5 → 4, `tools` 2 → 1, `assertion` 9 → 8, `tool` 2 → 1, `marker.counted` 173 → 172 (the
+partition is 121 + 26 + 25). `ODEC-08`'s gate list loses `VER-71` (`VER-69` stays); doc 23's rule row and
+doc 31 §12 read verified; doc 33's and doc 34's `Cited by` rows re-anchored for the lines doc 31 §12's
+rewrite pushed down (:402 → :404, :367 → :369, with the moves named in place).
+
+**Gates.** All seven green; 18 Go packages ok.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

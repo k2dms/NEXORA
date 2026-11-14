@@ -29,7 +29,7 @@
     },
     "protocol": {
       "const": "vless",
-      "description": "Only VLESS is modelled in NEXORA. Other protocols stay expressible as legacy FixedProfile/PacProfile and are out of scope for this schema (ADR-0003)."
+      "description": "Only VLESS is modelled in NEXORA. Other protocols stay expressible as legacy FixedProfile/PacProfile and are out of scope for this schema (ADR-0003). Expanding this enum is the same process rule as the network enum: an ADR, asserted by scripts/verify.mjs."
     },
     "address": {
       "type": "string",
@@ -57,7 +57,7 @@
         "xhttp",
         "h2"
       ],
-      "description": "Transport. Determines which transport block below is required."
+      "description": "Transport. Determines which transport block below is required. The five members are the shipped set: adding one is a new Core dependency and a new compatibility surface, so it is an ADR (docs/adr/0003-xray-implements-all-transport-protocols.md), not a schema edit -- scripts/verify.mjs asserts this literal against the shipped list."
     },
     "security": {
       "enum": [
