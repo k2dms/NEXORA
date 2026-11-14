@@ -256,7 +256,7 @@ process that can write a secret is the one that has to do the parsing
    `flow` or `security` is a connection that mysteriously fails.
 6. `404 ≠ delete`: removal of a subscription is a user action, never a fetch outcome.
 7. Identity is reused, not regenerated: a server this source already produced keeps its `id`, so health history,
-   `core.select` and the derived `srv-<id8>` tag survive a refresh (§identity of doc 29).
+   the derived `srv-<id8>` tag survives a refresh (§identity of doc 29).
 
 **Mode of failure** — a hostile endpoint returning 80 MB or a Clash YAML where a VLESS list was expected ⇒ size
 guard or format detect rejects before any parsing, and the previous state is untouched.
@@ -304,7 +304,7 @@ an event plus a retained status.
 **In** — server tag, probe definition (`packages/schema/protocol/commands/server.test.json#/args`), interval
 and cooldown from `packages/schema/connector-profile.schema.json#/properties/failover`.
 **Out** — `server.health.changed` events, `server.test` responses, failover decisions fed back to Core via
-`core.select` or the Core's own load-balance policy.
+the Core's own load-balance policy.
 
 **Invariants**
 1. A probe asserts **egress through Core**, not reachability of the VPS: a probe that would also succeed with
@@ -443,7 +443,7 @@ marker, never a silently stale "connected". **Owner**: `nexora/extension`.
 
 **In** — the shell's snapshot (profiles, applied state, health), keyboard commands
 (`omega-target-chromium-extension/overlay/manifest.json:36-38`).
-**Out** — profile selection, `core.select`, navigation to options.
+**Out** — profile selection (one `config.apply`; §9.5), navigation to options.
 
 **Invariants**
 1. It works when the Connector is absent: with no Core, the popup still switches legacy profiles, and shows

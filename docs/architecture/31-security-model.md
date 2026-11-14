@@ -124,7 +124,7 @@ registration. ADR-0004 rule 3; the data is
 
 Eleven of the nineteen methods carry `privileged: true` in
 `packages/schema/protocol/command-allowlist.json#/commands`: `core.start`, `core.stop`, `core.restart`,
-`core.select`, `config.apply`, `profile.import`, `profile.remove`, `subscription.refresh`, `server.test`,
+`config.apply`, `profile.import`, `profile.remove`, `subscription.refresh`, `server.test`,
 `diagnostics.get`, `keystore.purge`. The set is the one thing a Connector build MAY refuse to a sender that is
 not the pinned extension id (ADR-0004, `docs/architecture/26-command-surface.md` §2), because every member either
 starts a process, writes the keystore, deletes an entity, or emits traffic the user did not type.
@@ -211,7 +211,7 @@ process the amplification guard in `#/senderPolicy/refusals/amplificationGuard` 
 |---|---|---|---|
 | `subscription.refresh` | 3 / 60 s | `Busy` | `args.force` bypasses the per-source backoff, so this row is the only thing between a stuck options tab and the user's feed provider. One call may carry forty sources: the row counts calls, not fetches |
 | `server.test` | 8 / 10 s | `Busy` | enough for one panel of servers, too small for a poll loop to reach every VPS on the list each second. Probes are never retried, so a refusal is not a lost measurement |
-| `config.apply`, `core.start`, `core.stop`, `core.restart`, `core.select` | 4 / 20 s | `Busy` | each may restart Core, and a restart drops every live tunnel. Converge-to-desired-state means waiting loses the user nothing |
+| `config.apply`, `core.start`, `core.stop`, `core.restart` | 4 / 20 s | `Busy` | each may restart Core, and a restart drops every live tunnel. Converge-to-desired-state means waiting loses the user nothing |
 | `profile.import`, `profile.remove`, `keystore.purge` | 2 / 60 s | `Busy` | replace-class and destructive: a second import inside a minute is a retry of the first (idempotency answers it) or a bug |
 | `diagnostics.get` | 1 / 120 s | `Busy` | the most expensive read: it walks logs and writes a dump to disk |
 | `*` (global floor) | 20 / 1 s | `Busy` | bounds the pipe against a spinning worker, so a mistake in any row above cannot become an unbounded queue |

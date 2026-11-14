@@ -118,7 +118,7 @@ enums with `additionalProperties: false`.
 `docs/architecture/23-unified-server-model.md:76` makes REALITY-over-gRPC unsupported *by the pinned Core*, not
 by preference. That is a supply-chain statement with a product consequence: an `IntegrityMismatch`-free upgrade
 to a newer tag is also the event that can newly *allow* a combination the compiler had been refusing. So the
-compiler's capability decisions and the pin document are coupled, and `core.select`'s and `config.apply`'s
+compiler's capability decisions and the pin document are coupled, and `config.apply`'s
 behaviour must never depend on a version the Connector did not verify — which is why `connector.version` reports
 `coreVersion`, `pinsVersion` and `buildId` together
 (`packages/schema/protocol/commands/connector.version.json#/result/properties`): a support bundle that cannot say

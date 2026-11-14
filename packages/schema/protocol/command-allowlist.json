@@ -19,7 +19,6 @@
     { "name": "core.stop", "class": "converge", "availableBeforeHello": false, "privileged": true },
     { "name": "core.restart", "class": "converge", "availableBeforeHello": false, "privileged": true },
     { "name": "core.status", "class": "read", "availableBeforeHello": false, "privileged": false },
-    { "name": "core.select", "class": "mutate", "availableBeforeHello": false, "privileged": true },
     { "name": "config.apply", "class": "replace", "availableBeforeHello": false, "privileged": true },
     { "name": "config.snapshot", "class": "read", "availableBeforeHello": false, "privileged": false },
     { "name": "profile.import", "class": "replace", "availableBeforeHello": false, "privileged": true },

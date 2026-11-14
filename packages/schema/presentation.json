@@ -67,7 +67,7 @@
       "id": "servers",
       "document": "nexora-options.html",
       "purpose": "server list, search, filters, latency, favourites, groups",
-      "commands": ["server.test", "core.select", "config.apply", "profile.validate", "connector.health"],
+      "commands": ["server.test", "config.apply", "profile.validate", "connector.health"],
       "events": ["server.health.changed"],
       "states": ["loading", "empty", "unknown", "degradedSecret", "dryRunPlan", "error"],
       "parityWith": "the FixedProfile editor (omega-web/src/omega/controllers/fixed_profile.coffee:1) for the field-by-field half; list, search, latency and groups are new",
@@ -137,11 +137,11 @@
       "id": "popup",
       "document": "nexora-popup.html",
       "purpose": "current profile, quick switch, health dot, blocked state, one tap to options",
-      "commands": ["core.select", "connector.status", "core.status", "config.snapshot"],
+      "commands": ["config.apply", "connector.status", "core.status", "config.snapshot"],
       "events": ["core.blocked", "connector.connected", "connector.disconnected", "server.health.changed"],
       "states": ["loading", "unknown", "stale", "blocked", "failOpenInForce", "busy", "disabledPhase2", "error"],
       "parityWith": "the plain-JS popup: profile list, temp rules, add-rule, request info, external profile, keyboard help (omega-web/src/popup/js/profiles.js:1, omega-web/src/popup/js/keyboard.js:1)",
-      "note": "No command with a side effect runs on mount (docs/architecture/22-component-contracts.md §13 invariant 2, docs/verification/live-matrix.md LIVE-17), and a selection is converge-to-desired-state, so a double tap is one switch (packages/schema/protocol/commands/core.select.json)."
+      "note": "No command with a side effect runs on mount (docs/architecture/22-component-contracts.md §13 invariant 2, docs/verification/live-matrix.md LIVE-17), and a selection is converge-to-desired-state, so a double tap is one switch — a switch is a config.apply whose compiled hash is unchanged, answered without a restart (docs/PROJECT-STATE.md §9.5)."
     },
     {
       "id": "connector-status",

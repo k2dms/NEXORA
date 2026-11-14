@@ -109,7 +109,6 @@
         "core.start",
         "core.stop",
         "core.restart",
-        "core.select",
         "config.apply",
         "profile.import",
         "profile.remove",
@@ -137,7 +136,7 @@
         "why": "enough for a 'test all' on one panel of servers, too small for a poll loop to reach every VPS on the user's list every second; probes are never retried, so a refusal is not a lost measurement"
       },
       {
-        "scope": ["config.apply", "core.start", "core.stop", "core.restart", "core.select"],
+        "scope": ["config.apply", "core.start", "core.stop", "core.restart"],
         "windowSeconds": 20,
         "maxRequests": 4,
         "onExceed": "Busy",

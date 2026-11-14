@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.77; older scope and inventory paragraphs
+continuation is §4.78; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5035,7 +5035,7 @@ written before any behaviour existed. What each next milestone has to make true:
 | 2 | Lockfile policy: keep `package-lock.json` ignored or add `!packages/**/package-lock.json`? What the 2026-11-05 runs changed is the framing: a lockfile-free install now *measurably* builds, on three clean images, and what stays unverified is that it resolves the same set somewhere else (`docs/audit/99-baseline-report.md` §12) | CI as a trust anchor |
 | 3 | `.circleci/config.yml`: delete in a separate commit or keep and mark dead? | cosmetic, but CI-red |
 | 4 | **Answered on 2026-11-07, and the number stays.** The question was whether `subscription.refresh` delivers servers to the extension through chunked events or the Connector owns subscriptions entirely (`ODEC-33`, and the chunking-vs-out-of-band half above it was decided earlier: chunking). It is answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`: the Connector owns them, no feed body crosses the pipe in either direction, the parsed Servers arrive in one result frame, and an event carries counts. The id is retired in `packages/schema/open-decisions.json#/retired` and the row it gated in `packages/schema/verification.json#/retired`. The slot keeps its number, because §9's ordinals are cited by documents, by queue rows and by this ledger — decision 21's reason for retiring `ODEC-NN` instead of renumbering it, applied to the row that carries it. | nothing: the row that needed it, `VER-61`, is retired beside it |
-| 5 | inbound-per-tag vs single-inbound-with-routing (one Xray inbound per profile vs one with `routing` and `core.select`) | `27-…`, `core.select` semantics |
+| 5 | **Answered on 2026-11-14, and the number stays.** The question was inbound-per-tag vs single-inbound-with-routing — one Xray inbound per profile versus one inbound with `routing` and an imperative `core.select`. It is answered **inbound-per-tag**: the per-tag layout the compiler already ships (SOCKS5 inbound per tag, last-priority per-tag fallbacks, pinned by five goldens) keeps the server in the config bytes, which is what makes the hash-equality rule, the byte-stability promise and the diagnostics all readable; the imperative fast path `core.select` promised had no mechanism under it, so the command left the contract surface (18 methods) and the fast switch is a `config.apply` whose compiled hash is unchanged, answered without a restart (doc 26 §2.1). The slot keeps its number, because §9's ordinals are cited by documents, by queue rows and by this ledger. | nothing: the row that needed it, `VER-30`, is retired beside it |
 | 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
 | 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
 | 8 | What carries the heartbeat? `packages/schema/protocol/framing.json#/liveness` gives the interval (25 s), the miss count (3) and a **direction** (`host-to-extension`), and `packages/schema/protocol/envelope.schema.json#/properties/type` has four values — `request`, `response`, `event`, `progress` — none of them a beat. So either the beat is an envelope frame the data has not named (which one, given the closed object and the four type rules), or `nexora-host` keeps the port open without writing and only the extension counts, or the beat belongs to the local pipe instead and the direction value is wrong. Until one of those is chosen, no Go peer can claim the third clause of `VER-49`'s closer, and the peer in §4.7 counts *any* inbound frame as a beat arrived — a proxy, not the contract | `VER-49`, §11 of `docs/architecture/25-native-messaging-protocol.md`, the watchdog in `connector/internal/peer/` |
@@ -5448,6 +5448,32 @@ which is why the row's subject retired and that half did not.
 partition is 121 + 26 + 25). `ODEC-08`'s gate list loses `VER-71` (`VER-69` stays); doc 23's rule row and
 doc 31 §12 read verified; doc 33's and doc 34's `Cited by` rows re-anchored for the lines doc 31 §12's
 rewrite pushed down (:402 → :404, :367 → :369, with the moves named in place).
+
+**Gates.** All seven green; 18 Go packages ok.
+
+### 4.78 §9.5 answered inbound-per-tag — `core.select` leaves the surface, `VER-30` retired (2026-11-14)
+
+**The decision.** §9.5 (inbound-per-tag vs single-inbound-with-routing) is answered **inbound-per-tag**: the
+per-tag layout the compiler already ships is what the goldens pin, what the hash-equality rule reads, and what
+the diagnostics sections mean; switching to a single inbound would have rewritten the compiler, the goldens and
+the diagnostics half for a fast path the config bytes cannot express. Under that layout the imperative
+`core.select` — "change the active outbound without writing a config" — has no mechanism: the server **is** the
+config bytes. The command left the contract surface rather than staying published and unwired.
+
+**The removal.** Allowlist 19 → 18 methods, the mutate rate-limit scope and `presentation.json`'s two command
+lists lose it, `commands/core.select.json` is deleted, `contract_gen.go` regenerated, and the fixture scene
+that recorded a successful select is removed. The dispatch tests that used `core.select` as their
+"published but unwired" example now use `connector.version` / `connector.status`, which are published and
+unwired for real. Doc 26: eighteen methods in the header, the rules and the cross-check row; §2.1 becomes the
+decision record — **a fast server switch is a `config.apply` whose compiled hash is unchanged, answered
+without a restart** — and its invariant row reads Verified on the golden pair that proves the byte stability.
+Doc 22, 27, 29, 31, 33 and 37 lose the command from their tables; ADR-0007, README and doc 20 move to eighteen
+in their citations of the assertion's own label.
+
+**Corpus.** `VER-30` retired — matrix 60 → 59 rows, 33 tombstones, `no-code` 40 → 39, `connector` 34 → 33,
+`assertion` 8 → 7, `marker.counted` 172 → 171 (the partition is 120 + 26 + 25). The id floor in
+`verify.mjs` moves 60 → 55 with the queue it counts. §9 is three answered slots in nine now — the fourth,
+the fifth and the ninth — and the row that needed this one is retired beside it.
 
 **Gates.** All seven green; 18 Go packages ok.
 

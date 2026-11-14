@@ -240,7 +240,7 @@ A YAML file that fails to load is a `SchemaMismatch` for the whole refresh. It i
 ## 6. Identity, duplicates, and what a refresh may touch
 
 A refresh that mints new identifiers on every run destroys three things at once: the per-server health history,
-`core.select` (which names a server, `packages/schema/protocol/commands/core.select.json`), and the derived Xray tag
+the selected profile's `config.apply` (§9.5: inbound-per-tag pins the server into the config bytes), and the derived Xray tag
 `srv-<id8>` (`packages/schema/server.schema.json#/properties/tag`). So:
 
 1. **The identity key is non-secret and transport-only**: `protocol, address, port, network, security, flow` plus

@@ -26,8 +26,6 @@ var Methods = []Method{
 		Replayable: true, Idempotent: true, TimeoutMs: 20000, Capabilities: []string{"integrity.pinned-core"}},
 	{Name: "core.status", Class: "read", AvailableBeforeHello: false, Privileged: false,
 		Replayable: true, Idempotent: true, TimeoutMs: 3000, Capabilities: nil},
-	{Name: "core.select", Class: "mutate", AvailableBeforeHello: false, Privileged: true,
-		Replayable: true, Idempotent: true, TimeoutMs: 3000, Capabilities: nil},
 	{Name: "config.apply", Class: "replace", AvailableBeforeHello: false, Privileged: true,
 		Replayable: true, Idempotent: true, TimeoutMs: 30000, Capabilities: nil},
 	{Name: "config.snapshot", Class: "read", AvailableBeforeHello: false, Privileged: false,
@@ -93,7 +91,7 @@ var Capabilities = []string{
 var RateLimits = []RateLimit{
 	{Methods: []string{"subscription.refresh"}, WindowSeconds: 60, MaxRequests: 3},
 	{Methods: []string{"server.test"}, WindowSeconds: 10, MaxRequests: 8},
-	{Methods: []string{"config.apply", "core.start", "core.stop", "core.restart", "core.select"}, WindowSeconds: 20, MaxRequests: 4},
+	{Methods: []string{"config.apply", "core.start", "core.stop", "core.restart"}, WindowSeconds: 20, MaxRequests: 4},
 	{Methods: []string{"profile.import", "profile.remove", "keystore.purge"}, WindowSeconds: 60, MaxRequests: 2},
 	{Methods: []string{"diagnostics.get"}, WindowSeconds: 120, MaxRequests: 1},
 	{Methods: []string{ScopeAllMethods}, WindowSeconds: 1, MaxRequests: 20},

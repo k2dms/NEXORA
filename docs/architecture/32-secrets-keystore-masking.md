@@ -58,7 +58,7 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | `docs/architecture/23-unified-server-model.md:230` | field-level rules for `publicKey`/`shortId` | §10 |
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
 | `docs/architecture/25-native-messaging-protocol.md:291` | `SecretRedacted` vs a corrupt document | §11 |
-| `docs/architecture/26-command-surface.md:171` | `maskedConfig` must contain no keystore value | §13 |
+| `docs/architecture/26-command-surface.md:250` | `maskedConfig` must contain no keystore value | §13 |
 | `docs/architecture/27-config-compilation-pipeline.md:136` | mask and label rules for unrepresentable fields | §9, §10 |
 | `docs/architecture/29-subscriptions-and-servers.md:283` | `detail` masked like any other text | §8 |
 | `docs/architecture/29-subscriptions-and-servers.md:324` | M3–M5: credentials inside a subscription | §6, §14 |

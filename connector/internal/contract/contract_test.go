@@ -186,9 +186,9 @@ func writeContractJSON(t *testing.T, file string, value any) {
 	}
 }
 
-func TestSurfaceIsTheClosedNineteen(t *testing.T) {
-	if len(Methods) != 19 {
-		t.Errorf("the allowlist publishes %d methods, and 19 is what docs/architecture/26-command-surface.md names", len(Methods))
+func TestSurfaceIsTheClosedEighteen(t *testing.T) {
+	if len(Methods) != 18 {
+		t.Errorf("the allowlist publishes %d methods, and 18 is what docs/architecture/26-command-surface.md names", len(Methods))
 	}
 	var beforeHello, privileged, nonReplayable int
 	for _, m := range Methods {
@@ -219,8 +219,8 @@ func TestSurfaceIsTheClosedNineteen(t *testing.T) {
 	if beforeHello != 1 {
 		t.Errorf("%d methods are dispatchable before hello, want exactly 1", beforeHello)
 	}
-	if privileged != 11 {
-		t.Errorf("%d methods are privileged, want the 11 ADR-0004 names", privileged)
+	if privileged != 10 {
+		t.Errorf("%d methods are privileged, want the 10 ADR-0004 names after core.select left the surface", privileged)
 	}
 	if nonReplayable != 1 {
 		t.Errorf("%d methods are non-replayable, want exactly 1", nonReplayable)

@@ -25,7 +25,7 @@ first and implemented second, and it is the artifact both implementations bind t
    `packages/schema/protocol/command-allowlist.json`, which is the single normative artifact for both the Go
    switch and the TypeScript client. It currently lists **exactly 19 methods**
    (`packages/schema/protocol/command-allowlist.json:13` through
-   `packages/schema/protocol/command-allowlist.json:31`), each with a `class`, a
+   `packages/schema/protocol/command-allowlist.json:30`), each with a `class`, a
    `availableBeforeHello` flag and a `privileged` flag.
 2. Resolution MUST be a total function with one failure case: an unknown method MUST produce
    `UnknownMethod` (`packages/schema/protocol/error-taxonomy.json:9`) and MUST be answered before any state is
@@ -38,7 +38,7 @@ first and implemented second, and it is the artifact both implementations bind t
    build failure, not a TODO.
 4. The three names — the allowlist, the command documents and `docs/architecture/26-command-surface.md` —
    MUST denote the same set. The parity assertion in `packages/schema/scripts/verify.mjs` "hello gating agrees between allowlist and command doc" and "command class agrees between allowlist and command doc" and the count
-   assertion in `packages/schema/scripts/verify.mjs` "the command surface is exactly nineteen methods" enforce the first two today; the document cross-check
+   assertion in `packages/schema/scripts/verify.mjs` "the command surface is exactly eighteen methods" enforce the first two today; the document cross-check
    degrades to a visible `DEFERRED` note (`packages/schema/scripts/verify.mjs` "DEFERRED: 26-command-surface.md cross-check (file not present yet)") and becomes a real
    assertion the moment the file exists.
 5. Commands MUST be versioned with the protocol: the frame carries `v`, `connector.hello` negotiates
@@ -93,7 +93,7 @@ documenting a command surface that names a method the allowlist does not contain
   `diagnostics`.
 - `packages/schema/protocol/commands.schema.json:7` — VERIFIED — the eleven required fields; `:35` —
   VERIFIED — the closed `class` enum `read | converge | replace | mutate | probe`.
-- `packages/schema/scripts/verify.mjs` "the command surface is exactly nineteen methods" — VERIFIED — the literal assertion that the surface is nineteen methods;
+- `packages/schema/scripts/verify.mjs` "the command surface is exactly eighteen methods" — VERIFIED — the literal assertion that the surface is eighteen methods (core.select left the surface 2026-11-14 by §9.5; history in git);
   `packages/schema/scripts/verify.mjs` "every taxonomy entry is a code/layer/meaning object" — VERIFIED — the taxonomy shape assertion (which counts 23 today).
 - `packages/schema/protocol/commands/connector.hello.json:5` — VERIFIED — `class: read` for the pre-hello
   negotiation call, whose `requiresHello` field is itself pinned by

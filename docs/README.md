@@ -39,7 +39,7 @@ Executable artefacts, outside this directory:
   `docs/audit/99-baseline-report.md` by *section* (`docs/PROJECT-STATE.md` §n), and
   `packages/schema/scripts/verify.mjs` by *assertion label*. A harness citation is the file token and then
   one or more double-quoted labels exactly as the harness carries them — template placeholders included,
-  `packages/schema/scripts/verify.mjs` "the command surface is exactly nineteen methods",
+  `packages/schema/scripts/verify.mjs` "the command surface is exactly eighteen methods",
   "secret-bearing namespace is not sync-eligible: ${ns.entity}" — one label per line, never split across a
   line break or a table cell. `STALE LABEL` in the checker reads the harness and refuses a citation that
   names no check, which is why a rule added in the middle of the verifier can no longer break the docs that

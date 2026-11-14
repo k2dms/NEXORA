@@ -184,7 +184,7 @@ check(
   `only-in-allowlist: ${allowNames.filter((n) => !docNames.includes(n)).join(', ')}; ` +
     `only-as-file: ${docNames.filter((n) => !allowNames.includes(n)).join(', ')}`,
 );
-check(allowNames.length === 19, 'the command surface is exactly nineteen methods', `found ${allowNames.length}`);
+check(allowNames.length === 18, 'the command surface is exactly eighteen methods', `found ${allowNames.length}`);
 check(
   allowlist.commands.filter((c) => c.availableBeforeHello).map((c) => c.name).join() ===
     'connector.hello',
@@ -3615,7 +3615,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const thinTomb = verif.retired.rows.filter((r) =>
     !/^\d{4}-\d{2}-\d{2}$/.test(r.closed ?? '') || (r.was ?? '').length < 40 || (r.artefact ?? '').length < 40).map((r) => r.id);
   check(
-    ids.length >= 60 && dupes.length === 0 && retiredDupes.length === 0 && recycled.length === 0 &&
+    ids.length >= 55 && dupes.length === 0 && retiredDupes.length === 0 && recycled.length === 0 &&
       holes.length === 0 && ascending && thinTomb.length === 0,
     'every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it',
     `${ids.length} rows, ${retiredIds.length} retired, duplicates=${[...dupes, ...retiredDupes].join(',') || 'none'}, ` +
@@ -3756,7 +3756,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const promisedAssertions = verif.matrix.filter((r) => r.closesBy.kind === 'assertion');
   const alreadyGreen = promisedAssertions.filter((r) => labels.has(r.closesBy.ref)).map((r) => r.id);
   check(
-    promisedAssertions.length >= 8 && alreadyGreen.length === 0,
+    promisedAssertions.length >= 7 && alreadyGreen.length === 0,
     'every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled',
     `already green and still queued: ${alreadyGreen.join(', ') || 'none'}`,
   );
@@ -3778,14 +3778,14 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 40 && count('state', 'no-check') === 2 && count('state', 'no-run') === 11 &&
-      count('state', 'no-fixture') === 3 && count('state', 'needs-human') === 4 && verif.matrix.length === 60,
+    count('state', 'no-code') === 39 && count('state', 'no-check') === 2 && count('state', 'no-run') === 11 &&
+      count('state', 'no-fixture') === 3 && count('state', 'needs-human') === 4 && verif.matrix.length === 59,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
   );
   check(
-    count('owner', 'connector') === 34 && count('owner', 'extension') === 9 && count('owner', 'packages') === 3 &&
+    count('owner', 'connector') === 33 && count('owner', 'extension') === 9 && count('owner', 'packages') === 3 &&
       count('owner', 'ui') === 3 && count('owner', 'contracts') === 4 && count('owner', 'tools') === 1 &&
       count('owner', 'ci') === 2 && count('owner', 'human') === 1 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
@@ -3794,7 +3794,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
   );
   check(
-    kindCount('live-row') === 42 && kindCount('new-live-row') === 0 && kindCount('assertion') === 8 &&
+    kindCount('live-row') === 42 && kindCount('new-live-row') === 0 && kindCount('assertion') === 7 &&
       kindCount('gate') === 2 && kindCount('tool') === 1 && kindCount('ci-step') === 2 &&
       kindCount('decision') === 1 && kindCount('external-measurement') === 4,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',

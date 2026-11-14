@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 172
+    "counted": 171
   },
   "states": {
     "values": [
@@ -401,6 +401,12 @@
         "closed": "2026-11-14",
         "was": "the negative security rules of SEC-3 are unguarded: NEXORA must not add web_accessible_resources or inject fetched text",
         "artefact": "the sec3-manifest rule in tools/check-layout-guards.mjs: every tracked manifest*.json is scanned, and one that names web_accessible_resources — as a key or as text — is refused with the reason the audit records the absence as load-bearing (docs/audit/10-manifest-packaging-distribution.md §1). The selftest injects the defect and refuses it; the real run scans the two overlay manifests and finds the key absent from both. The injection half of SEC-3 (no fetched text spliced into a page) is the remaining clause, and it stays open in doc 31 §12 as the PAC-sandbox argument"
+      },
+      {
+        "id": "VER-30",
+        "closed": "2026-11-14",
+        "was": "core.select performing no config write is asserted by nothing (and §9.5 changes what the row means)",
+        "artefact": "§9.5 answered inbound-per-tag: the per-tag inbound layout the compiler ships pins the server into the config bytes, so the imperative no-config-write switch the command promised has no mechanism. core.select left the contract surface the same commit — allowlist 19 → 18, the mutate rate-limit scope and the presentation command lists lose it, the command file is deleted, contract_gen regenerated, the fixture scene removed — and the fast switch is now a config.apply whose compiled hash is unchanged, answered without a restart (doc 26 §2.1 states the decision). The row's premise is gone, which is the closure: nothing asserts a no-config-write switch because the surface no longer declares one"
       }
     ]
   },
@@ -821,23 +827,6 @@
         }
       ],
       "why": "Same principle as the subscription rule at two layers; a half-applied config is the state where nothing is true. The mechanism is now code and its rollback is measured: `connector/internal/apply` writes a temp file, syncs, chmods, renames, and a document whose secret is missing fails before any byte is written, so the file on disk keeps both its bytes and the hash `previousConfigHash` would report (`write_test.go`). What that does not prove is the sentence's subject: an apply that failed under a running Core, from a real extension, over a real frame."
-    },
-    {
-      "id": "VER-30",
-      "subject": "`core.select` is specified to perform no config write, and no assertion or run proves it",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "core.select leaves the applied-config hash unchanged"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/26-command-surface.md",
-          "anchor": "`core.select` performs no config write"
-        }
-      ],
-      "why": "Switching a profile is the hottest operation in the product; if it rewrites the config the hash-equality rule in VER-29 and every 'nothing changed' claim are false. Note that the inbound-per-tag decision (docs/PROJECT-STATE.md §9.5) determines what this row even means. No live row covers it -- LIVE-05 is a transport row, so the earlier citation of it here was wrong; the closer is a handler assertion over the applied-config hash."
     },
     {
       "id": "VER-32",

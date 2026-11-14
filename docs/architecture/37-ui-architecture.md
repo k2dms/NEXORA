@@ -100,14 +100,14 @@ Surfaces (`packages/schema/presentation.json#/surfaces`) and what each may say o
 | Surface | Document | Commands it may name | Events it renders |
 |---|---|---|---|
 | `dashboard` | `nexora-options.html` | `connector.status`, `connector.health`, `core.status`, `config.snapshot`, `profile.validate` | `core.started`, `core.exited`, `core.blocked`, `connector.connected`, `connector.disconnected`, `config.applied` |
-| `servers` | `nexora-options.html` | `server.test`, `core.select`, `config.apply`, `profile.validate`, `connector.health` | `server.health.changed` |
+| `servers` | `nexora-options.html` | `server.test`, `config.apply`, `profile.validate`, `connector.health` | `server.health.changed` |
 | `subscriptions` | `nexora-options.html` | `subscription.refresh`, `profile.import`, `config.apply`, `connector.health` | `subscription.updated`, `subscription.failed` |
 | `routing` | `nexora-options.html` | `profile.validate`, `config.apply`, `diagnostics.get` | `routing.decision` |
 | `settings` | `nexora-options.html` | `core.start`, `core.stop`, `core.restart`, `config.apply`, `connector.version`, `keystore.purge`, `profile.import`, `profile.remove` | `core.restart`, `integrity.mismatch` |
 | `diagnostics` | `nexora-options.html` | `diagnostics.get`, `connector.health`, `core.status`, `config.snapshot` | `config.drift`, `keystore.unavailable` |
 | `migration-review` | `nexora-options.html` | `profile.import`, `config.apply`, `diagnostics.get` | — |
 | `secret-entry` | `nexora-options.html` | `profile.import`, `keystore.purge` | `keystore.unavailable` |
-| `popup` | `nexora-popup.html` | `core.select`, `connector.status`, `core.status`, `config.snapshot` | `core.blocked`, `connector.connected`, `connector.disconnected`, `server.health.changed` |
+| `popup` | `nexora-popup.html` | `config.apply`, `connector.status`, `core.status`, `config.snapshot` | `core.blocked`, `connector.connected`, `connector.disconnected`, `server.health.changed` |
 | `connector-status` | `legacy-mount` | `connector.status`, `connector.version` | `connector.connected`, `connector.disconnected` |
 | `core-health` | `legacy-mount` | `core.status`, `connector.health` | `core.started`, `core.exited`, `core.blocked` |
 

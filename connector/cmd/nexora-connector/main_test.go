@@ -172,7 +172,7 @@ func TestJSONLModeAnswersTheFrontDoorCases(t *testing.T) {
 		{
 			name: "a published method this build registers no handler for says Internal", allowlisted: true,
 			warm: []string{hello},
-			id:   "req-jsonl-select", request: requestLine(t, "req-jsonl-select", "core.select", `{}`),
+			id:   "req-jsonl-select", request: requestLine(t, "req-jsonl-select", "connector.status", `{}`),
 			wantCode: "Internal",
 		},
 		{

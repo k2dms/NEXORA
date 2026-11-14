@@ -414,11 +414,11 @@ func TestAPublishedMethodWithNoHandlerSaysInternal(t *testing.T) {
 	}
 	id := negotiated(contract.CapabilityNames()...)
 
-	// core.status is published and this build registers it; core.select is published and does not.
+	// core.status is published and this build registers it; connector.version is published and does not.
 	if _, r := d.Dispatch(context.Background(), id, request(t, "req-ok-status-", "core.status")); r != nil {
 		t.Fatalf("a registered method was refused: %+v", r)
 	}
-	_, r := d.Dispatch(context.Background(), id, request(t, "req-missing-1", "core.select"))
+	_, r := d.Dispatch(context.Background(), id, request(t, "req-missing-1", "connector.version"))
 	if r == nil || r.Code != "Internal" {
 		t.Fatalf("an unregistered published method got %+v, want Internal", r)
 	}
@@ -759,7 +759,7 @@ func TestAdmissionIsRecheckedBeforeCachedAnswersAndCollisions(t *testing.T) {
 			}
 		})
 	}
-	for method, code := range map[string]string{"core.select": "Internal", "core.snooze": "UnknownMethod"} {
+	for method, code := range map[string]string{"connector.version": "Internal", "core.snooze": "UnknownMethod"} {
 		result, r := d.Dispatch(context.Background(), id, request(t, f.ID, method))
 		if result != nil || r == nil || r.Code != code {
 			t.Fatalf("%s did not precede collision lookup: %v / %+v", method, result, r)
