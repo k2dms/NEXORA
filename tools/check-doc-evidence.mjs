@@ -93,6 +93,36 @@ const CLAIMS_HOST_EXEMPT = ['docs/PROJECT-STATE.md', 'docs/audit/'];
 const CLAIMS_TARGET_EXEMPT = ['docs/adr/'];
 
 const linesCache = new Map();
+
+// SECTION: the fifth citation form — a backticked path under docs/ followed by a section number
+// (`docs/architecture/25-native-messaging-protocol.md` §5) — names a heading, and no earlier pass
+// read one: an anchor could name a section its document never had and the run stayed green. That is
+// what VER-83 measured (8 of 568 cites, all re-aimed by hand, docs/PROJECT-STATE.md §4.33) and the
+// neighbour form of the same error is why the check is on the exact number: doc 31 once cited doc 22
+// "§4 of the health section" while the health prober is §8 — a number that exists certifies the
+// neighbour mistake unless the sub-number must match too. The two mutable targets are checked on the
+// integer part only: their subsections are dated ledger entries and table slots (§9.4), not headings,
+// so a §4.64 cite into docs/PROJECT-STATE.md is resolved by the top-level section it lives under.
+const SECTION_RE = /`((?:docs)\/[^\s:#*][^\s:#*]*?\.md)`\s*§(\d+(?:\.\d+)?)/g;
+const headingsCache = new Map();
+
+async function headingsOf(rel) {
+  if (headingsCache.has(rel)) return headingsCache.get(rel);
+  const src = await readFile(join(REPO, rel), 'utf8').catch(() => null);
+  const set = new Set();
+  if (src !== null) {
+    for (const line of src.split('\n')) {
+      const h = /^#{1,6}\s+(\d+(?:\.\d+)?)\b/.exec(line);
+      if (h) set.add(h[1]);
+    }
+  }
+  headingsCache.set(rel, set);
+  return set;
+}
+
+const sectionMissing = [];
+let sectionChecked = 0;
+const SECTION_TOP_ONLY = ['docs/PROJECT-STATE.md', 'docs/audit/99-baseline-report.md'];
 async function citedLines(rel) {
   if (linesCache.has(rel)) return linesCache.get(rel);
   let l = null;
@@ -364,6 +394,20 @@ for await (const doc of mdFiles(join(REPO, 'docs'))) {
     }
   }
 
+  // SECTION: the fifth pass. One regex over the same text, resolved against the headings of the
+  // file the path names. A cite whose target does not exist is DOCNAME's finding, not this pass's.
+  for (const match of text.matchAll(SECTION_RE)) {
+    const [, target, section] = match;
+    sectionChecked++;
+    const present = await stat(join(REPO, target)).then(() => true, () => false);
+    if (!present) continue;
+    const want = SECTION_TOP_ONLY.includes(target) ? section.split('.')[0] : section;
+    const set = await headingsOf(target);
+    if (!set.has(want)) {
+      sectionMissing.push([label, target, section, [...set].length]);
+    }
+  }
+
   // CLAIMS: the `Cited by` tables. Walked line by line, because a table is a region of a file and
   // the regex scans above have no notion of the row a citation sits in.
   if (!CLAIMS_HOST_EXEMPT.some((p) => label.startsWith(p) || label === p)) {
@@ -383,17 +427,25 @@ const problems =
   selfCite.length +
   mutableCite.length +
   staleLabel.length +
-  claimsStale.length;
+  claimsStale.length +
+  sectionMissing.length;
 console.log(
-  `checked ${checked} path:line citations, ${pointerChecked} path#pointer citations, ${docNameChecked} doc-name references, ${labelCitesChecked} harness assertion labels and ${claimsChecked} \`Cited by\` rows in docs/`,
+  `checked ${checked} path:line citations, ${pointerChecked} path#pointer citations, ${docNameChecked} doc-name references, ${labelCitesChecked} harness assertion labels, ${claimsChecked} \`Cited by\` rows and ${sectionChecked} section cites in docs/`,
 );
 if (plannedSeen.size) {
   console.log(`planned, not yet written (${plannedSeen.size}): ${[...plannedSeen].sort().join(', ')}`);
 }
 
 if (problems === 0) {
-  console.log('OK: every citation resolves to a real, non-blank line, every pointer resolves, every harness label cited is a check the harness has, and every `Cited by` row cites a line that names the document whose table it is.');
+  console.log('OK: every citation resolves to a real, non-blank line, every pointer resolves, every harness label cited is a check the harness has, every `Cited by` row cites a line that names the document whose table it is, and every section cite names a heading its document has.');
   process.exit(0);
+}
+
+if (sectionMissing.length) {
+  console.error(`\nMISSING SECTION (${sectionMissing.length}) -- a section cite names a heading its document does not have:`);
+  for (const [doc, target, section, count] of sectionMissing) {
+    console.error(`  ${doc}  cites ${target} §${section}  (${count} numbered headings: ${[...await headingsOf(target)].slice(0, 12).join(', ')}...)`);
+  }
 }
 
 if (claimsStale.length) {

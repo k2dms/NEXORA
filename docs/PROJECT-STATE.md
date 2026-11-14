@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.69; older scope and inventory paragraphs
+continuation is §4.70; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5264,6 +5264,26 @@ place), and the tag-collision test's synthetic ids carry the same `nexora-secret
 `resolve_test.go` uses — repairing the secret-gate finding 548e901's and d6910e7's runs predate.
 
 **Gates.** All seven green.
+
+### 4.70 The section cite is resolved — `VER-83`'s pass written (2026-11-14)
+
+**The sixth pass.** `tools/check-doc-evidence.mjs` grew the SECTION pass beside the five it already runs: a
+backticked `docs/` path followed by `§N` must name a numbered heading of the file it cites, on the **exact
+sub-number** — the neighbour form of the error is what exact-match refuses, because the corpus has been caught
+citing a neighbour section three times (doc 31's "doc 22 §4 of the health section", while the health prober is §8).
+The two mutable targets (`docs/PROJECT-STATE.md`, `docs/audit/99-baseline-report.md`) are checked on the integer
+part only: their subsections are dated ledger entries and §9-table slots rather than headings. The first run
+checked **583 section cites** and found zero dangling; a planted §99 cite is refused with the target's heading
+list printed beside it.
+
+**Corpus.** `VER-83` retired — matrix 68 → 67 rows, 23 tombstones, `no-check` 6 → 5, `tools` 3 → 2, `gate` 4 → 3,
+`marker.counted` 187 → 186 (the partition is 136 + 26 + 24). README's section-cite bullet reads verified with the
+pass named; doc 39's two prose arguments that counted `VER-83` among the unclosable rows are updated, and the
+queue's closing-mechanism table moved with the row. doc 22 §6 invariant 4, doc 26 and doc 28's verified statements
+from the previous slice cite `nexora/extension/src/profiles/registry.ts`, whose synthetic ids now carry the
+`nexora-secret-allow` annotation the connector-side tests use.
+
+**Gates.** All seven green; the extension suite 64/64.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

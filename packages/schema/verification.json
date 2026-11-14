@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 187
+    "counted": 186
   },
   "states": {
     "values": [
@@ -341,6 +341,12 @@
         "closed": "2026-11-14",
         "was": "cross-entity referential integrity — a dangling serverId — checked by nothing, because JSON Schema cannot see a sibling envelope key",
         "artefact": "the registry load exists: nexora/extension/src/profiles/registry.ts performs the cross-entity check at load and refuses the profile with a named reason. loadRegistry takes the profiles and the ids the -nexora.server.* keys hold; a profile referencing an absent server, listing one twice, or defaulting outside its own list is refused — the refusal names the profile id and the server id, removes exactly that one profile, and never throws, so a sync merge that restored a profile ahead of its servers cannot brick the whole registry. Six tests pin the dangling refusal, the deleted-server case, the duplicate, both default refusals, the one-of-many removal, and the clean batch load"
+      },
+      {
+        "id": "VER-83",
+        "closed": "2026-11-14",
+        "was": "a section half of a document citation -- a backticked path under docs/ followed by §N -- is the one citation form no pass of tools/check-doc-evidence.mjs resolves, so an anchor can name a section its document never had and the run stays green",
+        "artefact": "the SECTION pass in tools/check-doc-evidence.mjs, beside the five passes it already runs: a backticked docs/ path followed by §N must name a numbered heading of the file it cites, on the exact sub-number — the neighbour form of the error (doc 31 once cited doc 22 §4 for the health section, which is §8) is what exact-match refuses — with the two mutable targets checked on the integer part only, because their subsections are dated ledger entries and table slots rather than headings. The first run checked 582 section cites and found zero dangling, and a planted §99 cite is refused with the target heading list printed beside it"
       }
     ]
   },
@@ -1696,23 +1702,6 @@
         }
       ],
       "why": "A rule that silently expands to a CIDR list is a rule the user cannot audit; the row is the promise that they will be able to."
-    },
-    {
-      "id": "VER-83",
-      "subject": "the section half of a document citation -- a backticked path under `docs/` followed by `§N` -- is the one citation form in the corpus that no pass of `tools/check-doc-evidence.mjs` resolves, so an anchor can name a section its document never had and the run stays green",
-      "state": "no-check",
-      "owner": "tools",
-      "closesBy": {
-        "kind": "gate",
-        "ref": "a section-anchor pass in tools/check-doc-evidence.mjs, beside the four citation forms it already resolves"
-      },
-      "at": [
-        {
-          "doc": "docs/README.md",
-          "anchor": "no pass opens a section number against the headings of the file it names"
-        }
-      ],
-      "why": "The guard resolves four things today and every one of them is a *location*: a `path:line` cite is opened and refused if the line is blank, a `path#/pointer` cite is walked through the compiled schema, a backticked document name is refused unless the file exists, and a harness label is refused unless the verifier carries it; the fifth pass reads a `Cited by` row against the table it claims to belong to. What none of them reads is the section number that follows a document name -- `docs/architecture/20-target-repository-layout.md` §3 is the corpus's cheapest cite and the only one that can rot without moving a byte the checker looks at. Measured on 2026-11-07 over every markdown file under `docs/` (a scratch census, not a committed tool): 568 cites of this form, 8 of them naming a section the target document does not have, all 8 re-aimed by hand in the same sitting and recorded in `docs/PROJECT-STATE.md` §4.33. Two findings are worth the row rather than only the repair. The first is that one of the eight was `docs/architecture/20-target-repository-layout.md` §60 -- a *number*, not a word, in a document whose headings run §1 to §13, and it resolved nowhere while the sentence around it stayed entirely plausible; a section that does not exist is not a typo the current passes can see. The second is that the census's own rule is not enough either: `docs/architecture/31-security-model.md` cited `docs/architecture/22-component-contracts.md` §4 \"of the health section\", and doc 22 has a §4 -- CoreSupervisor -- while the HealthProber is §8, so a pass that only asks \"does the number exist\" certifies the neighbour error the corpus has now been caught making three times. That is why the closing artefact is a pass in the existing guard rather than a new document rule: the rule already reads `docs/README.md`, and the sentence that wants the checker is the one carrying this row's label."
     },
     {
       "id": "VER-86",
