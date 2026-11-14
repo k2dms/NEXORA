@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 53
+    "counted": 52
   },
   "notADeferral": [
     {
@@ -806,29 +806,6 @@
       ]
     },
     {
-      "id": "ODEC-30",
-      "question": "Do the unbounded `log-store` and state blob get a compaction policy, or are they declared legacy-only and left?",
-      "decidedBy": "product",
-      "blocks": {
-        "verification": [
-          "VER-48"
-        ],
-        "compatibility": []
-      },
-      "why": "Both grow without a bound today, and VER-48 needs a real ring with real `seq` gaps to prove masking and rotation -- which means the store has to have a bounded shape before that assertion can mean anything. Declaring them legacy-only is defensible and leaves a quota failure to the user; compacting them is a policy with a lossy edge.",
-      "options": [
-        "declare legacy-only, assert they are never read by NEXORA, and let the user clear them",
-        "ring-buffer them with a recorded cap, which is what VER-48's eviction test needs anyway",
-        "move the log to the Connector plane entirely and leave the browser store empty by design"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/34-data-split.md",
-          "anchor": "- whether the unbounded `log-store`"
-        }
-      ]
-    },
-    {
       "id": "ODEC-31",
       "question": "What are the real envelope sizes without `unlimitedStorage` -- the number doc 34 §9's three conditions depend on?",
       "decidedBy": "measurement",
@@ -1069,6 +1046,16 @@
           "verification": [
             "VER-76"
           ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-30",
+        "decided": "2026-11-14",
+        "was": "do the unbounded log-store and state blob get a compaction policy, or are they declared legacy-only and left",
+        "artefact": "the second of its three options, the ring buffer with a recorded cap. The connector plane enforces it in code: connector/internal/logstore caps the ring at 2000 records and 1 MiB, rotates the file sink at 5 MiB × 5 oldest-first, and reads retentionDays 0 as the current session only (truncated at start, never appended) — the caps are observability.json#/sinks' own rows, asserted as data since Phase 1 and now executed. The browser plane carries the same caps as data and enforces them in the extension slice that owns browser-ring, whose live half stays on LIVE-10 and LIVE-11. The state blob is doc 34 §10 rule 5's business and was never part of the log answer. VER-48 retired in the same commit; the citing line in doc 34 §15 now states the answer",
+        "freed": {
+          "verification": [],
           "compatibility": []
         }
       }

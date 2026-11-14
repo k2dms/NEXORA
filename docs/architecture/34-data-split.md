@@ -513,7 +513,6 @@ document and asks it to name an owner for each. Naming them, plus the ones §5�
   or stay frozen where ADR-0002 put them;
 - the compiled config after an unclean kill, shared with `docs/architecture/32-secrets-keystore-masking.md` §13
   and `docs/architecture/33-binary-integrity.md` §17;
-- whether the unbounded `log-store` and state blob get a compaction policy or are declared legacy-only and left;
 - envelope-size measurements without `unlimitedStorage`, owed by
   `docs/architecture/38-compatibility-matrix.md` before §9's three conditions can be checked.
 

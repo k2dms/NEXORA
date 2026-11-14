@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 180
+    "counted": 179
   },
   "states": {
     "values": [
@@ -359,6 +359,12 @@
         "closed": "2026-11-14",
         "was": "no CI grep gate fails when vless|reality|xtls appears as executable code under packages/ or nexora/",
         "artefact": "the VER-03 step of .github/workflows/verify.yml -- the transport-literal grep over executable JS, with the schema harness named as the one exempt file -- ran green on three runner images on 2026-11-05 over empty roots (docs/audit/99-baseline-report.md §12). It now runs over the real extension and packages sources, which name the protocols only in UI strings and schema-derived types, and stays green: the gate is non-vacuous and the constraint it guards has held with code on the guarded side of it"
+      },
+      {
+        "id": "VER-48",
+        "closed": "2026-11-14",
+        "was": "no run shows a record actually being written, masked and rotated, with real seq gaps and a ring that evicts",
+        "artefact": "connector/internal/logstore is written and its nine fake-sink tests run green: the store renders once and hands every sink the same masked line stamped with the same per-plane seq (one render, every sink, byte-identical); the value-keyed masker runs inside each sink over bare strings — the exact case the legacy replacer lost — refusing short and empty table entries; the ring evicts by count and by bytes (first cap wins), keeps a single oversized record, and re-reads the masked line so the raw value is nowhere in it, with the evicted head showing as a seq gap above the oldest survivor; the file sink rotates oldest-first at its byte cap, caps its file count, masks before the write, and truncates at start when retentionDays is 0 — the current session only. The browser half of the row stays open on LIVE-10 and LIVE-11, which is why the row's subject is retired and the live rows are not"
       }
     ]
   },
@@ -1158,23 +1164,6 @@
         }
       ],
       "why": "A negative about network behaviour cannot be proven by a schema; it is a bundle review plus the permission table, which is why doc 31 owns the surface."
-    },
-    {
-      "id": "VER-48",
-      "subject": "no run shows a record actually being written, masked and rotated, with real `seq` gaps and a ring that evicts",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "a Go test over a fake sink set, then the grep of a real exported bundle that LIVE-10 owns"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/36-observability.md",
-          "anchor": "A record is actually written, masked and rotated at runtime; `seq` gaps are real; the ring evicts"
-        }
-      ],
-      "why": "The record shape, the sink list and the bounds are asserted as data today; a `seq` that is only contiguous in a fixture proves nothing about a ring that has filled and evicted under a real session."
     },
     {
       "id": "VER-49",

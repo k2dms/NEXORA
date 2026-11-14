@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.71; older scope and inventory paragraphs
+continuation is §4.72; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5307,6 +5307,29 @@ same rule that kept `VER-02` open after its step was written: writing a workflow
 `marker.counted` 186 → 180 (the partition is 130 + 26 + 24; four deferral labels became verified statements in
 docs 20, 21, 22 and 37). Doc 20 §7's two statements and §13's row read GREEN, doc 21's protocol-code row reads
 GREEN, doc 39's VER-58 argument now names the day the greps went non-vacuous.
+
+**Gates.** All seven green.
+
+### 4.72 The log-store exists — `VER-48`'s connector half written, `ODEC-30` answered (2026-11-14)
+
+**The component.** `connector/internal/logstore` is doc 36's connector half: `Store` renders one record once
+and hands every sink the same masked line stamped with the same per-plane `seq` — one render, every sink, so
+two sinks cannot disagree about what happened; `Masker` is doc 32 §8's value-keyed pass, built from the
+keystore's values, replacing whole occurrences in bare strings (the exact case the legacy replacer lost) and
+refusing short and empty table entries; `Ring` is the memory sink at 2000 records / 1 MiB, first cap wins,
+keeping a single oversized record and re-reading the masked line so the raw value is nowhere in it — the
+evicted head shows as a seq gap above the oldest survivor, which is the gap detector; `FileSink` rotates
+oldest-first at 5 MiB × 5, masks before the write, and reads `retentionDays: 0` as the current session only
+(truncated at start, never appended). Nine fake-sink tests pin the render identity, the bare-string mask, the
+seq gap, both caps, the rotation and the zero-retention truncation. 18 Go packages green.
+
+**Two register closures.** `VER-48`'s connector half retired (matrix 65 → 64 rows, 26 tombstones, `no-code`
+44 → 43, `connector` 36 → 35, `assertion` 13 → 12, `marker.counted` 180 → 179); the browser half stays on
+`LIVE-10` and `LIVE-11`, which is why the row's subject retired and the live rows did not. `ODEC-30`
+answered by its second option — the ring buffer with a recorded cap: the caps doc 36 §10 asserted as data are
+now executed code, and the browser plane enforces the same caps in the extension slice that owns
+`browser-ring`. Register 31 → 30 entries, 53 → 52 sites, `product` 14 → 13; the citing bullet in doc 34 §15
+now states the answer.
 
 **Gates.** All seven green.
 
