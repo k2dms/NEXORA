@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 186
+    "counted": 180
   },
   "states": {
     "values": [
@@ -347,60 +347,22 @@
         "closed": "2026-11-14",
         "was": "a section half of a document citation -- a backticked path under docs/ followed by §N -- is the one citation form no pass of tools/check-doc-evidence.mjs resolves, so an anchor can name a section its document never had and the run stays green",
         "artefact": "the SECTION pass in tools/check-doc-evidence.mjs, beside the five passes it already runs: a backticked docs/ path followed by §N must name a numbered heading of the file it cites, on the exact sub-number — the neighbour form of the error (doc 31 once cited doc 22 §4 for the health section, which is §8) is what exact-match refuses — with the two mutable targets checked on the integer part only, because their subsections are dated ledger entries and table slots rather than headings. The first run checked 582 section cites and found zero dangling, and a planted §99 cite is refused with the target heading list printed beside it"
+      },
+      {
+        "id": "VER-02",
+        "closed": "2026-11-14",
+        "was": "the import boundary -- nothing under nexora/** or packages/** may import from omega-* -- is asserted by nothing",
+        "artefact": "the VER-02 step of .github/workflows/verify.yml has run green on three runner images since 2026-11-05 (docs/audit/99-baseline-report.md §12) and on this host beside every gate run since; what kept the row open was vacuousness -- a grep over a nexora/** that held no code proves nothing. The extension sources have been real since the single-server Chromium path landed (docs/PROJECT-STATE.md §4.41 onward), the registry load (src/profiles/registry.ts) widened them further, and the same greps now run over a boundary with code on both sides of it: the omega-* import scan, the side-effect-import scan and the file: dependency scan are non-vacuous, and the tree is clean under all three"
+      },
+      {
+        "id": "VER-03",
+        "closed": "2026-11-14",
+        "was": "no CI grep gate fails when vless|reality|xtls appears as executable code under packages/ or nexora/",
+        "artefact": "the VER-03 step of .github/workflows/verify.yml -- the transport-literal grep over executable JS, with the schema harness named as the one exempt file -- ran green on three runner images on 2026-11-05 over empty roots (docs/audit/99-baseline-report.md §12). It now runs over the real extension and packages sources, which name the protocols only in UI strings and schema-derived types, and stays green: the gate is non-vacuous and the constraint it guards has held with code on the guarded side of it"
       }
     ]
   },
   "matrix": [
-    {
-      "id": "VER-02",
-      "subject": "the import boundary -- nothing under `nexora/**` or `packages/**` may import from `omega-*` -- is asserted by nothing",
-      "state": "no-code",
-      "owner": "ci",
-      "closesBy": {
-        "kind": "gate",
-        "ref": "import-graph assertion in .github/workflows/verify.yml"
-      },
-      "at": [
-        {
-          "doc": "docs/adr/0002-keep-omega-directories-additive-layout.md",
-          "anchor": "Verified: NO — deferred to Phase 2 (rule 4's import boundary has no ch"
-        },
-        {
-          "doc": "docs/architecture/20-target-repository-layout.md",
-          "anchor": "`nexora/**` and `packages/**` import nothing from `omega-*`"
-        },
-        {
-          "doc": "docs/architecture/22-component-contracts.md",
-          "anchor": "or the command handlers. Testable as an import-graph assertion; `Verif"
-        },
-        {
-          "doc": "docs/architecture/37-ui-architecture.md",
-          "anchor": "(`docs/architecture/20-target-repository-layout.md` §7). `Verified: NO"
-        }
-      ],
-      "why": "ADR-0002's whole bargain is that the legacy tree keeps working untouched; the boundary is the only thing enforcing it, and it is a rule with no enforcement until there is code on one side of it."
-    },
-    {
-      "id": "VER-03",
-      "subject": "no CI grep gate fails when `vless|reality|xtls` appears as executable code under `packages/` or `nexora/`",
-      "state": "no-code",
-      "owner": "ci",
-      "closesBy": {
-        "kind": "ci-step",
-        "ref": "protocol-code grep in .github/workflows/verify.yml"
-      },
-      "at": [
-        {
-          "doc": "docs/adr/0003-xray-implements-all-transport-protocols.md",
-          "anchor": "Verified: NO — deferred to Phase 2."
-        },
-        {
-          "doc": "docs/architecture/21-system-context.md",
-          "anchor": "No protocol code in `nexora/**`"
-        }
-      ],
-      "why": "Constraint 1 is the reason the Connector exists. A violation is a rewrite of the architecture, so it is guarded by a machine and not by review."
-    },
     {
       "id": "VER-09",
       "subject": "extension identity and the version-line continuity are asserted by nothing in-repo -- the wipe trap is a behaviour of the store, not of this tree",

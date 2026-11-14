@@ -99,4 +99,4 @@ does not look at the legacy tree at all. A layout assertion (the eleven coupled 
 cited paths, and `nexora/**` contains no import of `omega-*`) is specified for Phase 2 in
 `docs/architecture/20-target-repository-layout.md` and is not implemented in this iteration.
 
-Verified: NO — deferred to Phase 2 (rule 4's import boundary has no checker yet).
+Verified 2026-11-14, superseding the deferred verdict this line carried: rule 4's import boundary has a checker — the `VER-02` step of `.github/workflows/verify.yml`, green on three runner images and over the real extension sources since they landed (`docs/PROJECT-STATE.md` §4.71; history in git).

@@ -178,8 +178,9 @@ sweep it into `grunt watch` the moment it grew a `Gruntfile.*`. Verified: YES fo
 and refuses any glob in the two `watch.coffee` files that leaves its own project except the declared
 `../omega-locales/` or names a new root; `VER-07` closed on 2026-11-06 and is in
 `packages/schema/verification.json#/retired`. The import-specifier scan of `nexora/**` and `packages/**` is the
-`VER-02` step of `.github/workflows/verify.yml`, green on three runner images over a `nexora/**` that holds no code yet,
-which is the reason that row is not met.
+`VER-02` step of `.github/workflows/verify.yml`, green on three runner images — and green now over a `nexora/**`
+that holds real code: the vacuousness that kept the row open is gone, and `VER-02` closed 2026-11-14
+(`docs/PROJECT-STATE.md` §4.71).
 
 ## 8. Roots: why there is deliberately no root `package.json`
 
@@ -288,7 +289,7 @@ non-tagging, leaving `.github/workflows/release.yml` untouched — that one fire
 | NEXORA keys never start with `+`; `secretBearing ⇒ ¬syncEligible`; `headers` stripped from sync | the prefix rejection at `packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}", the cross-rule and schema-existence checks at `packages/schema/scripts/verify.mjs` "secret-bearing namespace is not sync-eligible: ${ns.entity}" and "namespace value schema exists: ${ns.entity}" and the `headers` assertion at `packages/schema/scripts/verify.mjs` "syncExcludedValueKeys strips headers" | **GREEN** — this is SEC-1 expressed as data |
 | Legacy build graph still reachable from `omega-build` | Ladder A (`omega-build/package.json:12-15`) run by hand, recorded in `docs/audit/99-baseline-report.md`; the `legacy-chain` job of `.github/workflows/verify.yml` automates install → link → hub build → tests → release → artifact inspection, and did all of it on three runner images on 2026-11-05, green, at the pinned floors (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 |
 | The six legacy directories have not moved | the `legacy-roots` and `locale-chain` rules of `node tools/check-layout-guards.mjs` (each of the six is a directory, the five that are npm packages answer to their own directory name, and every `../omega-locales/**.po` the `po2crx` task reads resolves) | **GREEN** (§4) |
-| `nexora/**` and `packages/**` import nothing from `omega-*` | the `VER-02` step of `.github/workflows/verify.yml` — import-specifier, side-effect-import and `file:` greps over both roots; green here and on three runner images, but over a `nexora/**` that holds no code yet, which is why the row is not met (`docs/audit/99-baseline-report.md` §12) | Verified: NO — deferred to Phase 2 (§7) |
+| `nexora/**` and `packages/**` import nothing from `omega-*` | the `VER-02` step of `.github/workflows/verify.yml` — import-specifier, side-effect-import and `file:` greps over both roots; green on three runner images and green over the real extension sources on this host (`docs/PROJECT-STATE.md` §4.71) | **GREEN** (§7) |
 | No `package.json` / `go.work` / `.npmrc` at the repository root | the `root-bare` rule of `node tools/check-layout-guards.mjs` — five root paths including `package-lock.json` and `go.mod`; the same five were the `VER-04` shell loop of `.github/workflows/verify.yml` until 2026-11-06, green on three runner images, and the step now runs the script (`docs/audit/99-baseline-report.md` §12) | **GREEN** (§8) |
 | No connector, host shim, or Xray bytes inside `dist/*.zip` | the `VER-08` step's `check_zip`, which asserts the exact top-level path set, the 353-entry count and the bundle's presence, and ran against the artifacts each of the three runner builds produced, green (`docs/audit/99-baseline-report.md` §12) | **GREEN** (§9) |
 | Extension identity and version-line continuity | nothing in-repo; store behaviour is external | Verified: NO — deferred to Phase 2, `docs/verification/live-matrix.md` LIVE-14 |

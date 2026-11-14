@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.70; older scope and inventory paragraphs
+continuation is §4.71; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5284,6 +5284,31 @@ from the previous slice cite `nexora/extension/src/profiles/registry.ts`, whose 
 `nexora-secret-allow` annotation the connector-side tests use.
 
 **Gates.** All seven green; the extension suite 64/64.
+
+### 4.71 The import boundary is no longer vacuous — `VER-02` and `VER-03` retired, and `VER-64`'s gate written (2026-11-14)
+
+**The two retirements.** The `VER-02` and `VER-03` steps of `.github/workflows/verify.yml` have run green on
+three runner images since 2026-11-05 (`docs/audit/99-baseline-report.md` §12); what kept both rows open was
+vacuousness — a grep over a `nexora/**` that held no code proves nothing, which is exactly what §8's evidence rule
+refuses to count. The roots have held real code since the single-server Chromium path landed, the registry load
+widened it, and the same greps now run over a boundary with code on the guarded side of it: the omega-*
+import-specifier, side-effect-import and `file:` scans are non-vacuous and clean, and the transport-literal grep
+finds the protocols only in UI strings and schema-derived types. Both rows retired the same commit; ADR-0002's and
+ADR-0003's deferred labels carry dated superseding notes (the label moves, history stays in git — the `ODEC-33`
+precedent).
+
+**The new gate.** `VER-64`'s build-graph assertion is written as a CI step beside them: no `fetch(`,
+`XMLHttpRequest`, `new WebSocket`, `new Request`, `new EventSource` or `sendBeacon` anywhere under
+`nexora/extension/src` — grep rather than an import scan, because the primitives it refuses are globals no import
+graph sees. The tree is clean under it today. The row stays open until the step's first recorded runner run, by the
+same rule that kept `VER-02` open after its step was written: writing a workflow is not running one.
+
+**Corpus.** Matrix 67 → 65 rows, 25 tombstones, `no-code` 46 → 44, `ci` 4 → 2, `gate` 3 → 2, `ci-step` 3 → 2,
+`marker.counted` 186 → 180 (the partition is 130 + 26 + 24; four deferral labels became verified statements in
+docs 20, 21, 22 and 37). Doc 20 §7's two statements and §13's row read GREEN, doc 21's protocol-code row reads
+GREEN, doc 39's VER-58 argument now names the day the greps went non-vacuous.
+
+**Gates.** All seven green.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

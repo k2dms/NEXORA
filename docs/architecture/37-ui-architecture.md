@@ -130,8 +130,9 @@ already holds. The legacy page's experimental badge is the row they inherit
 
 **Import boundary.** Nothing under `nexora/extension/src/ui/**` may import from `omega-*`, and the one
 permitted exception is type derivation from `packages/schema`
-(`docs/architecture/20-target-repository-layout.md` §7). `Verified: NO — deferred to Phase 2`: the check is a
-build-time scan of the import graph, which needs the UI package to exist.
+(`docs/architecture/20-target-repository-layout.md` §7). The check is the `VER-02` step of
+`.github/workflows/verify.yml`, and it is green over the real UI sources — the UI package exists, and the scan is
+no longer vacuous (`VER-02` closed 2026-11-14, `docs/PROJECT-STATE.md` §4.71).
 
 ## 4. The state vocabulary
 

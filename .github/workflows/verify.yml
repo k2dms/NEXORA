@@ -169,6 +169,24 @@ jobs:
           fi
           echo "OK: no JS or TS file outside the schema harness mentions vless, reality or xtls."
 
+      - name: VER-64 -- no network primitive under nexora/extension (ADR-0021, constraint 8)
+        run: |
+          # The browser never fetches: a subscription feed is fetched inside the Connector (ADR-0021 forbids a
+          # feed body on the pipe in either direction), and the extension's only transport is Native Messaging.
+          # This is the build-graph gate that keeps that responsibility from drifting back into the browser by
+          # 'temporary' convenience -- grep, not an import graph, because the primitives it refuses are globals
+          # (window.fetch, XMLHttpRequest, the WebSocket and Request constructors) that no import scan sees.
+          offenders=$(find nexora/extension/src -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.svelte' \) \
+                       | xargs -r grep -nE '(\bfetch\s*\(|XMLHttpRequest|\bnew\s+(WebSocket|Request|EventSource)\b|sendBeacon)' || true)
+          if [ -n "$offenders" ]; then
+            printf '%s\n' "$offenders"
+            echo "::error::a network primitive appears under nexora/extension/src. The browser never fetches:" \
+                 "subscriptions are fetched inside the Connector (docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md)" \
+                 "and the extension's transport is Native Messaging only (docs/adr/0004-native-messaging-only-no-loopback-http-control.md)."
+            exit 1
+          fi
+          echo "OK: no fetch, XMLHttpRequest, WebSocket, Request, EventSource or sendBeacon under nexora/extension/src."
+
       - name: VER-08 -- no executable bytes in a tracked path (ADR-0019 rule 1)
         run: |
           node -e '

@@ -102,4 +102,4 @@ in this tree. The runtime assertion is Phase 2 row `LIVE-04` of the live matrix 
 server's IP, see `docs/verification/live-env-contract.md`), and the negative assertion — a CI grep that fails
 if `vless|reality|xtls` appears as executable code under `packages/` or `nexora/` — is deferred with it.
 
-Verified: NO — deferred to Phase 2.
+Verified 2026-11-14, superseding the deferred verdict this line carried: the `VER-03` step of `.github/workflows/verify.yml` greps executable JS for transport literals, green on three runner images and over the real extension sources since they landed (`docs/PROJECT-STATE.md` §4.71; history in git).
