@@ -194,7 +194,10 @@ files found under `omega-web/bower_components/*` are vendored, derived trees, no
 
 ## 7. Name-coupling sites that make moving `omega-*` expensive
 
-Plan claimed "≥15". Concrete enumeration below, each verified against a line I read.
+Plan claimed "≥15". Concrete enumeration below, each verified against a line I read. Row 21 (the CircleCI
+cache keys, `.circleci/config.yml:14-34`) left the table on 2026-11-14: PROJECT-STATE §9.3 deleted the file it
+cited, and a coupling to a file that no longer exists is no coupling. The census this section once counted
+(23 rows, 13 files) is 22 rows over 12 files since.
 
 | # | Coupling | Evidence |
 |---|---|---|
@@ -218,7 +221,6 @@ Plan claimed "≥15". Concrete enumeration below, each verified against a line I
 | 18 | browserify `require.resolve('omega-pac/omega_pac.min.js')` at load | `omega-target-chromium-extension/grunt/browserify.coffee:43` |
 | 19 | watch globs `node_modules/omega-web/build` + `node_modules/omega-target` | `omega-target-chromium-extension/grunt/watch.coffee:12-15` |
 | 20 | watch reads `node_modules/omega-pac/omega_pac.min.js` | `omega-web/grunt/watch.coffee:10` |
-| 21 | 6 CircleCI cache keys checksum `omega-*/package.json` + `omega-web/bower.json` | `.circleci/config.yml:14-34` |
 | 22 | `po2crx` reads `../omega-locales/**` for 7 locales | `omega-target-chromium-extension/grunt/po2crx.coffee:5-17` |
 | 23 | copy pulls `COPYING`/`AUTHORS` from repo root `..` | `omega-target-chromium-extension/grunt/copy.coffee:26-27` |
 

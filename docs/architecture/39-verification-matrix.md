@@ -232,7 +232,8 @@ Not a schedule — a dependency graph the states impose:
    checks green on the runner as inline shell and, in the same commit, gathered into `tools/check-adr-shape.mjs`,
    and the three whose ids the workflow now carries as one step gathered into `tools/check-layout-guards.mjs` — two
    scripts no pipeline has executed yet, and the next run of this workflow is that. `VER-11` did not close, because
-   its own record keeps the half a run cannot give it while no lockfile is tracked.
+   its own record keeps the half a run cannot give it — the ladder's own lockfiles stay ignored (§9.2
+   answered for the contract roots only, 2026-11-14).
 2. **`LIVE-04` is the gate.** Promotion rule 2 of the live matrix makes egress proof a precondition of
    `LIVE-05…LIVE-09`. `VER-27`, `VER-32` and `VER-68` close by executing `LIVE-04` itself, and `VER-50` hangs on
    `LIVE-05` — behind the gate twice. Until an egress IP equals the VPS IP, no transport row may be reported,
@@ -409,7 +410,7 @@ the answer was the reading that was left. The id stays retired: §9 rule 8.
 |---|---|---|
 | VER-01 | no script checked the ADR index, the one-heading rule, the six sections or the 60-140 line bound | `tools/check-adr-shape.mjs` — ADR-0001 rules 1-4, 10 and 11 over `docs/adr`, with a `--selftest` that injects one defect per rule and refuses each — and the `VER-01` step of `.github/workflows/verify.yml` that runs it; the same checks ran on all three runner images as inline shell since 2026-11-05, and the shell became this script rather than stay a second copy of the rule |
 | VER-04 | a root `package.json`, `go.work` or `.npmrc` could appear and nothing would notice | the `root-bare` rule of `tools/check-layout-guards.mjs` — five root paths refused — running in the workflow step that carried this id as a bash loop until the same commit gathered that loop into the script the row always named as its closer |
-| VER-05 | nothing asserted that the coupled legacy files and the six legacy directories still sit at their cited paths | the `coupling`, `legacy-roots` and `locale-chain` rules of `tools/check-layout-guards.mjs`, which read doc 01 §7's 23-row enumeration rather than copying it and print the census the audit's headline does not make (13 distinct files, not 11) |
+| VER-05 | nothing asserted that the coupled legacy files and the six legacy directories still sit at their cited paths | the `coupling`, `legacy-roots` and `locale-chain` rules of `tools/check-layout-guards.mjs`, which read doc 01 §7's 22-row enumeration rather than copying it and print the census the audit's headline does not make (12 distinct files, not 11) |
 | VER-06 | the commit-shape rules were review-only | the `VER-06` step of `.github/workflows/verify.yml` — label, `CUT-OVER:` scope, one cut-over per range — green on the `contracts` cells of every recorded run since `a7627ae` stated the vocabulary that step enforces |
 | VER-07 | `grunt watch` would pick up `packages/**` the moment a `Gruntfile.*` appeared outside the legacy roots | the `watcher-scope` rule of `tools/check-layout-guards.mjs`, over the five tracked Gruntfiles and both `watch.coffee` files, walking `git ls-files` so a scratch archive cannot trip it |
 | VER-08 | no assertion inspected an artifact's contents, and nothing enforced 'no binary in a tracked path' | the magic-byte scan of every tracked file and the `check_zip` of the `legacy-chain` job, green on all three runner images since `ceedabf` — the uncompressed total is a printed NOTE, not a floor — plus the `.gitattributes` executable suffixes ADR-0019 rule 1 asked for |
@@ -525,7 +526,7 @@ aloud moves with them (`no-check` 9 → 6, `tools` 5 → 2, `tool` 5 → 2, 77 r
 of doc 01 §7's own table rather than copied from it, the six legacy directories, the `po2crx` locale chain, and the
 reach of `grunt watch` — each with a defect injected in its `--selftest`, so the CI step proves the guard bites
 rather than merely executes. Two things this closure states rather than hides. The census the tool prints found 13
-distinct files behind that section's 23 rows, where its headline counts 11; the difference is recorded in the tool,
+distinct files behind that section's rows, where its headline counts 11; the difference is recorded in the tool,
 in `VER-05`'s tombstone and in `docs/architecture/20-target-repository-layout.md` §4, and the audit's own sentence
 was left alone, because a checker that silently adopted a count different from the document it cites is a second
 wrong answer rather than a correction. And the bash loop that enforced the bare-root rule in
@@ -641,7 +642,8 @@ The distributions and marker count do not move; `docs/PROJECT-STATE.md` §4.57 r
    §4 reads aloud — both of which `packages/schema/scripts/verify.mjs` holds as hard-coded numbers, on purpose.
    `VER-06`, `VER-08` and `VER-10` are the three whose stated condition a green run meets, and the 2026-11-06 commit
    named in §13 deleted them; `VER-11` is the fourth whose run is green and stays, because its own subject asks for a
-   lockfile that `.gitignore:3` refuses to track, and a run over an absent artefact is not that artefact.
+   lockfile — the ladder roots\' lockfiles stay ignored (§9.2 answered for the contract roots only), and a
+   run over an absent artefact is not that artefact.
    `VER-02` and `VER-03` ran over roots that hold no code yet, and still do; `VER-57` names a CSP load test the workflow
    does not contain. `VER-01` was the one row of that group whose run did not need to be waited for: its checks were
    already shell steps of the workflow and green on every image, and the row named a script rather than a

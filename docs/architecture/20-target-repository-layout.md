@@ -7,7 +7,7 @@
 > `docs/architecture/39-verification-matrix.md`.
 
 Status: Accepted — inherits the two open decisions of `docs/PROJECT-STATE.md` §9 (lockfile policy,
-`.circleci/config.yml`); neither changes this layout, both are flagged where they touch it.
+`.circleci/config.yml`, deleted 2026-11-14 by PROJECT-STATE §9.3); neither changes this layout, both are flagged where they touch it.
 
 ## 1. Reading rules
 
@@ -30,7 +30,7 @@ E:/NEXORA
 ├─ .npmrc ×5                                             EXISTS   one per legacy project, none at root (§8)
 ├─ .github/workflows/release.yml                         EXISTS   legacy tag-driven publisher (§10)
 ├─ .github/workflows/verify.yml                          EXISTS   PR-blocking, non-tagging counterpart; written and first run 2026-11-05, green (§11)
-├─ .circleci/config.yml                                  EXISTS   dead, cannot pass; pending PROJECT-STATE §9.3
+├─ .circleci/config.yml                                  DELETED  dead, cannot pass; removed 2026-11-14 by PROJECT-STATE §9.3
 ├─ docs/{README,PROJECT-STATE}.md, audit/, adr/, verification/  EXISTS   Phase 0 + Phase 1 output
 ├─ docs/architecture/                                    PARTIAL  20-40; this file is 20
 ├─ packages/schema/                                      EXISTS   the only executable artefact of Phase 1
@@ -93,7 +93,7 @@ migration work plus an artifact assertion proving the move
 
 Verified: YES — `node tools/check-layout-guards.mjs` reads the enumeration above out of
 `docs/audit/01-repository-and-build-graph.md` §7 and refuses a cited file that has left the tree, a cited line that has
-drifted past its file, and a coupling literal edited out of the line that carried it; it counts 23 rows over 13 distinct
+drifted past its file, and a coupling literal edited out of the line that carried it; it counts 22 rows over 12 distinct (23 and 13 before §9.3 deleted `.circleci/config.yml`, whose row left the table with its file)
 files where §7's own headline counts 11, and the guard prints what it counts rather than the headline. It also checks
 that the six roots above are still directories, that the five of them which are npm packages still answer to their
 directory name in `package.json` — ADR-0002 makes the *name*, not the folder, the thing the symlinks resolve through —
@@ -133,8 +133,9 @@ git, so the transport `omega-web/bower.json:37` and `:43` name is never handed t
 (`docs/audit/raw/probe-5-bower-cold-install.txt`, `docs/audit/02-toolchain-decay-and-risk.md` §1.1). Raw
 `git ls-remote git://…` still times out here, which is why `.github/workflows/verify.yml` keeps its
 `insteadOf` step — defence in depth for a caller that does pass the literal URL to git, not the thing that
-makes the build possible. No lockfile is tracked (`.gitignore:3`,
-`docs/audit/02-toolchain-decay-and-risk.md` §6). The empty-cache question that measurement closed: 21 of the 26
+makes the build possible. The contract roots track their lockfiles since §9.2 answered
+(`packages/**/package-lock.json`, un-ignored 2026-11-14); the legacy roots' lockfiles stay ignored — their
+reproducibility is the audit's §6 question, not this rule's (`docs/audit/02-toolchain-decay-and-risk.md` §6). The empty-cache question that measurement closed: 21 of the 26
 components came from this host's Bower cache in the 2026-11-05 rebuild, and the runner build of the same commit, on
 an image with no cache, produced a zip carrying the same 252 `lib/` entries (§12).
 
@@ -203,8 +204,9 @@ Rules 1-7 of `docs/adr/0018-workspace-roots-and-no-root-package-json.md` are nor
   exact accident ADR-0018 exists to prevent. **`tools/*.mjs` stay dependency-free** (`:50`) so they run before
   any install exists.
 
-Inherited open decision: with no lockfile tracked (`.gitignore:3`) each root answers reproducibility for
-itself, and `packages/schema` currently answers UNVERIFIED on a clean machine (`docs/PROJECT-STATE.md` §9.2).
+§9.2 answered (2026-11-14): the contract roots track their lockfiles, so each installs on pinned versions;
+what a clean machine still cannot prove is that the resolution matches somewhere else — that is the CI run's
+job (`docs/PROJECT-STATE.md` §9.2).
 Verified: YES — the root-bare rule of `node tools/check-layout-guards.mjs` refuses any of the five paths named above
 (`package.json`, `package-lock.json`, `go.work`, `go.mod`, `.npmrc`) at the repository root. Until 2026-11-06 the same
 five were a shell loop in `.github/workflows/verify.yml`, green on three runner images; the tool is where that check

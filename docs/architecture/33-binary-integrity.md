@@ -260,6 +260,11 @@ makes it diagnosable.
 
 ## 9. The `manual` channel, and the air-gapped story
 
+§9.7 answered (2026-11-14): the shipped product is `pinned` with a first-run download; air-gapped setup is out
+of scope for this iteration and this section is the documented shape a future `manual` path would take — the
+feature to build, not a promise this iteration makes. `installChannel: manual` stays in the schema as that
+place.
+
 `installChannel` is exactly `pinned` or `manual`
 (`packages/schema/connector-settings.schema.json#/properties/core/properties/installChannel`), and its
 description contains the sentence this section exists to unpack: *"a binary chosen by path is a binary chosen by

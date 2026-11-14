@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.79; older scope and inventory paragraphs
+continuation is §4.80; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5032,12 +5032,12 @@ written before any behaviour existed. What each next milestone has to make true:
 | # | Question | Blocks |
 |---|---|---|
 | 1 | Fix SEC-1 (`transformValueKeys` + `headers`) immediately after baseline, or hold it as a documented Phase-2 requirement until a test exists? | Phase 2 first PR |
-| 2 | Lockfile policy: keep `package-lock.json` ignored or add `!packages/**/package-lock.json`? What the 2026-11-05 runs changed is the framing: a lockfile-free install now *measurably* builds, on three clean images, and what stays unverified is that it resolves the same set somewhere else (`docs/audit/99-baseline-report.md` §12) | CI as a trust anchor |
-| 3 | `.circleci/config.yml`: delete in a separate commit or keep and mark dead? | cosmetic, but CI-red |
+| 2 | **Answered on 2026-11-14, and the number stays.** The question was the lockfile policy. It is answered **tracked**: `.gitignore` gains `!packages/**/package-lock.json` over the blanket ignore, all three contract roots carry a committed lockfile, and each installs on pinned versions. What stays unverified is that a clean machine resolves the same set — that is the CI run's job. The ladder roots' lockfiles stay ignored; `VER-11` stays open on its own artefact. | nothing: CI remains the trust anchor for cross-machine resolution |
+| 3 | **Answered on 2026-11-14, and the number stays.** The question was `.circleci/config.yml`'s fate. It is answered **deleted**: one commit removes the file, which no runner has executed since the audit and which the hub it drives no longer builds the same way; the CI of record is `.github/workflows/verify.yml` (doc 20 §11). | cosmetic |
 | 4 | **Answered on 2026-11-07, and the number stays.** The question was whether `subscription.refresh` delivers servers to the extension through chunked events or the Connector owns subscriptions entirely (`ODEC-33`, and the chunking-vs-out-of-band half above it was decided earlier: chunking). It is answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`: the Connector owns them, no feed body crosses the pipe in either direction, the parsed Servers arrive in one result frame, and an event carries counts. The id is retired in `packages/schema/open-decisions.json#/retired` and the row it gated in `packages/schema/verification.json#/retired`. The slot keeps its number, because §9's ordinals are cited by documents, by queue rows and by this ledger — decision 21's reason for retiring `ODEC-NN` instead of renumbering it, applied to the row that carries it. | nothing: the row that needed it, `VER-61`, is retired beside it |
 | 5 | **Answered on 2026-11-14, and the number stays.** The question was inbound-per-tag vs single-inbound-with-routing — one Xray inbound per profile versus one inbound with `routing` and an imperative `core.select`. It is answered **inbound-per-tag**: the per-tag layout the compiler already ships (SOCKS5 inbound per tag, last-priority per-tag fallbacks, pinned by five goldens) keeps the server in the config bytes, which is what makes the hash-equality rule, the byte-stability promise and the diagnostics all readable; the imperative fast path `core.select` promised had no mechanism under it, so the command left the contract surface (18 methods) and the fast switch is a `config.apply` whose compiled hash is unchanged, answered without a restart (doc 26 §2.1). The slot keeps its number, because §9's ordinals are cited by documents, by queue rows and by this ledger. | nothing: the row that needed it, `VER-30`, is retired beside it |
-| 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
-| 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
+| 6 | **Answered on 2026-11-14, and the number stays.** The question was the 20 unsupplied locales. It is answered **scoped to 7 publicly**: ADR-0017's amendment names the shipped locales as the product's locale set, the rest are closed until measured demand says otherwise, and the extension shows only what ships — a document no longer promises locales nobody can install. | ADR-0017's amendment |
+| 7 | **Answered on 2026-11-14, and the number stays.** The question was offline installs. It is answered **accepted as a product limitation**: pinned-Xray requires a first-run download on a networked machine; air-gapped setup is out of scope and doc 33 states it. `installChannel: manual` stays in the schema as the place a future manual-pin path would land, with its hash/minisign checks already specified — a feature to build, not a promise this iteration makes. | `33-…` carries the sentence the user reads |
 | 8 | **Answered on 2026-11-14, and the number stays.** The question was what carries the heartbeat — the interval, the miss count and the `host-to-extension` direction were data, and none of the four frame types was a beat. It is answered by the **fifth frame type**: `heartbeat` joins `request/response/event/progress` in the envelope schema, carries nothing but `v, id, type, sentAt` (a fifth allOf branch refuses every payload field), the host-side peer sends it every `BeatSeconds`, and the armed watchdog measures silence against `cfg.Now` and tears the transport down at three missed intervals — `VER-49`'s third clause is its closing assertion, retired with it. The slot keeps its number. | nothing: the row that needed it, `VER-49`, is retired beside it |
 | 9 | **Answered on 2026-11-14, and the number stays.** The question was what the bytes of a chunk slice are and which byte string `chunk.contentHash` hashes (`ODEC-34`, §4.11's find, and the row this ledger once refused to supply an answer for). It is answered by the fragment model: `profile.import` gains `args.payload`, each slice carries its fragment as base64 there, and `chunk.contentHash` is sha256 over the concatenation of the decoded fragments in `chunkSeq` order. The id is retired in `packages/schema/open-decisions.json#/retired`, the row it gated in `packages/schema/verification.json#/retired`, and `connector/internal/chunk` — the package this question stopped — is written and tested. §4.66 carries the change | nothing: the row that needed it, `VER-76`, is retired beside it |
 **This list ran to nine rows, dropped to eight, and is at nine again.** It dropped when §4.10 deleted the ninth it had
@@ -5499,7 +5499,32 @@ doc 25 §4 and §13 became verified statements, and their live halves name `LIVE
 slots in nine now — the fourth, the fifth, the eighth and the ninth.
 
 **Gates.** All seven green.
-Plus the decisions in §7 and the six questions standing in §9's nine slots, which are not work an agent may finish;
-the note under that table says why the fourth, the fifth, the eighth and the ninth stopped being questions, and why their numbers stayed.
+### 4.80 §9 answered in one sitting — 2, 3, 6 and 7 (2026-11-14)
+
+**§9.2, tracked.** `.gitignore` gains `!packages/**/package-lock.json` over the blanket ignore; all three
+contract roots carry a committed lockfile (`protocol` and `state` generated `--package-lock-only` for the
+occasion), and each installs on pinned versions. What stays unverified is that a clean machine resolves the
+same set — that is the CI run's job. The ladder roots' lockfiles stay ignored, which is why `VER-11` keeps
+its own artefact question; doc 20 §4 and §6 state both halves.
+
+**§9.3, deleted.** One commit removes `.circleci/config.yml`, dead since the audit and unexecuted by every
+runner since. The deletion had a tail: doc 01 §7's coupling census carried row 21 — six CircleCI cache keys
+citing that file — and a coupling to a file that no longer exists is no coupling, so the row left the table
+with its file (22 rows over 12 files since, with the dated note in doc 01 §7) and doc 20 §7, the VER-05 row
+and §13's census sentence moved with it. Doc 20's layout tree marks the row DELETED with the decision named.
+
+**§9.6, scoped to seven publicly.** ADR-0017's Verification carries a dated amendment: the product's locale
+set is the seven `omega-locales` ships, the rest are closed until measured demand says otherwise, and the
+compilation pipeline is unchanged — what changed is the set it is expected to produce.
+
+**§9.7, accepted as a limitation.** Doc 33 §9 states it: the shipped product is `pinned` with a first-run
+download; air-gapped setup is out of scope for this iteration, and §9's own text is the documented shape a
+future `manual` path would take — the feature to build, not a promise this iteration makes.
+
+**Corpus.** §9's nine slots now carry eight answered rows; row 1 (the SEC-1 timing question) is the only one
+still open, and it is work-shaped, not decision-shaped. The ledger rows keep their numbers.
+
+**Gates.** All seven green; 18 Go packages ok; the layout guard's census moved with the deleted file.
+Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

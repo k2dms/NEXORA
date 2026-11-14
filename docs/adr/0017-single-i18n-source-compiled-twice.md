@@ -112,6 +112,12 @@ popup is therefore a message to a service worker that may be asleep -- the exact
 
 ## Verification
 
+- Amendment, 2026-11-14: §9.6 of  asked whether the 20 unsupplied locales stay
+  promised. They do not: the product's locale set is the seven  ships, said publicly, and the
+  rest are closed until measured demand says otherwise — a document no longer promises locales nobody can
+  install. The compilation pipeline this ADR defines is unchanged; what changed is the set it is expected to
+  produce. History in git.
+
 - Existing check: `node tools/check-doc-evidence.mjs` resolves every citation above, including the `po2crx`
   list that defines the shipped set.
 - Verified: NO -- deferred to Phase 2: the `.po`-to-catalog compiler, `localeSupport` table generation and
