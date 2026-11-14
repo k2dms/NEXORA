@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "verify": "node --test src/*.test.ts",
+    "verify": "node --test src/*.test.ts src/profiles/*.test.ts",
     "verify:browser": "node scripts/browser-golden.mjs",
     "build": "npm run check && vite build && node scripts/package.mjs"
   },

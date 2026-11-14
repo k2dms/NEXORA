@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.68; older scope and inventory paragraphs
+continuation is §4.69; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5237,6 +5237,33 @@ strings either way.
 Doc 23 §10's collision row reads `GREEN` with the new test named beside the one that started it.
 
 **Gates.** All seven green; the full Go suite green in every package.
+
+### 4.69 The registry load exists — `VER-31` retired, and the egress slice's red tests repaired (2026-11-14)
+
+**The component.** `nexora/extension/src/profiles/registry.ts` implements doc 22 §6 invariant 4: JSON Schema sees
+one envelope key at a time, so the cross-entity referential check happens at load, not in the schema.
+`loadRegistry` takes the profiles and the ids the `-nexora.server.*` keys hold; a profile referencing an absent
+server, listing one twice, or defaulting outside its own list is refused — the refusal names the profile id and
+the server id, removes exactly that one profile, and never throws, so a sync merge that restored a profile ahead
+of its servers cannot brick the whole registry. Six tests pin the dangling refusal, the deleted-server case, the
+duplicate, both default refusals, the one-of-many removal, and the clean batch load. The extension's verify glob
+grew `src/profiles/*.test.ts`; the suite is 58 → 64 tests, all green, svelte-check clean.
+
+**A committed red suite repaired.** Running the suite exposed that 548e901 (the egress slice) had left twelve
+`connection.test.ts` failures behind: three mock fixtures still carried the three-layer probe shape the four-layer
+contract now refuses. The fixtures were brought to four layers plus the egress pair, and the whitelist test's
+secret list now treats the observed egress IP as public — it is an answer the UI renders — while the request
+context and native error detail stay secret. 64/64 pass on this commit.
+
+**Corpus.** `VER-31` retired — matrix 69 → 68 rows, 22 tombstones, `no-code` 47 → 46, `extension` 11 → 10,
+`assertion` 14 → 13, `marker.counted` 191 → 187 (doc 22 §6's invariant line, doc 26's prose and table row, and
+doc 28's deferral label all became verified statements; the partition is 137 + 26 + 24). `ODEC-16`'s gate list
+loses `VER-31` (19 entries gate exactly 2, 9 gate 1). Doc 34's and doc 35's `Cited by` rows re-anchored for the
+lines this slice's prose shifts pushed down (doc 22 :348 → :349/:352, doc 26 :230 → :232, with the moves named in
+place), and the tag-collision test's synthetic ids carry the same `nexora-secret-allow` annotation
+`resolve_test.go` uses — repairing the secret-gate finding 548e901's and d6910e7's runs predate.
+
+**Gates.** All seven green.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

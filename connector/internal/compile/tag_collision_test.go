@@ -54,8 +54,8 @@ func TestACollisionArrivingUnsortedFromAFeedIsRefusedInEitherOrder(t *testing.T)
 	// The twin is built from the canonical document itself, not from a private fixture: the feed delivers
 	// schema-valid documents, and the mistake is between them.
 	raw := corpus(t, "server.vision-tcp-tls.json")
-	twinJSON := strings.Replace(string(raw), "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01",
-		"3f2a1c9e-9999-4000-8000-000000000001", 1)
+	twinJSON := strings.Replace(string(raw), "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01", // // nexora-secret-allow: synthetic canonical id, nothing real behind it — the same identity resolve_test.go uses
+		"3f2a1c9e-9999-4000-8000-000000000001", 1) // // nexora-secret-allow: synthetic canonical id, nothing real behind it — the same identity resolve_test.go uses
 	if !strings.Contains(twinJSON, "3f2a1c9e-9999") {
 		t.Fatal("the canonical vision server id was not found to twin")
 	}
@@ -81,7 +81,7 @@ func TestACollisionArrivingUnsortedFromAFeedIsRefusedInEitherOrder(t *testing.T)
 		if err == nil {
 			t.Fatalf("%s: a feed carrying an eight-hex tag twin was accepted", name)
 		}
-		for _, want := range []string{"tag collision", "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01", twin.ID, "srv-3f2a1c9e"} {
+		for _, want := range []string{"tag collision", "3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01", twin.ID, "srv-3f2a1c9e"} { // // nexora-secret-allow: synthetic canonical id, nothing real behind it — the same identity resolve_test.go uses
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("%s: the refusal does not name %q: %v", name, want, err)
 			}

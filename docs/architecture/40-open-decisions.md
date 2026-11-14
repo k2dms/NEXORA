@@ -109,7 +109,7 @@ costs one commit once chosen — which is why they are the rows a Phase-2 commit
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
-`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 20 entries gate exactly 2 and 8 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
+`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 19 entries gate exactly 2 and 9 gate 1; that is the honest shape of a design phase — most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 Two questions are cited by four or more sites each — `ODEC-15` (the built-in sync secret, five) and `ODEC-01`
@@ -257,7 +257,7 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-13` | how the Firefox AMO id is managed as both continuity constraint and security principal | `product` | `VER-15`, `VER-52` |
 | `ODEC-14` | what `block` actually promises against DNS, WebRTC and the alarm floor | `upstream` | `VER-21`, `VER-74`, `COMP-07`, `COMP-10`, `COMP-14` |
 | `ODEC-15` | how the built-in sync config leaves `chrome.storage.sync` | `adr` | `VER-22`, `VER-24` |
-| `ODEC-16` | what the UI says about a legacy authenticated proxy in an imported backup | `product` | `VER-31`, `COMP-07` |
+| `ODEC-16` | what the UI says about a legacy authenticated proxy in an imported backup | `product` | `COMP-07` |
 | `ODEC-17` | whether the pre-migration snapshot is encrypted at rest | `adr` | `VER-33` |
 | `ODEC-18` | whether the `host` fingerprint key rotates, and what the diagnostic history means after | `contract` | `VER-23`, `VER-45` |
 | `ODEC-20` | who owns "Core is alive, unmanaged and unsupervised" | `contract` | `VER-14`, `VER-21` |

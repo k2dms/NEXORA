@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 191
+    "counted": 187
   },
   "states": {
     "values": [
@@ -335,6 +335,12 @@
         "closed": "2026-11-14",
         "was": "tag uniqueness over the whole server set is a compile error naming both ids in stage 1; it has never met a registry that arrives unsorted from a subscription import",
         "artefact": "connector/internal/compile/tag_collision_test.go drives the whole claim from the shipped canonical examples: the five server documents compile as one batch with every stored tag equal to its derived one, and the twin of the canonical vision server — its id sharing the first eight hex, built by mutating the shipped document rather than from a private fixture — is refused in two different arrival orders, each refusal naming both server ids and the shared srv-3f2a1c9e tag. The order-independence is the feed half of the claim: the batch arrives whole and arbitrarily sorted, and the refusal names the same three strings either way"
+      },
+      {
+        "id": "VER-31",
+        "closed": "2026-11-14",
+        "was": "cross-entity referential integrity — a dangling serverId — checked by nothing, because JSON Schema cannot see a sibling envelope key",
+        "artefact": "the registry load exists: nexora/extension/src/profiles/registry.ts performs the cross-entity check at load and refuses the profile with a named reason. loadRegistry takes the profiles and the ids the -nexora.server.* keys hold; a profile referencing an absent server, listing one twice, or defaulting outside its own list is refused — the refusal names the profile id and the server id, removes exactly that one profile, and never throws, so a sync merge that restored a profile ahead of its servers cannot brick the whole registry. Six tests pin the dangling refusal, the deleted-server case, the duplicate, both default refusals, the one-of-many removal, and the clean batch load"
       }
     ]
   },
@@ -872,35 +878,6 @@
         }
       ],
       "why": "Switching a profile is the hottest operation in the product; if it rewrites the config the hash-equality rule in VER-29 and every 'nothing changed' claim are false. Note that the inbound-per-tag decision (docs/PROJECT-STATE.md §9.5) determines what this row even means. No live row covers it -- LIVE-05 is a transport row, so the earlier citation of it here was wrong; the closer is a handler assertion over the applied-config hash."
-    },
-    {
-      "id": "VER-31",
-      "subject": "cross-entity referential integrity -- a dangling `serverId` -- is checked by nothing, because JSON Schema cannot see a sibling envelope key",
-      "state": "no-code",
-      "owner": "extension",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "the ProfileRegistry load test refusing a profile with a named reason"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/22-component-contracts.md",
-          "anchor": "performs it at load and refuses the profile with a named reason; `Veri"
-        },
-        {
-          "doc": "docs/architecture/26-command-surface.md",
-          "anchor": "`profile.import` rejects a dangling `serverId`"
-        },
-        {
-          "doc": "docs/architecture/26-command-surface.md",
-          "anchor": "Phase-2 live row, not a schema rule. Recorded as `Verified: NO — defer"
-        },
-        {
-          "doc": "docs/architecture/28-routing-model.md",
-          "anchor": "Every browser rule maps to a profile that exists"
-        }
-      ],
-      "why": "The one class of invalid data the contract layer provably cannot catch, and the one a restored backup is most likely to contain (VER-38)."
     },
     {
       "id": "VER-32",

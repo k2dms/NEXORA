@@ -173,8 +173,10 @@ the hash it last applied and asks whether reality matches. Masking is `SecretRed
 **`profile.import`** — see §2.2. `mode` distinguishes merge from replace; `backupBeforeWrite` exists because a
 user-data rewrite is not a debug operation. Note the honest gap: `serverIds` in this method's args are **not**
 validated against the stored Server set — JSON Schema cannot express cross-entity referential integrity, so
-that check is a `ProfileRegistry` invariant owned by `docs/architecture/22-component-contracts.md` and a
-Phase-2 live row, not a schema rule. Recorded as `Verified: NO — deferred to Phase 2`.
+that check is a `ProfileRegistry` invariant owned by `docs/architecture/22-component-contracts.md`, and it is
+now implemented at load: `nexora/extension/src/profiles/registry.ts` refuses a profile whose `serverIds` name
+no `-nexora.server.*` key, naming profile and server. The Connector half of the same refusal is
+`profile.import`'s own payload check.
 
 **`profile.remove`** — `backupBeforeDelete` is required and `blockingReferences` is a result field: a removal
 that would orphan a routing rule returns the blockers instead of performing a partial delete
@@ -242,7 +244,7 @@ accidental "delete all credentials" is structurally impossible from a UI bug.
 | Chunk groups in the fixtures are complete | `packages/schema/scripts/verify.mjs` "a complete chunked import reassembles in the fixtures" | **Verified** |
 | `config.apply` restarts only on hash change | no code exists to run | **Verified: NO — deferred to Phase 2** (golden config test, `docs/architecture/27-config-compilation-pipeline.md`) |
 | `core.select` performs no config write | no code exists to run | **Verified: NO — deferred to Phase 2** (`core.select` leaves the applied-config hash unchanged, asserted once the handler exists) |
-| `profile.import` rejects a dangling `serverId` | not expressible in the schema | **Verified: NO — deferred to Phase 2** (ProfileRegistry invariant) |
+| `profile.import` rejects a dangling `serverId` | the payload check in the Connector's handler; the load-time check is `nexora/extension/src/profiles/registry.ts`'s `loadRegistry`, tests naming profile and server | **Verified** (registry load) / Connector-side on `profile.import` |
 | `diagnostics.get` output contains no secret | fixtures cannot prove absence over a real keystore | **Verified: NO — deferred to Phase 2** (`LIVE-10`) |
 | `server.test` layer results are not replayed | static half green: assertions "probe is non-replayable: server.test" and "probe is answered exactly once" over `packages/schema/fixtures/protocol/` | **Verified: NO — deferred to Phase 2** for the runtime half (rides on `LIVE-05`) |
 | `config.snapshot` can say whether reality matches the hash the extension holds | `packages/schema/protocol/commands/config.snapshot.json#/args` declares two properties and `additionalProperties: false`, so the expectation `matchesExtensionHash` is computed against cannot be sent; this method still has no handler, while `core.status` now reports the supervisor's process and persisted state | **Verified: NO — deferred to Phase 2** (`VER-90`: the field, then the handler, then a run that detects a drift — `LIVE-06` names that check) |

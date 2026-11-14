@@ -207,8 +207,9 @@ prefix, hold NEXORA entities under `-nexora.*`, and never let the two namespaces
    rejected (`packages/schema/connector-profile.schema.json#/properties/serverIds`,
    `packages/schema/examples/invalid/profile.no-servers.json`).
 4. JSON Schema cannot express the cross-entity referential check (a dangling `serverId`), so the registry
-   performs it at load and refuses the profile with a named reason; `Verified: NO — deferred to Phase 2` and
-   owned by `docs/architecture/38-compatibility-matrix.md` plus a live row.
+   performs it at load and refuses the profile with a named reason — `nexora/extension/src/profiles/registry.ts`
+   implements exactly that, and `loadRegistry`'s tests refuse the dangling id, the duplicate, and the default
+   outside its own list, each naming profile and server (`VER-31` retired with it).
 5. Deleting a profile that a rule still references is either refused or rewired, never silent —
    `Profiles.replaceRef`/`referencedBySet` semantics stay as legacy implemented them.
 6. It does not touch storage directly; it is given a `Storage` (`docs/audit/05-storage-sync-and-migration.md`).

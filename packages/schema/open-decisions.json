@@ -492,9 +492,7 @@
       "question": "What does the UI say about a legacy authenticated HTTP/SOCKS proxy in an imported backup, since NEXORA's model has no field for it?",
       "decidedBy": "product",
       "blocks": {
-        "verification": [
-          "VER-31"
-        ],
+        "verification": [],
         "compatibility": [
           "COMP-07"
         ]

@@ -28,7 +28,8 @@ function fixture() {
       { layer: 'dns', state: 'pass', rttMs: 1.25 },
       { layer: 'tcp', state: 'pass', rttMs: 2 },
       { layer: 'core-outbound', state: 'pass', rttMs: 3 },
-    ],
+      { layer: 'proxied-http', state: 'pass', rttMs: 4 },
+    ], egressIp: null, matchesExpectedEgress: null,
   });
   let record: RuntimeRecord | null = null;
   const previous: ProxyValue = { mode: 'pac_script', pacScript: { data: 'function FindProxyForURL(){return "DIRECT";}', mandatory: true } };
@@ -931,6 +932,7 @@ test('test-server preserves failed, timeout and skipped rows while whitelisting 
     { layer: 'dns', state: 'fail', rttMs: 0, code: 'private-access-secret', detail: subscriptionURL, raw: subscriptionURL },
     { layer: 'tcp', state: 'timeout', rttMs: null, jitterMs: 100, detail: 'private-access-secret' },
     { layer: 'core-outbound', state: 'skipped', detail: subscriptionURL },
+    { layer: 'proxied-http', state: 'skipped', detail: subscriptionURL },
   ] };
   f.probeWith(() => result);
   const stored = structuredClone([f.stored(), f.record(), f.proxy()]);
@@ -939,12 +941,15 @@ test('test-server preserves failed, timeout and skipped rows while whitelisting 
     { layer: 'dns', state: 'fail', rttMs: 0 },
     { layer: 'tcp', state: 'timeout', rttMs: null },
     { layer: 'core-outbound', state: 'skipped', rttMs: null },
-  ] };
+    { layer: 'proxied-http', state: 'skipped', rttMs: null },
+  ], egressIp: '203.0.113.7', matchesExpectedEgress: true };
   assert.equal(view.error, null);
   assert.equal(view.phase, 'connected');
   assert.deepEqual(view.check, check);
   assert.deepEqual([f.stored(), f.record(), f.proxy()], stored);
-  for (const secret of ['private-path-secret', 'query-secret', 'fragment-secret', 'private-access-secret', '203.0.113.7']) {
+  // The egress pair is an observed answer the UI renders, so 203.0.113.7 is public now; what must never
+  // travel is the request context the probe ran against and the native error detail.
+  for (const secret of ['private-path-secret', 'query-secret', 'fragment-secret', 'private-access-secret']) {
     assert.ok(!JSON.stringify([view, f.connection.snapshot()]).includes(secret));
   }
   result.layers[0]!.rttMs = 999;
@@ -981,7 +986,8 @@ test('malformed, foreign, duplicate, unknown and missing probe results clear the
     { layer: 'dns', state: 'pass', rttMs: 1.25 },
     { layer: 'tcp', state: 'pass', rttMs: 2 },
     { layer: 'core-outbound', state: 'pass', rttMs: 3 },
-  ] };
+    { layer: 'proxied-http', state: 'pass', rttMs: 4 },
+  ], egressIp: null, matchesExpectedEgress: null };
   const malformed: unknown[] = [
     undefined, null, subscriptionURL, [], {}, { layers: good.layers },
     { ...good, serverId: crypto.randomUUID() }, { ...good, serverId: subscriptionURL },
