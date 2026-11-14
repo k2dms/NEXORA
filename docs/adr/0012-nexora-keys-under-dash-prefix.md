@@ -105,6 +105,10 @@ proxy for the user who never touched that key.
   (`packages/schema/scripts/verify.mjs` "namespace stays out of the profile prefix: ${ns.entity}", "secret-bearing namespace is not sync-eligible: ${ns.entity}" and "namespace value schema exists: ${ns.entity}") fails the build on a `+` pattern, on a secret-bearing
   sync-eligible namespace, and on a missing value schema. Green at the time of writing (707 checks; the harness has grown since).
 - Existing check: `node tools/check-doc-evidence.mjs` resolves every citation in this file.
-- Verified: NO -- deferred to Phase 2: the negative runtime test "a `-nexora.server.<id>` key produces no
-  entry in `availableProfiles` and no PAC reference". That needs a loaded extension and belongs to
-  `docs/verification/`.
+- Verified 2026-11-14, superseding the deferred verdict this item carried: the negative runtime test
+  "a `-nexora.server.<id>` key produces no entry in `availableProfiles` and no PAC reference" now runs without a
+  loaded extension -- it is four tests in `omega-pac/test/profiles.coffee` over the inherited engine itself
+  (`Profiles.each` never hands a dash key to the callback, the quick-switch list shape contains no dash key,
+  the compiled PAC names no `-nexora.` key and no saboteur address, and an envelope of only dash keys yields
+  no dash-keyed callback at all), and it stays green at 146 passing / 1 pinned failing (VER-25 retired with
+  it; `docs/PROJECT-STATE.md` §4.74). History in git.

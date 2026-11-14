@@ -288,3 +288,65 @@ describe 'Profiles', ->
         ['+default', null])
       testProfile(profile, 'http://localhost/example.org',
         ruleListResult('example', 'example.org'))
+
+  # VER-25: the negative runtime half of ADR-0012's scheme. The `-nexora.*` prefix is asserted on the
+  # data (packages/schema/examples/envelope-keys.nexora.json); the engine's behaviour is the other half.
+  # The engine iterates `+` keys only (omega-pac/src/profiles.coffee:111-118), and every list the UI
+  # shows -- the quick-switch list, `availableProfiles`, the rule pickers -- is `Profiles.each` called
+  # with the whole flat options envelope. So a `-nexora.server.<id>` key holding a value that looks like
+  # a profile must be invisible to all three.
+  describe 'nexora keys', ->
+    nexoraServerKey = '-nexora.server.3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01'
+    nexoraProfileKey = '-nexora.profile.b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11'
+    options =
+      '+legit':
+        profileType: 'FixedProfile'
+        profileName: 'legit'
+      # A saboteur's envelope: the dash-keyed values carry everything a profile would need to be
+      # mistaken for one, if the iteration were by shape instead of by prefix.
+      "#{nexoraProfileKey}":
+        profileType: 'FixedProfile'
+        profileName: 'nexora profile'
+        defaultProfileName: 'direct'
+      "#{nexoraServerKey}":
+        protocol: 'vless'
+        address: '203.0.113.7'
+        port: 443
+
+    it 'should never hand a -nexora.* key to Profiles.each', ->
+      seen = {}
+      Profiles.each options, (key) -> seen[key] = true
+      seen.should.have.property('+legit')
+      seen.should.not.have.property(nexoraServerKey)
+      seen.should.not.have.property(nexoraProfileKey)
+
+    it 'should keep -nexora.* keys out of the quick-switch list shape', ->
+      # omega-target builds the quick-switch list from Profiles.each; one call with the whole envelope
+      # is the producer behind availableProfiles and the rule pickers. Same assertion at the one place
+      # the lists are born. The builtins (+direct, +system) are the only other names this callback sees.
+      keys = []
+      Profiles.each options, (key) -> keys.push(key)
+      keys.should.contain('+legit')
+      keys.should.not.contain(nexoraServerKey)
+      keys.should.not.contain(nexoraProfileKey)
+
+    it 'should compile a PAC that names no -nexora.* key', ->
+      # Profiles.create, not an inline object: compile wants the decorated shape, and the point of the
+      # test is the envelope scan, not the compile itself.
+      options['+legit'] = Profiles.create('legit', 'FixedProfile')
+      compiled = Profiles.compile(options['+legit'])
+      source = compiled.print_to_string()
+      source.should.not.contain('-nexora.')
+      source.should.not.contain('nexora profile')
+      source.should.not.contain('203.0.113.7')
+
+    it 'should iterate nothing from an envelope that holds only dash keys', ->
+      # A saboteur's envelope: every value is profile-shaped, every key is prefixed with the dash.
+      only = {}
+      only[nexoraServerKey] = options[nexoraServerKey]
+      only[nexoraProfileKey] = options[nexoraProfileKey]
+      # The builtins (+direct, +system) are iterated with or without the caller's keys, so the negative
+      # is about the dash prefix, not about a silent callback: no dash key is ever handed over.
+      dashSeen = []
+      Profiles.each only, (key) -> dashSeen.push(key) if key.charCodeAt(0) == '-'.charCodeAt(0)
+      dashSeen.should.deep.equal([])

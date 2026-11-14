@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 178
+    "counted": 177
   },
   "states": {
     "values": [
@@ -371,6 +371,12 @@
         "closed": "2026-11-14",
         "was": "the retained status the store row names health-history keeps its medium of disk nowhere: the built ring is a map behind the prober's mutex that dies with the process, and nothing under connector/ writes it to the path the medium names",
         "artefact": "connector/internal/health/persist.go is the medium: Config.StateDir persists the per-server rings, the streak counters, the verdicts and the running cooldowns to health-history.json under the state directory after every retained probe — atomic temp-plus-rename, the discipline internal/apply uses — and New reads it back, re-applying the 64 KiB ring cap on the way in so a ring written by a build with a larger cap is trimmed rather than refused. A write failure is remembered (PersistError) and never fails the probe: the ring is a hint for a support bundle, and losing a hint is not failing the measurement. Four tests pin the closing assertion — the restart that re-reads the ring entry-for-entry, the three-failure streak that survives across the restart and condemns on the next process's third note, the corrupt document that starts empty and rebuilds on the next note, and the StateDir-less prober that keeps memory only. The verdict now survives the process that computed it"
+      },
+      {
+        "id": "VER-25",
+        "closed": "2026-11-14",
+        "was": "no negative runtime test shows that a -nexora.server.<id> key produces no PAC entry, no availableProfiles row and no rule picker option",
+        "artefact": "four tests in omega-pac/test/profiles.coffee over the inherited engine, which is the code the UI lists are born in: Profiles.each over an envelope carrying profile-shaped values under -nexora.server.<id> and -nexora.profile.<id> hands the callback the + keys only (the builtins +direct and +system are its other two names, so the negative is about the dash prefix and not about a silent callback); the quick-switch list shape the producer behind availableProfiles builds contains no dash key; the PAC compiled from a created FixedProfile names no -nexora. key, no saboteur display name and no saboteur address; and an envelope holding only dash keys produces no dash-keyed callback at all. The suite stays at its pinned floor: 146 passing / 1 pinned failing. The loaded-extension half of ADR-0012's sentence -- a real browser rendering the quick-switch list -- is LIVE-15's business, which is why the row retired and the live row did not"
       }
     ]
   },
@@ -720,23 +726,6 @@
         }
       ],
       "why": "Constraint 9. `tools/check-no-secrets.mjs` cannot prove absence over a real keystore; only a grep of artefacts produced by a real session can."
-    },
-    {
-      "id": "VER-25",
-      "subject": "no negative runtime test shows that a `-nexora.server.<id>` key produces no PAC entry, no `availableProfiles` row and no rule picker option",
-      "state": "no-code",
-      "owner": "extension",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "the negative PAC and profile-list test over the inherited engine"
-      },
-      "at": [
-        {
-          "doc": "docs/adr/0012-nexora-keys-under-dash-prefix.md",
-          "anchor": "- Verified: NO -- deferred to Phase 2: the negative runtime test \"a `-"
-        }
-      ],
-      "why": "ADR-0012's whole scheme rests on the `+`-only iteration at `omega-pac/src/profiles.coffee:111-118`; the prefix rejection is asserted on the data, and the engine's behaviour is the other half."
     },
     {
       "id": "VER-26",

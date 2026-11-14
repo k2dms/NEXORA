@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.73; older scope and inventory paragraphs
+continuation is §4.74; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5353,6 +5353,32 @@ note; and the `StateDir`-less prober that writes nothing. 18 Go packages green, 
 **Corpus.** `VER-86` retired — matrix 64 → 63 rows, 27 tombstones, `no-code` 43 → 42, `connector` 35 → 34,
 `assertion` 12 → 11, `marker.counted` 179 → 178 (the partition is 128 + 26 + 24). Doc 22's registration-gap
 paragraph reads closed with the mechanism named.
+
+**Gates.** All seven green.
+
+### 4.74 The negative runtime test exists — `VER-25` retired (2026-11-14)
+
+**The tests.** Four tests in `omega-pac/test/profiles.coffee`, over the inherited engine itself — the code the
+UI lists are born in, not a reimplementation: `Profiles.each` over an envelope carrying profile-shaped values
+under `-nexora.server.<id>` and `-nexora.profile.<id>` hands the callback the `+` keys only (the builtins
+`+direct` and `+system` are its other two names, so the negative is about the dash prefix and not about a
+silent callback — the engine iterates builtins with or without the caller's keys); the quick-switch list shape
+the producer behind `availableProfiles` builds contains no dash key; the PAC compiled from a created
+`FixedProfile` names no `-nexora.` key, no saboteur display name and no saboteur address; and an envelope
+holding only dash keys produces no dash-keyed callback at all. The suite stays at its pinned floor: **146
+passing / 1 pinned failing** (the floor is `>= 142` passing, `<= 1` failing — the same `pacResult` SOCKS5
+regression the audit pinned).
+
+**The subtlety the row's why predicted.** The saboteur's values are deliberately profile-shaped — a
+`FixedProfile` under the dash profile key, a VLESS server under the dash server key — so the tests assert the
+prefix, not the shape: the engine's protection is \`charCodeAt(0) == '+'.charCodeAt(0)\` at
+`omega-pac/src/profiles.coffee:111-118`, and nothing else. ADR-0012's label carries a dated superseding note
+(the `ODEC-33` precedent; history in git), naming the four tests and the floor they hold.
+
+**Corpus.** `VER-25` retired — matrix 63 → 62 rows, 28 tombstones, `no-code` 42 → 41, `extension` 10 → 9,
+`assertion` 11 → 10, `marker.counted` 178 → 177 (the partition is 127 + 26 + 24). The loaded-extension half
+of ADR-0012's sentence — a real browser rendering the quick-switch list — is `LIVE-15`'s business, which is
+why the row retired and the live row did not.
 
 **Gates.** All seven green.
 
