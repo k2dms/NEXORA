@@ -30,9 +30,10 @@
         "request",
         "response",
         "event",
-        "progress"
+        "progress",
+        "heartbeat"
       ],
-      "description": "Frame direction. Determines which of the if/then rules below apply, and therefore which fields may exist at all."
+      "description": "Frame direction. Determines which of the if/then rules below apply, and therefore which fields may exist at all. heartbeat is the liveness beat of framing.json#/liveness: it carries nothing but its identity, and its arrival is what the missed-heartbeat count measures."
     },
     "method": {
       "type": "string",
@@ -322,6 +323,66 @@
           "progress",
           "result"
         ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "heartbeat"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "method"
+              ]
+            },
+            {
+              "required": [
+                "result"
+              ]
+            },
+            {
+              "required": [
+                "ok"
+              ]
+            },
+            {
+              "required": [
+                "error"
+              ]
+            },
+            {
+              "required": [
+                "progress"
+              ]
+            },
+            {
+              "required": [
+                "chunk"
+              ]
+            },
+            {
+              "required": [
+                "inReplyTo"
+              ]
+            },
+            {
+              "required": [
+                "traceId"
+              ]
+            },
+            {
+              "required": [
+                "seq"
+              ]
+            }
+          ]
+        }
       }
     }
   ]

@@ -68,6 +68,12 @@ type Config struct {
 	// floor of 1 is subsumed by the envelope's 1..255 bound, so the below-floor answer branch (VER-89) cannot
 	// be produced by any frame the schema accepts until a real floor above 1 ships.
 	PipeFloor int
+
+	// BeatSeconds is the sender half of framing.json#/liveness: the peer writes a heartbeat frame this
+	// often while Serve runs. The direction the contract declares is host-to-extension, so this belongs to
+	// the host's own endpoint — the extension counts misses and the host sends beats. Zero sends nothing,
+	// which is every endpoint that is not the declared sender.
+	BeatSeconds int
 }
 
 // ToExtension is the host's endpoint facing the browser: it may send the host-to-extension ceiling and must
@@ -160,6 +166,8 @@ func New(pipe io.ReadWriteCloser, cfg Config) *Peer {
 func (p *Peer) Serve() error {
 	stop := p.watchLiveness()
 	defer stop()
+	stopBeats := p.sendBeats()
+	defer stopBeats()
 	defer p.Close()
 	for {
 		data, err := frames.Read(p.pipe, p.cfg.ReadLimit)
@@ -236,6 +244,13 @@ func (p *Peer) deliver(f *envelope.Frame) {
 		p.wait.bytes -= w.wait.bytes
 		p.mu.Unlock()
 		w.ch <- f
+		return
+	}
+	if f.Type == envelope.TypeHeartbeat {
+		// A beat is the liveness carrier (framing.json#/liveness, VER-49's third clause): its arrival is
+		// the count resetting, which the heartbeat update above already did, and it has no handler —
+		// nothing answers a beat.
+		p.mu.Unlock()
 		return
 	}
 	handler := p.cfg.Handler
@@ -396,6 +411,33 @@ func (p *Peer) Close() error {
 
 // watchLiveness starts the deadline check and returns its stop. A ticker, not a per-frame timer: the rule is
 // "three missed heartbeats", so one clock must be watching continuously.
+// sendBeats writes a heartbeat frame every BeatSeconds while Serve runs — the sender half of
+// framing.json#/liveness. The write failing is the pipe being gone, which Serve's own read reports; the
+// ticker stops and lets that error surface rather than inventing a second one.
+func (p *Peer) sendBeats() func() {
+	if p.cfg.BeatSeconds <= 0 {
+		return func() {}
+	}
+	stop := make(chan struct{})
+	go func() {
+		t := time.NewTicker(time.Duration(p.cfg.BeatSeconds) * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-t.C:
+				beat, err := envelope.NewHeartbeat()
+				if err != nil {
+					return
+				}
+				_ = p.Send(beat)
+			}
+		}
+	}()
+	return func() { close(stop) }
+}
+
 func (p *Peer) watchLiveness() func() {
 	if p.cfg.HeartbeatInterval <= 0 {
 		return func() {}
@@ -412,9 +454,12 @@ func (p *Peer) watchLiveness() func() {
 			select {
 			case <-stop:
 				return
-			case now := <-t.C:
+			case <-t.C:
+				// The ticker only schedules the check; the time the silence is measured against is the
+				// peer's own clock (cfg.Now), because a test clock that jumps must move the deadline with it
+				// — measuring the jump against the real ticker time would never fire.
 				p.mu.Lock()
-				missed := p.missedLocked(now)
+				missed := p.missedLocked(p.cfg.Now())
 				p.mu.Unlock()
 				if missed < p.cfg.MissedHeartbeats {
 					continue

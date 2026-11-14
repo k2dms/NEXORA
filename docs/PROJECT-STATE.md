@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.78; older scope and inventory paragraphs
+continuation is §4.79; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5038,7 +5038,7 @@ written before any behaviour existed. What each next milestone has to make true:
 | 5 | **Answered on 2026-11-14, and the number stays.** The question was inbound-per-tag vs single-inbound-with-routing — one Xray inbound per profile versus one inbound with `routing` and an imperative `core.select`. It is answered **inbound-per-tag**: the per-tag layout the compiler already ships (SOCKS5 inbound per tag, last-priority per-tag fallbacks, pinned by five goldens) keeps the server in the config bytes, which is what makes the hash-equality rule, the byte-stability promise and the diagnostics all readable; the imperative fast path `core.select` promised had no mechanism under it, so the command left the contract surface (18 methods) and the fast switch is a `config.apply` whose compiled hash is unchanged, answered without a restart (doc 26 §2.1). The slot keeps its number, because §9's ordinals are cited by documents, by queue rows and by this ledger. | nothing: the row that needed it, `VER-30`, is retired beside it |
 | 6 | Do we close the 20 unsupplied locales, or scope to 7 and say so publicly? | ADR-0017 |
 | 7 | Offline installs: pinned-Xray means a first-run download, which breaks air-gapped setup. Accept as a product limitation or ship a documented manual-pin path (`installChannel: manual` exists in `connector-settings.schema.json`)? | `33-…` |
-| 8 | What carries the heartbeat? `packages/schema/protocol/framing.json#/liveness` gives the interval (25 s), the miss count (3) and a **direction** (`host-to-extension`), and `packages/schema/protocol/envelope.schema.json#/properties/type` has four values — `request`, `response`, `event`, `progress` — none of them a beat. So either the beat is an envelope frame the data has not named (which one, given the closed object and the four type rules), or `nexora-host` keeps the port open without writing and only the extension counts, or the beat belongs to the local pipe instead and the direction value is wrong. Until one of those is chosen, no Go peer can claim the third clause of `VER-49`'s closer, and the peer in §4.7 counts *any* inbound frame as a beat arrived — a proxy, not the contract | `VER-49`, §11 of `docs/architecture/25-native-messaging-protocol.md`, the watchdog in `connector/internal/peer/` |
+| 8 | **Answered on 2026-11-14, and the number stays.** The question was what carries the heartbeat — the interval, the miss count and the `host-to-extension` direction were data, and none of the four frame types was a beat. It is answered by the **fifth frame type**: `heartbeat` joins `request/response/event/progress` in the envelope schema, carries nothing but `v, id, type, sentAt` (a fifth allOf branch refuses every payload field), the host-side peer sends it every `BeatSeconds`, and the armed watchdog measures silence against `cfg.Now` and tears the transport down at three missed intervals — `VER-49`'s third clause is its closing assertion, retired with it. The slot keeps its number. | nothing: the row that needed it, `VER-49`, is retired beside it |
 | 9 | **Answered on 2026-11-14, and the number stays.** The question was what the bytes of a chunk slice are and which byte string `chunk.contentHash` hashes (`ODEC-34`, §4.11's find, and the row this ledger once refused to supply an answer for). It is answered by the fragment model: `profile.import` gains `args.payload`, each slice carries its fragment as base64 there, and `chunk.contentHash` is sha256 over the concatenation of the decoded fragments in `chunkSeq` order. The id is retired in `packages/schema/open-decisions.json#/retired`, the row it gated in `packages/schema/verification.json#/retired`, and `connector/internal/chunk` — the package this question stopped — is written and tested. §4.66 carries the change | nothing: the row that needed it, `VER-76`, is retired beside it |
 **This list ran to nine rows, dropped to eight, and is at nine again.** It dropped when §4.10 deleted the ninth it had
 — whether a name the allowlist does not publish is refused by the codec or by the front door was raised here as a
@@ -5477,7 +5477,29 @@ the fifth and the ninth — and the row that needed this one is retired beside i
 
 **Gates.** All seven green; 18 Go packages ok.
 
-Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
-the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.
+### 4.79 The beat is a frame — §9.8 answered, `VER-49` retired (2026-11-14)
+
+**The carrier.** §9.8 is answered by the **fifth frame type**: `heartbeat` joins the envelope schema's four
+types, carries nothing but `v, id, type, sentAt` — the schema's fifth allOf branch refuses every payload
+field, and `typeRules` refuses the same nine keys in Go, so the two contracts cannot drift apart on what a
+beat may carry. `packages/schema/protocol/framing.json#/liveness` states the arrangement: the host sends a beat every 25 s on the
+browser hop, and every inbound frame resets the count of the side that counts.
+
+**Both halves in Go.** `peer.Config.BeatSeconds` is the sender half: the host's endpoint writes a heartbeat
+every interval while Serve runs. The receiver half counts every inbound frame as a beat (which the watchdog
+already did) and tears the transport down at three missed intervals — measuring silence against `cfg.Now`,
+which the watchdog now reads instead of its own real ticker time, because a test clock that jumps must move
+the deadline with it. Four peer tests pin the pair: two beats on the interval keep an armed watchdog alive
+past the point a silent peer is torn down, the silence verdict is `ErrPeerLost`, the beat carries nothing
+else, and the sender writes on its interval. 18 Go packages green.
+
+**Corpus.** `VER-49` retired — matrix 59 → 58 rows, 34 tombstones, `no-code` 39 → 38, `connector` 33 → 32,
+`assertion` 7 → 6, `marker.counted` 171 → 170 (the partition is 119 + 26 + 25; four deferral labels in
+doc 25 §4 and §13 became verified statements, and their live halves name `LIVE-05`). §9 is four answered
+slots in nine now — the fourth, the fifth, the eighth and the ninth.
+
+**Gates.** All seven green.
+Plus the decisions in §7 and the six questions standing in §9's nine slots, which are not work an agent may finish;
+the note under that table says why the fourth, the fifth, the eighth and the ninth stopped being questions, and why their numbers stayed.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

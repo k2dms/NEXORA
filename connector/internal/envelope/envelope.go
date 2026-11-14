@@ -27,10 +27,11 @@ import (
 type Type string
 
 const (
-	TypeRequest  Type = "request"
-	TypeResponse Type = "response"
-	TypeEvent    Type = "event"
-	TypeProgress Type = "progress"
+	TypeRequest   Type = "request"
+	TypeResponse  Type = "response"
+	TypeEvent     Type = "event"
+	TypeProgress  Type = "progress"
+	TypeHeartbeat Type = "heartbeat"
 )
 
 var (
@@ -189,7 +190,7 @@ func ParseWithFloor(data []byte, floor int) (*Frame, error) {
 		} else {
 			f.Type = Type(s)
 			switch f.Type {
-			case TypeRequest, TypeResponse, TypeEvent, TypeProgress:
+			case TypeRequest, TypeResponse, TypeEvent, TypeProgress, TypeHeartbeat:
 			default:
 				add("type", fmt.Sprintf("%q is not a frame type", s))
 			}
@@ -310,7 +311,7 @@ func (f *Frame) Validate() error {
 		v = append(v, Violation{"id", "must match ^[A-Za-z0-9_-]{8,36}$"})
 	}
 	switch f.Type {
-	case TypeRequest, TypeResponse, TypeEvent, TypeProgress:
+	case TypeRequest, TypeResponse, TypeEvent, TypeProgress, TypeHeartbeat:
 	default:
 		v = append(v, Violation{"type", fmt.Sprintf("%q is not a frame type", string(f.Type))})
 	}
@@ -358,6 +359,14 @@ func typeRules(f *Frame) []Violation {
 			}
 			if !*f.OK && !present("error") {
 				v = append(v, Violation{"error", "a failed response carries the error"})
+			}
+		}
+	case TypeHeartbeat:
+		// The beat is framing.json#/liveness's carrier: it carries nothing but its identity, and the
+		// schema's fifth allOf branch refuses every payload field for the same reason in JSON.
+		for _, k := range []string{"method", "result", "ok", "error", "progress", "chunk", "inReplyTo", "traceId", "seq"} {
+			if present(k) {
+				v = append(v, Violation{k, "a heartbeat carries nothing but v, id, type and sentAt"})
 			}
 		}
 	case TypeEvent, TypeProgress:
@@ -679,6 +688,13 @@ func (f *Frame) Fail(code, message string) (*Frame, error) {
 	msg := message
 	out := &Frame{V: f.V, ID: newID(), Type: TypeResponse, OK: &no, InReplyTo: &reply,
 		Error: &Error{Code: code, Message: &msg, Retryable: &retry}, TraceID: f.TraceID, SentAt: Now()}
+	return out, out.finalize()
+}
+
+// NewHeartbeat builds the liveness beat of framing.json#/liveness: v, id, type and sentAt and nothing
+// else. The sender mints a fresh id per beat; the receiver counts its arrival and never answers it.
+func NewHeartbeat() (*Frame, error) {
+	out := &Frame{V: contract.FrameFormatVersion, ID: newID(), Type: TypeHeartbeat, SentAt: Now()}
 	return out, out.finalize()
 }
 

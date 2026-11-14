@@ -60,7 +60,7 @@
     "heartbeatSeconds": 25,
     "heartbeatDirection": "host-to-extension",
     "missedHeartbeatsBeforeDisconnect": 3,
-    "note": "Chrome tears out the port when the extension's service worker is evicted. The Connector and Core MUST survive that (ADR-0005) -- a dropped port is a client reconnect event, never a shutdown signal."
+    "note": "Chrome tears out the port when the extension's service worker is evicted. The Connector and Core MUST survive that (ADR-0005) -- a dropped port is a client reconnect event, never a shutdown signal. The beat itself is an envelope frame of the fifth type, heartbeat (protocol/envelope.schema.json#/properties/type): it carries nothing but v, id, type and sentAt, the host sends it every heartbeatSeconds on the browser hop, and every inbound frame -- a beat or any real traffic -- resets the missed-heartbeat count of the side that counts."
   },
   "reconnect": {
     "strategy": "exponential-with-cap",

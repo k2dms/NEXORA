@@ -145,7 +145,7 @@ little-endian bytes are not).
 | concurrent requests | 64 | sender stops issuing | `#/limits/maxConcurrentRequests`, `#/ordering/backpressure` |
 | in-flight bytes | 8 MiB | sender | `#/limits/maxInFlightBytes` — the concurrency cap alone does not bound memory when frames are large |
 
-`Verified: NO — deferred to Phase 2` for enforcement itself; the *values* are asserted today by the framing
+**Verified for the Go halves** — the peer refuses an oversized write before the pipe and the client refuses a request over the ceiling, both pinned by `VER-49`'s tests; what no run shows is a browser accepting one up to its own cap (`LIVE-05`)
 sanity block in `packages/schema/scripts/verify.mjs`, including the ordering property that
 `effectiveCrossBrowserBytes ≤ hostToExtensionBytes ≤ extensionToHostBytes`.
 
@@ -307,7 +307,7 @@ it is behavioural, not numerical:
 - a late answer to an already-timed-out request is discarded by `id`, and MUST NOT re-apply its side effect —
   for a `replace`-class command that would be a config the user did not ask for;
 - probes (`server.test`) are never retried on timeout: a retry is a second measurement, and the client wanted
-  one. `Verified: NO — deferred to Phase 2` for the discard path.
+  one. **Verified for the Go half** — the request table discards by id; the run against a real host stays with `LIVE-05`.
 
 One correction of the plan: it asked for `progress` frames for both `subscription.refresh` and `server.test`.
 `subscription.refresh` has them (`subscription.updated`, `subscription.failed`), and `server.test` deliberately
@@ -377,9 +377,9 @@ and no bidirectional streaming RPC semantics.
 | Probes answered exactly once | "probe is answered exactly once" over the fixtures | **GREEN** |
 | Replays byte-identical after clock-strip | "idempotent replay returns the same result" (5 pairs today) | **GREEN** |
 | Every fixture frame validates against the envelope | the replay loop; it prints the frame count on every run | **GREEN** |
-| Sender-side rejection before write | the `packages/protocol` codec refuses an oversized write and a peer declaring one; the `packages/state` client refuses a request over the ceiling before the port | Verified: NO — deferred to Phase 2 (the real crossing must still show a browser accepting one up to its own cap) |
-| Heartbeat / missed-heartbeat behaviour | nothing | Verified: NO — deferred to Phase 2 (a liveness test drives the 25 s heartbeat and the three-miss deadline) |
-| Late-answer discard by `id` | the Go request table and the `packages/state` client each drop an answer whose `id` is no longer in flight, and a duplicate one | Verified: NO — deferred to Phase 2 (no run shows a real host's late answer arriving after a timeout) |
+**GREEN** — `VER-49`'s tests: the codec refuses an oversized write and a peer declaring one; the `packages/state` client refuses a request over the ceiling before the port | the live half — a browser accepting one up to its own cap — stays `LIVE-05` |
+| Heartbeat / missed-heartbeat behaviour | `envelope.TypeHeartbeat` — the fifth frame type §9.8 named — sent by the host-side peer (`peer.Config.BeatSeconds`), counted by the armed watchdog, which measures silence against `cfg.Now` and tears the transport down at three missed intervals; the peer tests drive both halves | **GREEN** (`VER-49` retired with it) |
+**GREEN** for the Go half — `VER-49`: the Go request table and the `packages/state` client each drop an answer whose `id` is no longer in flight, and a duplicate one | the live half — a real host's late answer arriving after a timeout — stays `LIVE-05` |
 | Jittered reconnect actually jitters | the `packages/state` harness walks the capped ladder on an injected clock; a live drive against `nexora-host` + `nexora-connector` measured 1009 ms and 1203 ms on the first rung, re-running hello both times | Verified: NO — LIVE-13 (a browser's own port teardown is still unmeasured) |
 
 Trace: ADR-0004, ADR-0005, ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0015, ADR-0019 · Contract:

@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 171
+    "counted": 166
   },
   "states": {
     "values": [
@@ -407,6 +407,12 @@
         "closed": "2026-11-14",
         "was": "core.select performing no config write is asserted by nothing (and §9.5 changes what the row means)",
         "artefact": "§9.5 answered inbound-per-tag: the per-tag inbound layout the compiler ships pins the server into the config bytes, so the imperative no-config-write switch the command promised has no mechanism. core.select left the contract surface the same commit — allowlist 19 → 18, the mutate rate-limit scope and the presentation command lists lose it, the command file is deleted, contract_gen regenerated, the fixture scene removed — and the fast switch is now a config.apply whose compiled hash is unchanged, answered without a restart (doc 26 §2.1 states the decision). The row's premise is gone, which is the closure: nothing asserts a no-config-write switch because the surface no longer declares one"
+      },
+      {
+        "id": "VER-49",
+        "closed": "2026-11-14",
+        "was": "framing enforcement, clause by clause: the sender-side rejection before write and the late-answer discard have tests, the three-missed-heartbeat verdict does not and cannot yet",
+        "artefact": "the third clause is written on both halves. The carrier §9.8 asked for exists: heartbeat is the envelope's fifth frame type, carrying nothing but v, id, type and sentAt (the schema's fifth allOf branch and typeRules refuse every payload field). The sender half is peer.Config.BeatSeconds — the host's endpoint writes a beat every interval while Serve runs; the receiver half counts every inbound frame as a beat and tears down at three missed intervals, measuring silence against cfg.Now. The peer tests drive the pair: two beats on the interval keep an armed watchdog alive past the point a silent peer is torn down, and the silence verdict is ErrPeerLost. The first two clauses (oversized-write refusal, late-answer discard) were green since 2026-11-05; the row's own blocker — which endpoint arms the deadline and what arrives on the wire — was §9.8, answered the same commit"
       }
     ]
   },
@@ -1139,39 +1145,6 @@
         }
       ],
       "why": "A negative about network behaviour cannot be proven by a schema; it is a bundle review plus the permission table, which is why doc 31 owns the surface."
-    },
-    {
-      "id": "VER-49",
-      "subject": "framing enforcement, clause by clause: the sender-side rejection before write and the late-answer discard have tests, the three-missed-heartbeat verdict does not and cannot yet",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "the framing peer refuses an oversized write, discards a late answer by id, and treats three missed heartbeats as a lost peer"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "`Verified: NO — deferred to Phase 2` for enforcement itself; the *valu"
-        },
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "Sender-side rejection before write"
-        },
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "one. `Verified: NO — deferred to Phase 2` for the discard path."
-        },
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "Late-answer discard by `id`"
-        },
-        {
-          "doc": "docs/architecture/25-native-messaging-protocol.md",
-          "anchor": "Heartbeat / missed-heartbeat behaviour"
-        }
-      ],
-      "why": "The framing values are asserted today (that is the green half); a limit that only exists in a document is a limit the peer has never seen enforced. No live row covers enforcement -- the document cited LIVE-05 and LIVE-06 here, both transport rows, which was wrong -- so the closers are a codec test that refuses an oversized write, a request-table test for the late answer, and a liveness test driving the 25 s heartbeat and the three-miss deadline. As of 2026-11-05 the first two clauses have those tests (connector/internal/peer/ -- docs/PROJECT-STATE.md §4.7); the row stays open on the third, and not for a lack of code: protocol/framing.json#/liveness gives the heartbeat a direction, host-to-extension, so on the hop that has a heartbeat the Go endpoint is the one sending the beats and the extension is the one counting misses, and protocol/envelope.schema.json#/properties/type has four values none of which carries a beat. Which endpoint arms the deadline, and what arrives on the wire to be missed, is docs/PROJECT-STATE.md §9's eighth question."
     },
     {
       "id": "VER-50",
