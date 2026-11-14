@@ -104,6 +104,10 @@ func (p *Prober) note(a *Answer, at time.Time) {
 	r.lastOverall = a.Overall
 	p.retain(r, a, at)
 
+	// The medium the store row names is disk (VER-86): the retained rings reach it on every note, while
+	// the prober's lock is already held and the caller cannot observe a failed write.
+	p.persistLocked()
+
 	if previous != r.verdict && p.cfg.Events != nil {
 		p.cfg.Events(Event{ServerID: a.ServerID})
 	}

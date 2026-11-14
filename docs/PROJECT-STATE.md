@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.72; older scope and inventory paragraphs
+continuation is §4.73; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5330,6 +5330,29 @@ answered by its second option — the ring buffer with a recorded cap: the caps 
 now executed code, and the browser plane enforces the same caps in the extension slice that owns
 `browser-ring`. Register 31 → 30 entries, 53 → 52 sites, `product` 14 → 13; the citing bullet in doc 34 §15
 now states the answer.
+
+**Gates.** All seven green.
+
+### 4.73 The retained ring reaches its medium — `VER-86` retired (2026-11-14)
+
+**The code.** `connector/internal/health/persist.go` is `health-history`'s `medium: disk`:
+`Config.StateDir` persists the per-server rings, the streak counters, the verdicts and the running cooldowns
+to `health-history.json` under the state directory after every retained probe — atomic temp-plus-rename, the
+discipline `internal/apply` uses — and `New` reads it back, re-applying the 64 KiB ring cap on the way in so a
+ring written by a build with a larger cap is trimmed rather than refused. A write failure is remembered
+(`PersistError`) and never fails the probe: the ring is a hint for a support bundle, and losing a hint is not
+failing the measurement. A prober built without a `StateDir` keeps doc 36 §8's cap and dies with the process —
+the behaviour every existing test expected and still sees.
+
+**The closing assertion.** Four tests: the restart that re-reads the ring entry-for-entry with the verdict and
+the three-failure streak intact; the streak that survives across the restart and condemns on the next process's
+third note (doc 22 §8 invariant 3 — the count, not a single timeout, drives failover, and a restart must not
+forgive a server the policy had condemned); the corrupt document that starts empty and rebuilds on the next
+note; and the `StateDir`-less prober that writes nothing. 18 Go packages green, gofmt and vet clean.
+
+**Corpus.** `VER-86` retired — matrix 64 → 63 rows, 27 tombstones, `no-code` 43 → 42, `connector` 35 → 34,
+`assertion` 12 → 11, `marker.counted` 179 → 178 (the partition is 128 + 26 + 24). Doc 22's registration-gap
+paragraph reads closed with the mechanism named.
 
 **Gates.** All seven green.
 

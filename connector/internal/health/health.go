@@ -230,6 +230,11 @@ type Config struct {
 
 	// RingBytes bounds the retained history per server. Zero is `DefaultRingBytes`.
 	RingBytes int
+
+	// StateDir is where the retained rings persist (the health-history row's `medium: disk`, VER-86).
+	// Empty means memory only: a prober built without one keeps doc 36 §8's cap and dies with the
+	// process, which is what every existing test expects.
+	StateDir string
 }
 
 // defaultLayerTimeout is the prober's own number, and the corpus states none: `server.test`'s deadline is 30000 ms
@@ -279,16 +284,30 @@ func New(cfg Config) (*Prober, error) {
 	if cfg.RingBytes <= 0 {
 		cfg.RingBytes = DefaultRingBytes
 	}
-	return &Prober{cfg: cfg, records: map[string]*record{}}, nil
+	p := &Prober{cfg: cfg, records: map[string]*record{}}
+	p.loadLocked()
+	return p, nil
 }
 
 // Prober measures servers. It is safe for concurrent use: the command surface answers frames from one process while
 // a poller may be probing the same table, and no probe holds the bookkeeping lock across its network I/O, because a
 // dead VPS must not be able to stall a status read.
 type Prober struct {
-	cfg     Config
-	mu      sync.Mutex
-	records map[string]*record
+	cfg        Config
+	mu         sync.Mutex
+	records    map[string]*record
+	sequence   int64
+	persistErr error
+}
+
+// PersistError is the last failure writing the retained rings to the medium the health-history row names.
+// Nil means the last write succeeded — or that this prober runs without a StateDir and keeps its rings in
+// memory only. A probe answer is never refused because its history could not be written: the ring is a
+// hint for a support bundle, and losing a hint is not failing the measurement.
+func (p *Prober) PersistError() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.persistErr
 }
 
 // The four ways a probe can stop before it has measured anything. Each carries the taxonomy code the command answers
