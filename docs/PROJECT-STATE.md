@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.75; older scope and inventory paragraphs
+continuation is §4.76; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5406,6 +5406,26 @@ reported whole, never broadened. `ODEC-37` gates `VER-91`; doc 27's residual sen
 in `verify.mjs` moves 10 → 9 with the queue it counts.
 
 **Gates.** All seven green; ADR-0020 condensed back inside rule 11's 140-line bound.
+
+### 4.76 The redirect-chain row exists — `VER-65` retired into `LIVE-25`, re-queued as `VER-92` (2026-11-14)
+
+**The omission closed where it was found.** `VER-65` registered a citation to a live row that did not exist;
+the row now does: `LIVE-25` in `docs/verification/live-matrix.md` — a two-hop feed (allowed host →
+redirector → metadata literal) must fail naming the hop that crossed, with the same chain inside the budget as
+the control that shows the guard is per-hop rather than a first-hop-only gate. Doc 29 §13's citation names
+`LIVE-25`, so it is an obligation on a row that exists. The live matrix is LIVE-01…25; the inheritance check,
+its doc 39 assertion row and the partition's live count all moved 24 → 25 in the same commit.
+
+**The pointer row.** `VER-92` (`contracts`, closes by `LIVE-25`) is the queue's pointer at the new row —
+the same shape `VER-16` and `VER-21` point at theirs — so doc 29's label stays owned after `VER-65` left,
+and `ODEC-07`'s gate list names `VER-59` and `VER-92`. The row is unexecuted, as every live row is; what
+`VER-65` owed was the row itself.
+
+**Corpus.** `VER-65` retired, `VER-92` registered — matrix 62 rows, 30 tombstones, `no-check` 5 → 4,
+`no-run` 10 → 11, `new-live-row` 1 → 0, `live-row` 41 → 42, `marker.counted` 173 → 174 (the partition is
+123 + 26 + 25, and the live-inheritance check's own count moved with the matrix).
+
+**Gates.** All seven green.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

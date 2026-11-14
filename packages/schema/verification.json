@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 173
+    "counted": 174
   },
   "states": {
     "values": [
@@ -383,6 +383,12 @@
         "closed": "2026-11-14",
         "was": "golden config snapshots under connector/testdata/config/*.golden.json -- five of doc 27 section 3's six fixtures pinned, and shape C's headersRef materialized via headersKeys with fail-closed owned by chrome.proxy",
         "artefact": "the closer exists and runs: five goldens (shape-a-vision-tcp-tls, shape-b-reality-xhttp, shape-c-grpc-tls, multi-server-ordered, two-plane-core-rules) are byte-compared by connector/internal/compile/golden_test.go, and connector/internal/apply/drive_test.go recompiles all five, materializes them with apply.Write and drives Xray 24.11.11 run -test -c -- all five accepted, the invalid-port negative control rejected. Shape C's headersRef is materialized by the headersKeys list (ODEC-45): the compiler emits a keyed handle map and apply fills exactly the declared keys from the store. The sixth fixture is the fail-closed variant, and it has no distinct Xray bytes because doc 30 section 7 puts the block in chrome.proxy -- so the sixth file is a stated exclusion, which is the golden rule met as written, not a missing snapshot. ODEC-37's predicate-semantics residual is untouched by this closure"
+      },
+      {
+        "id": "VER-65",
+        "closed": "2026-11-14",
+        "was": "no live row covers guards being applied to every redirect hop -- the omission, not the behaviour, is the finding",
+        "artefact": "the omission is closed where it was found: LIVE-25 now exists in docs/verification/live-matrix.md as the redirect-chain row the citation promised -- a two-hop feed (allowed host → redirector → metadata literal) must fail naming the hop that crossed, with the same chain inside the budget as the control that shows the guard is per-hop rather than a first-hop-only gate. The citation in doc 29 §13 now names LIVE-25, so it is an obligation on a row that exists rather than a false reference. The row is unexecuted, as every live row is; what VER-65 owed was the row itself"
       }
     ]
   },
@@ -1437,23 +1443,6 @@
       "why": "Testable as a build-graph assertion today; it is the row that keeps the Connector's fetch responsibility from drifting back into the browser by 'temporary' convenience. ADR-0021 made it load-bearing rather than tidy: that decision forbids a feed body on the pipe, and this is the only row that could catch the breach."
     },
     {
-      "id": "VER-65",
-      "subject": "no live row covers guards being applied to every redirect hop -- the omission, not the behaviour, is the finding",
-      "state": "no-check",
-      "owner": "contracts",
-      "closesBy": {
-        "kind": "new-live-row",
-        "ref": "a redirect-chain row must be added to docs/verification/live-matrix.md"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/29-subscriptions-and-servers.md",
-          "anchor": "Guards are applied to every redirect hop"
-        }
-      ],
-      "why": "The document cites a row that does not exist. Registered here as owed so the citation is an obligation rather than a false reference; a feed that redirects to metadata is the cheapest SSRF bypass available."
-    },
-    {
       "id": "VER-66",
       "subject": "`format: auto` is specified never to resolve ambiguously, and there is no fixture for the two-detectors-both-true case",
       "state": "no-fixture",
@@ -1684,6 +1673,23 @@
         }
       ],
       "why": "The inversion half of ODEC-37 is answered by the rule language itself, which has no negation and can complement only ports; what remains is evidence, not a decision -- QUIC's positive case needs a decryptable Initial packet, and a live fakedns match needs an engine plus a fake-IP allocation round-trip, and this pipeline emits no fakedns engine. Both are the residual the whole-reporting rule exists to keep honest: a rule this prober cannot measure is reported whole, never broadened. The row is what ODEC-37 gates now that the golden tier it previously gated is closed"
+    },
+    {
+      "id": "VER-92",
+      "subject": "the redirect-chain guards (scheme, address family, budget) are specified per hop and unexecuted: LIVE-25 is the row that closes them",
+      "state": "no-run",
+      "owner": "contracts",
+      "closesBy": {
+        "kind": "live-row",
+        "ref": "LIVE-25"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/29-subscriptions-and-servers.md",
+          "anchor": "Guards are applied to every redirect hop"
+        }
+      ],
+      "why": "VER-65 registered the omission -- a citation to a live row that did not exist -- and closed when LIVE-25 was written. What remains is the row itself: the two-hop redirect-to-metadata fixture and its in-budget control are unexecuted, and the guards that re-run per hop are the reason a feed cannot walk an allowed host into the cloud metadata service. The row is the queue's pointer at LIVE-25, in the same shape VER-16 and VER-21 point at theirs"
     }
   ]
 }

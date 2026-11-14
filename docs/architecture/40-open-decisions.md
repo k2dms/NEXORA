@@ -248,7 +248,7 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-04` | how the block port range and the inbound allocation range stay disjoint across two files | `contract` | `VER-20` |
 | `ODEC-05` | what `localDNS` means, and whether `IPIfNonMatch` is the right default | `product` | `VER-27`, `VER-75` |
 | `ODEC-06` | whether 64 inbounds is the ceiling, and what a feed bigger than one frame gets | `product` | `VER-68`, `VER-73` |
-| `ODEC-07` | whether the Connector may fetch a feed through another proxy, including a loopback one | `product` | `VER-59`, `VER-65` |
+| `ODEC-07` | whether the Connector may fetch a feed through another proxy, including a loopback one | `product` | `VER-59`, `VER-92` |
 | `ODEC-08` | what a legacy Shadowsocks/Trojan/WireGuard feed becomes | `adr` | `VER-69`, `VER-71` |
 | `ODEC-09` | whether `password` joins the sync strip set | `product` | `VER-22`, `VER-74`, `COMP-18` |
 | `ODEC-10` | whether any external API surface survives for third-party compatibility | `product` | `VER-54` |

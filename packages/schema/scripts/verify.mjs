@@ -3693,7 +3693,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const vocabKeys = [...ownersOf].filter(([, who]) => who.includes('vocabulary') && who.length === 1);
   const liveKeys = [...ownersOf].filter(([, who]) => who.length === 1 && who[0] === 'live-row');
   check(
-    vocabKeys.length === verif.vocabulary.length && liveKeys.length === 24 &&
+    vocabKeys.length === verif.vocabulary.length && liveKeys.length === 25 &&
       rowKeys.length + vocabKeys.length + liveKeys.length === derived,
     'the queue partitions the corpus exactly: rows, plus the sentences that define the label, plus the inherited live rows',
     `rows=${rowKeys.length} + vocabulary=${vocabKeys.length} + live=${liveKeys.length} = ` +
@@ -3711,8 +3711,8 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const executed = liveRows.filter((r) => /^`?YES/.test(statusOf(r))).map((r) => r.id);
   const unknownStatus = liveRows.filter((r) => !/^`?(NO|PARTIAL|YES)/.test(statusOf(r))).map((r) => r.id);
   check(
-    liveIds.length === 24 && denseLive,
-    'the live rows this queue inherits are exactly LIVE-01 to LIVE-24, in order',
+    liveIds.length === 25 && denseLive,
+    'the live rows this queue inherits are exactly LIVE-01 to LIVE-25, in order',
     `derived ${liveIds.length}: ${liveIds.join(',')}`,
   );
   check(
@@ -3759,7 +3759,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 40 && count('state', 'no-check') === 5 && count('state', 'no-run') === 10 &&
+    count('state', 'no-code') === 40 && count('state', 'no-check') === 4 && count('state', 'no-run') === 11 &&
       count('state', 'no-fixture') === 3 && count('state', 'needs-human') === 4 && verif.matrix.length === 62,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
@@ -3775,7 +3775,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
   );
   check(
-    kindCount('live-row') === 41 && kindCount('new-live-row') === 1 && kindCount('assertion') === 9 &&
+    kindCount('live-row') === 42 && kindCount('new-live-row') === 0 && kindCount('assertion') === 9 &&
       kindCount('gate') === 2 && kindCount('tool') === 2 && kindCount('ci-step') === 2 &&
       kindCount('decision') === 1 && kindCount('external-measurement') === 4,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',
