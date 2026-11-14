@@ -131,7 +131,10 @@ pinned to it.
   tier 1 plus the frame replay of rule 7.
 - Existing check: `node tools/check-no-secrets.mjs --selftest` (13/13) guards the "no secrets in tests or
   logs" half of rule 1; `node tools/check-doc-evidence.mjs` resolves the citations above.
-- Verified: NO -- deferred to Phase 2: the golden-config snapshots, the whole live matrix `LIVE-01…24`, the
-  egress-proof rule applied to every "connected" display, the fail-closed traffic assertion, the
-  restore-from-backup migration test, and `.github/workflows/verify.yml` implementing the pinned legacy
-  floor with `NOTE:` lines for the empty projects.
+- Verified 2026-11-14 for the golden-config half, superseding the deferred verdict this item carried: the
+  snapshots exist under `connector/testdata/config/` — five of doc 27 §3's six fixtures, byte-compared and
+  Xray-driven by `connector/internal/apply/drive_test.go`; the sixth (the fail-closed variant) has no distinct
+  Xray bytes by doc 30 §7's own decision, a stated exclusion, not a missing golden (`VER-28` retired).
+  The rest -- the live matrix `LIVE-01…24`, the egress-proof rule on every "connected" display, the
+  fail-closed traffic assertion, the migration test, and `.github/workflows/verify.yml`'s pinned legacy floor --
+  stays deferred to Phase 2. History in git.

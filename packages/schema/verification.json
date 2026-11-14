@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 177
+    "counted": 173
   },
   "states": {
     "values": [
@@ -377,6 +377,12 @@
         "closed": "2026-11-14",
         "was": "no negative runtime test shows that a -nexora.server.<id> key produces no PAC entry, no availableProfiles row and no rule picker option",
         "artefact": "four tests in omega-pac/test/profiles.coffee over the inherited engine, which is the code the UI lists are born in: Profiles.each over an envelope carrying profile-shaped values under -nexora.server.<id> and -nexora.profile.<id> hands the callback the + keys only (the builtins +direct and +system are its other two names, so the negative is about the dash prefix and not about a silent callback); the quick-switch list shape the producer behind availableProfiles builds contains no dash key; the PAC compiled from a created FixedProfile names no -nexora. key, no saboteur display name and no saboteur address; and an envelope holding only dash keys produces no dash-keyed callback at all. The suite stays at its pinned floor: 146 passing / 1 pinned failing. The loaded-extension half of ADR-0012's sentence -- a real browser rendering the quick-switch list -- is LIVE-15's business, which is why the row retired and the live row did not"
+      },
+      {
+        "id": "VER-28",
+        "closed": "2026-11-14",
+        "was": "golden config snapshots under connector/testdata/config/*.golden.json -- five of doc 27 section 3's six fixtures pinned, and shape C's headersRef materialized via headersKeys with fail-closed owned by chrome.proxy",
+        "artefact": "the closer exists and runs: five goldens (shape-a-vision-tcp-tls, shape-b-reality-xhttp, shape-c-grpc-tls, multi-server-ordered, two-plane-core-rules) are byte-compared by connector/internal/compile/golden_test.go, and connector/internal/apply/drive_test.go recompiles all five, materializes them with apply.Write and drives Xray 24.11.11 run -test -c -- all five accepted, the invalid-port negative control rejected. Shape C's headersRef is materialized by the headersKeys list (ODEC-45): the compiler emits a keyed handle map and apply fills exactly the declared keys from the store. The sixth fixture is the fail-closed variant, and it has no distinct Xray bytes because doc 30 section 7 puts the block in chrome.proxy -- so the sixth file is a stated exclusion, which is the golden rule met as written, not a missing snapshot. ODEC-37's predicate-semantics residual is untouched by this closure"
       }
     ]
   },
@@ -772,39 +778,6 @@
         }
       ],
       "why": "The compiler now emits the shipped core-plane rules in authored order and explicit inbound-to-server fallbacks. Five goldens and local Xray config acceptance pin those bytes; loopback HTTP/UDP tests exercise the measured routing subset. Invert:true is reported whole because the pinned release ignores it. These checks do not lower legacy browser conditions or execute LIVE-04's browser session, cross-plane reporting and containment. ODEC-37 retains residual predicate semantics; ODEC-05 and ODEC-23 still gate resolver and geo-data behavior. The fourth anchor is doc 33's door-back prohibition: loopback inspection and fixtures exist, but the complete installed session remains unproved."
-    },
-    {
-      "id": "VER-28",
-      "subject": "golden compiled configs pin five of doc 27 §3's six fixtures; shape C's headersRef is materialized via headersKeys (ODEC-45) and fail-closed belongs in chrome.proxy rather than a distinct Xray config",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "golden config snapshots under connector/testdata/config/*.golden.json"
-      },
-      "at": [
-        {
-          "doc": "docs/adr/0020-test-strategy.md",
-          "anchor": "- Verified: NO -- deferred to Phase 2: the golden-config snapshots, th"
-        },
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "`Verified: NO — deferred to Phase 2` (one of the six, for that reason)"
-        },
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "Compilation is byte-deterministic"
-        },
-        {
-          "doc": "docs/architecture/23-unified-server-model.md",
-          "anchor": "`Verified: NO — deferred to Phase 2` for byte-exactness (ADR-0020's go"
-        },
-        {
-          "doc": "docs/architecture/23-unified-server-model.md",
-          "anchor": "The three canonical configs compile byte-for-byte as shown"
-        }
-      ],
-      "why": "Tier 2 of ADR-0020. A diff in a golden file is a contract change; its reason belongs in the same diff. Five exist: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `shape-c-grpc-tls`, `multi-server-ordered` and `two-plane-core-rules` under `connector/testdata/config/`, compared byte-for-byte by `connector/internal/compile/golden_test.go`, which writes only with `-golden.update`. `connector/internal/apply/drive_test.go` recompiles all five, checks the snapshots, materializes with `apply.Write`, and drives Xray 24.11.11 `run -test -c`: all five written configs were accepted and the invalid-port negative control rejected. The corrected bytes use object-shaped policy.levels, VLESS vnext[].users[], explicit per-tag fallbacks after authored rules, referenced freedom/blackhole outbounds, array selectors and inbound-sibling sniffing. Shape C's headersRef is materialized via headersKeys (ODEC-45): the compiler emits a keyed handle map and apply fills exactly the declared keys from the store. This is config acceptance, not runtime routing evidence, and `ODEC-37` remains open. The remaining case is the fail-closed variant, which has no distinct Xray bytes because docs/architecture/30-failure-policy.md §7 puts the block in `chrome.proxy`."
     },
     {
       "id": "VER-29",
@@ -1694,6 +1667,23 @@
         }
       ],
       "why": "The initial 2026-11-11 client run against a real nexora-host and nexora-connector found config.snapshot and core.status both answering Internal. A subsequent slice registered core.status and verified process facts and persisted exit state through three real-host sessions; config.snapshot remains unregistered. The contract half is worse than a missing handler. matchesExtensionHash is described as computed by the Connector against the hash the extension sent, and packages/schema/protocol/commands/config.snapshot.json#/args is a closed object carrying includeMaskedConfig and maxBytes only -- so no caller can send an expectation and the field is null on every answer the schema permits. The client compares locally instead, which is sound for a hash equality because no clock is in it, but it is not the comparison the command doc promises, and docs/architecture/25-native-messaging-protocol.md §11 said the opposite until this slice corrected it. LIVE-06 is the closer because its evidence column already names a config.snapshot drift check: executing it needs the field, then the handler, then a run that detects a drift rather than reporting one it cannot compute."
+    },
+    {
+      "id": "VER-91",
+      "subject": "QUIC's positive traffic case and a live FakeDNS match are unmeasured: the sniffing predicates' residual is reported whole rather than evidenced (ODEC-37)",
+      "state": "no-fixture",
+      "owner": "connector",
+      "closesBy": {
+        "kind": "external-measurement",
+        "ref": "a decryptable QUIC Initial over a real client, and a fakedns match produced by an engine this pipeline emits"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/27-config-compilation-pipeline.md",
+          "anchor": "`ODEC-37` retains QUIC's positive case and a live FakeDNS match with an engine"
+        }
+      ],
+      "why": "The inversion half of ODEC-37 is answered by the rule language itself, which has no negation and can complement only ports; what remains is evidence, not a decision -- QUIC's positive case needs a decryptable Initial packet, and a live fakedns match needs an engine plus a fake-IP allocation round-trip, and this pipeline emits no fakedns engine. Both are the residual the whole-reporting rule exists to keep honest: a rule this prober cannot measure is reported whole, never broadened. The row is what ODEC-37 gates now that the golden tier it previously gated is closed"
     }
   ]
 }

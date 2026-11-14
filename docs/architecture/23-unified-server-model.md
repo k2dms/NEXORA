@@ -156,7 +156,7 @@ cut-over (ADR-0013) and is specified in `docs/architecture/24-options-envelope-c
 Below: what the compiler must emit for `packages/schema/examples/server.vision-tcp-tls.json`,
 `packages/schema/examples/server.reality-xhttp.json` and `packages/schema/examples/server.grpc-tls.json`.
 These are illustrative here and **normative in `connector/testdata/config/*.golden.json` in Phase 2** —
-`Verified: NO — deferred to Phase 2` for byte-exactness (ADR-0020's golden-config rule is the check). Marked
+**GREEN** for byte-exactness — ADR-0020's golden-config rule is the check, and the snapshots exist and are compared (`VER-28` retired with it). Marked
 `⟨secret⟩` fields are materialized by the Connector from the keystore at write time and appear in no extension
 transit.
 
@@ -270,7 +270,7 @@ one inbound with internal routing — is considered and rejected there, not here
 | Every field has a description | the undocumented-field coverage check in `packages/schema/scripts/verify.mjs` | **GREEN** |
 | `h2` implies `tls` | `allOf` clause 8 + `packages/schema/examples/invalid/server.h2-without-tls.json` | **GREEN** |
 | A subscription server names its subscription | `allOf` clause 9 | **GREEN** |
-| The three canonical configs compile byte-for-byte as shown | all three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`, `shape-b-reality-xhttp.golden.json` and `shape-c-grpc-tls.golden.json`, compared by `connector/internal/compile/golden_test.go`; `ODEC-37` tracks the remaining predicate semantics beyond the measured core-plane fixture | Verified: NO — deferred to Phase 2 (`connector/testdata/config/*.golden.json`) |
+| The three canonical configs compile byte-for-byte as shown | all three: `connector/testdata/config/shape-a-vision-tcp-tls.golden.json`, `shape-b-reality-xhttp.golden.json` and `shape-c-grpc-tls.golden.json`, compared by `connector/internal/compile/golden_test.go`, plus the multi-server and two-plane goldens and the Xray `run -test -c` drive over all five; `ODEC-37` tracks the remaining predicate semantics beyond the measured core-plane fixture | **GREEN** (`VER-28` retired with it) |
 | Tag collision across the server set is a compile error | `connector/internal/compile/resolve.go` refuses a second server whose derived tag is taken, naming both ids — `TestATagCollisionNamesBothServers`, and the eight-hex collision test over the canonical examples proves a twinned feed document arriving unsorted is refused in either order while the clean five-server batch compiles | **GREEN** (`VER-70` retired with it) |
 | The generated config file is owner-only on disk | nothing | Verified: NO — LIVE-18 |
 | A non-VLESS server in a legacy subscription is reported, not dropped | nothing (parser does not exist) | Verified: NO — `LIVE-14` carries the import; `docs/architecture/39-verification-matrix.md` will own the row |

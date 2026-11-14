@@ -74,8 +74,10 @@ pinned: `shape-a-vision-tcp-tls`, `shape-b-reality-xhttp`, `shape-c-grpc-tls`, `
 it writes snapshots only with `-golden.update`. Shape C's `headersRef` is materialized by the key list in `headersKeys`
 (ODEC-45): the compiler emits a keyed handle map, and apply fills exactly the declared keys from the store. The
 fail-closed variant has no bytes of
-its own because `docs/architecture/30-failure-policy.md` §7 puts the block in `chrome.proxy`, not in Xray.
-`Verified: NO — deferred to Phase 2` (one of the six, for that reason).
+its own because `docs/architecture/30-failure-policy.md` §7 puts the block in `chrome.proxy`, not in Xray —
+which is why the sixth fixture is five goldens and a stated exclusion rather than a sixth file, and the golden
+rule is met as written (`VER-28` retired 2026-11-14 with the five snapshots and their Xray `run -test -c`
+drive in `connector/internal/apply/drive_test.go`).
 
 All five materialized configs were also accepted by Xray 24.11.11 through `connector/internal/apply/drive_test.go`; §9 distinguishes this from runtime evidence.
 
@@ -142,7 +144,7 @@ subscription into profiles. Silently allocating ports until the range is exhaust
 
 These are implemented, tested interim forms. `connector/internal/apply/drive_test.go` recompiles the five golden
 inputs, compares the snapshots, then calls `apply.Write` and Xray 24.11.11 `run -test -c`: all five written configs
-were accepted and the invalid-port control rejected. `connector/internal/compile/drive_test.go` separately checks loopback HTTP, TLS, BitTorrent handshakes, WebSocket Upgrade and SOCKS5 UDP. The `tls` predicate needs SNI; `bittorrent` matches the TCP handshake with sniffing enabled; plaintext WebSocket Upgrade matches `http`, not `ws`. Rules containing `ws` or `fakedns` are reported whole, not broadened to HTTP or partially emitted: the fakedns sniffer exists only beside a FakeDNS engine and this pipeline emits none, so that predicate could only miss the config it is handed. `ODEC-37` retains QUIC's positive case and a live FakeDNS match with an engine; its inversion half is answered by the rule language itself, which has no negation and can complement ports (`"0-7999,9001-65535"`) but not domains or CIDRs.
+were accepted and the invalid-port control rejected. `connector/internal/compile/drive_test.go` separately checks loopback HTTP, TLS, BitTorrent handshakes, WebSocket Upgrade and SOCKS5 UDP. The `tls` predicate needs SNI; `bittorrent` matches the TCP handshake with sniffing enabled; plaintext WebSocket Upgrade matches `http`, not `ws`. Rules containing `ws` or `fakedns` are reported whole, not broadened to HTTP or partially emitted: the fakedns sniffer exists only beside a FakeDNS engine and this pipeline emits none, so that predicate could only miss the config it is handed. `ODEC-37` retains QUIC's positive case and a live FakeDNS match with an engine — `Verified: NO — deferred to Phase 2`, queued as `VER-91` with both fixtures named; its inversion half is answered by the rule language itself, which has no negation and can complement ports (`"0-7999,9001-65535"`) but not domains or CIDRs.
 
 ## 7. The unrepresentable report
 
@@ -191,7 +193,7 @@ is an apply that failed while a real Core was loading the previous config).
 | `domainStrategy` accepts only Xray's three values | `packages/schema/scripts/verify.mjs` "corePlane.domainStrategy is exactly the set Xray documents", "the domainStrategy default is a value Xray accepts", "the domainStrategy description cites the source the enum was taken from" and "routing example uses a documented domainStrategy" | **GREEN** |
 | `unrepresentable` shape is identical in policy and command | shared `{source, reason}` shape in both files, each `additionalProperties: false` and `maxItems: 256`; `connector/internal/compile/split.go` fills it and its bounds are tested, and `connector/cmd/nexora-connector/config_apply.go` carries what it fills into the command answer | **GREEN** for the shape; the *reporting behaviour* is Verified: NO — no session shows a browser reporting rather than dropping it |
 | Every `*Hash` field is one canonical lowercase sha256 pattern | the coverage check in `packages/schema/scripts/verify.mjs` "${name}.${part}.${field} uses the canonical sha256 pattern" | **GREEN** |
-| Compilation is byte-deterministic | the serializer and five goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | Verified: NO — golden configs (VER-28's tier; no live row tests the determinism of a *compiled* config) |
+| Compilation is byte-deterministic | the serializer and five goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | **GREEN** — the golden tier exists and runs (`VER-28` retired with it); a live row testing the determinism of a *compiled* config stays with the live matrix |
 | Non-loopback bind is impossible to emit | `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before stage 7 returns, and `compile_test.go` shows an `0.0.0.0` inbound cannot survive it | Verified: NO — deferred to Phase 2 |
 | Block port range and allocation range are disjoint | `connector/internal/compile/ports.go` refuses a range that overlaps the block range rather than drawing around it, and `model_test.go` checks the two shipped documents | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | `ports.go` refuses the whole set naming the count, so no partial document is ever emitted; whether `QuotaExceeded` is that count's code is `ODEC-03`'s question | Verified: NO — deferred to Phase 2 |

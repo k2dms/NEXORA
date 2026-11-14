@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.74; older scope and inventory paragraphs
+continuation is §4.75; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5381,6 +5381,31 @@ of ADR-0012's sentence — a real browser rendering the quick-switch list — is
 why the row retired and the live row did not.
 
 **Gates.** All seven green.
+
+### 4.75 The golden rule is met as written — `VER-28` retired, `ODEC-37` re-gated on `VER-91` (2026-11-14)
+
+**The closure.** The closer VER-28 named already exists and runs: five goldens under
+`connector/testdata/config/` (shape-a-vision-tcp-tls, shape-b-reality-xhttp, shape-c-grpc-tls,
+multi-server-ordered, two-plane-core-rules) are byte-compared by `golden_test.go`, recompiled, materialized
+with `apply.Write` and driven by Xray 24.11.11 `run -test -c` in `drive_test.go` — all five accepted, the
+invalid-port negative control rejected. Shape C's `headersRef` is materialized by the `headersKeys` list
+(`ODEC-45`). The sixth fixture is the fail-closed variant, and it has **no distinct Xray bytes by doc 30 §7's
+own decision** — the block lives in `chrome.proxy` — so the sixth file is a stated exclusion, which is the
+golden rule met as written, not a missing snapshot. The row retired on that reading; doc 27's two deferral
+labels, doc 23's two, and ADR-0020's golden half carry the dated superseding note.
+
+**The re-gate.** `ODEC-37`'s only gate was `VER-28`, so retiring it left the upstream residual ungated — the
+harness refuses an open question that blocks nothing. The residual is now its own row: `VER-91` (`no-fixture`,
+closing by external measurement) — QUIC's positive traffic case needs a decryptable Initial packet, and a live
+fakedns match needs an engine this pipeline does not emit; until either fixture exists, the predicates are
+reported whole, never broadened. `ODEC-37` gates `VER-91`; doc 27's residual sentence carries the row's label.
+
+**Corpus.** Matrix 62 → 61 rows on the retirement and 61 → 62 on the registration — 62 live, 29 tombstones;
+`no-code` 41 → 40, `no-fixture` 2 → 3, `connector` 34, `external-measurement` 4, `marker.counted` 178 → 173
+(four deferral labels became verified statements; the partition is 123 + 26 + 24). The assertion-promise floor
+in `verify.mjs` moves 10 → 9 with the queue it counts.
+
+**Gates.** All seven green; ADR-0020 condensed back inside rule 11's 140-line bound.
 
 Plus the decisions in §7 and the seven questions standing in §9's nine slots, which are not work an agent may finish;
 the note under that table says why the fourth and the ninth stopped being questions, and why their numbers stayed.

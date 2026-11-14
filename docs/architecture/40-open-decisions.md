@@ -272,7 +272,7 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-29` | whether legacy `derived` fields are ever evicted or frozen where ADR-0002 left them | `contract` | `VER-22` |
 | `ODEC-31` | the real envelope sizes without `unlimitedStorage` | `measurement` | `VER-74`, `COMP-14` |
 | `ODEC-32` | whether mirrored legacy profile keys are name-derived or minted | `contract` | `VER-33` |
-| `ODEC-37` | residual core-routing predicate semantics after measuring the four byte spellings; inversion and protocol-specific matches | `upstream` | `VER-28` |
+| `ODEC-37` | residual core-routing predicate semantics after measuring the four byte spellings; inversion and protocol-specific matches | `upstream` | `VER-91` |
 
 Each entry in the data also carries the options (§4's argument in three lines each), the reason it is open, and the
 sites that deferred to it; the 30 rows above are the same 30 objects, not a summary of them.

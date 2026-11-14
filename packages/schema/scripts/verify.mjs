@@ -3737,7 +3737,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const promisedAssertions = verif.matrix.filter((r) => r.closesBy.kind === 'assertion');
   const alreadyGreen = promisedAssertions.filter((r) => labels.has(r.closesBy.ref)).map((r) => r.id);
   check(
-    promisedAssertions.length >= 10 && alreadyGreen.length === 0,
+    promisedAssertions.length >= 9 && alreadyGreen.length === 0,
     'every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled',
     `already green and still queued: ${alreadyGreen.join(', ') || 'none'}`,
   );
@@ -3759,8 +3759,8 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 41 && count('state', 'no-check') === 5 && count('state', 'no-run') === 10 &&
-      count('state', 'no-fixture') === 2 && count('state', 'needs-human') === 4 && verif.matrix.length === 62,
+    count('state', 'no-code') === 40 && count('state', 'no-check') === 5 && count('state', 'no-run') === 10 &&
+      count('state', 'no-fixture') === 3 && count('state', 'needs-human') === 4 && verif.matrix.length === 62,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
@@ -3775,9 +3775,9 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
   );
   check(
-    kindCount('live-row') === 41 && kindCount('new-live-row') === 1 && kindCount('assertion') === 10 &&
+    kindCount('live-row') === 41 && kindCount('new-live-row') === 1 && kindCount('assertion') === 9 &&
       kindCount('gate') === 2 && kindCount('tool') === 2 && kindCount('ci-step') === 2 &&
-      kindCount('decision') === 1 && kindCount('external-measurement') === 3,
+      kindCount('decision') === 1 && kindCount('external-measurement') === 4,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',
     `live=${kindCount('live-row')} new-live=${kindCount('new-live-row')} assertion=${kindCount('assertion')} ` +
       `gate=${kindCount('gate')} tool=${kindCount('tool')} ci=${kindCount('ci-step')} ` +
