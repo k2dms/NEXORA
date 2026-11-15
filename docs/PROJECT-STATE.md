@@ -5566,3 +5566,9 @@ inserted (doc 32 :283/:324/:380 → :297/:338/:394, doc 35 :393 → :407, this f
 in place).
 
 **Gates.** All seven green; the Go suite green in every package.
+
+**The push.** Confirmed by the user the same sitting: `git push nexora nexora/architecture:master` fast-forwarded
+`refs/heads/master` from `ee8f45f` to `9cc5cab` — one commit, this record's own — and `git ls-remote --heads nexora`
+printed one ref before it and one after. The state commit that carries this sentence was written after the push it
+names, which is why it is not inside the commit it names, and why `git rev-list --count nexora/master..HEAD` reads
+1 at the time it was written.
