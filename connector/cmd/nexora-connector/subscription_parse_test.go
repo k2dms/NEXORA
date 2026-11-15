@@ -654,3 +654,59 @@ func TestSubscriptionQuotaBeforeAnyReturnedBatch(t *testing.T) {
 		t.Fatal("quota overflow was not atomically refused")
 	}
 }
+
+func TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole(t *testing.T) {
+	// doc 29 §5: the two auto detectors are defined on the raw body. The base64
+	// detector answers true when the trimmed body is entirely valid strict base64;
+	// the uri-list detector answers true when a non-comment line contains "://".
+	// They are exclusive by alphabet, not by luck: ':' is outside every base64
+	// alphabet and strict decoding refuses it, so a body the base64 detector
+	// accepts can never carry a "://" line -- the two-true case is unrepresentable.
+	uri := subscriptionParseTestURI("mixed.example.test:443", subscriptionParseTestUser, "Mixed", nil)
+	uriList := uri + "\n" + uri
+	for _, name := range []string{"std padded", "std raw", "url padded", "url raw"} {
+		var encoding *base64.Encoding
+		switch name {
+		case "std padded":
+			encoding = base64.StdEncoding
+		case "std raw":
+			encoding = base64.RawStdEncoding
+		case "url padded":
+			encoding = base64.URLEncoding
+		case "url raw":
+			encoding = base64.RawURLEncoding
+		}
+		body := encoding.EncodeToString([]byte(uriList))
+		if _, ok := decodeSubscriptionBase64(body); !ok {
+			t.Fatalf("base64 detector refuses a wrapped feed on %s", name)
+		}
+		if strings.Contains(body, "://") {
+			t.Fatalf("a base64-detector body carried a uri-detector line on %s", name)
+		}
+	}
+	for _, raw := range []string{uri, uriList, "vless://x:y#?", "plain text with http:// inside"} {
+		if _, ok := decodeSubscriptionBase64(raw); ok {
+			t.Fatal("base64 detector accepted a body the uri detector would fire on")
+		}
+	}
+	// The ambiguous input the legacy loader could mis-resolve is the mixed body:
+	// the uri-list detector wins deterministically, the base64-shaped line is one
+	// dropped entry, and the refresh boundary turns dropped > 0 into a whole
+	// SchemaMismatch that names the resolved format and the rejected count
+	// (TestSubscriptionPartialInitialAndLastGoodPreserved). Never a partial import.
+	mixed := uri + "\n" + base64.StdEncoding.EncodeToString([]byte(uri)) + "\n"
+	servers, values, format, dropped, err := parseSubscription([]byte(mixed), "auto", subscriptionParseTestSource, 10)
+	if err != nil || format != "vless-uri-list" || dropped != 1 || len(servers) != 1 || len(values) != 1 {
+		t.Fatalf("mixed body did not resolve deterministically: format=%s dropped=%d servers=%d err=%v", format, dropped, len(servers), err)
+	}
+	subscriptionParseTestPublic(t, servers, values)
+	// A declared format runs no detector: the parser is the one declared, and a
+	// body that fails it fails under its own name.
+	_, _, resolved, _, err := parseSubscription([]byte(mixed), "vless-uri-list", subscriptionParseTestSource, 10)
+	if err != nil || resolved != "vless-uri-list" {
+		t.Fatalf("declared uri-list was second-guessed: resolved=%s err=%v", resolved, err)
+	}
+	if _, _, _, _, err := parseSubscription([]byte(mixed), "vless-base64", subscriptionParseTestSource, 10); err == nil {
+		t.Fatal("declared base64 accepted a body that is not entirely strict base64")
+	}
+}

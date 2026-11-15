@@ -2155,7 +2155,8 @@ because the dropped anchor leaves §5's label unanswered, then `rows=157 + vocab
 One failure is the collision; the other two are what a collision costs the arithmetic, and they are the reason §6 #8's
 "exact partition" sentence is worth its machinery. Earlier in the same slice the run had printed the six the
 registration is *supposed* to fail before it is complete — derived 208 against a declared 207, the three distribution
-assertions, `absent from doc 39: VER-81`, `unowned: …29-subscriptions-and-servers.md:390` and `unregistered=VER-81` — so
+assertions, `absent from doc 39: VER-81`, `unowned: …29-subscriptions-and-servers.md:390` — re-read as :404 on
+2026-11-15 when §5's detector definitions pushed the table down fourteen lines — and `unregistered=VER-81` — so
 doc 39, doc 40 and the four harness constants were written against its messages rather than against a guess.
 
 **Gates.** `npm --prefix packages/schema run verify` → **1220 checks**, green: the count is unchanged because this slice
@@ -4692,9 +4693,10 @@ place, and neither is a status edit:
    makes the last sentence of this item wrong rather than stale: §8's first step is seven ids, four of them gated, and
    the harness refuses a gated row's deletion while its question stays open — around the gate leaves a question
    blocking nothing, which doc 40 forbids, and through it leaves the question naming a row no longer in the matrix. What
-   the step actually holds today is `VER-66`, `VER-19` and `VER-58`, and each is smaller than it reads: the first wants a
-   body detector no entity schema has a field for, the second a live cross-port replay/adoption fixture after §4.58, and the
-   third a scan over a `nexora/**` that is empty.
+   the step actually holds today is `VER-19` and `VER-58` — the first wants a
+   live cross-port replay/adoption fixture after §4.58, the second a scan over a `nexora/**` that is empty —
+   and `VER-66` was the third until 2026-11-15, when the contract answer made its two-true fixture
+   unrepresentable and the row left (§4.81).
 2. **The browser half.** `LIVE-01…24`, unchanged and `SKIPPED`, need a person with a real Chrome, and `LIVE-14`
    needs the export that would replace the fixtures' exporter-shaped values.
 
@@ -5528,3 +5530,39 @@ still open, and it is work-shaped, not decision-shaped. The ledger rows keep the
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
+
+### 4.81 The two-true case is unrepresentable — `VER-66` retired by the contract it waited on (2026-11-15)
+
+**The decision.** `VER-66`'s blocker was never a fixture file but a contract question: what are the "two detectors"
+doc 29 §5's rule names. The answer is the reading its own data forces: both detectors are defined on the **raw body**
+— the base64 detector answers true when the trimmed body is entirely valid strict base64
+(`connector/cmd/nexora-connector/subscription_parse.go:127-147`: any alphabet variant, padding optional, no internal
+whitespace), the uri-list detector answers true when some non-blank non-comment line contains `://`
+(`connector/cmd/nexora-connector/subscription_parse.go:36-49`) — and they are **exclusive by alphabet**: `:` is
+outside every base64 alphabet and strict decoding refuses it, so a body the base64 detector accepts can never carry a
+`://` line. The two-true case the row wanted a fixture for is therefore unrepresentable; the invalid example its
+`closesBy` named cannot exist, and the closure is the decision that says so, not the fixture.
+
+**The mixed body.** The ambiguous input the legacy loader could actually mis-resolve
+(`omega-pac/src/profiles.coffee:504-511`, "the last detector that did not say `false`") is the **mixed body** — URI
+lines beside base64-shaped fragments. Its rule is the deterministic one the refresh already enforced: the uri-list
+detector wins, and a body with any line that is not a valid entry refuses whole — `dropped > 0` is a `SchemaMismatch`
+at the refresh boundary (`connector/cmd/nexora-connector/subscription_refresh.go:384-391`) naming the resolved
+`format` and the rejected count, never a partial import. A declared format runs no detector.
+
+**The assertion.** `TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole`
+(`connector/cmd/nexora-connector/subscription_parse_test.go`): the wrapped URI list is accepted by the base64
+detector and carries no `://` on all four alphabet variants, every uri-detector body is refused by the strict
+decoder, the mixed body resolves `vless-uri-list` with exactly one dropped fragment, and a declared format is never
+second-guessed. The whole-refusal half — `SchemaMismatch` with `Format` and `RejectedCount`, last-good preserved —
+was already `TestSubscriptionPartialInitialAndLastGoodPreserved`'s.
+
+**Corpus.** `VER-66` retired — matrix 58 → 57 rows, 35 tombstones, `no-fixture` 3 → 2, `contracts` 4 → 3,
+`assertion` 6 → 5, `marker.counted` 166 → 165 (the partition is 114 + 26 + 25; doc 29 §11's invariant row now reads
+**Verified**). Doc 29 §5 carries the definitions and the rule, and its §11 row names the test. Doc 39's four
+distributions and its §10/§11 tallies move with the row, and the promised-assertion floor in `verify.mjs` moves
+6 → 5 with the queue it counts. Four citations into doc 29 re-anchored for the fourteen lines the §5 paragraph
+inserted (doc 32 :283/:324/:380 → :297/:338/:394, doc 35 :393 → :407, this file's :390 → :404, with the move named
+in place).
+
+**Gates.** All seven green; the Go suite green in every package.

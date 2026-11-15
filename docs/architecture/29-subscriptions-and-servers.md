@@ -110,6 +110,20 @@ whose enum is the source schema's minus `auto`), and the extension persists it i
 (`docs/architecture/34-data-split.md` §6) — the one field the result carries back, which its args' "not a mutated
 source" description states as the exception it is.
 
+The two detectors are defined on the raw body, and they are exclusive by construction, not by luck: the **base64
+detector** answers true when the trimmed body is entirely valid strict base64 — any alphabet variant, padding
+optional, no internal whitespace (`connector/cmd/nexora-connector/subscription_parse.go:127-147`) — and the
+**uri-list detector** answers true when some non-blank, non-comment line contains `://`
+(`connector/cmd/nexora-connector/subscription_parse.go:36-49`). Since `:` is outside every base64 alphabet and
+strict decoding refuses it, a body the base64 detector accepts can never carry a `://` line, so the two-true case
+the rule above refuses is unrepresentable here. The ambiguous input the legacy loader could mis-resolve is the
+**mixed body** — URI lines beside base64-shaped fragments — and its rule is the deterministic one: the uri-list
+detector wins, and a body with any line that is not a valid entry refuses whole, because `dropped > 0` is a
+`SchemaMismatch` at the refresh boundary (`connector/cmd/nexora-connector/subscription_refresh.go:384-391`) naming
+the resolved `format` and the rejected count, never a partial import. Both halves are pinned by
+`TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole`; the whole-refusal half was already
+`TestSubscriptionPartialInitialAndLastGoodPreserved`'s.
+
 Every table below uses the same four statuses.
 
 | Status | Meaning | UI obligation |
@@ -357,7 +371,7 @@ no cache-busting parameter at all, and a feed that requires one is served by the
 | Every Server a refresh returns validates against the stored schema, so extraction ran | `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/servers` (`$ref` to `server.schema.json`); the fixture pair `packages/schema/fixtures/protocol/probes-and-ops.jsonl` carries three real servers through it | **Verified** (schema half) — the keystore write is `LIVE-18` |
 | The engine never fetches, and no feed body enters the browser process | prose rule; testable as a build-graph assertion (no `fetch(`/`XMLHttpRequest` under `nexora/extension/src/subscriptions/**`) | Verified: NO — deferred to Phase 2 |
 | Guards are applied to every redirect hop | `docs/verification/live-matrix.md` `LIVE-25` — the two-hop redirect-to-metadata fixture and its in-budget control | Verified: NO — LIVE-25 |
-| `format: auto` never resolves ambiguously | `packages/schema/subscription-source.schema.json#/properties/format` declares the enum; the two-true-detectors case has no fixture | Verified: NO — Phase 2 |
+| `format: auto` never resolves ambiguously | the enum is declared (`packages/schema/subscription-source.schema.json#/properties/format`); §5's two detectors are exclusive by alphabet and the mixed body refuses whole — `TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole` pins both halves | **Verified** |
 | Id reuse across refreshes: `id`, `tag`, `userIdRef` stable, feed name does not overwrite a user rename | §6 rules, no checker yet | Verified: NO — Phase 2 |
 | The cap ladder warns before applying | §8; the compile half is `docs/architecture/27-config-compilation-pipeline.md` §7 rule 3 | Verified: NO — Phase 2 |
 

@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 166
+    "counted": 165
   },
   "states": {
     "values": [
@@ -413,6 +413,12 @@
         "closed": "2026-11-14",
         "was": "framing enforcement, clause by clause: the sender-side rejection before write and the late-answer discard have tests, the three-missed-heartbeat verdict does not and cannot yet",
         "artefact": "the third clause is written on both halves. The carrier §9.8 asked for exists: heartbeat is the envelope's fifth frame type, carrying nothing but v, id, type and sentAt (the schema's fifth allOf branch and typeRules refuse every payload field). The sender half is peer.Config.BeatSeconds — the host's endpoint writes a beat every interval while Serve runs; the receiver half counts every inbound frame as a beat and tears down at three missed intervals, measuring silence against cfg.Now. The peer tests drive the pair: two beats on the interval keep an armed watchdog alive past the point a silent peer is torn down, and the silence verdict is ErrPeerLost. The first two clauses (oversized-write refusal, late-answer discard) were green since 2026-11-05; the row's own blocker — which endpoint arms the deadline and what arrives on the wire — was §9.8, answered the same commit"
+      },
+      {
+        "id": "VER-66",
+        "closed": "2026-11-15",
+        "was": "`format: auto` is specified never to resolve ambiguously, and there is no fixture for the two-detectors-both-true case",
+        "artefact": "the contract decision the row waited on, taken as the reading its own data forces: the two detectors are defined on the raw body and are exclusive by construction — `:` is outside every base64 alphabet and strict decoding refuses it, so a body the base64 detector accepts cannot carry a `://` line, and the two-true case the row wanted a fixture for is unrepresentable. The ambiguous input the legacy loader could mis-resolve is the mixed body (URI lines beside base64-shaped fragments), and its rule is the deterministic one: the uri-list detector wins, and any non-entry line refuses the whole body — dropped > 0 is a SchemaMismatch at the refresh boundary naming the resolved format and the rejected count, never a partial import. doc 29 §5 states the definitions and the rule; TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole (connector/cmd/nexora-connector/subscription_parse_test.go) pins the exclusivity over all four alphabet variants, the base64 refusal of every uri-detector body, the mixed body's one-dropped-entry resolution and the declared-format no-detector path; the whole-refusal half was already TestSubscriptionPartialInitialAndLastGoodPreserved's"
       }
     ]
   },
@@ -1398,23 +1404,6 @@
         }
       ],
       "why": "Testable as a build-graph assertion today; it is the row that keeps the Connector's fetch responsibility from drifting back into the browser by 'temporary' convenience. ADR-0021 made it load-bearing rather than tidy: that decision forbids a feed body on the pipe, and this is the only row that could catch the breach."
-    },
-    {
-      "id": "VER-66",
-      "subject": "`format: auto` is specified never to resolve ambiguously, and there is no fixture for the two-detectors-both-true case",
-      "state": "no-fixture",
-      "owner": "contracts",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "an invalid example: a source whose base64 and text detectors both fire"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/29-subscriptions-and-servers.md",
-          "anchor": "`format: auto` never resolves ambiguously"
-        }
-      ],
-      "why": "Closeable today with one file under packages/schema/examples/invalid/; it waits only because nobody has written it."
     },
     {
       "id": "VER-67",
