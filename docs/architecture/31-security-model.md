@@ -392,7 +392,8 @@ accurately, because its value differs per browser:
   exception; adding `web_accessible_resources` would, and §12 forbids it.
 
 **Permission reduction is a product behaviour change**, which puts it under PROJECT-STATE §2.2: it ships with a
-test, not with this document. `Verified: NO — deferred to Phase 2` for every row in the target column above.
+test, not with this document. The "today" column is guarded by `tools/check-manifest-delta.mjs` (`Verified: YES`);
+`Verified: NO — deferred to Phase 2` for the target column above, whose `<all_urls>` target waits on `ODEC-11`.
 
 ## 14. Residual risk, accepted and named
 
@@ -437,7 +438,7 @@ test, not with this document. `Verified: NO — deferred to Phase 2` for every r
 | Secrets never exist as values in a syncing or logging place | the envelope-keys namespace loop and the sync-strip-set assertion | **GREEN** (contract) / `Verified: NO — LIVE-10` (artefact) |
 | The block primitive has nothing that can leak | "the block primitive has no bypass list to leak through", "the block target is loopback-only (ADR-0006)" | **GREEN** (contract) |
 | No shell, path or bind address is caller-chosen | per-command schema validation + the `host` const + "command doc conforms to meta-schema" | **GREEN** (contract) / `Verified: NO` (Connector-side, LIVE-03) |
-| The shipped manifest grants exactly what is in §13's "today" column | nothing — `check-doc-evidence.mjs` cites the lines but no tool reads the manifest | `Verified: NO — deferred to Phase 2`: a Phase-2 check should diff the packaged manifest against §13 |
+| The shipped manifest grants exactly what is in §13's "today" column | `tools/check-manifest-delta.mjs` | `Verified: YES` — it diffs both overlay manifests against this column, browser scope and `host_permissions` included |
 | The packaged bundle survives the declared CSP | nothing | `Verified: NO — deferred to Phase 2` (`.github/workflows/verify.yml` step) |
 | An unallowlisted sender cannot use a second registration to get around a budget | nothing | `Verified: NO — deferred to Phase 2` (LIVE-16) |
 

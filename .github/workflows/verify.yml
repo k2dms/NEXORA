@@ -127,6 +127,14 @@ jobs:
           node tools/check-layout-guards.mjs --selftest
           node tools/check-layout-guards.mjs
 
+      # doc 31 §13's "today" column is the set of grants the two overlay manifests actually ship. Until 2026-11-19
+      # only the citations were checked, so a permission added or removed was a behaviour change with no witness.
+      # The sets are derived from the document on every run; --selftest proves the guard bites before it is trusted.
+      - name: VER-56's manifest half -- the shipped manifests grant exactly what doc 31 §13 records today
+        run: |
+          node tools/check-manifest-delta.mjs --selftest
+          node tools/check-manifest-delta.mjs
+
       - name: VER-02 -- nothing under packages/ or nexora/ imports from omega-* (ADR-0018 rule 4)
         run: |
           roots=()

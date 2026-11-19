@@ -5704,3 +5704,35 @@ carries this paragraph stays unpushed until then.
 **Gates.** All seven green.
 
 **Not pushed yet.**
+
+### 4.85 The manifest is read, the target column stays open — `VER-56` narrowed, not retired (2026-11-19)
+
+**What the row actually claimed.** `VER-56` carried two deferral labels in doc 31: the §13 "today" column (the grants
+the overlays ship) and the residual-risk row over the permission *target* column. `check-doc-evidence.mjs` proved the
+citations existed, but nothing read a manifest; that half is now closed by a tool. The other half is not — the target
+column is a product decision, and `ODEC-11` still gates the `<all_urls>` removal. Retiring the whole row would leave
+`ODEC-11 -> VER-56` naming a row no longer in the matrix, which `verify.mjs` refuses. So the row narrows: same id,
+`no-check` state, `tools` owner and `tools/check-manifest-delta.mjs` closer; one of its two anchors goes.
+
+**What landed.**
+- `tools/check-manifest-delta.mjs` derives each browser's expected grant set from doc 31 §13's "today" column on
+  every run — the trailing "(Chromium)"/"(Firefox only)" scopes the last backticked grant in a row — then compares both
+  overlay manifests' `permissions` and `host_permissions`. Its `--selftest` injects six defects, one per rule: a
+  missing grant, an early `nativeMessaging`, a browser-scope crossing, a widened host permission, a rewritten "absent
+  today" marker and a lost table header. Expected sets are never copied into the tool.
+- `.github/workflows/verify.yml` runs the selftest and the tool; `docs/README.md` and `docs/verification/README.md`
+  name it, the latter as the manifest half of `VER-56`.
+- doc 31 §13's manifest row now records `Verified: YES` with the tool as its evidence; the paragraph below it keeps
+  its deferred-to-Phase-2 marker for the target column, re-anchored to name `ODEC-11`.
+- `packages/schema/verification.json`: VER-56's `subject` and `why` describe only the target half, one `at` anchor
+  remains, and `marker.counted` moves 163 → 162. No state, owner, closing-kind or matrix count changed; nothing moved
+  to `#/retired`. doc 39 follows in the same commit: `163` → `162` in §2 and invariant 5, `rows (112)` → `(111)` in
+  §6's partition, and the §10 row's claim and `Docs · lines` cell narrowed to 1 · 1.
+
+**Gates.** All seven green; `verify.mjs` 1240 checks; `check-doc-evidence` 2394 path:line / 646 pointer / 1650
+doc-name references, 76 harness labels, 52 `Cited by` rows and 590 section cites; the manifest tool's six injected
+defects all refused and the clean fixture passed; `check-adr-shape`, `check-no-secrets`, `check-layout-guards`,
+`check-legacy-backup` green; `gofmt -l .` empty, `go vet ./...` and `go test ./...` clean over 20 packages. The
+`packages/protocol` drift check is still red for the pre-existing cause recorded in §4.83 and is outside these gates.
+
+**Not pushed yet.** This record is local: the push waits for the user's word as §7 requires.

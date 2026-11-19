@@ -26,6 +26,7 @@ Executable artefacts, outside this directory:
 | `tools/verify-vendor.mjs` | Fails if a `lib/…` reference in the legacy UI sources has no file under `omega-web/lib/` |
 | `tools/check-no-secrets.mjs` | Scans the tree for secret-shaped strings; `--selftest` proves the scanner itself works |
 | `tools/check-doc-evidence.mjs` | Fails if a citation in `docs/` no longer means what it says: a `path:line` that is out of range or lands on a blank line, a `path#/pointer` that does not resolve, a named document that does not exist, a line cite into a file that is rewritten in place, or a quoted harness label that is not a check the harness has |
+| `tools/check-manifest-delta.mjs` | Fails if either overlay manifest grants a permission or a `host_permissions` value that is not in §13's "today" column of `docs/architecture/31-security-model.md` — the sets are read from the document, and `--selftest` proves the guard bites |
 
 ## Conventions these documents follow
 

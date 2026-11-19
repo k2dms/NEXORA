@@ -60,6 +60,7 @@ corpus cites labels, not numbers.
 `docs/PROJECT-STATE.md` — must be a section reference. | the honesty of every claim in this directory that cites evidence |
 | 6 | `node tools/verify-vendor.mjs` | The legacy options page's referenced vendor assets resolve on disk, so a green build is not shipping a page that renders blank. | the baseline, not a NEXORA claim |
 | 7 | `npm --prefix omega-pac test`, `npm --prefix omega-target test` | The legacy test floor, pinned as a regression baseline: `omega-pac` 142 passing / 1 failing, `omega-target` 8 passing / 5 failing. The 6 failures predate this branch and are recorded in `docs/audit/99-baseline-report.md`; the failing SOCKS5 `pacResult` case is a Phase-2 blocking requirement because `ConnectorProfile.compile` depends on that path. | the promise that migration does not silently break the engine that reads these fixtures |
+| 8 | `node tools/check-manifest-delta.mjs` | Both overlay manifests grant exactly what §13's "today" column of `docs/architecture/31-security-model.md` declares — permission set, browser scope and `host_permissions` — with the expected sets derived from the document on every run; `--selftest` injects one defect per rule. | the manifest half of `VER-56` |
 
 Command 2 needs `omega-pac/index.js`, the browserified engine the `omega-pac` build produces; it is a build output, so
 it is not committed, and the command says so and exits non-zero with the build step instead of passing quietly. That

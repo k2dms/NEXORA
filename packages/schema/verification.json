@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 163
+    "counted": 162
   },
   "states": {
     "values": [
@@ -1257,7 +1257,7 @@
     },
     {
       "id": "VER-56",
-      "subject": "no tool reads the shipped manifest: the permission target column and 'grants exactly what §13 says today' are unmeasured",
+      "subject": "the permission target column is unmeasured while `ODEC-11` is open — the manifest half closed 2026-11-19, the target half waits on the decision",
       "state": "no-check",
       "owner": "tools",
       "closesBy": {
@@ -1267,14 +1267,10 @@
       "at": [
         {
           "doc": "docs/architecture/31-security-model.md",
-          "anchor": "The shipped manifest grants exactly what is in §13's \"today\" column"
-        },
-        {
-          "doc": "docs/architecture/31-security-model.md",
-          "anchor": "test, not with this document. `Verified: NO — deferred to Phase 2` for"
+          "anchor": "`Verified: NO — deferred to Phase 2` for the target column above, whose `<all_urls>` target waits on `ODEC-11`"
         }
       ],
-      "why": "`check-doc-evidence.mjs` proves the cited lines exist; a permission removed from a manifest is a behaviour change with no witness today."
+      "why": "`tools/check-manifest-delta.mjs` now proves the \"today\" column against both shipped manifests; the target column is a product decision, and `ODEC-11` still gates the `<all_urls>` removal, so the row narrows rather than retires."
     },
     {
       "id": "VER-57",
