@@ -111,4 +111,4 @@ the wired import A → rotation B → replay A test preserves B with exactly two
 (`connector/cmd/nexora-connector/main_test.go:601`). Deferred: replay across port recreation and a second
 Core start after adoption returning the same PID, as required by ADR-0005 and ODEC-01.
 
-Verified: NO — deferred to Phase 2 (cross-process replay and adoption remain unmeasured).
+Verified: YES — cross-process replay and adoption measured by TestAdoptionAcrossPortRecreation (connector/cmd/nexora-host/adoption_test.go).

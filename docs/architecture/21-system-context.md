@@ -105,7 +105,7 @@ indistinguishable from an outage from the user's side. Splitting gives:
   no config compiler. Small enough to be reviewed as the only attack surface the browser can reach.
 - **connector** — everything stateful. Survives port teardown; the next `connectNative` re-attaches to the
   running instance instead of starting a second one (`CoreAlreadyRunning` is the error that says "another
-  browser profile already owns the instance" — `docs/architecture/40-open-decisions.md` holds what is left of it).
+  browser profile already owns the instance" — the single-instance format is decided; only the browser-side measurement remains, tracked as LIVE-13).
 - **the pipe between them** carries the same envelope as the browser side, so no translation layer exists, but
   it is versioned *separately*, and since 2026-11-06 that separation is data:
   `packages/schema/protocol/framing.json#/versionFloors` names the browser floor and the pipe's `minPipeVersion`,
@@ -190,7 +190,7 @@ record a crash left behind is overwritten by the next owner rather than trusted.
 pid: the kernel releases it when the owner's last handle closes, where a number in a file is a number the system
 reuses. If an owner is alive and its endpoint does not answer, the answer is
 `CoreAlreadyRunning`, never a second Core. `Verified: NO — deferred to Phase 2` (the format is decided; the
-measurement that a real process adopts by it is what remains, recorded in `docs/architecture/40-open-decisions.md`).
+measurement that a real process adopts by it is what remains (the format is decided; the browser-side half is LIVE-13).
 
 ## 12. Invariants of this document and their checks
 
@@ -199,7 +199,7 @@ measurement that a real process adopts by it is what remains, recorded in `docs/
 | Exactly one Native Messaging entry point per extension installation | `connector/cmd/nexora-installer` writes one manifest and points all three family keys at it — `TestExactlyOneEntryPointPerInstallation` reads the directory and the argv, `TestTheRegistrationIsRealOnThisHost` reads the keys back out of HKCU; no browser has resolved that registration yet | Verified: NO — LIVE-16 |
 | `Xray ⊆ connector ⊆ host` containment holds after a SIGKILL of the parent | `connector/internal/supervisor`'s parent-death test, which is the innermost level only: the host now exists and is the process that would hold the outer job, but it requests none — `connector/cmd/nexora-host` spawns with `os/exec` and no job object, so the chain above Core is still unheld | Verified: NO — LIVE-13 |
 | The Connector runs in the interactive user's session and never as a service/agent | `connector/cmd/nexora-installer` writes only the three Native Messaging keys, and `TestTheRegistrationMatrixIsDoc25sWindowsColumn` refuses any argv naming a Run key or a Services key; the session half is still unmeasured | Verified: NO — deferred to Phase 2 (§11); the installer must not register an SCM service or a LaunchAgent |
-| Reconnect adopts the running Connector instead of starting a second one | `connector/internal/localpipe`'s per-root mutex is the owner's liveness and the record beside the applied state names it; `connector/cmd/nexora-host` answers `CoreAlreadyRunning` when that owner does not answer its endpoint (`packages/schema/protocol/framing.json#/singleInstance`); no browser has torn a port down under either path | Verified: NO — deferred to Phase 2 (LIVE-13; `docs/architecture/40-open-decisions.md` holds the rest) |
+| Reconnect adopts the running Connector instead of starting a second one | `connector/internal/localpipe`'s per-root mutex is the owner's liveness and the record beside the applied state names it; `connector/cmd/nexora-host` answers `CoreAlreadyRunning` when that owner does not answer its endpoint (`packages/schema/protocol/framing.json#/singleInstance`); no browser has torn a port down under either path | Verified: NO - deferred to Phase 2 (LIVE-13; the single-instance format is decided) |
 | No inbound binds non-loopback | asserted at `core.start` per ADR-0006; the shape is `packages/schema/protocol/commands/core.start.json#/result/properties/inboundPorts` and the compile-time rule is `packages/schema/connector-profile.schema.json#/properties/serverIds` | Verified: NO — deferred to Phase 2 (a Go test, not schema-checkable) |
 | No protocol code in `nexora/**` | the `VER-03` step of `.github/workflows/verify.yml` — the grep for transport protocol literals in executable JS, green on three runner images on 2026-11-05 (`docs/audit/99-baseline-report.md` §12) and green over the real extension sources since they landed (`docs/PROJECT-STATE.md` §4.71) | **GREEN** |
 | The pipe version and the browser protocol version are independent numbers | `packages/schema/protocol/framing.json#/versionFloors` declares two floors over four numbers -- `protocolVersion` and `minCompatibleProtocolVersion` for the browser side, negotiated in `connector.hello`, and `frameFormatVersion` and `minPipeVersion` for the pipe, carried by the `v` field of every frame -- and the assertion "the pipe floor and the protocol floor are separate numbers in the framing contract" in `packages/schema/scripts/verify.mjs` reads that shape, not the values | **GREEN** (run `npm --prefix packages/schema run verify`) |

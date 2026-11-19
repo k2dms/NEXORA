@@ -109,7 +109,7 @@ privilege class, execute, emit events, and be the only process that talks to Cor
    directions between the allowlist and the command docs (the "hello gating agrees" assertion in
    `packages/schema/scripts/verify.mjs`).
 3. The client's frame `id` is the idempotency key inside a dedupe window: same id ⇒ same side effect, two
-   identical answers (ADR-0008). `Verified: NO — deferred to Phase 2` for cross-process replay; the bounded
+   identical answers (ADR-0008). `Verified: YES` for cross-process replay; the bounded
    process-local cache and wired import-rotation regression now prove that half without storing request payloads.
 4. `config.apply` restarts Core only when the compiled hash changes
    (`packages/schema/protocol/commands/config.apply.json#/result/properties/unchangedBecauseHashMatched`).

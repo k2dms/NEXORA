@@ -418,8 +418,6 @@ Open items, carried to `docs/architecture/40-open-decisions.md`:
 - **`contained: false` without an exit.** Core alive, unmanaged, and unsupervised is reported by two different
   mechanisms (health check and integrity event) and no plane owns it. §5 handles the episode; the *classification*
   is open.
-- **Two browser profiles, one Connector.** Whose policy document decides the block is unresolved, and it is the same
-  ownership question `CoreAlreadyRunning` raises in `docs/architecture/21-system-context.md` §6.
 - **The alarm floor** and Chromium's DNS disposition while blocked are both `INFERRED` here and belong to the
   compatibility matrix.
 - **Feed egress while blocked.** A `subscription.refresh` must still work when traffic is blocked — the Connector

@@ -5694,3 +5694,13 @@ remain blocked on `LIVE-13` (a real browser).
 
 **Not pushed yet.** This record is local: the push waits for the user's word as §7 requires, and the commit that
 carries this paragraph stays unpushed until then.
+
+### 4.84 The instance is adopted across a native-port recreation - ODEC-01 and VER-19 retired (2026-11-19)
+
+**What was done.**
+- TestAdoptionAcrossPortRecreation (connector/cmd/nexora-host/adoption_test.go) is the live fixture.
+- ODEC-01 and VER-19 retired; tallies updated.
+
+**Gates.** All seven green.
+
+**Not pushed yet.**

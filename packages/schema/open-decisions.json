@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 52
+    "counted": 48
   },
   "notADeferral": [
     {
@@ -69,42 +69,6 @@
     "why": "'Open' is not a mood. Each entry names the kind of artefact that would close it, so an entry can be audited against a Phase-2 diff: product and contract answers appear as fields and screens, `adr` as a new file in `docs/adr/`, `measurement` as a `COMP-NN` row with a number and a date, `upstream` as a documented browser behaviour."
   },
   "register": [
-    {
-      "id": "ODEC-01",
-      "question": "Who owns the single Connector when two browser profiles -- or a browser and a manual run -- reach the same per-user instance: does the second caller adopt, get refused by `CoreAlreadyRunning`, or replace?",
-      "decidedBy": "contract",
-      "blocks": {
-        "verification": [
-          "VER-12",
-          "VER-14"
-        ],
-        "compatibility": []
-      },
-      "why": "The adoption rule is stated (`a lock file with {pid, pipeVersion, startedAt, configHash}`, then adopt rather than replace) but the file's format, its staleness rule and what a *dead* lock means are not decided, and the same ownership question returns as 'two browser profiles, one Connector': whose policy document decides the block. Until the answer exists, no test can distinguish a correct adopt from a correct refusal. The framing contract's `portsPerSender` refusal row -- 'enforced by the host, close the oldest' -- waits on the same half of it: a host that holds one port per process has nothing to close, which is what docs/PROJECT-STATE.md §4.52 builds.",
-      "options": [
-        "adopt-and-share: both profiles drive one Connector and one policy, and the first writer of the policy wins until a reload",
-        "adopt-and-name: both share the Connector, but the answer to `core.status` names the profile that applied the current config, so the second user sees what they did not choose",
-        "first-writer-holds: a second profile gets `CoreAlreadyRunning` with the owner's identity and must explicitly take over"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/21-system-context.md",
-          "anchor": "browser profile already owns the instance"
-        },
-        {
-          "doc": "docs/architecture/21-system-context.md",
-          "anchor": "recorded in `docs/architecture/40-open-decisions.md`"
-        },
-        {
-          "doc": "docs/architecture/21-system-context.md",
-          "anchor": "Reconnect adopts the running Connector instead of starting a second one"
-        },
-        {
-          "doc": "docs/architecture/30-failure-policy.md",
-          "anchor": "- **Two browser profiles, one Connector.**"
-        }
-      ]
-    },
     {
       "id": "ODEC-03",
       "question": "Do the two codes the compiler's refusals answer with mean what the refusals are -- `UnsupportedCombination` is registered for transport combinations while the prose uses it for a bind address and a port overlap, and `QuotaExceeded` is a storage-layer code given a port ceiling?",
@@ -883,6 +847,19 @@
     "rule": "An entry leaves this file when it is answered -- the description's own rule, and the same one doc 39 §9 rule 2 imposes on a queue row -- and the id it held retires here rather than being reused. Ids are issued once: doc 39 §9 rule 8 adopted ADR-0001 rule 2 for `VER-NN` because those ids are cited across the corpus, and an `ODEC-NN` is cited the same way, in `verification.json` rows whose `closesBy.ref` names the question it waits on, in the tables of docs/architecture/39 and 40, and in docs/PROJECT-STATE.md's ledger. A gapless, re-derived numbering would therefore make answering a question silently rewrite every answer that cited a later one, which is why this list exists and why the register's ids are no longer required to be dense.",
     "rows": [
       {
+        "id": "ODEC-01",
+        "decided": "2026-11-19",
+        "was": "Who owns the single Connector when two browser profiles -- or a browser and a manual run -- reach the same per-user instance: does the second caller adopt, get refused by `CoreAlreadyRunning`, or replace?",
+        "artefact": "packages/schema/protocol/framing.json#/singleInstance (owner proof, recordFile, adoption) plus TestAdoptionAcrossPortRecreation (connector/cmd/nexora-host/adoption_test.go); closes VER-12 and VER-14 by the same commit",
+        "freed": {
+          "verification": [
+            "VER-12",
+            "VER-14"
+          ],
+          "compatibility": []
+        }
+      },
+      {
         "id": "ODEC-02",
         "decided": "2026-11-06",
         "was": "what the two version floors are, and what each refuses to speak",
@@ -895,14 +872,22 @@
         }
       },
       {
-        "id": "ODEC-40",
-        "decided": "2026-11-07",
-        "was": "where the format an `auto` parse resolved to is recorded -- a field in the refresh result, a value stored from something else, or nowhere",
-        "artefact": "the first option its own entry listed, as a contract addition: `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format` -- required, enum the source schema's minus `auto` -- the exception its `#/args` description now states, the format amendment in `packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row, the resolved-format sentence that replaced the labelled line in `docs/architecture/29-subscriptions-and-servers.md` §5, the `format` row of that document §7's status table, and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` that carries the field; it closes `VER-81`, the only row this entry gated, in the same commit",
+        "id": "ODEC-19",
+        "decided": "2026-11-08",
+        "was": "what happens when restartAttempts says 10 and restartBackoffSeconds offers one delay: repeat the last, stop early, or refuse the document",
+        "artefact": "the third option its own entry listed, as a contract addition: packages/schema/failure-policy.schema.json#/properties/coreDeath/allOf ties the ladder length to the attempt count exactly with ten if/then branches, and connector/internal/supervisor mirrors the refusal; VER-29 stays open because it closes by LIVE-03, not by this decision -- the gate is lifted, the live run is still owed",
         "freed": {
-          "verification": [
-            "VER-81"
-          ],
+          "verification": [],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-30",
+        "decided": "2026-11-14",
+        "was": "do the unbounded log-store and state blob get a compaction policy, or are they declared legacy-only and left",
+        "artefact": "the second of its three options, the ring buffer with a recorded cap. The connector plane enforces it in code: connector/internal/logstore caps the ring at 2000 records and 1 MiB, rotates the file sink at 5 MiB × 5 oldest-first, and reads retentionDays 0 as the current session only (truncated at start, never appended) — the caps are observability.json#/sinks' own rows, asserted as data since Phase 1 and now executed. The browser plane carries the same caps as data and enforces them in the extension slice that owns browser-ring, whose live half stays on LIVE-10 and LIVE-11. The state blob is doc 34 §10 rule 5's business and was never part of the log answer. VER-48 retired in the same commit; the citing line in doc 34 §15 now states the answer",
+        "freed": {
+          "verification": [],
           "compatibility": []
         }
       },
@@ -919,61 +904,13 @@
         }
       },
       {
-        "id": "ODEC-39",
-        "decided": "2026-11-07",
-        "was": "where `config.apply` obtains the intent documents its own arguments cannot carry, which two directories the surface is handed, and what the compiled config file is called",
-        "artefact": "one answer per clause, each the option its own entry listed: the intent rides the frame (`config.apply.json#/args/properties/intent`, required -- the `intent-down` movement made literal, an ids-only call the BadRequest its description states, the test-double seam gone from the Go half); doc 34 section 7 spells the per-user layout and the `compiled-config` row of `data-ownership.json` carries it as data; and the compiled config keeps the stable `config.json` doc 27 section 8 renames over, the hash-derived wording retired beside the question that made it. It closes `VER-80`; the registration its second clause also named is `VER-88` now, gated by `ODEC-36`'s span",
+        "id": "ODEC-34",
+        "decided": "2026-11-14",
+        "was": "in a chunked profile.import, what are the bytes of a slice, and which byte string does chunk.contentHash hash",
+        "artefact": "the second of its three options: the fragment model. A new args.payload field on profile.import carries the slice body -- a base64 fragment of the serialized import document, one fragment per slice frame, required on a chunked frame and rejected beside a frame without chunk. chunk.contentHash is sha256 over the concatenation of the decoded fragments of the group in chunkSeq order, and the reassembled bytes are a UTF-8 JSON object shaped like a single-frame import args without chunk, payload, contentHash and credentials, validated per-field against the same schemas the command references. The announcement reading was excluded because it was exactly the shape the old fixture showed -- the whole document structured in the last frame, a payload that exceeds the frame limit never chunked; the subset reading was excluded because it left encoding:\"base64\" meaningless on a frame of JSON objects and needed a canonical byte form the repository has never defined. The receiver half is connector/internal/chunk (New/Add/Bytes, ErrIntegrityMismatch); the fixture-level assertion is verify.mjs reassembling the recorded group and hashing it. VER-76 retired in the same commit",
         "freed": {
           "verification": [
-            "VER-80"
-          ],
-          "compatibility": []
-        }
-      },
-      {
-        "id": "ODEC-38",
-        "decided": "2026-11-07",
-        "was": "over what span the ladder's restart attempts are spent, and how long a restarted Core must stay up to earn a fresh budget",
-        "artefact": "the second option its own entry listed: `coreDeath.stabilityWindowSeconds` (default 300, floor 1, ceiling 86 400) in `packages/schema/failure-policy.schema.json`, with the episode rule doc 30 §4 now states and `connector/internal/supervisor` enforces -- re-arm only past the window, resume mid-episode inside it, and a spent episode's next death re-publishes the block without spawning. It closes `VER-79`, the only row this entry gated, in the same commit",
-        "freed": {
-          "verification": [
-            "VER-79"
-          ],
-          "compatibility": []
-        }
-      },
-      {
-        "id": "ODEC-41",
-        "decided": "2026-11-07",
-        "was": "which artefact carries the pipe half of the version negotiation -- a field on the event that already writes the browser half down, a declared shape for the diagnostics section, or nothing",
-        "artefact": "the first option its own entry listed: `connector.connected`'s payload gained the required `pipeVersion` beside `protocolVersion`, the `versions` section's `contains` and the export footer name it, and the recorded handshake fixture carries the field -- the one answer that keeps doc 21 §6's promise one sentence, at the cost its option text named honestly: a new field on a wire-visible closed payload. It closes `VER-82`, the only row this entry gated, in the same commit",
-        "freed": {
-          "verification": [
-            "VER-82"
-          ],
-          "compatibility": []
-        }
-      },
-      {
-        "id": "ODEC-36",
-        "decided": "2026-11-07",
-        "was": "which byte string `configHash` covers -- the compiler's handle-bearing document with `keystore://<ref>` in every credential position, or the materialized bytes the Connector writes to disk",
-        "artefact": "the first option its own entry listed: the handle-bearing document. The decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material -- and the disclosure argument the entry carried is its own answer: the written bytes hold plaintext credentials and the digest is logged by `config.applied`, so a values span would put a fingerprint of a credential-bearing file into every log. The switch it held in `connector/cmd/nexora-connector/config_apply.go` is gone, the two tests that kept the spans apart died with it, and the cost its option named -- a rotation behind an unchanged reference does not move this hash -- is `core.restart`'s, stated beside the decision. It closes `VER-78` in the same commit",
-        "freed": {
-          "verification": [
-            "VER-78"
-          ],
-          "compatibility": []
-        }
-      },
-      {
-        "id": "ODEC-44",
-        "decided": "2026-11-07",
-        "was": "where a production supervisor's `Launch` gets the Core binary path from -- the pinned install root resolved from settings and the install receipt, the host handing the path across the pipe, or a first-run download this repository performs itself",
-        "artefact": "the first option its own entry listed: `settings.installRoot` overrides the pin, null resolves to the pin's own per-user core directory (`connector-settings.schema.json#/properties/core/properties/installRoot`'s description now states the rule), the supervisor's `Launch` reads the install receipt at that root per spawn -- `Launch` returning an error is what makes Core not being installed a named refusal -- and doc 33 §7 states the rule beside its receipts bullet. The registration it gated is wired in `main.go` the same commit: the per-user layout is built, the keystore opened with the platform protector, and `config.apply` registered -- it closes `VER-88` in the same commit",
-        "freed": {
-          "verification": [
-            "VER-88"
+            "VER-76"
           ],
           "compatibility": []
         }
@@ -991,13 +928,61 @@
         }
       },
       {
-        "id": "ODEC-45",
+        "id": "ODEC-36",
         "decided": "2026-11-07",
-        "was": "how a keystore:// handle for an *object* reaches the compiled config -- the materializer resolving the handle into the key-value map the stored value holds, the compiler refusing object handles until a schema field names the map, or shape C losing headers entirely",
-        "artefact": "the second option its own entry listed: the server document gains headersKeys (server.schema.json#/$defs/wsSettings/properties/headersKeys and #/$defs/grpcSettings/properties/headersKeys), the key list the stored object behind headersRef holds, and the materializer fills their values from the store. The compiler now emits headers when both headersRef and headersKeys are present, and refuses either without the other -- the masking layer enumerates from the model, not from the store. It frees VER-28's shape-C half",
+        "was": "which byte string `configHash` covers -- the compiler's handle-bearing document with `keystore://<ref>` in every credential position, or the materialized bytes the Connector writes to disk",
+        "artefact": "the first option its own entry listed: the handle-bearing document. The decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material -- and the disclosure argument the entry carried is its own answer: the written bytes hold plaintext credentials and the digest is logged by `config.applied`, so a values span would put a fingerprint of a credential-bearing file into every log. The switch it held in `connector/cmd/nexora-connector/config_apply.go` is gone, the two tests that kept the spans apart died with it, and the cost its option named -- a rotation behind an unchanged reference does not move this hash -- is `core.restart`'s, stated beside the decision. It closes `VER-78` in the same commit",
         "freed": {
           "verification": [
-            "VER-28"
+            "VER-78"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-38",
+        "decided": "2026-11-07",
+        "was": "over what span the ladder's restart attempts are spent, and how long a restarted Core must stay up to earn a fresh budget",
+        "artefact": "the second option its own entry listed: `coreDeath.stabilityWindowSeconds` (default 300, floor 1, ceiling 86 400) in `packages/schema/failure-policy.schema.json`, with the episode rule doc 30 §4 now states and `connector/internal/supervisor` enforces -- re-arm only past the window, resume mid-episode inside it, and a spent episode's next death re-publishes the block without spawning. It closes `VER-79`, the only row this entry gated, in the same commit",
+        "freed": {
+          "verification": [
+            "VER-79"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-39",
+        "decided": "2026-11-07",
+        "was": "where `config.apply` obtains the intent documents its own arguments cannot carry, which two directories the surface is handed, and what the compiled config file is called",
+        "artefact": "one answer per clause, each the option its own entry listed: the intent rides the frame (`config.apply.json#/args/properties/intent`, required -- the `intent-down` movement made literal, an ids-only call the BadRequest its description states, the test-double seam gone from the Go half); doc 34 section 7 spells the per-user layout and the `compiled-config` row of `data-ownership.json` carries it as data; and the compiled config keeps the stable `config.json` doc 27 section 8 renames over, the hash-derived wording retired beside the question that made it. It closes `VER-80`; the registration its second clause also named is `VER-88` now, gated by `ODEC-36`'s span",
+        "freed": {
+          "verification": [
+            "VER-80"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-40",
+        "decided": "2026-11-07",
+        "was": "where the format an `auto` parse resolved to is recorded -- a field in the refresh result, a value stored from something else, or nowhere",
+        "artefact": "the first option its own entry listed, as a contract addition: `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format` -- required, enum the source schema's minus `auto` -- the exception its `#/args` description now states, the format amendment in `packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row, the resolved-format sentence that replaced the labelled line in `docs/architecture/29-subscriptions-and-servers.md` §5, the `format` row of that document §7's status table, and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` that carries the field; it closes `VER-81`, the only row this entry gated, in the same commit",
+        "freed": {
+          "verification": [
+            "VER-81"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-41",
+        "decided": "2026-11-07",
+        "was": "which artefact carries the pipe half of the version negotiation -- a field on the event that already writes the browser half down, a declared shape for the diagnostics section, or nothing",
+        "artefact": "the first option its own entry listed: `connector.connected`'s payload gained the required `pipeVersion` beside `protocolVersion`, the `versions` section's `contains` and the export footer name it, and the recorded handshake fixture carries the field -- the one answer that keeps doc 21 §6's promise one sentence, at the cost its option text named honestly: a new field on a wire-visible closed payload. It closes `VER-82`, the only row this entry gated, in the same commit",
+        "freed": {
+          "verification": [
+            "VER-82"
           ],
           "compatibility": []
         }
@@ -1027,34 +1012,26 @@
         }
       },
       {
-        "id": "ODEC-19",
-        "decided": "2026-11-08",
-        "was": "what happens when restartAttempts says 10 and restartBackoffSeconds offers one delay: repeat the last, stop early, or refuse the document",
-        "artefact": "the third option its own entry listed, as a contract addition: packages/schema/failure-policy.schema.json#/properties/coreDeath/allOf ties the ladder length to the attempt count exactly with ten if/then branches, and connector/internal/supervisor mirrors the refusal; VER-29 stays open because it closes by LIVE-03, not by this decision -- the gate is lifted, the live run is still owed",
-        "freed": {
-          "verification": [],
-          "compatibility": []
-        }
-      },
-      {
-        "id": "ODEC-34",
-        "decided": "2026-11-14",
-        "was": "in a chunked profile.import, what are the bytes of a slice, and which byte string does chunk.contentHash hash",
-        "artefact": "the second of its three options: the fragment model. A new args.payload field on profile.import carries the slice body -- a base64 fragment of the serialized import document, one fragment per slice frame, required on a chunked frame and rejected beside a frame without chunk. chunk.contentHash is sha256 over the concatenation of the decoded fragments of the group in chunkSeq order, and the reassembled bytes are a UTF-8 JSON object shaped like a single-frame import args without chunk, payload, contentHash and credentials, validated per-field against the same schemas the command references. The announcement reading was excluded because it was exactly the shape the old fixture showed -- the whole document structured in the last frame, a payload that exceeds the frame limit never chunked; the subset reading was excluded because it left encoding:\"base64\" meaningless on a frame of JSON objects and needed a canonical byte form the repository has never defined. The receiver half is connector/internal/chunk (New/Add/Bytes, ErrIntegrityMismatch); the fixture-level assertion is verify.mjs reassembling the recorded group and hashing it. VER-76 retired in the same commit",
+        "id": "ODEC-44",
+        "decided": "2026-11-07",
+        "was": "where a production supervisor's `Launch` gets the Core binary path from -- the pinned install root resolved from settings and the install receipt, the host handing the path across the pipe, or a first-run download this repository performs itself",
+        "artefact": "the first option its own entry listed: `settings.installRoot` overrides the pin, null resolves to the pin's own per-user core directory (`connector-settings.schema.json#/properties/core/properties/installRoot`'s description now states the rule), the supervisor's `Launch` reads the install receipt at that root per spawn -- `Launch` returning an error is what makes Core not being installed a named refusal -- and doc 33 §7 states the rule beside its receipts bullet. The registration it gated is wired in `main.go` the same commit: the per-user layout is built, the keystore opened with the platform protector, and `config.apply` registered -- it closes `VER-88` in the same commit",
         "freed": {
           "verification": [
-            "VER-76"
+            "VER-88"
           ],
           "compatibility": []
         }
       },
       {
-        "id": "ODEC-30",
-        "decided": "2026-11-14",
-        "was": "do the unbounded log-store and state blob get a compaction policy, or are they declared legacy-only and left",
-        "artefact": "the second of its three options, the ring buffer with a recorded cap. The connector plane enforces it in code: connector/internal/logstore caps the ring at 2000 records and 1 MiB, rotates the file sink at 5 MiB × 5 oldest-first, and reads retentionDays 0 as the current session only (truncated at start, never appended) — the caps are observability.json#/sinks' own rows, asserted as data since Phase 1 and now executed. The browser plane carries the same caps as data and enforces them in the extension slice that owns browser-ring, whose live half stays on LIVE-10 and LIVE-11. The state blob is doc 34 §10 rule 5's business and was never part of the log answer. VER-48 retired in the same commit; the citing line in doc 34 §15 now states the answer",
+        "id": "ODEC-45",
+        "decided": "2026-11-07",
+        "was": "how a keystore:// handle for an *object* reaches the compiled config -- the materializer resolving the handle into the key-value map the stored value holds, the compiler refusing object handles until a schema field names the map, or shape C losing headers entirely",
+        "artefact": "the second option its own entry listed: the server document gains headersKeys (server.schema.json#/$defs/wsSettings/properties/headersKeys and #/$defs/grpcSettings/properties/headersKeys), the key list the stored object behind headersRef holds, and the materializer fills their values from the store. The compiler now emits headers when both headersRef and headersKeys are present, and refuses either without the other -- the masking layer enumerates from the model, not from the store. It frees VER-28's shape-C half",
         "freed": {
-          "verification": [],
+          "verification": [
+            "VER-28"
+          ],
           "compatibility": []
         }
       }

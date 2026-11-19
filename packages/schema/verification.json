@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 165
+    "counted": 163
   },
   "states": {
     "values": [
@@ -217,6 +217,18 @@
         "artefact": "tools/check-adr-shape.mjs -- ADR-0001 rules 1-4, 10 and 11 over docs/adr, including the 60-140 line bound and the index's own Status and Date cells, which the two inline shell steps it replaced did not read, plus a --selftest that injects one defect per rule and refuses each; it is the `VER-01` step of .github/workflows/verify.yml and is green here on the 20 records on disk, where these same checks went green on all three runner images since 2026-11-05 as shell; the labelled sentence it anchored became a `Verified: YES` in docs/adr/0001-adr-practice.md ## Verification"
       },
       {
+        "id": "VER-02",
+        "closed": "2026-11-14",
+        "was": "the import boundary -- nothing under nexora/** or packages/** may import from omega-* -- is asserted by nothing",
+        "artefact": "the VER-02 step of .github/workflows/verify.yml has run green on three runner images since 2026-11-05 (docs/audit/99-baseline-report.md §12) and on this host beside every gate run since; what kept the row open was vacuousness -- a grep over a nexora/** that held no code proves nothing. The extension sources have been real since the single-server Chromium path landed (docs/PROJECT-STATE.md §4.41 onward), the registry load (src/profiles/registry.ts) widened them further, and the same greps now run over a boundary with code on both sides of it: the omega-* import scan, the side-effect-import scan and the file: dependency scan are non-vacuous, and the tree is clean under all three"
+      },
+      {
+        "id": "VER-03",
+        "closed": "2026-11-14",
+        "was": "no CI grep gate fails when vless|reality|xtls appears as executable code under packages/ or nexora/",
+        "artefact": "the VER-03 step of .github/workflows/verify.yml -- the transport-literal grep over executable JS, with the schema harness named as the one exempt file -- ran green on three runner images on 2026-11-05 over empty roots (docs/audit/99-baseline-report.md §12). It now runs over the real extension and packages sources, which name the protocols only in UI strings and schema-derived types, and stays green: the gate is non-vacuous and the constraint it guards has held with code on the guarded side of it"
+      },
+      {
         "id": "VER-04",
         "closed": "2026-11-06",
         "was": "nothing prevents a root `package.json`, `go.work` or `.npmrc` from appearing",
@@ -259,10 +271,100 @@
         "artefact": "packages/schema/protocol/framing.json#/minPipeVersion, declared beside #/versionFloors as the second of two floors -- `protocol` over protocolVersion and minCompatibleProtocolVersion, negotiated in connector.hello, and `pipe` over frameFormatVersion and minPipeVersion, carried by the `v` field every frame already bears -- refused by the one code `VersionMismatch`, because a second code is breaking for a client that switches exhaustively (docs/architecture/25-native-messaging-protocol.md §7) and which floor failed is a message, not a name. The new harness assertion reads the shape rather than the values: four distinct numbers, each floor at or below the version it floors, the refusal code in the taxonomy. The question it answers is `ODEC-02`, decided by the contract addition its own first option named; the sentence that anchored it became a `Verified: YES` in docs/architecture/21-system-context.md §12. Declarative on purpose: `connector/internal/contract` now projects MinPipeVersion and its test refuses a floor above the version it floors, but nothing compared a frame's `v` to it on the day this row closed, and docs/architecture/25-native-messaging-protocol.md §1 says that instead of leaving the number queued. The comparison exists in `connector/internal/envelope` now and cannot fire while the envelope schema's own lower bound equals the floor; that residual is `VER-89`"
       },
       {
-        "id": "VER-82",
+        "id": "VER-19",
+        "closed": "2026-11-19",
+        "was": "bounded process-local dedupe is tested, but replay after native-port recreation and shared Core adoption has no live fixture",
+        "artefact": "TestAdoptionAcrossPortRecreation (connector/cmd/nexora-host/adoption_test.go) - cross-process replay and adoption across native-port recreation, same owner PID and cached answer; retires ODEC-01 alongside"
+      },
+      {
+        "id": "VER-25",
+        "closed": "2026-11-14",
+        "was": "no negative runtime test shows that a -nexora.server.<id> key produces no PAC entry, no availableProfiles row and no rule picker option",
+        "artefact": "four tests in omega-pac/test/profiles.coffee over the inherited engine, which is the code the UI lists are born in: Profiles.each over an envelope carrying profile-shaped values under -nexora.server.<id> and -nexora.profile.<id> hands the callback the + keys only (the builtins +direct and +system are its other two names, so the negative is about the dash prefix and not about a silent callback); the quick-switch list shape the producer behind availableProfiles builds contains no dash key; the PAC compiled from a created FixedProfile names no -nexora. key, no saboteur display name and no saboteur address; and an envelope holding only dash keys produces no dash-keyed callback at all. The suite stays at its pinned floor: 146 passing / 1 pinned failing. The loaded-extension half of ADR-0012's sentence -- a real browser rendering the quick-switch list -- is LIVE-15's business, which is why the row retired and the live row did not"
+      },
+      {
+        "id": "VER-28",
+        "closed": "2026-11-14",
+        "was": "golden config snapshots under connector/testdata/config/*.golden.json -- five of doc 27 section 3's six fixtures pinned, and shape C's headersRef materialized via headersKeys with fail-closed owned by chrome.proxy",
+        "artefact": "the closer exists and runs: five goldens (shape-a-vision-tcp-tls, shape-b-reality-xhttp, shape-c-grpc-tls, multi-server-ordered, two-plane-core-rules) are byte-compared by connector/internal/compile/golden_test.go, and connector/internal/apply/drive_test.go recompiles all five, materializes them with apply.Write and drives Xray 24.11.11 run -test -c -- all five accepted, the invalid-port negative control rejected. Shape C's headersRef is materialized by the headersKeys list (ODEC-45): the compiler emits a keyed handle map and apply fills exactly the declared keys from the store. The sixth fixture is the fail-closed variant, and it has no distinct Xray bytes because doc 30 section 7 puts the block in chrome.proxy -- so the sixth file is a stated exclusion, which is the golden rule met as written, not a missing snapshot. ODEC-37's predicate-semantics residual is untouched by this closure"
+      },
+      {
+        "id": "VER-30",
+        "closed": "2026-11-14",
+        "was": "core.select performing no config write is asserted by nothing (and §9.5 changes what the row means)",
+        "artefact": "§9.5 answered inbound-per-tag: the per-tag inbound layout the compiler ships pins the server into the config bytes, so the imperative no-config-write switch the command promised has no mechanism. core.select left the contract surface the same commit — allowlist 19 → 18, the mutate rate-limit scope and the presentation command lists lose it, the command file is deleted, contract_gen regenerated, the fixture scene removed — and the fast switch is now a config.apply whose compiled hash is unchanged, answered without a restart (doc 26 §2.1 states the decision). The row's premise is gone, which is the closure: nothing asserts a no-config-write switch because the surface no longer declares one"
+      },
+      {
+        "id": "VER-31",
+        "closed": "2026-11-14",
+        "was": "cross-entity referential integrity — a dangling serverId — checked by nothing, because JSON Schema cannot see a sibling envelope key",
+        "artefact": "the registry load exists: nexora/extension/src/profiles/registry.ts performs the cross-entity check at load and refuses the profile with a named reason. loadRegistry takes the profiles and the ids the -nexora.server.* keys hold; a profile referencing an absent server, listing one twice, or defaulting outside its own list is refused — the refusal names the profile id and the server id, removes exactly that one profile, and never throws, so a sync merge that restored a profile ahead of its servers cannot brick the whole registry. Six tests pin the dangling refusal, the deleted-server case, the duplicate, both default refusals, the one-of-many removal, and the clean batch load"
+      },
+      {
+        "id": "VER-48",
+        "closed": "2026-11-14",
+        "was": "no run shows a record actually being written, masked and rotated, with real seq gaps and a ring that evicts",
+        "artefact": "connector/internal/logstore is written and its nine fake-sink tests run green: the store renders once and hands every sink the same masked line stamped with the same per-plane seq (one render, every sink, byte-identical); the value-keyed masker runs inside each sink over bare strings — the exact case the legacy replacer lost — refusing short and empty table entries; the ring evicts by count and by bytes (first cap wins), keeps a single oversized record, and re-reads the masked line so the raw value is nowhere in it, with the evicted head showing as a seq gap above the oldest survivor; the file sink rotates oldest-first at its byte cap, caps its file count, masks before the write, and truncates at start when retentionDays is 0 — the current session only. The browser half of the row stays open on LIVE-10 and LIVE-11, which is why the row's subject is retired and the live rows are not"
+      },
+      {
+        "id": "VER-49",
+        "closed": "2026-11-14",
+        "was": "framing enforcement, clause by clause: the sender-side rejection before write and the late-answer discard have tests, the three-missed-heartbeat verdict does not and cannot yet",
+        "artefact": "the third clause is written on both halves. The carrier §9.8 asked for exists: heartbeat is the envelope's fifth frame type, carrying nothing but v, id, type and sentAt (the schema's fifth allOf branch and typeRules refuse every payload field). The sender half is peer.Config.BeatSeconds — the host's endpoint writes a beat every interval while Serve runs; the receiver half counts every inbound frame as a beat and tears down at three missed intervals, measuring silence against cfg.Now. The peer tests drive the pair: two beats on the interval keep an armed watchdog alive past the point a silent peer is torn down, and the silence verdict is ErrPeerLost. The first two clauses (oversized-write refusal, late-answer discard) were green since 2026-11-05; the row's own blocker — which endpoint arms the deadline and what arrives on the wire — was §9.8, answered the same commit"
+      },
+      {
+        "id": "VER-58",
+        "closed": "2026-11-14",
+        "was": "the negative security rules of SEC-3 are unguarded: NEXORA must not add web_accessible_resources or inject fetched text",
+        "artefact": "the sec3-manifest rule in tools/check-layout-guards.mjs: every tracked manifest*.json is scanned, and one that names web_accessible_resources — as a key or as text — is refused with the reason the audit records the absence as load-bearing (docs/audit/10-manifest-packaging-distribution.md §1). The selftest injects the defect and refuses it; the real run scans the two overlay manifests and finds the key absent from both. The injection half of SEC-3 (no fetched text spliced into a page) is the remaining clause, and it stays open in doc 31 §12 as the PAC-sandbox argument"
+      },
+      {
+        "id": "VER-61",
         "closed": "2026-11-07",
-        "was": "the pipe half of the version negotiation has no artefact to be written down in: doc 21 §6 promised the negotiation result reaches the connector log and diagnostics.get, and every field that could carry it named only the browser-side number",
-        "artefact": "ODEC-41 answered by its own first option: `connector.connected`'s payload gained the required `pipeVersion` beside `protocolVersion` (`packages/schema/observability.json#/events`), the `versions` section's `contains` names both numbers, and the export footer lists `pipeVersion` beside `protocolVersion` -- so the recorded handshake fixture carries the field and a support bundle can tell which side of the pipe refused. The labelled row in doc 36 §14 reads Verified as data now, the runtime half staying with §16's fifth open item"
+        "was": "the subscription delivery boundary: nobody had decided whether the Connector keeps subscriptions whole or the extension receives feed-derived Servers in chunks, so the boundary that follows from the answer had nothing to assert against",
+        "artefact": "ODEC-33 answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, and answered by elimination rather than by preference: the chunked hand-off is excluded by `packages/schema/observability.json#/events/7/payload`, closed at four count fields, and by `packages/schema/protocol/envelope.schema.json#/properties/chunk`, which names `profile.import` as its only sender; the raw-body read is excluded by `docs/architecture/29-subscriptions-and-servers.md` §11's invariant; and what survives is what `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already demands -- `servers` in the result of the command the extension calls. The labelled line this row owned, doc 29 §13 item 6, leaves the corpus with it, and the deferral is handed to `VER-64` on the ADR's own `## Verification` line, so the counted total of deferred claims is unchanged"
+      },
+      {
+        "id": "VER-65",
+        "closed": "2026-11-14",
+        "was": "no live row covers guards being applied to every redirect hop -- the omission, not the behaviour, is the finding",
+        "artefact": "the omission is closed where it was found: LIVE-25 now exists in docs/verification/live-matrix.md as the redirect-chain row the citation promised -- a two-hop feed (allowed host → redirector → metadata literal) must fail naming the hop that crossed, with the same chain inside the budget as the control that shows the guard is per-hop rather than a first-hop-only gate. The citation in doc 29 §13 now names LIVE-25, so it is an obligation on a row that exists rather than a false reference. The row is unexecuted, as every live row is; what VER-65 owed was the row itself"
+      },
+      {
+        "id": "VER-66",
+        "closed": "2026-11-15",
+        "was": "`format: auto` is specified never to resolve ambiguously, and there is no fixture for the two-detectors-both-true case",
+        "artefact": "the contract decision the row waited on, taken as the reading its own data forces: the two detectors are defined on the raw body and are exclusive by construction — `:` is outside every base64 alphabet and strict decoding refuses it, so a body the base64 detector accepts cannot carry a `://` line, and the two-true case the row wanted a fixture for is unrepresentable. The ambiguous input the legacy loader could mis-resolve is the mixed body (URI lines beside base64-shaped fragments), and its rule is the deterministic one: the uri-list detector wins, and any non-entry line refuses the whole body — dropped > 0 is a SchemaMismatch at the refresh boundary naming the resolved format and the rejected count, never a partial import. doc 29 §5 states the definitions and the rule; TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole (connector/cmd/nexora-connector/subscription_parse_test.go) pins the exclusivity over all four alphabet variants, the base64 refusal of every uri-detector body, the mixed body's one-dropped-entry resolution and the declared-format no-detector path; the whole-refusal half was already TestSubscriptionPartialInitialAndLastGoodPreserved's"
+      },
+      {
+        "id": "VER-70",
+        "closed": "2026-11-14",
+        "was": "tag uniqueness over the whole server set is a compile error naming both ids in stage 1; it has never met a registry that arrives unsorted from a subscription import",
+        "artefact": "connector/internal/compile/tag_collision_test.go drives the whole claim from the shipped canonical examples: the five server documents compile as one batch with every stored tag equal to its derived one, and the twin of the canonical vision server — its id sharing the first eight hex, built by mutating the shipped document rather than from a private fixture — is refused in two different arrival orders, each refusal naming both server ids and the shared srv-3f2a1c9e tag. The order-independence is the feed half of the claim: the batch arrives whole and arbitrarily sorted, and the refusal names the same three strings either way"
+      },
+      {
+        "id": "VER-71",
+        "closed": "2026-11-14",
+        "was": "the protocol enum expansion requires an ADR, and that process rule is asserted by nothing",
+        "artefact": "the assertion runs: scripts/verify.mjs pins both literals of packages/schema/server.schema.json — protocol const vless and network exactly [tcp, ws, grpc, xhttp, h2] — and requires both descriptions to name the ADR process rule, so a schema edit that widens either enum without the ADR (or an ADR whose member list disagrees with the pinned literal) is a red run. The compiler's own refusal of a non-vless protocol before it emits is the second half, already live. Both descriptions now carry the rule in so many words, so the schema states its own law"
+      },
+      {
+        "id": "VER-76",
+        "closed": "2026-11-14",
+        "was": "chunk reassembly has no slice body: the contract says what a slice is and never says where its bytes ride",
+        "artefact": "the fragment model (ODEC-34): args.payload on profile.import carries the base64 fragment per slice frame, chunk.contentHash hashes the concatenation of the decoded fragments in chunkSeq order, and the reassembled bytes are the import document. The closing assertion is written and green: the chunk block in scripts/verify.mjs reassembles the recorded group, hashes the concatenation and requires sha256 == the declared contentHash, and requires the bytes to parse as UTF-8 JSON. The receiver half connector/internal/chunk.Bytes verifies the same hash before returning anything, mapping a mismatch to ErrIntegrityMismatch"
+      },
+      {
+        "id": "VER-77",
+        "closed": "2026-11-07",
+        "was": "hop 2 has no transport contract: the local pipe's message schema is undefined, and nothing says how the sender identity crosses it",
+        "artefact": "ADR-0022 answers both halves: one pipe instance per sender -- identity is which pipe the host opened, injected at spawn -- and the local pipe carries the same envelope the extension-facing protocol defines, guarded by the pipe floor framing.json already declares. The labelled row in doc 25 §2 reads Answered now. The minPipeVersion comparison at the framing layer is still VER-18's declared residual"
+      },
+      {
+        "id": "VER-78",
+        "closed": "2026-11-07",
+        "was": "the compiled bytes are byte-deterministic over four goldens; which byte string `configHash` covers remains gated by `ODEC-36` -- the stability has a producer, the hash subject still has no decision",
+        "artefact": "ODEC-36 answered by its own first option: `configHash` is the handle-bearing document's digest, and the decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material, the written bytes deliberately not the subject. The stability half the row already had: `emit_test.go` pins shape A's hash of the handle-bearing document and four goldens compile byte-for-byte, accepted by the pinned Xray. The labelled row in doc 27 §9 reads Verified as data; the cost its option carried -- a rotation behind an unchanged reference does not move this hash -- is stated beside the decision and owned by `core.restart`"
       },
       {
         "id": "VER-79",
@@ -283,28 +385,16 @@
         "artefact": "ODEC-40 answered by its own first option, in the commit that retired both: `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/properties/format` -- required on every refreshed item, enum the source schema's minus `auto` -- plus the exception its `#/args` description now states, the format amendment in `packages/schema/protocol/data-ownership.json`'s `nexora-subscriptions` row, the resolved-format sentence in `docs/architecture/29-subscriptions-and-servers.md` §5 that the labelled line became, the `format` row of that document §7's status table, and the fixture item in `packages/schema/fixtures/protocol/probes-and-ops.jsonl` that carries the field"
       },
       {
-        "id": "VER-61",
+        "id": "VER-82",
         "closed": "2026-11-07",
-        "was": "the subscription delivery boundary: nobody had decided whether the Connector keeps subscriptions whole or the extension receives feed-derived Servers in chunks, so the boundary that follows from the answer had nothing to assert against",
-        "artefact": "ODEC-33 answered by `docs/adr/0021-subscription-servers-travel-in-the-refresh-result.md`, and answered by elimination rather than by preference: the chunked hand-off is excluded by `packages/schema/observability.json#/events/7/payload`, closed at four count fields, and by `packages/schema/protocol/envelope.schema.json#/properties/chunk`, which names `profile.import` as its only sender; the raw-body read is excluded by `docs/architecture/29-subscriptions-and-servers.md` §11's invariant; and what survives is what `packages/schema/protocol/commands/subscription.refresh.json#/result/properties/refreshed/items/required` already demands -- `servers` in the result of the command the extension calls. The labelled line this row owned, doc 29 §13 item 6, leaves the corpus with it, and the deferral is handed to `VER-64` on the ADR's own `## Verification` line, so the counted total of deferred claims is unchanged"
+        "was": "the pipe half of the version negotiation has no artefact to be written down in: doc 21 §6 promised the negotiation result reaches the connector log and diagnostics.get, and every field that could carry it named only the browser-side number",
+        "artefact": "ODEC-41 answered by its own first option: `connector.connected`'s payload gained the required `pipeVersion` beside `protocolVersion` (`packages/schema/observability.json#/events`), the `versions` section's `contains` names both numbers, and the export footer lists `pipeVersion` beside `protocolVersion` -- so the recorded handshake fixture carries the field and a support bundle can tell which side of the pipe refused. The labelled row in doc 36 §14 reads Verified as data now, the runtime half staying with §16's fifth open item"
       },
       {
-        "id": "VER-78",
-        "closed": "2026-11-07",
-        "was": "the compiled bytes are byte-deterministic over four goldens; which byte string `configHash` covers remains gated by `ODEC-36` -- the stability has a producer, the hash subject still has no decision",
-        "artefact": "ODEC-36 answered by its own first option: `configHash` is the handle-bearing document's digest, and the decision is stated in `config.apply.json#/result/properties/configHash`'s description -- machine-independent, a digest whose input holds no secret material, the written bytes deliberately not the subject. The stability half the row already had: `emit_test.go` pins shape A's hash of the handle-bearing document and four goldens compile byte-for-byte, accepted by the pinned Xray. The labelled row in doc 27 §9 reads Verified as data; the cost its option carried -- a rotation behind an unchanged reference does not move this hash -- is stated beside the decision and owned by `core.restart`"
-      },
-      {
-        "id": "VER-88",
-        "closed": "2026-11-07",
-        "was": "the `config.apply` method is still not registered: the surface is wired end to end except the supervisor's `Launch`, and no document says where a production build gets the Core binary path from",
-        "artefact": "ODEC-44 answered by its own first option and the registration it unblocked is wired in the same commit: `main.go` builds the per-user layout of doc 34 §7 (state, config, keystore, core), opens the keystore with the platform's own protector, constructs the supervisor whose `Launch` reads the install receipt per spawn (`Launch` now returns an error the start reports, so Core not being installed is a refusal naming the reason, not a generic failure), and registers `config.apply` in the dispatcher. The wiring tests measure the registration from the wire -- the ids-only call answers the intent BadRequest a registered method answers -- and the Launch resolution from the receipt. The labelled row in doc 27 §9 reads Verified now"
-      },
-      {
-        "id": "VER-77",
-        "closed": "2026-11-07",
-        "was": "hop 2 has no transport contract: the local pipe's message schema is undefined, and nothing says how the sender identity crosses it",
-        "artefact": "ADR-0022 answers both halves: one pipe instance per sender -- identity is which pipe the host opened, injected at spawn -- and the local pipe carries the same envelope the extension-facing protocol defines, guarded by the pipe floor framing.json already declares. The labelled row in doc 25 §2 reads Answered now. The minPipeVersion comparison at the framing layer is still VER-18's declared residual"
+        "id": "VER-83",
+        "closed": "2026-11-14",
+        "was": "a section half of a document citation -- a backticked path under docs/ followed by §N -- is the one citation form no pass of tools/check-doc-evidence.mjs resolves, so an anchor can name a section its document never had and the run stays green",
+        "artefact": "the SECTION pass in tools/check-doc-evidence.mjs, beside the five passes it already runs: a backticked docs/ path followed by §N must name a numbered heading of the file it cites, on the exact sub-number — the neighbour form of the error (doc 31 once cited doc 22 §4 for the health section, which is §8) is what exact-match refuses — with the two mutable targets checked on the integer part only, because their subsections are dated ledger entries and table slots rather than headings. The first run checked 582 section cites and found zero dangling, and a planted §99 cite is refused with the target heading list printed beside it"
       },
       {
         "id": "VER-84",
@@ -319,106 +409,22 @@
         "artefact": "ODEC-43 answered: the closest declared meaning, chosen per command and recorded at the site -- the status quo. The shipped code and its tests already follow this reading; the taxonomy gap is real and named rather than hidden"
       },
       {
-        "id": "VER-76",
-        "closed": "2026-11-14",
-        "was": "chunk reassembly has no slice body: the contract says what a slice is and never says where its bytes ride",
-        "artefact": "the fragment model (ODEC-34): args.payload on profile.import carries the base64 fragment per slice frame, chunk.contentHash hashes the concatenation of the decoded fragments in chunkSeq order, and the reassembled bytes are the import document. The closing assertion is written and green: the chunk block in scripts/verify.mjs reassembles the recorded group, hashes the concatenation and requires sha256 == the declared contentHash, and requires the bytes to parse as UTF-8 JSON. The receiver half connector/internal/chunk.Bytes verifies the same hash before returning anything, mapping a mismatch to ErrIntegrityMismatch"
-      },
-      {
-        "id": "VER-89",
-        "closed": "2026-11-14",
-        "was": "a frame below the pipe floor ends the stream instead of answering VersionMismatch: the comparison in connector/internal/envelope's Parse is live code that the envelope's own lower bound subsumes, and framing.json#/versionFloors/tooOld still owes its answer",
-        "artefact": "the answer is written for both transports: envelope.ParseWithFloor carries the refused frame's parsed id on the Invalid error (RejectedID), and internal/peer's Serve plus the connector's line mode answer VersionMismatch in reply to that id — carrying this build's FrameFormatVersion, never the sender's failed one — before ending the stream, because a sender below the floor speaks a framing this build cannot continue reading in step. The branch is live code a test can reach: peer.Config.PipeFloor and the service's pipeFloor state the floor a test needs, since the shipped floor of 1 is subsumed by the envelope's 1..255 bound. Three tests pin it: the peer answers then ends, an id-less below-floor frame gets no answer, and the line mode answers the same way. The production firing is still the day the floor rises above 1, which is the day a second framing exists"
-      },
-      {
-        "id": "VER-70",
-        "closed": "2026-11-14",
-        "was": "tag uniqueness over the whole server set is a compile error naming both ids in stage 1; it has never met a registry that arrives unsorted from a subscription import",
-        "artefact": "connector/internal/compile/tag_collision_test.go drives the whole claim from the shipped canonical examples: the five server documents compile as one batch with every stored tag equal to its derived one, and the twin of the canonical vision server — its id sharing the first eight hex, built by mutating the shipped document rather than from a private fixture — is refused in two different arrival orders, each refusal naming both server ids and the shared srv-3f2a1c9e tag. The order-independence is the feed half of the claim: the batch arrives whole and arbitrarily sorted, and the refusal names the same three strings either way"
-      },
-      {
-        "id": "VER-31",
-        "closed": "2026-11-14",
-        "was": "cross-entity referential integrity — a dangling serverId — checked by nothing, because JSON Schema cannot see a sibling envelope key",
-        "artefact": "the registry load exists: nexora/extension/src/profiles/registry.ts performs the cross-entity check at load and refuses the profile with a named reason. loadRegistry takes the profiles and the ids the -nexora.server.* keys hold; a profile referencing an absent server, listing one twice, or defaulting outside its own list is refused — the refusal names the profile id and the server id, removes exactly that one profile, and never throws, so a sync merge that restored a profile ahead of its servers cannot brick the whole registry. Six tests pin the dangling refusal, the deleted-server case, the duplicate, both default refusals, the one-of-many removal, and the clean batch load"
-      },
-      {
-        "id": "VER-83",
-        "closed": "2026-11-14",
-        "was": "a section half of a document citation -- a backticked path under docs/ followed by §N -- is the one citation form no pass of tools/check-doc-evidence.mjs resolves, so an anchor can name a section its document never had and the run stays green",
-        "artefact": "the SECTION pass in tools/check-doc-evidence.mjs, beside the five passes it already runs: a backticked docs/ path followed by §N must name a numbered heading of the file it cites, on the exact sub-number — the neighbour form of the error (doc 31 once cited doc 22 §4 for the health section, which is §8) is what exact-match refuses — with the two mutable targets checked on the integer part only, because their subsections are dated ledger entries and table slots rather than headings. The first run checked 582 section cites and found zero dangling, and a planted §99 cite is refused with the target heading list printed beside it"
-      },
-      {
-        "id": "VER-02",
-        "closed": "2026-11-14",
-        "was": "the import boundary -- nothing under nexora/** or packages/** may import from omega-* -- is asserted by nothing",
-        "artefact": "the VER-02 step of .github/workflows/verify.yml has run green on three runner images since 2026-11-05 (docs/audit/99-baseline-report.md §12) and on this host beside every gate run since; what kept the row open was vacuousness -- a grep over a nexora/** that held no code proves nothing. The extension sources have been real since the single-server Chromium path landed (docs/PROJECT-STATE.md §4.41 onward), the registry load (src/profiles/registry.ts) widened them further, and the same greps now run over a boundary with code on both sides of it: the omega-* import scan, the side-effect-import scan and the file: dependency scan are non-vacuous, and the tree is clean under all three"
-      },
-      {
-        "id": "VER-03",
-        "closed": "2026-11-14",
-        "was": "no CI grep gate fails when vless|reality|xtls appears as executable code under packages/ or nexora/",
-        "artefact": "the VER-03 step of .github/workflows/verify.yml -- the transport-literal grep over executable JS, with the schema harness named as the one exempt file -- ran green on three runner images on 2026-11-05 over empty roots (docs/audit/99-baseline-report.md §12). It now runs over the real extension and packages sources, which name the protocols only in UI strings and schema-derived types, and stays green: the gate is non-vacuous and the constraint it guards has held with code on the guarded side of it"
-      },
-      {
-        "id": "VER-48",
-        "closed": "2026-11-14",
-        "was": "no run shows a record actually being written, masked and rotated, with real seq gaps and a ring that evicts",
-        "artefact": "connector/internal/logstore is written and its nine fake-sink tests run green: the store renders once and hands every sink the same masked line stamped with the same per-plane seq (one render, every sink, byte-identical); the value-keyed masker runs inside each sink over bare strings — the exact case the legacy replacer lost — refusing short and empty table entries; the ring evicts by count and by bytes (first cap wins), keeps a single oversized record, and re-reads the masked line so the raw value is nowhere in it, with the evicted head showing as a seq gap above the oldest survivor; the file sink rotates oldest-first at its byte cap, caps its file count, masks before the write, and truncates at start when retentionDays is 0 — the current session only. The browser half of the row stays open on LIVE-10 and LIVE-11, which is why the row's subject is retired and the live rows are not"
-      },
-      {
         "id": "VER-86",
         "closed": "2026-11-14",
         "was": "the retained status the store row names health-history keeps its medium of disk nowhere: the built ring is a map behind the prober's mutex that dies with the process, and nothing under connector/ writes it to the path the medium names",
         "artefact": "connector/internal/health/persist.go is the medium: Config.StateDir persists the per-server rings, the streak counters, the verdicts and the running cooldowns to health-history.json under the state directory after every retained probe — atomic temp-plus-rename, the discipline internal/apply uses — and New reads it back, re-applying the 64 KiB ring cap on the way in so a ring written by a build with a larger cap is trimmed rather than refused. A write failure is remembered (PersistError) and never fails the probe: the ring is a hint for a support bundle, and losing a hint is not failing the measurement. Four tests pin the closing assertion — the restart that re-reads the ring entry-for-entry, the three-failure streak that survives across the restart and condemns on the next process's third note, the corrupt document that starts empty and rebuilds on the next note, and the StateDir-less prober that keeps memory only. The verdict now survives the process that computed it"
       },
       {
-        "id": "VER-25",
-        "closed": "2026-11-14",
-        "was": "no negative runtime test shows that a -nexora.server.<id> key produces no PAC entry, no availableProfiles row and no rule picker option",
-        "artefact": "four tests in omega-pac/test/profiles.coffee over the inherited engine, which is the code the UI lists are born in: Profiles.each over an envelope carrying profile-shaped values under -nexora.server.<id> and -nexora.profile.<id> hands the callback the + keys only (the builtins +direct and +system are its other two names, so the negative is about the dash prefix and not about a silent callback); the quick-switch list shape the producer behind availableProfiles builds contains no dash key; the PAC compiled from a created FixedProfile names no -nexora. key, no saboteur display name and no saboteur address; and an envelope holding only dash keys produces no dash-keyed callback at all. The suite stays at its pinned floor: 146 passing / 1 pinned failing. The loaded-extension half of ADR-0012's sentence -- a real browser rendering the quick-switch list -- is LIVE-15's business, which is why the row retired and the live row did not"
+        "id": "VER-88",
+        "closed": "2026-11-07",
+        "was": "the `config.apply` method is still not registered: the surface is wired end to end except the supervisor's `Launch`, and no document says where a production build gets the Core binary path from",
+        "artefact": "ODEC-44 answered by its own first option and the registration it unblocked is wired in the same commit: `main.go` builds the per-user layout of doc 34 §7 (state, config, keystore, core), opens the keystore with the platform's own protector, constructs the supervisor whose `Launch` reads the install receipt per spawn (`Launch` now returns an error the start reports, so Core not being installed is a refusal naming the reason, not a generic failure), and registers `config.apply` in the dispatcher. The wiring tests measure the registration from the wire -- the ids-only call answers the intent BadRequest a registered method answers -- and the Launch resolution from the receipt. The labelled row in doc 27 §9 reads Verified now"
       },
       {
-        "id": "VER-28",
+        "id": "VER-89",
         "closed": "2026-11-14",
-        "was": "golden config snapshots under connector/testdata/config/*.golden.json -- five of doc 27 section 3's six fixtures pinned, and shape C's headersRef materialized via headersKeys with fail-closed owned by chrome.proxy",
-        "artefact": "the closer exists and runs: five goldens (shape-a-vision-tcp-tls, shape-b-reality-xhttp, shape-c-grpc-tls, multi-server-ordered, two-plane-core-rules) are byte-compared by connector/internal/compile/golden_test.go, and connector/internal/apply/drive_test.go recompiles all five, materializes them with apply.Write and drives Xray 24.11.11 run -test -c -- all five accepted, the invalid-port negative control rejected. Shape C's headersRef is materialized by the headersKeys list (ODEC-45): the compiler emits a keyed handle map and apply fills exactly the declared keys from the store. The sixth fixture is the fail-closed variant, and it has no distinct Xray bytes because doc 30 section 7 puts the block in chrome.proxy -- so the sixth file is a stated exclusion, which is the golden rule met as written, not a missing snapshot. ODEC-37's predicate-semantics residual is untouched by this closure"
-      },
-      {
-        "id": "VER-65",
-        "closed": "2026-11-14",
-        "was": "no live row covers guards being applied to every redirect hop -- the omission, not the behaviour, is the finding",
-        "artefact": "the omission is closed where it was found: LIVE-25 now exists in docs/verification/live-matrix.md as the redirect-chain row the citation promised -- a two-hop feed (allowed host → redirector → metadata literal) must fail naming the hop that crossed, with the same chain inside the budget as the control that shows the guard is per-hop rather than a first-hop-only gate. The citation in doc 29 §13 now names LIVE-25, so it is an obligation on a row that exists rather than a false reference. The row is unexecuted, as every live row is; what VER-65 owed was the row itself"
-      },
-      {
-        "id": "VER-71",
-        "closed": "2026-11-14",
-        "was": "the protocol enum expansion requires an ADR, and that process rule is asserted by nothing",
-        "artefact": "the assertion runs: scripts/verify.mjs pins both literals of packages/schema/server.schema.json — protocol const vless and network exactly [tcp, ws, grpc, xhttp, h2] — and requires both descriptions to name the ADR process rule, so a schema edit that widens either enum without the ADR (or an ADR whose member list disagrees with the pinned literal) is a red run. The compiler's own refusal of a non-vless protocol before it emits is the second half, already live. Both descriptions now carry the rule in so many words, so the schema states its own law"
-      },
-      {
-        "id": "VER-58",
-        "closed": "2026-11-14",
-        "was": "the negative security rules of SEC-3 are unguarded: NEXORA must not add web_accessible_resources or inject fetched text",
-        "artefact": "the sec3-manifest rule in tools/check-layout-guards.mjs: every tracked manifest*.json is scanned, and one that names web_accessible_resources — as a key or as text — is refused with the reason the audit records the absence as load-bearing (docs/audit/10-manifest-packaging-distribution.md §1). The selftest injects the defect and refuses it; the real run scans the two overlay manifests and finds the key absent from both. The injection half of SEC-3 (no fetched text spliced into a page) is the remaining clause, and it stays open in doc 31 §12 as the PAC-sandbox argument"
-      },
-      {
-        "id": "VER-30",
-        "closed": "2026-11-14",
-        "was": "core.select performing no config write is asserted by nothing (and §9.5 changes what the row means)",
-        "artefact": "§9.5 answered inbound-per-tag: the per-tag inbound layout the compiler ships pins the server into the config bytes, so the imperative no-config-write switch the command promised has no mechanism. core.select left the contract surface the same commit — allowlist 19 → 18, the mutate rate-limit scope and the presentation command lists lose it, the command file is deleted, contract_gen regenerated, the fixture scene removed — and the fast switch is now a config.apply whose compiled hash is unchanged, answered without a restart (doc 26 §2.1 states the decision). The row's premise is gone, which is the closure: nothing asserts a no-config-write switch because the surface no longer declares one"
-      },
-      {
-        "id": "VER-49",
-        "closed": "2026-11-14",
-        "was": "framing enforcement, clause by clause: the sender-side rejection before write and the late-answer discard have tests, the three-missed-heartbeat verdict does not and cannot yet",
-        "artefact": "the third clause is written on both halves. The carrier §9.8 asked for exists: heartbeat is the envelope's fifth frame type, carrying nothing but v, id, type and sentAt (the schema's fifth allOf branch and typeRules refuse every payload field). The sender half is peer.Config.BeatSeconds — the host's endpoint writes a beat every interval while Serve runs; the receiver half counts every inbound frame as a beat and tears down at three missed intervals, measuring silence against cfg.Now. The peer tests drive the pair: two beats on the interval keep an armed watchdog alive past the point a silent peer is torn down, and the silence verdict is ErrPeerLost. The first two clauses (oversized-write refusal, late-answer discard) were green since 2026-11-05; the row's own blocker — which endpoint arms the deadline and what arrives on the wire — was §9.8, answered the same commit"
-      },
-      {
-        "id": "VER-66",
-        "closed": "2026-11-15",
-        "was": "`format: auto` is specified never to resolve ambiguously, and there is no fixture for the two-detectors-both-true case",
-        "artefact": "the contract decision the row waited on, taken as the reading its own data forces: the two detectors are defined on the raw body and are exclusive by construction — `:` is outside every base64 alphabet and strict decoding refuses it, so a body the base64 detector accepts cannot carry a `://` line, and the two-true case the row wanted a fixture for is unrepresentable. The ambiguous input the legacy loader could mis-resolve is the mixed body (URI lines beside base64-shaped fragments), and its rule is the deterministic one: the uri-list detector wins, and any non-entry line refuses the whole body — dropped > 0 is a SchemaMismatch at the refresh boundary naming the resolved format and the rejected count, never a partial import. doc 29 §5 states the definitions and the rule; TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole (connector/cmd/nexora-connector/subscription_parse_test.go) pins the exclusivity over all four alphabet variants, the base64 refusal of every uri-detector body, the mixed body's one-dropped-entry resolution and the declared-format no-detector path; the whole-refusal half was already TestSubscriptionPartialInitialAndLastGoodPreserved's"
+        "was": "a frame below the pipe floor ends the stream instead of answering VersionMismatch: the comparison in connector/internal/envelope's Parse is live code that the envelope's own lower bound subsumes, and framing.json#/versionFloors/tooOld still owes its answer",
+        "artefact": "the answer is written for both transports: envelope.ParseWithFloor carries the refused frame's parsed id on the Invalid error (RejectedID), and internal/peer's Serve plus the connector's line mode answer VersionMismatch in reply to that id — carrying this build's FrameFormatVersion, never the sender's failed one — before ending the stream, because a sender below the floor speaks a framing this build cannot continue reading in step. The branch is live code a test can reach: peer.Config.PipeFloor and the service's pipeFloor state the floor a test needs, since the shipped floor of 1 is subsumed by the envelope's 1..255 bound. Three tests pin it: the peer answers then ends, an id-less below-floor frame gets no answer, and the line mode answers the same way. The production firing is still the day the floor rises above 1, which is the day a second framing exists"
       }
     ]
   },
@@ -606,27 +612,6 @@
         }
       ],
       "why": "ADR-0004's negative is the security property every other control assumes; a stray 127.0.0.1:8080 would be invisible to this repository's checks."
-    },
-    {
-      "id": "VER-19",
-      "subject": "bounded process-local dedupe is tested, but replay after native-port recreation and shared Core adoption has no live fixture",
-      "state": "no-fixture",
-      "owner": "contracts",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "a live retry across native-port recreation and adoption returns the prior result without repeating a protected write or Core start"
-      },
-      "at": [
-        {
-          "doc": "docs/adr/0008-idempotency-and-replay.md",
-          "anchor": "Verified: NO — deferred to Phase 2 (cross-process replay and adoption remain unmeasured)."
-        },
-        {
-          "doc": "docs/architecture/22-component-contracts.md",
-          "anchor": "identical answers (ADR-0008). `Verified: NO — deferred to Phase 2` for"
-        }
-      ],
-      "why": "The generated 300-second/256-entry/8-MiB window and wired A/B/A credential-rotation regression cover one Connector process. A fresh native port still creates another owner and loses that cache; no live fixture proves adoption and replay across that boundary."
     },
     {
       "id": "VER-20",
