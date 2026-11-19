@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.87; older scope and inventory paragraphs
+continuation is §4.88; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5569,6 +5569,29 @@ ODEC-04 row — 27 live questions, 44 sites, contract 8 → 7, gating 15 entries
 and 36's Cited-by rows re-anchored for the lines doc 30 §8 and doc 27 §4's verified rewrites pushed down.
 
 **Gates.** All seven green; 18 Go packages ok.
+### 4.88 packages/i18n is written — VER-40 retired, ADR-0017 single source is real (2026-11-19)
+
+**The root.** packages/i18n: scripts/compile.mjs reads every omega-locales/*/LC_MESSAGES/omega-web.po
+(27 sources), measures completion against the en_US reference (a msgid is covered when the locale carries a
+non-empty non-fuzzy msgstr for it), and emits the two artifacts ADR-0017 names: catalog/shipped.json — the
+typed catalog for the Svelte islands, keyed by the same msgids the po files carry — and localeSupport.json,
+naming all 27 sources with measured completion, the fuzzy count, and rule 5's per-locale promotion work.
+The shipped set is read from po2crx.coffee itself (cs, en_US, fa, ru, zh_CN, zh_TW), never copied.
+
+**The threshold is stated and enforced.** 90% of the reference's msgids (ADR-0017 rule 5's “above a stated
+threshold”): scripts/verify.mjs refuses a shipped locale below it or carrying a fuzzy flag, byte-compares the
+committed artifacts against a fresh compile (nothing is hand-maintained), pins the shipped set to po2crx.coffee,
+traces every catalog entry to its po, and prints the promotion-eligible locales — today ja and pt_BR at 91%.
+A CI step carries the run with VER-40's id.
+
+**Corpus.** VER-40 retired — matrix 54 → 53 rows, 39 tombstones, no-code 38 → 37, packages 3 → 2, assertion
+3 → 2, marker.counted 157 → 155 (the partition is 105 + 26 + 25). The ADR-0017 item's compiler half carries
+the dated superseding note; the RPC half (“no translated string in the new UI reaches the background over
+RPC”) stays with the live rows, and the fetch-graph gate guards its transport side. Doc 20's layout row reads
+“yes — §4.88”; doc 37's threshold row names the tool and the threshold.
+
+**Gates.** All seven green; 18 Go packages ok; the i18n root's own verify green (53 checks, one per
+locale/claim).
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

@@ -1,0 +1,286 @@
+{
+  "generatedBy": "packages/i18n/scripts/compile.mjs",
+  "source": "omega-locales/*/LC_MESSAGES/omega-web.po",
+  "referenceLocale": "en_US",
+  "thresholdPct": 90,
+  "shippedSet": [
+    "cs",
+    "en_US",
+    "fa",
+    "ru",
+    "zh_CN",
+    "zh_TW"
+  ],
+  "rows": [
+    {
+      "locale": "ach",
+      "entries": 350,
+      "translated": 350,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": false,
+      "promotion": "completion above the stated threshold; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "cs",
+      "entries": 350,
+      "translated": 350,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": true,
+      "promotion": "shipped"
+    },
+    {
+      "locale": "de",
+      "entries": 350,
+      "translated": 350,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": false,
+      "promotion": "completion above the stated threshold; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "en_US",
+      "entries": 381,
+      "translated": 381,
+      "fuzzy": 0,
+      "covered": 381,
+      "completionPct": 100,
+      "supported": true,
+      "promotion": "shipped"
+    },
+    {
+      "locale": "es",
+      "entries": 348,
+      "translated": 348,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": false,
+      "promotion": "completion above the stated threshold; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "es_AR",
+      "entries": 350,
+      "translated": 350,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": false,
+      "promotion": "completion above the stated threshold; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "fa",
+      "entries": 348,
+      "translated": 348,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": true,
+      "promotion": "shipped"
+    },
+    {
+      "locale": "fr",
+      "entries": 350,
+      "translated": 350,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": false,
+      "promotion": "completion above the stated threshold; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "he_IL",
+      "entries": 350,
+      "translated": 0,
+      "fuzzy": 0,
+      "covered": 0,
+      "completionPct": 0,
+      "supported": false,
+      "promotion": "completion 0% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "is",
+      "entries": 350,
+      "translated": 44,
+      "fuzzy": 0,
+      "covered": 44,
+      "completionPct": 12,
+      "supported": false,
+      "promotion": "completion 12% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "it",
+      "entries": 350,
+      "translated": 43,
+      "fuzzy": 0,
+      "covered": 43,
+      "completionPct": 11,
+      "supported": false,
+      "promotion": "completion 11% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "ja",
+      "entries": 350,
+      "translated": 350,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": false,
+      "promotion": "completion above the stated threshold; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "lzh",
+      "entries": 350,
+      "translated": 21,
+      "fuzzy": 0,
+      "covered": 21,
+      "completionPct": 6,
+      "supported": false,
+      "promotion": "completion 6% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "nb_NO",
+      "entries": 350,
+      "translated": 210,
+      "fuzzy": 7,
+      "covered": 210,
+      "completionPct": 55,
+      "supported": false,
+      "promotion": "completion 55% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "nl",
+      "entries": 350,
+      "translated": 35,
+      "fuzzy": 0,
+      "covered": 35,
+      "completionPct": 9,
+      "supported": false,
+      "promotion": "completion 9% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "pl",
+      "entries": 350,
+      "translated": 7,
+      "fuzzy": 0,
+      "covered": 7,
+      "completionPct": 2,
+      "supported": false,
+      "promotion": "completion 2% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "pt",
+      "entries": 350,
+      "translated": 69,
+      "fuzzy": 0,
+      "covered": 69,
+      "completionPct": 18,
+      "supported": false,
+      "promotion": "completion 18% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "pt_BR",
+      "entries": 350,
+      "translated": 350,
+      "fuzzy": 0,
+      "covered": 348,
+      "completionPct": 91,
+      "supported": false,
+      "promotion": "completion above the stated threshold; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "ru",
+      "entries": 381,
+      "translated": 381,
+      "fuzzy": 0,
+      "covered": 381,
+      "completionPct": 100,
+      "supported": true,
+      "promotion": "shipped"
+    },
+    {
+      "locale": "si",
+      "entries": 350,
+      "translated": 2,
+      "fuzzy": 0,
+      "covered": 2,
+      "completionPct": 1,
+      "supported": false,
+      "promotion": "completion 1% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "sk",
+      "entries": 350,
+      "translated": 34,
+      "fuzzy": 2,
+      "covered": 34,
+      "completionPct": 9,
+      "supported": false,
+      "promotion": "completion 9% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "sl",
+      "entries": 350,
+      "translated": 47,
+      "fuzzy": 0,
+      "covered": 47,
+      "completionPct": 12,
+      "supported": false,
+      "promotion": "completion 12% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "tr",
+      "entries": 350,
+      "translated": 245,
+      "fuzzy": 0,
+      "covered": 243,
+      "completionPct": 64,
+      "supported": false,
+      "promotion": "completion 64% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "uk",
+      "entries": 350,
+      "translated": 223,
+      "fuzzy": 127,
+      "covered": 222,
+      "completionPct": 58,
+      "supported": false,
+      "promotion": "completion 58% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "zh_CN",
+      "entries": 360,
+      "translated": 360,
+      "fuzzy": 0,
+      "covered": 360,
+      "completionPct": 94,
+      "supported": true,
+      "promotion": "shipped"
+    },
+    {
+      "locale": "zh_Hant",
+      "entries": 350,
+      "translated": 90,
+      "fuzzy": 8,
+      "covered": 90,
+      "completionPct": 24,
+      "supported": false,
+      "promotion": "completion 24% of 90%; a po2crx.coffee target entry; a localeSupport row flip"
+    },
+    {
+      "locale": "zh_TW",
+      "entries": 356,
+      "translated": 356,
+      "fuzzy": 0,
+      "covered": 356,
+      "completionPct": 93,
+      "supported": true,
+      "promotion": "shipped"
+    }
+  ]
+}

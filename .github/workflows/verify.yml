@@ -94,6 +94,18 @@ jobs:
         working-directory: packages/state
         run: npm run verify
 
+      # ADR-0017's single-source promise, as a runner step: the omega-locales po files compile into the typed
+      # catalog and the localeSupport table, and the committed artifacts are byte-compared against a fresh
+      # compile -- a hand-edited catalog, a dropped locale or a shipped locale below the stated threshold is a
+      # red run (VER-40's closer; docs/PROJECT-STATE.md §4.88).
+      - name: Install the i18n root
+        working-directory: packages/i18n
+        run: npm install --no-audit --no-fund
+
+      - name: VER-40 -- the po-to-catalog compile and the localeSupport table (packages/i18n)
+        working-directory: packages/i18n
+        run: npm run verify
+
       # The last of these modes is the one the resolution checks cannot see: a `| Cited by |` row whose cited
       # line is real, non-blank and about something else. Of the 52 rows in the six tables that carry a line
       # cite outside docs/adr/, 21 had drifted that way by 2026-11-07, all of them green; docs/PROJECT-STATE.md

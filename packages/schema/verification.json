@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 157
+    "counted": 155
   },
   "states": {
     "values": [
@@ -437,6 +437,12 @@
         "closed": "2026-11-19",
         "was": "UnsupportedCombination is in the taxonomy with a transport-combination meaning, so a user-supplied port overlap has a refusal and no code that names it",
         "artefact": "the named-code half is config_apply.go's codeMarkers table: the overlap refusal (ports.go's own words, \"overlaps the block range\") maps to UnsupportedCombination, and config_apply_test.go drives the real refusal for every marker row, so a reworded message fails the test rather than silently changing an answer a client acts on. The disjointness half is ODEC-04's answer, retired beside it: the two shipped documents are pinned disjoint by model_test.go, the overlap is refused before any document is emitted, and the refusal surfaces through config.apply under the named code. The three corpus labels this row anchored read Verified"
+      },
+      {
+        "id": "VER-40",
+        "closed": "2026-11-19",
+        "was": "the .po-to-catalog compiler, the localeSupport table and the promotion threshold do not exist",
+        "artefact": "packages/i18n is written: scripts/compile.mjs reads every omega-locales/*/LC_MESSAGES/omega-web.po, measures completion against the en_US reference (a msgid is covered when the locale carries a non-empty non-fuzzy msgstr for it), and emits catalog/shipped.json for the locales po2crx.coffee compiles plus localeSupport.json naming all 27 sources with measured completion and rule 5's per-locale promotion work. scripts/verify.mjs byte-compares the committed artifacts against a fresh compile, pins the shipped set to po2crx.coffee, refuses a shipped locale below the stated threshold (90%) or carrying a fuzzy flag, traces every catalog entry to its po, and prints the promotion-eligible locales for the contributor track. A CI step runs it on every push. The ADR-0017 item's compiler half is superseded by a dated note; its RPC half stays with the live rows and the fetch-graph gate"
       }
     ]
   },
@@ -967,27 +973,6 @@
         }
       ],
       "why": "This one cannot be automated away: 'a button implies a feature' is a fact about a reader, so the honest close is a review per screen, not an assertion."
-    },
-    {
-      "id": "VER-40",
-      "subject": "the `.po`-to-catalog compiler, the `localeSupport` table and the promotion threshold do not exist",
-      "state": "no-code",
-      "owner": "packages",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "packages/i18n compiles the catalog and emits the localeSupport table"
-      },
-      "at": [
-        {
-          "doc": "docs/adr/0017-single-i18n-source-compiled-twice.md",
-          "anchor": "- Verified: NO -- deferred to Phase 2: the `.po`-to-catalog compiler, "
-        },
-        {
-          "doc": "docs/architecture/37-ui-architecture.md",
-          "anchor": "locale completion threshold and promotion"
-        }
-      ],
-      "why": "ADR-0017's single-source promise is only real once both outputs come from one compile; and the scope of the 20 unsupplied locales is still a human decision (docs/PROJECT-STATE.md §9.6)."
     },
     {
       "id": "VER-41",

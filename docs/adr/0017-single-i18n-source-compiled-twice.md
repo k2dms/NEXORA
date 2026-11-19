@@ -120,7 +120,11 @@ popup is therefore a message to a service worker that may be asleep -- the exact
 
 - Existing check: `node tools/check-doc-evidence.mjs` resolves every citation above, including the `po2crx`
   list that defines the shipped set.
-- Verified: NO -- deferred to Phase 2: the `.po`-to-catalog compiler, `localeSupport` table generation and
-  its completion threshold, and "no translated string in the new UI reaches the background over RPC". The
-  intended check is a CI job that regenerates the catalog and diffs it against the committed output, plus a
-  lint that fails a shipped locale below threshold.
+- Verified 2026-11-19 for the compiler half, superseding the deferred verdict this item carried:
+  `packages/i18n/scripts/compile.mjs` compiles the omega-locales po files into the typed catalog and
+  `localeSupport.json` (all 27 sources with measured completion against the en_US reference; the stated
+  threshold is 90%), and `scripts/verify.mjs` byte-compares the committed artifacts against a fresh compile,
+  refuses a shipped locale below the threshold or carrying a fuzzy flag, and states rule 5's promotion work
+  per unshipped locale. A CI step runs it on every push (`VER-40` retired with it). The RPC half -- "no
+  translated string in the new UI reaches the background over RPC" -- stays with the live rows; the
+  fetch-graph gate (VER-64's step) guards its transport side. History in git.

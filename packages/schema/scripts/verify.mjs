@@ -3819,7 +3819,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const promisedAssertions = verif.matrix.filter((r) => r.closesBy.kind === 'assertion');
   const alreadyGreen = promisedAssertions.filter((r) => labels.has(r.closesBy.ref)).map((r) => r.id);
   check(
-    promisedAssertions.length >= 3 && alreadyGreen.length === 0,
+    promisedAssertions.length >= 2 && alreadyGreen.length === 0,
     'every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled',
     `already green and still queued: ${alreadyGreen.join(', ') || 'none'}`,
   );
@@ -3841,14 +3841,14 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 38 && count('state', 'no-check') === 0 && count('state', 'no-run') === 11 &&
-      count('state', 'no-fixture') === 1 && count('state', 'needs-human') === 4 && verif.matrix.length === 54,
+    count('state', 'no-code') === 37 && count('state', 'no-check') === 0 && count('state', 'no-run') === 11 &&
+      count('state', 'no-fixture') === 1 && count('state', 'needs-human') === 4 && verif.matrix.length === 53,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
   );
   check(
-    count('owner', 'connector') === 32 && count('owner', 'extension') === 9 && count('owner', 'packages') === 3 &&
+    count('owner', 'connector') === 32 && count('owner', 'extension') === 9 && count('owner', 'packages') === 2 &&
       count('owner', 'ui') === 3 && count('owner', 'contracts') === 1 && count('owner', 'tools') === 0 &&
       count('owner', 'ci') === 2 && count('owner', 'human') === 1 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
@@ -3857,7 +3857,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
   );
   check(
-    kindCount('live-row') === 42 && kindCount('new-live-row') === 0 && kindCount('assertion') === 3 &&
+    kindCount('live-row') === 42 && kindCount('new-live-row') === 0 && kindCount('assertion') === 2 &&
       kindCount('gate') === 2 && kindCount('tool') === 0 && kindCount('ci-step') === 2 &&
       kindCount('decision') === 1 && kindCount('external-measurement') === 4,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',

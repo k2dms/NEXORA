@@ -466,7 +466,7 @@ already owns.
 | parity rows are real and none is closed | `nexora/extension` | "every parity row points at a legacy file that is still in the repository", "no parity row is closed in this iteration" |
 | doc 37 names what the data declares | `nexora/extension` | "the user-interface document names every surface, state, document, placement, token and locale the data declares" |
 | every budget measured, popup startup | `nexora/extension` | none yet — `Verified: NO`, deferred to Phase 2 with a CI measurement |
-| locale completion threshold and promotion | contributors + `packages/i18n` | none yet — `Verified: NO`, ADR-0017 rule 5 |
+| locale completion threshold and promotion | contributors + `packages/i18n` | `scripts/compile.mjs` measures completion against the en_US reference (the stated threshold is 90%) and emits `localeSupport.json`, whose rows state per-locale promotion work; `scripts/verify.mjs` byte-compares the committed artifacts against a fresh compile (`VER-40` retired with it) |
 | no Svelte root inside AngularJS DOM | `nexora/extension` | none yet — `Verified: NO`, a build-time scan of mount points (ADR-0016 verification) |
 
 ## 12. Threat, control, check

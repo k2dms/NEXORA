@@ -1,0 +1,10 @@
+{
+  "name": "@nexora/i18n",
+  "private": true,
+  "type": "module",
+  "description": "ADR-0017's single-source promise: the omega-locales .po files compile into the typed UI catalog and the localeSupport table. Nothing here is hand-maintained; verify.mjs recompiles and byte-compares against the committed artifacts.",
+  "scripts": {
+    "compile": "node scripts/compile.mjs",
+    "verify": "node scripts/verify.mjs"
+  }
+}
