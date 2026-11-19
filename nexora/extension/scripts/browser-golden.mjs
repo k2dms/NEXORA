@@ -7,6 +7,7 @@ import { createServer as httpsServer } from 'node:https';
 import { createServer as tcpServer } from 'node:net';
 import { generateKeyPairSync, createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
+import { openSync } from 'node:fs';
 import { strict as assert } from 'node:assert';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -121,7 +122,7 @@ const launchChrome = async () => {
     '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
     ...subscriptionURL ? [] : ['--ignore-certificate-errors'],
     '--enable-unsafe-extension-debugging', '--remote-debugging-port=' + debugPort, '--user-data-dir=' + root + '/browser', 'about:blank',
-  ], { stdio: 'ignore', env });
+  ], { stdio: ['ignore', 'ignore', openSync('E:/NEXORA/tmp/chrome-stderr.log', 'a')], env });
   version = undefined;
   for (let attempt = 0; attempt < 100; attempt++) {
     assert.equal(chrome.exitCode, null, 'Chrome exited before CDP was ready');
@@ -342,10 +343,17 @@ try {
   id = await installUnpacked();
   installed = true;
   command(bins + 'nexora-installer.exe', ['install', '--host', hostExe, '--origin', 'chrome-extension://' + id + '/']);
+  // The SW started while the NM registration was still absent, so its reconnect ladder may have exhausted
+  // before the manifest appeared. Close the options page so that SW instance dies of MV3 idle, then re-open:
+  // the fresh SW reconnects with a full ladder and finds the host whose registration now exists.
+  const optionsTargetId = await attachOptions();
+  await call('Target.closeTarget', { targetId: optionsTargetId });
+  await delay(35000);
+  sessionId = null;
   await attachOptions();
   await delay(1500);
   let status;
-  for (let attempt = 0; attempt < 40; attempt++) {
+  for (let attempt = 0; attempt < 240; attempt++) {
     status = await rpc('status');
     if (status?.view?.connector === 'ready') break;
     await delay(250);
