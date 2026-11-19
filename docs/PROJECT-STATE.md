@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.86; older scope and inventory paragraphs
+continuation is §4.87; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5552,6 +5552,23 @@ The status line of this ledger, which §4.81–§4.85 had left at §4.80, reads 
 commit the previous session left local — and b8937e7, ODEC-11's answer; `nexora/master` moved 33599ae →
 b8937e7. The push was confirmed by the user in the session that wrote this entry, per the rule the state
 commits of 33599ae and b1590ca already follow.
+### 4.87 The overlap refusal has its code — VER-20 retired, ODEC-04 answered (2026-11-19)
+
+**The row was stale.** VER-20's why said two halves were owed, but the code already carried both:
+config_apply.go's `codeMarkers` table maps the overlap refusal (ports.go's own words, "overlaps the block
+range") to `UnsupportedCombination`, and config_apply_test.go drives the real refusal for every marker row.
+The disjointness half is ODEC-04's answer, its own second and third options together: two ranges stay
+declared, a harness check pins the two shipped documents disjoint (model_test.go), ports.go refuses an overlap
+before any document is emitted, and the refusal surfaces through config.apply under the named code.
+
+**Corpus.** VER-20 and ODEC-04 retired — matrix 55 → 54 rows, 38 tombstones, no-check 1 → 0 (the column is
+empty now), contracts 2 → 1, assertion 4 → 3, marker.counted 161 → 157 (the partition is 106 + 26 + 25; three
+deferral labels in docs 22, 30 and 27 became verified statements, and ODEC-03's born-from site keeps its
+register mention on the verified line). ODEC-03's gate list loses VER-20 (`VER-16` stays); doc 40 loses the
+ODEC-04 row — 27 live questions, 44 sites, contract 8 → 7, gating 15 entries gate exactly 2. Doc 32, 33, 34
+and 36's Cited-by rows re-anchored for the lines doc 30 §8 and doc 27 §4's verified rewrites pushed down.
+
+**Gates.** All seven green; 18 Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

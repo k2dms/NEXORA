@@ -59,12 +59,12 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
 | `docs/architecture/25-native-messaging-protocol.md:317` | `SecretRedacted` vs a corrupt document | §11 |
 | `docs/architecture/26-command-surface.md:254` | `maskedConfig` must contain no keystore value | §13 |
-| `docs/architecture/27-config-compilation-pipeline.md:136` | mask and label rules for unrepresentable fields | §9, §10 |
+| `docs/architecture/27-config-compilation-pipeline.md:139` | mask and label rules for unrepresentable fields | §9, §10 |
 | `docs/architecture/29-subscriptions-and-servers.md:297` | `detail` masked like any other text | §8 |
 | `docs/architecture/29-subscriptions-and-servers.md:338` | M3–M5: credentials inside a subscription | §6, §14 |
 | `docs/architecture/29-subscriptions-and-servers.md:394` | the write primitive "that does not exist yet" | §6 — it exists now |
 | `docs/architecture/30-failure-policy.md:146` | a Core holding credentials with no controller | §7, §12 |
-| `docs/architecture/30-failure-policy.md:383` | what a keystore failure means for a command | §12 |
+| `docs/architecture/30-failure-policy.md:385` | what a keystore failure means for a command | §12 |
 | `docs/architecture/31-security-model.md:283` | the DPAPI residual and the full threat model | §16 here; the residual stays owned by `docs/architecture/31-security-model.md` §14 |
 | `docs/adr/0011-windows-keystore-dpapi.md:54` | "the full threat model belongs to" this document | §16 |
 

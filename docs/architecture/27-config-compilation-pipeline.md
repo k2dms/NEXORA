@@ -96,10 +96,12 @@ All five materialized configs were also accepted by Xray 24.11.11 through `conne
 
 The last row is a real trap: `packages/schema/failure-policy.schema.json#/properties/block/properties/portRange`
 chooses a port to *leave closed*. If that range overlaps the allocation range, a fail-closed write could point
-at a live inbound and silently proxy instead of blocking. The rule is that the two ranges are disjoint, and the
-disjointness is an open item for Phase 2 data (`docs/architecture/40-open-decisions.md`) — it cannot be
-expressed as a JSON Schema constraint across two files today, so it is asserted where both are loaded:
-`Verified: NO — deferred to Phase 2`.
+at a live inbound and silently proxy instead of blocking. The rule is that the two ranges are disjoint, and
+`ODEC-04` answered 2026-11-19: it cannot be expressed as a JSON Schema constraint across two files, so it is
+asserted where both are loaded — `model_test.go` pins the two shipped documents disjoint, `ports.go` refuses an
+overlap before any document is emitted, and the refusal surfaces through `config.apply` as
+`UnsupportedCombination` (`config_apply_test.go` drives it). **Verified** (`VER-20` and `ODEC-04` retired with
+it).
 
 ## 5. Inbound topology: per tag, not one inbound with routing
 
@@ -195,7 +197,7 @@ is an apply that failed while a real Core was loading the previous config).
 | Every `*Hash` field is one canonical lowercase sha256 pattern | the coverage check in `packages/schema/scripts/verify.mjs` "${name}.${part}.${field} uses the canonical sha256 pattern" | **GREEN** |
 | Compilation is byte-deterministic | the serializer and five goldens — `emit_test.go` re-emits one hand-built document two hundred times and compares an independent encoder, and `golden_test.go` compiles the contract examples and compares the result byte-for-byte with `connector/testdata/config/*.golden.json`; registry order and map order are both covered | **GREEN** — the golden tier exists and runs (`VER-28` retired with it); a live row testing the determinism of a *compiled* config stays with the live matrix |
 | Non-loopback bind is impossible to emit | `connector/internal/compile/validate.go` refuses any inbound whose `listen` is not `127.0.0.1` before stage 7 returns, and `compile_test.go` shows an `0.0.0.0` inbound cannot survive it | Verified: NO — deferred to Phase 2 |
-| Block port range and allocation range are disjoint | `connector/internal/compile/ports.go` refuses a range that overlaps the block range rather than drawing around it, and `model_test.go` checks the two shipped documents | Verified: NO — deferred to Phase 2, `docs/architecture/40-open-decisions.md` |
+| Block port range and allocation range are disjoint | `connector/internal/compile/ports.go` refuses a range that overlaps the block range rather than drawing around it, and `model_test.go` checks the two shipped documents; the refusal surfaces as `UnsupportedCombination` through `config.apply` | **GREEN** (`VER-20` and `ODEC-04` retired with it) |
 | The 64-inbound ceiling produces `QuotaExceeded`, not a partial config | `ports.go` refuses the whole set naming the count, so no partial document is ever emitted; whether `QuotaExceeded` is that count's code is `ODEC-03`'s question | Verified: NO — deferred to Phase 2 |
 | The core-rule and per-tag inbound spellings a golden must pin | §5–§6 record the implemented interim forms; `split_test.go` and `golden_test.go` pin their emitted bytes, and `connector/internal/apply/drive_test.go` measures acceptance of five materialized configs by Xray 24.11.11. Loopback HTTP/TLS, BitTorrent, WebSocket Upgrade and UDP tests additionally verify the measured routing subset; `invert: true` and rules containing `ws` or `fakedns` are reported whole because Core cannot preserve their matches. `ODEC-37` retains QUIC's positive traffic case and the FakeDNS engine a live match would need | open decision, `docs/architecture/40-open-decisions.md` |
 | A failed apply leaves the previous config applied | `connector/internal/apply/write_test.go` writes a document whose secret is missing over a good config and re-reads the file, byte-for-byte, plus the hash the contract would report | Verified: NO — deferred to Phase 2 |

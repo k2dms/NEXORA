@@ -259,7 +259,9 @@ a restart the Compiler could bind exactly the port the browser believes is close
 unmanaged tunnel that the user has been told is severed. The two shipped documents are checked for disjointness by
 `verify.mjs` today; a user-supplied overlap is a semantic conflict and must be refused by `config.apply` with
 `UnsupportedCombination` rather than `BadRequest`, because nothing about either document is malformed.
-`Verified: NO — deferred to Phase 2`.
+**Verified** — `config_apply.go`'s `codeMarkers` table maps the overlap refusal to that code, and
+`config_apply_test.go` drives the real refusal for every row, so a reworded message fails the test
+(`VER-20` retired with it).
 
 Within the block range, one port is used at a time and it is chosen deterministically, not round-robin: the port
 in force is part of what reconnect reconciliation compares, so a rotating block port would look like drift on every

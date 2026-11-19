@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 47
+    "counted": 45
   },
   "notADeferral": [
     {
@@ -75,8 +75,7 @@
       "decidedBy": "contract",
       "blocks": {
         "verification": [
-          "VER-16",
-          "VER-20"
+          "VER-16"
         ],
         "compatibility": []
       },
@@ -89,34 +88,7 @@
       "at": [
         {
           "doc": "docs/architecture/22-component-contracts.md",
-          "anchor": "decision in `docs/architecture/40-open-decisions.md`"
-        }
-      ]
-    },
-    {
-      "id": "ODEC-04",
-      "question": "How is the fail-closed block port range kept disjoint from the inbound allocation range, when the two live in different files and JSON Schema cannot span them?",
-      "decidedBy": "contract",
-      "blocks": {
-        "verification": [
-          "VER-20"
-        ],
-        "compatibility": []
-      },
-      "why": "`failure-policy.schema.json#/properties/block/properties/portRange` chooses a port to *leave closed*. If it overlaps the allocation range in `connector-settings.schema.json`, a fail-closed write can point at a live inbound and silently proxy -- the exact inversion of constraint 10. The rule is real; only its expression is open, and no cross-file constraint exists in draft 2020-12 today.",
-      "options": [
-        "one owner: the allocation range is declared in `connector-settings.schema.json` and the block range is derived from it, never written by the user",
-        "two ranges plus an assertion: keep both fields and add a harness check that they are disjoint on every run (VER-20's promised assertion)",
-        "a named error code for the overlap and a runtime refusal at `core.start`, accepting that a bad document can still be authored"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "disjointness is an open item for Phase 2 data"
-        },
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "| Block port range and allocation range are disjoint |"
+          "anchor": "`UnsupportedCombination` — **Verified**, the question it defers still open in `docs/architecture/40-open-decisions.md`"
         }
       ]
     },
@@ -1018,6 +990,18 @@
         "freed": {
           "verification": [
             "VER-56"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-04",
+        "decided": "2026-11-19",
+        "was": "how is the fail-closed block port range kept disjoint from the inbound allocation range, when the two live in different files and JSON Schema cannot span them",
+        "artefact": "its own second and third options together, which the implementation already is: two ranges stay declared (a user may move either), a harness check pins the two shipped documents disjoint (model_test.go), ports.go refuses an overlap before any document is emitted rather than drawing around it, and the refusal surfaces through config.apply as UnsupportedCombination by the codeMarkers table. No cross-file JSON Schema constraint exists in draft 2020-12, so the assertion lives where both files are loaded -- which is where the schema cannot reach. VER-20 retired in the same commit; the citing sites in doc 27 §4 and §14 and doc 30 §8 state the answer",
+        "freed": {
+          "verification": [
+            "VER-20"
           ],
           "compatibility": []
         }

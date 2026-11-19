@@ -116,8 +116,8 @@ privilege class, execute, emit events, and be the only process that talks to Cor
 5. It never returns an unmasked secret in any frame, including `diagnostics.get`
    (`docs/architecture/32-secrets-keystore-masking.md` §sink rule).
 6. It refuses to start Core if any inbound would bind non-loopback (ADR-0006), answering
-   `UnsupportedCombination` — `Verified: NO — deferred to Phase 2`, and flagged as a missing error-code
-   decision in `docs/architecture/40-open-decisions.md`.
+   `UnsupportedCombination` — **Verified**, the question it defers still open in `docs/architecture/40-open-decisions.md`: the refusal exists in `ports.go`, surfaces through `config.apply`
+   by the `codeMarkers` table, and the tests drive every marker row (`VER-20` retired with it).
 
 **Mode of failure** — crash ⇒ Core dies with it by containment; the extension's fail-closed policy takes over
 (`docs/architecture/30-failure-policy.md`). **Owner**: the Go module.

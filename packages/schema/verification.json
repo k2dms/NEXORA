@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 161
+    "counted": 157
   },
   "states": {
     "values": [
@@ -431,6 +431,12 @@
         "closed": "2026-11-19",
         "was": "the permission target column is unmeasured while ODEC-11 is open -- the manifest half closed 2026-11-19, the target half waits on the decision",
         "artefact": "both halves closed. The manifest half: tools/check-manifest-delta.mjs diffs both overlay manifests against §13's today column, browser scope and host_permissions included. The target half: ODEC-11 answered 2026-11-19 -- the grant is inherited, not chosen -- doc 31 §13's host_permissions row states it, and the tool gained rule 6: a manifest that drops <all_urls> while the target column says keep inherited is refused, with a selftest case injecting the defect. The row is deleted rather than re-labelled: a target column with a decision and a tool that enforces it is not a queued claim"
+      },
+      {
+        "id": "VER-20",
+        "closed": "2026-11-19",
+        "was": "UnsupportedCombination is in the taxonomy with a transport-combination meaning, so a user-supplied port overlap has a refusal and no code that names it",
+        "artefact": "the named-code half is config_apply.go's codeMarkers table: the overlap refusal (ports.go's own words, \"overlaps the block range\") maps to UnsupportedCombination, and config_apply_test.go drives the real refusal for every marker row, so a reworded message fails the test rather than silently changing an answer a client acts on. The disjointness half is ODEC-04's answer, retired beside it: the two shipped documents are pinned disjoint by model_test.go, the overlap is refused before any document is emitted, and the refusal surfaces through config.apply under the named code. The three corpus labels this row anchored read Verified"
       }
     ]
   },
@@ -618,35 +624,6 @@
         }
       ],
       "why": "ADR-0004's negative is the security property every other control assumes; a stray 127.0.0.1:8080 would be invisible to this repository's checks."
-    },
-    {
-      "id": "VER-20",
-      "subject": "`UnsupportedCombination` is in the taxonomy with a transport-combination meaning, so a user-supplied port overlap has a refusal and no code that names it",
-      "state": "no-check",
-      "owner": "contracts",
-      "closesBy": {
-        "kind": "assertion",
-        "ref": "the overlap refusal is a named error code, not BadRequest"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/22-component-contracts.md",
-          "anchor": "`UnsupportedCombination` — `Verified: NO — deferred to Phase 2`, and f"
-        },
-        {
-          "doc": "docs/architecture/30-failure-policy.md",
-          "anchor": "`Verified: NO — deferred to Phase 2`."
-        },
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "`Verified: NO — deferred to Phase 2`."
-        },
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "Block port range and allocation range are disjoint"
-        }
-      ],
-      "why": "Nothing about either document is malformed, so a generic error would blame the user. The refusal exists: `connector/internal/compile/ports.go` refuses an allocation range that overlaps the block range rather than drawing around it, so no partial document reaches the writer. Two halves stay owed. The refusal is a Go error with no command surface, and the code doc 30 §8 promises for it means 'semantically invalid transport combination' (`packages/schema/protocol/error-taxonomy.json:14`), which an overlap is not -- `ODEC-03` holds that reading. And the shipped disjointness of the two files is checked where both are loaded, which is now stage 3 of the compiler (`model_test.go`), not a schema rule."
     },
     {
       "id": "VER-21",
