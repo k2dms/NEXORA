@@ -83,7 +83,7 @@ func refuseCode(t *testing.T, r *Refusal) string {
 
 func TestAChunkGroupIsAnsweredByProgressFramesAndOneResponse(t *testing.T) {
 	d, ran, _ := chunkDispatcher(t)
-	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"servers":[],"mode":"merge"}`)
+	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"servers":[],"mode":"merge"}`) // nexora-secret-allow: synthetic profile id, nothing behind it
 	hash, chunks := fragment(doc, 3)
 	if len(chunks) != 3 {
 		t.Fatalf("the fixture split into %d fragments", len(chunks))
@@ -138,7 +138,7 @@ func TestAChunkGroupIsAnsweredByProgressFramesAndOneResponse(t *testing.T) {
 
 func TestTheImportBudgetIsSpentOncePerGroup(t *testing.T) {
 	d, _, _ := chunkDispatcher(t)
-	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`)
+	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`) // nexora-secret-allow: synthetic profile id, nothing behind it
 	hash, chunks := fragment(doc, 2)
 	// One complete group: the named budget records one import, not two slice frames plus a final.
 	for seq, payload := range chunks {
@@ -163,7 +163,7 @@ func mustRefuse(t *testing.T, d *Dispatcher, f *envelope.Frame) *Refusal {
 
 func TestAnOutOfOrderSliceFailsTheWholeImport(t *testing.T) {
 	d, ran, _ := chunkDispatcher(t)
-	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`)
+	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`) // nexora-secret-allow: synthetic profile id, nothing behind it
 	hash, chunks := fragment(doc, 3)
 	if _, r := dispatchSlice(t, d, chunkedSlice("pi-req-0001", 0, 3, hash, chunks[0])); r != nil {
 		t.Fatalf("slice 0 was refused: %v", r)
@@ -182,7 +182,7 @@ func TestAnOutOfOrderSliceFailsTheWholeImport(t *testing.T) {
 
 func TestASplitHashIsRefusedTheWayTheRecordedGroupIs(t *testing.T) {
 	d, ran, _ := chunkDispatcher(t)
-	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2)
+	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2) // nexora-secret-allow: synthetic profile id, nothing behind it
 	sum := sha256.Sum256([]byte(`{"profiles":[]}`))
 	other := hex.EncodeToString(sum[:])
 	if _, r := dispatchSlice(t, d, chunkedSlice("pi-req-0002", 0, 2, hash, chunks[0])); r != nil {
@@ -198,7 +198,7 @@ func TestASplitHashIsRefusedTheWayTheRecordedGroupIs(t *testing.T) {
 
 func TestAReaskedSliceIsAnsweredFromState(t *testing.T) {
 	d, ran, _ := chunkDispatcher(t)
-	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`)
+	doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`) // nexora-secret-allow: synthetic profile id, nothing behind it
 	hash, chunks := fragment(doc, 3)
 	first, r := dispatchSlice(t, d, chunkedSlice("pi-req-0001", 0, 3, hash, chunks[0]))
 	if r != nil {
@@ -227,7 +227,7 @@ func TestAReaskedSliceIsAnsweredFromState(t *testing.T) {
 
 func TestAnUndecodableFragmentRefusesAndDropsTheGroup(t *testing.T) {
 	d, ran, _ := chunkDispatcher(t)
-	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2)
+	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2) // nexora-secret-allow: synthetic profile id, nothing behind it
 	if code := refuseCode(t, mustRefuse(t, d, chunkedSlice("pi-req-0001", 0, 2, hash, "!!!not base64"))); code != "BadRequest" {
 		t.Fatalf("an undecodable fragment was answered %s, want BadRequest", code)
 	}
@@ -242,7 +242,7 @@ func TestAnUndecodableFragmentRefusesAndDropsTheGroup(t *testing.T) {
 func TestTheReassembledDocumentMayNotCarryWhatAChunkedImportMustNot(t *testing.T) {
 	for _, field := range []string{"credentials", "contentHash", "payload", "chunk"} {
 		d, ran, _ := chunkDispatcher(t)
-		doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge","` + field + `":{}}`)
+		doc := []byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge","` + field + `":{}}`) // nexora-secret-allow: synthetic profile id, nothing behind it
 		hash, chunks := fragment(doc, 2)
 		if _, r := dispatchSlice(t, d, chunkedSlice("pi-req-0001", 0, 2, hash, chunks[0])); r != nil {
 			t.Fatalf("%s: slice 0 was refused: %v", field, r)
@@ -258,7 +258,7 @@ func TestTheReassembledDocumentMayNotCarryWhatAChunkedImportMustNot(t *testing.T
 
 func TestAHashMismatchOnACompleteGroupIsIntegrityMismatch(t *testing.T) {
 	d, ran, _ := chunkDispatcher(t)
-	_, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2)
+	_, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2) // nexora-secret-allow: synthetic profile id, nothing behind it
 	wrong := strings.Repeat("ab", 32)
 	if _, r := dispatchSlice(t, d, chunkedSlice("pi-req-0001", 0, 2, wrong, chunks[0])); r != nil {
 		t.Fatalf("slice 0 was refused: %v", r)
@@ -326,7 +326,7 @@ func TestAChunkFrameForAnotherMethodIsRefused(t *testing.T) {
 
 func TestAWholeFrameMayNotBorrowAnOpenGroupId(t *testing.T) {
 	d, ran, _ := chunkDispatcher(t)
-	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2)
+	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2) // nexora-secret-allow: synthetic profile id, nothing behind it
 	if _, r := dispatchSlice(t, d, chunkedSlice("pi-req-0001", 0, 2, hash, chunks[0])); r != nil {
 		t.Fatalf("slice 0 was refused: %v", r)
 	}
@@ -347,7 +347,7 @@ func TestAWholeFrameMayNotBorrowAnOpenGroupId(t *testing.T) {
 
 func TestAStalledGroupExpiresPastItsCommandTimeout(t *testing.T) {
 	d, ran, clk := chunkDispatcher(t)
-	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2)
+	hash, chunks := fragment([]byte(`{"profiles":[{"id":"b9d6f2c4-1a85-4e37-9c50-6d3b8f2a4e11"}],"mode":"merge"}`), 2) // nexora-secret-allow: synthetic profile id, nothing behind it
 	if _, r := dispatchSlice(t, d, chunkedSlice("pi-req-0001", 0, 2, hash, chunks[0])); r != nil {
 		t.Fatalf("slice 0 was refused: %v", r)
 	}

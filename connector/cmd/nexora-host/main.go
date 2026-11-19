@@ -202,11 +202,20 @@ func run(cfg config, browser io.ReadWriteCloser, open hop2, notes io.Writer) err
 	}
 	if !allow[id] {
 		fmt.Fprintf(notes, "nexora-host: sender %q is not on the allowlist at %s; one UnauthorizedExtension per frame, no Connector started\n", id, cfg.allowlistPath)
-		return refuseOnly(browser, id, cfg.now)
+		// The id is clipped because the envelope caps an error message: a refusal that cannot be marshalled is a
+		// closed port instead of an answer, which is the outcome the guard reserves for a retry loop rather than
+		// for a long command line.
+		return refuseOnly(browser, id, cfg.now, "UnauthorizedExtension",
+			fmt.Sprintf("the sender %.64q is not on this host's startup allowlist (ADR-0004 rule 6)", id))
 	}
 	pipe, err := open(cfg.senderID)
 	if err != nil {
-		return err
+		var unreachable *instanceUnreachable
+		if !errors.As(err, &unreachable) {
+			return err
+		}
+		fmt.Fprintf(notes, "nexora-host: %v; one CoreAlreadyRunning per frame, no Connector started\n", err)
+		return refuseOnly(browser, id, cfg.now, "CoreAlreadyRunning", err.Error())
 	}
 	fmt.Fprintf(notes, "nexora-host: serving sender %q over the pipe opened at %s\n", id, cfg.connectorBin)
 	return pump(browser, pipe)
@@ -218,10 +227,14 @@ func run(cfg config, browser io.ReadWriteCloser, open hop2, notes io.Writer) err
 // `#/senderPolicy/refusals/loggedFields` is deliberately absent here, because naming a method means interpreting
 // a payload and that is the Connector's half of the split.
 //
+// The code is a parameter because the shim has two refusals it can give without a Connector: a sender it does not
+// admit, and an owner that is alive but does not answer (`framing.json#/singleInstance/adoption/unreachable`).
+// Both are refusals in the same sense: the frame is not forwarded, one answer goes back, and the process waits.
+//
 // Past the guard's window the port closes rather than keeps answering
 // (`#/senderPolicy/refusals/amplificationGuard`), which is the response a retry loop cannot cost anything to
 // notice and the only one available to a process that holds no keystore.
-func refuseOnly(browser io.ReadWriteCloser, senderID string, now func() time.Time) error {
+func refuseOnly(browser io.ReadWriteCloser, senderID string, now func() time.Time, code, message string) error {
 	g := newGuard(now)
 	for {
 		payload, err := frames.Read(browser, contract.ExtensionToHostBytes)
@@ -241,11 +254,7 @@ func refuseOnly(browser io.ReadWriteCloser, senderID string, now func() time.Tim
 			// (docs/architecture/25-native-messaging-protocol.md §8 rule 1).
 			return fmt.Errorf("refusing sender %q: %w", senderID, err)
 		}
-		res, err := f.Fail("UnauthorizedExtension",
-			// The id is clipped because the envelope caps an error message and a refusal that cannot be
-			// marshalled is a closed port instead of an answer — which is the outcome the guard is meant to
-			// reserve for a retry loop, not for a long command line.
-			fmt.Sprintf("the sender %.64q is not on this host's startup allowlist (ADR-0004 rule 6)", senderID))
+		res, err := f.Fail(code, message)
 		if err != nil {
 			return err
 		}

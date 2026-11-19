@@ -1847,7 +1847,7 @@ binary this host still does not have.
 ### 4.20 M3's sixth slice: the command surface that joins compile, apply and supervisor (`connector/cmd/nexora-connector/`, 2026-11-06)
 
 **What landed.** Two files, 1 761 lines, sixteen test functions, and no fourth package. `config_apply.go` (523 lines) is
-`Handle` (`connector/cmd/nexora-connector/config_apply.go:447`) over the three things §4.15 to §4.19 built: the seams
+`Handle` (`connector/cmd/nexora-connector/config_apply.go:452`) over the three things §4.15 to §4.19 built: the seams
 `intentSource` (`:58`) and `coreProcess` (`:66`), the wiring `applyConfig` (`:101`), the hand-decoded args
 (`readApplyArgs`:172), the answer struct (`applyAnswer`:271), the reconciliation (`reconcile`:360) and the classification
 table (`codeMarkers`:478, `codeForApply`:499). `config_apply_test.go` (1 238 lines) is the slice's claim. `go test
@@ -1872,7 +1872,7 @@ could make the next apply believe a config is in force that nothing loads.
 (`packages/schema/protocol/commands/config.apply.json#/args/properties/expectedAppliedHash`) is a pattern
 `^([0-9a-f]{64})?$` over a type that admits absence, so an empty value is not "I believe nothing is applied" — it is no
 belief at all. `Handle` therefore compares only when the caller stated something
-(`connector/cmd/nexora-connector/config_apply.go:460`), and the reason is not tidiness: were an unstated belief read as
+(`connector/cmd/nexora-connector/config_apply.go:464`), and the reason is not tidiness: were an unstated belief read as
 a claim about an empty record, every second apply from the same tab would have to call `core.status` first just to be
 allowed to speak, and doc 26 §2.1's CAS would have become a lock. `docs/architecture/26-command-surface.md` §2.1 now
 says that out loud beside the rule it qualifies, because the code and the sentence had to move together or the next
@@ -1966,10 +1966,10 @@ stale addresses were not in a document citing a document, they were in the recor
 
 **Queue arithmetic, stated so the next slice can check it.** 79 rows → 80: `VER-32` moves `no-code` → `no-run` (the
 envelope→Xray compiler now has an answer for ADR-0013's promise — `Unrepresentable`
-(`connector/cmd/nexora-connector/config_apply.go:567`) carries the compile's report into the result, proven at
+(`connector/cmd/nexora-connector/config_apply.go:588`) carries the compile's report into the result, proven at
 `connector/cmd/nexora-connector/config_apply_test.go:1096` — and what no test here can show is a real Core holding the
 previous config), and `VER-80` enters `no-code` over the surface `main.go` does not register (it wires `connector.hello`
-and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:161-162` (re-anchored from :150-151, which the pipe-floor field's addition to the config and service structs pushed down), and `intentSource` had no production
+and `connector.version` only at that slice; the initial pair remains at `connector/cmd/nexora-connector/main.go:165-166` (re-anchored from :150-151, and again from :161-162 when single-instance fields joined the same structs), and `intentSource` had no production
 implementation). `no-code` is therefore 54 → 53 → 54 and `no-run` 5 → 6, `connector` 37+1 → 39 and `decision` 3 → 4.
 `marker.counted` 206 → 207 for doc 27 §9's one new label (the partition is 157 + 26 + 24), and the register 38 → 39
 entries over 59 → 60 sites with `contract` 14 → 15. `verify.mjs`'s literals moved to those numbers; the check count did
@@ -3470,12 +3470,12 @@ now late-bound — `connector/internal/health/health.go:203` — and read at the
 (`connector/internal/health/probe.go:336`), and the expected address comes out of the resolved server document and is
 resolved then, not at build time (`connector/internal/health/probe.go:350`). The last missing fact — which server a
 frame's `serverId` names — is answered without a store: `config.apply` records the intent it just put into Core in an
-in-memory table (`connector/cmd/nexora-connector/config_apply.go:135`, written only from
-`connector/cmd/nexora-connector/config_apply.go:517`, after the rename and the reconcile, because ADR-0010 forbids
+in-memory table (`connector/cmd/nexora-connector/config_apply.go:141`, written only from
+`connector/cmd/nexora-connector/config_apply.go:529`, after the rename and the reconcile, because ADR-0010 forbids
 keeping a copy of intent and a dryRun puts nothing anywhere). `newHealthSurface`
 (`connector/cmd/nexora-connector/health_probe.go:67`) joins that table and that endpoint to the supervisor's live
-inbound table, read through `healthInbounds` (`connector/cmd/nexora-connector/config_apply.go:586`) rather than a
-second copy of the ports, and `connector/cmd/nexora-connector/main.go:203` registers the handler. A probe of a
+inbound table, read through `healthInbounds` (`connector/cmd/nexora-connector/config_apply.go:607`) rather than a
+second copy of the ports, and `connector/cmd/nexora-connector/main.go:240` registers the handler. A probe of a
 server nothing has applied is a refusal naming the absence, and a fetch probe before the first settings document is
 the same: neither is a constructor error, because both are facts about the world the Connector is allowed to learn
 only from a frame.
@@ -3631,7 +3631,7 @@ dispatch table rather than by the transport. That run also exposed a fact no doc
 connector never stamps its own version — `debug.ReadBuildInfo().Main.Version` is "(devel)" for a main module whatever
 tags exist, measured with a local `connector/v0.0.0` tag that changed nothing — so an unstamped binary refuses to
 start and the live crossing was impossible until `releaseVersion`
-(`connector/cmd/nexora-connector/main.go:354`) let the build pass it in with `-ldflags -X`. The tag is gone; the
+(`connector/cmd/nexora-connector/main.go:415`) let the build pass it in with `-ldflags -X`. The tag is gone; the
 ldflags line is the release recipe now, and `--connector-version` remains the operator's way to name the release a
 hand-built process answers for. `tools/check-doc-evidence.mjs`'s `FUTURE_PREFIX` lost `packages/protocol/` and doc 20
 §1's future-path sentence lost it too, so citations into this package are checked from here on; the §6 figures are
@@ -3660,7 +3660,7 @@ pair swapped it was licensed to write a gigabyte into a port whose browser kills
 the port closes, and the user sees a disconnect rather than an error. One line below it is the read limit:
 `ReadLimit: contract.ExtensionToHostBytes` was 1 MiB, so a 2 MiB `profile.import` — legal under every one of those
 pages — became a transport error before dispatch ever saw it. `nexora-host`'s two pump legs
-(`connector/cmd/nexora-host/main.go:274` and `:277`) name their limits by direction, so both legs were wrong in the
+(`connector/cmd/nexora-host/main.go:283` and `:286`) name their limits by direction, so both legs were wrong in the
 same two ways and neither needed editing once the data was right. That is the shape of the defect: it lived only in
 the numbers, and every consumer reached them by name.
 
@@ -3886,7 +3886,7 @@ its handler (`connector/cmd/nexora-connector/core_status.go:59`) answers `runnin
 containment, and retains the applied hash and last exit when Core is down. Missing process facts are null, not
 zero-valued claims; an unreadable receipt leaves the version null without suppressing process facts. The existing
 empty closed args object accepts omitted args, null or `{}` and refuses extra fields with the command's declared
-`Internal` code. `connector/cmd/nexora-connector/main.go:235` registers the fifth implemented method (re-anchored from :208, which the same slice's additions pushed down). Optional
+`Internal` code. `connector/cmd/nexora-connector/main.go:245` registers the fifth implemented method (re-anchored from :208, and again from :235 when the single-instance wiring moved the surface down). Optional
 `activeServerTag` and `stats` are absent because there is no selection or counter producer; no new obligation is
 invented for fields the result does not require.
 
@@ -5636,6 +5636,61 @@ moved, not because the quote changed.
 **Gates.** All seven green; 20 Go packages ok; `verify.mjs` 1236 checks; `packages/protocol`'s drift check remains
 red for a cause that predates this slice (its committed `src/contract.ts` lacks `heartbeat` and `core.select`, and
 that harness is outside the seven), so it is noted, not fixed here.
+
+**Not pushed yet.** This record is local: the push waits for the user's word as §7 requires, and the commit that
+carries this paragraph stays unpushed until then.
+
+### 4.83 The single instance is adopted, not replaced - the record, the mutex, and the refusal as data (2026-11-19)
+
+**What was already decided, and what was not.** `ODEC-01` (variant A, `adopt-and-share`) was settled before this slice:
+the Connector on a named mutex outlives the port, a second caller adopts it, and a live owner that does not answer is
+refused with `CoreAlreadyRunning` rather than replaced. What existed was the rule in prose and the promise that
+`core.start` already returns `alreadyRunning` + `pid`. What did not exist was the record's shape, the liveness proof,
+the write's timing, the re-pointing of the record across an apply, or the shim's rule. All four are now data.
+
+**What was done.**
+- `packages/schema/protocol/framing.json` gained `singleInstance`: the owner proof (a mutex,
+  `Global\nexora-<sha256 of the normalised root>`), `recordFile` (`state/connector-instance.json`, four fields
+  `pid, pipeVersion, startedAt, configHash`, written after every endpoint is listening and removed on clean exit), and
+  the adoption rule for reachable, unreachable and stale records.
+- `packages/schema/protocol/error-taxonomy.json` `CoreAlreadyRunning` meaning now names the per-user Connector instance
+  as well as a second Core on the same ports. This is the first half of `ODEC-03`'s question, recorded here as a
+  deliberate change rather than a silent one; the second half (the declared errors of `core.start`) stays open.
+- `connector/internal/localpipe/instance.go` is the one declaration both readers decode against: `InstanceRecord`,
+  `InstanceRecordPath`, `ReadInstanceRecord`, `WriteInstanceRecord` (temp + rename), `UpdateInstanceConfigHash`.
+- `localpipe.OwnerLive` (Windows) opens the mutex with `OpenMutexW(SYNCHRONIZE)` instead of creating it, so a probe
+  cannot be mistaken for an owner; off Windows it is `false`, because the shared instance is a Windows arrangement.
+- `connector/cmd/nexora-connector/shared.go` writes the record after the listeners are up, taking `configHash` from
+  `supervisor.ReadState(...).AppliedHash`; `config.apply` re-points only `configHash` after `noteInForce`.
+- `connector/cmd/nexora-host/shared.go` now follows the rule: adopt on a live record, refuse
+  `CoreAlreadyRunning` when the owner is alive but its endpoint does not answer, wait without spawning when the owner
+  is live and no record exists yet, and spawn as before when the mutex is free. `refuseOnly` takes the code and
+  message as arguments so the same loop serves both refusals.
+- `docs/architecture/21-system-context.md` §11 and §12, `docs/architecture/22-component-contracts.md` §2 invariant 6
+  and `docs/architecture/34-data-split.md` §7 now describe the record beside the applied state.
+- `packages/schema/scripts/verify.mjs` gained the "single instance, as data" block (4 checks: path and four fields
+  against doc 21 §11; unreachable names `CoreAlreadyRunning` with `retryable === false`; the meaning names the
+  Connector; `core.start` answers `alreadyRunning` with a `pid`). Total 1236 → 1240.
+- `connector/internal/dispatch/chunkgate_test.go` (the previous slice) carried ten synthetic profile-id UUID literals
+  without the inline marker that gate expects; each line now carries `nexora-secret-allow: synthetic profile id,
+  nothing behind it`, matching the convention already used in `config_apply_test.go`. This is a gate fix, not a
+  behaviour change, and it is recorded here so it is not read as part of this slice's subject.
+
+**New tests.**
+- `internal/localpipe/instance_test.go`: `TestInstanceRecordMatchesTheFramingContract` (path and field names from the
+  data) and `TestInstanceRecordRoundTripsAndKeepsItsIdentity` (missing record is `os.ErrNotExist`; an update moves
+  only `configHash`).
+- `internal/localpipe/pipe_windows_test.go`: `TestOwnerLiveReadsTheMutexWithoutCreatingIt`.
+- `cmd/nexora-connector/instance_record_test.go`: `TestASharedApplyRepointsTheInstanceRecordAtTheConfigItPutInForce`.
+- `cmd/nexora-host/instance_test.go`: `TestALiveOwnerThatDoesNotAnswerIsRefusedAsAlreadyRunning`.
+
+**ODEC-01 is still open.** The format, the mutex-as-liveness proof and the refusal are now data, but the measurement
+that a real process adopts by them is not: that is slice 2b (a real-process test with two pipes and one PID), which
+retires `ODEC-01` and `VER-19` and removes the three deferral sites in doc 21 §6, §11 and §12. `VER-12` and `VER-14`
+remain blocked on `LIVE-13` (a real browser).
+
+**Gates.** All seven green; 20 Go packages ok; `verify.mjs` 1240 checks; `check-doc-evidence` 2394 citations; the
+`packages/protocol` drift check remains red for a cause that predates these slices.
 
 **Not pushed yet.** This record is local: the push waits for the user's word as §7 requires, and the commit that
 carries this paragraph stays unpushed until then.

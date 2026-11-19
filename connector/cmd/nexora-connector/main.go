@@ -94,6 +94,10 @@ type service struct {
 	allowlisted bool
 	core        *supervisor.Supervisor
 
+	// stateDir is doc 34 §7's per-user state directory this process resolved, kept because the shared instance
+	// record beside the applied-state file has to name the hash that file holds (cmd/nexora-connector/shared.go).
+	stateDir string
+
 	// p and stop are set only by the framed mode: the peer reads its own endpoint, and a refusal that says the
 	// stream ends instead of an answer is carried out of Serve as the error the caller prints.
 	p    *peer.Peer
@@ -209,7 +213,13 @@ func newService(cfg config) (*service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the Core supervisor could not be built: %w", err)
 	}
-	ca, err := newConfigApply(applyConfig{StateDir: stateDir, ConfigDir: configDir, preserveOwner: cfg.shared},
+	// Only a --shared run owns the instance record (framing.json#/singleInstance): a per-port Native Messaging
+	// process is not the process a shim adopts, so it has none to refresh.
+	sharedRoot := ""
+	if cfg.shared {
+		sharedRoot = cfg.instanceRoot
+	}
+	ca, err := newConfigApply(applyConfig{StateDir: stateDir, ConfigDir: configDir, preserveOwner: cfg.shared, InstanceRoot: sharedRoot},
 		fileStateRecord{dir: stateDir}, store, sup)
 	if err != nil {
 		return nil, fmt.Errorf("the config.apply surface could not be built: %w", err)
@@ -252,7 +262,7 @@ func newService(cfg config) (*service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &service{ctx: context.Background(), d: d, sess: new(hello.Session), senderID: cfg.senderID, allowlisted: cfg.allowlisted, core: sup, pipeFloor: cfg.pipeFloor}, nil
+	return &service{ctx: context.Background(), d: d, sess: new(hello.Session), senderID: cfg.senderID, allowlisted: cfg.allowlisted, core: sup, pipeFloor: cfg.pipeFloor, stateDir: stateDir}, nil
 }
 
 // respond is the one dispatch path the two transports share, so --jsonl cannot diverge from the contract's own:

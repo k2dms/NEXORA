@@ -84,6 +84,10 @@ spawn-or-adopt of the Connector, byte pump between the two pipes.
    separately from the browser protocol (`docs/architecture/21-system-context.md` §6).
 5. Its pinnable identity is the manifest it writes (`docs/architecture/33-binary-integrity.md`), not a build
    artefact inside the extension zip.
+6. It adopts a Connector that already owns the per-user root and never starts a second one: the owner's mutex is the
+   liveness proof, the record `state/connector-instance.json` (`packages/schema/protocol/framing.json#/singleInstance/recordFile`)
+   names that owner, and a live owner that does not answer its sender endpoint is refused with `CoreAlreadyRunning` —
+   one frame back, no Core started.
 
 **Mode of failure** — killed by the browser when the port closes; the Connector must not notice. **Owner**: the
 Connector installer owns its registration; the extension owns which ID it may talk to.

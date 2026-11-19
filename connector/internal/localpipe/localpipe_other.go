@@ -31,4 +31,9 @@ func SameExecutable(string, string) bool { return false }
 
 func Mutex(string) (io.Closer, error) { return nil, ErrUnsupported }
 
+// OwnerLive has no answer off Windows because the mutex it reads does not exist there: the shared instance is a
+// Windows-only arrangement today (doc 21 §11's per-OS launch model), and a probe that guessed "absent" off Windows
+// would be a shim that spawns the second owner this rule forbids. Callers that never take the shared path never ask.
+func OwnerLive(string) bool { return false }
+
 func Detach(*exec.Cmd) error { return ErrUnsupported }

@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +13,7 @@ import (
 	"github.com/k2dms/nexora/connector/internal/contract"
 	"github.com/k2dms/nexora/connector/internal/hello"
 	"github.com/k2dms/nexora/connector/internal/localpipe"
+	"github.com/k2dms/nexora/connector/internal/supervisor"
 )
 
 type senderPorts struct {
@@ -125,7 +124,7 @@ func runShared(ctx context.Context, cfg config, notes io.Writer) error {
 		}
 		listeners = append(listeners, listener)
 	}
-	metadataPath, err := writeInstanceRecord(cfg.instanceRoot)
+	metadataPath, err := writeInstanceRecord(cfg.instanceRoot, s.stateDir)
 	if err != nil {
 		return err
 	}
@@ -181,37 +180,19 @@ func runShared(ctx context.Context, cfg config, notes io.Writer) error {
 	}
 }
 
-func writeInstanceRecord(root string) (string, error) {
-	dir := filepath.Join(root, "state")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", err
-	}
-	data, err := json.Marshal(struct {
-		PID         int    `json:"pid"`
-		PipeVersion int    `json:"pipeVersion"`
-		StartedAt   string `json:"startedAt"`
-	}{os.Getpid(), contract.FrameFormatVersion, time.Now().UTC().Format(time.RFC3339Nano)})
+// writeInstanceRecord is `framing.json#/singleInstance/recordFile` as a write, and its timing is the rule the shim
+// leans on: every sender endpoint is listening before this runs, so a record that exists means the endpoints do.
+//
+// The configHash is the one the applied-state record holds, and an empty string before the first apply is the
+// honest answer rather than a guess — nothing has been applied yet.
+func writeInstanceRecord(root, stateDir string) (string, error) {
+	applied, err := supervisor.ReadState(stateDir)
 	if err != nil {
 		return "", err
 	}
-	tmp, err := os.CreateTemp(dir, ".connector-instance-*")
-	if err != nil {
+	rec := localpipe.NewInstanceRecord(contract.FrameFormatVersion, applied.AppliedHash)
+	if err := localpipe.WriteInstanceRecord(root, rec); err != nil {
 		return "", err
 	}
-	defer os.Remove(tmp.Name())
-	defer tmp.Close()
-	if _, err := tmp.Write(data); err != nil {
-		return "", err
-	}
-	if err := tmp.Sync(); err != nil {
-		return "", err
-	}
-	if err := tmp.Close(); err != nil {
-		return "", err
-	}
-	path := filepath.Join(dir, "connector-instance.json")
-	if err := os.Rename(tmp.Name(), path); err != nil {
-		return "", err
-	}
-	return path, nil
+	return localpipe.InstanceRecordPath(root), nil
 }

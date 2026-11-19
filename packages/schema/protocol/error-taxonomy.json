@@ -15,7 +15,7 @@
     { "code": "SecretRedacted", "retryable": false, "layer": "security", "meaning": "A secret-bearing field was present in a place that syncs or logs. The call was refused instead of stripping it.", "surface": "error" },
     { "code": "QuotaExceeded", "retryable": false, "layer": "storage", "meaning": "chrome.storage.sync or keystore quota hit. Client must fall back and tell the user.", "surface": "error" },
     { "code": "CoreNotRunning", "retryable": false, "layer": "state", "meaning": "Operation needs a running Core. Call core.start; do not retry blindly.", "surface": "status" },
-    { "code": "CoreAlreadyRunning", "retryable": false, "layer": "state", "meaning": "A second supervisor tried to start Core on the same ports.", "surface": "status" },
+    { "code": "CoreAlreadyRunning", "retryable": false, "layer": "state", "meaning": "A second owner tried to take an instance that is already running -- Core on the same ports, or the per-user Connector that holds this root. Adopt it; never start a second one.", "surface": "status" },
     { "code": "CoreExited", "retryable": false, "layer": "state", "meaning": "Core exited unexpectedly. Triggers the fail-closed path (docs/architecture/30).", "surface": "banner" },
     { "code": "ConfigApplyFailed", "retryable": false, "layer": "state", "meaning": "Compiled config was rejected by Core. The previous working config stays applied.", "surface": "banner" },
     { "code": "HealthCheckFailed", "retryable": true, "layer": "network", "meaning": "A health probe failed. Never used to decide that the proxy is healthy.", "surface": "status" },

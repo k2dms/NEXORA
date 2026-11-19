@@ -110,6 +110,33 @@ func TestClosingPipeAndListenerUnblocksPendingOperations(t *testing.T) {
 	}
 }
 
+func TestOwnerLiveReadsTheMutexWithoutCreatingIt(t *testing.T) {
+	root := t.TempDir()
+	if OwnerLive(root) {
+		t.Fatal("a root no Connector has claimed reported a live owner")
+	}
+	owner, err := Mutex(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !OwnerLive(root) {
+		t.Fatal("the owner's mutex was not seen as live")
+	}
+	if err := owner.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if OwnerLive(root) {
+		t.Fatal("a released mutex still reported a live owner")
+	}
+	// A probe that created the object it asked about would have answered "owned" for every root it touched; the
+	// next owner is the proof that it did not.
+	next, err := Mutex(root)
+	if err != nil {
+		t.Fatalf("the liveness probe left an object behind: %v", err)
+	}
+	defer next.Close()
+}
+
 func TestMutexOwnershipAndPipeSquattingAreExclusive(t *testing.T) {
 	root := t.TempDir()
 	owner, err := Mutex(root)

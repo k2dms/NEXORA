@@ -291,6 +291,51 @@ for (const name of ['windowSeconds', 'maxEntries', 'maxBytes']) {
   );
 }
 
+// ---------------------------------------------------------------- single instance, as data
+//
+// `framing.json#/singleInstance` is what the shim reads instead of a rule it remembers: one owner per root, proved
+// by a mutex rather than a pid, named by a record whose shape the shim and the Connector both decode, and adopted
+// or refused according to whether that owner answers. Doc 21 section 11 records the same shape in prose, and the
+// refusal it ends with is `CoreAlreadyRunning` -- the code whose meaning had to name the instance as well as the
+// Core (docs/architecture/40-open-decisions.md reserves the taxonomy question ODEC-03's first half asks).
+
+{
+  const single = framing.singleInstance;
+  const recordFile = single?.recordFile ?? {};
+  const fields = recordFile.fields ?? [];
+  const ctxDoc = await readFile(join(REPO, 'docs', 'architecture', '21-system-context.md'), 'utf8');
+  check(
+    recordFile.path === 'state/connector-instance.json' &&
+      fields.join(',') === 'pid,pipeVersion,startedAt,configHash' &&
+      ctxDoc.includes(`{${fields.join(', ')}}`),
+    'the instance record is the four fields doc 21 section 11 records, in the state directory beside the applied-state file',
+    `path=${recordFile.path}; fields=${fields.join(', ') || '(absent)'}`,
+  );
+
+  const owner = taxonomy.codes.find((c) => c.code === 'CoreAlreadyRunning');
+  check(
+    typeof single?.adoption?.unreachable === 'string' &&
+      single.adoption.unreachable.includes('CoreAlreadyRunning') &&
+      owner?.retryable === false,
+    'an owner that does not answer is refused as CoreAlreadyRunning, which is not retryable',
+    `unreachable=${single?.adoption?.unreachable ?? '(absent)'}; retryable=${owner?.retryable}`,
+  );
+
+  check(
+    /Connector/.test(owner?.meaning ?? ''),
+    'CoreAlreadyRunning names the Connector instance the shim refuses to replace, not only a second Core on the same ports',
+    `meaning=${owner?.meaning ?? '(absent)'}`,
+  );
+
+  const startResult = commandDocs.get('core.start')?.doc.result ?? {};
+  check(
+    (startResult.required ?? []).includes('alreadyRunning') &&
+      !!startResult.properties?.pid,
+    'core.start can answer "already running" with the pid of the instance that is, so adoption needs no new method',
+    `required=${(startResult.required ?? []).join(', ') || '(absent)'}`,
+  );
+}
+
 // ---------------------------------------------------------------- entity examples
 
 const SCHEMAS_BY_PREFIX = {

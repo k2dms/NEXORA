@@ -52,9 +52,9 @@ Each row is a real forward reference found by grepping the tree for this file's 
 
 | Cited by | What it deferred | Answered in |
 |---|---|---|
-| `docs/architecture/22-component-contracts.md:113` | "never returns an unmasked secret in any frame, including `diagnostics.get`" | §8, §9 |
-| `docs/architecture/22-component-contracts.md:319` | a probe must not reveal a secret in result or logs | §8 |
-| `docs/architecture/22-component-contracts.md:399` | masking happens at the sink, not the call site | §8 |
+| `docs/architecture/22-component-contracts.md:117` | "never returns an unmasked secret in any frame, including `diagnostics.get`" | §8, §9 |
+| `docs/architecture/22-component-contracts.md:323` | a probe must not reveal a secret in result or logs | §8 |
+| `docs/architecture/22-component-contracts.md:404` | masking happens at the sink, not the call site | §8 |
 | `docs/architecture/23-unified-server-model.md:230` | field-level rules for `publicKey`/`shortId` | §10 |
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
 | `docs/architecture/25-native-messaging-protocol.md:317` | `SecretRedacted` vs a corrupt document | §11 |
@@ -243,7 +243,7 @@ does, and it needs no cooperation from the code producing the text.
 - **At the sink, not the call site**, because a call-site policy has one failure mode and it is the interesting
   one: a new `log.debug` written by someone who forgot the helper leaks. A sink cannot be forgotten — there are
   a fixed number of them; `packages/schema/observability.json#/sinks` closes the list. This is the mechanism
-  `docs/architecture/22-component-contracts.md:399` promised.
+  `docs/architecture/22-component-contracts.md:404` promised.
 - **The sinks**: the log ring buffer, `diagnostics.get`'s payload
   (`packages/schema/protocol/commands/diagnostics.get.json#/result/properties/masked`), a structured error's
   `detail` (`docs/architecture/29-subscriptions-and-servers.md:297`), `config.snapshot`'s `maskedConfig` (§13),

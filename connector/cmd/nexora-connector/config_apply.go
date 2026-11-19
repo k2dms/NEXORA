@@ -36,6 +36,7 @@ import (
 	"github.com/k2dms/nexora/connector/internal/envelope"
 	"github.com/k2dms/nexora/connector/internal/health"
 	"github.com/k2dms/nexora/connector/internal/keystore"
+	"github.com/k2dms/nexora/connector/internal/localpipe"
 	"github.com/k2dms/nexora/connector/internal/supervisor"
 )
 
@@ -95,6 +96,10 @@ type applyConfig struct {
 	// one stable file name is what makes doc 27 §8's replacement a rename and not a create.
 	ConfigDir     string
 	preserveOwner bool
+	// InstanceRoot is the per-user root whose instance record names this process as the owner
+	// (`framing.json#/singleInstance`). Empty for a per-port Connector, which owns no record: the record says
+	// which config the adopted instance has in force, and only the shared owner is ever adopted.
+	InstanceRoot string
 }
 
 // configApply is the handler: the seams, the directories, and the span.
@@ -522,6 +527,15 @@ func (a *configApply) Handle(ctx context.Context, f *envelope.Frame) (any, *disp
 	// The intent is in force now: the file is renamed, the table is stored, and Core has been told. This is the
 	// only place the snapshot moves, which is why `server.test` can name a server id and get a real answer.
 	a.noteInForce(&args.intent)
+	if a.cfg.InstanceRoot != "" {
+		// The record names the config the instance has in force, and a shim reads it to tell a caller what it is
+		// adopting. An apply that moved the hash and left the record naming the previous one would hand a
+		// reconnecting caller a stale answer, so the apply reports the failure it has rather than rolling back a
+		// config that is already in force.
+		if err := localpipe.UpdateInstanceConfigHash(a.cfg.InstanceRoot, a.core.Status().Hash); err != nil {
+			return nil, refuseApply(err, "config.apply: the config was written but the instance record was not updated")
+		}
+	}
 	return a.answer(res, hash, recorded.AppliedHash, false, restarted, !restarted && hash == recorded.AppliedHash), nil
 }
 

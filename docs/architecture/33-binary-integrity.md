@@ -52,7 +52,7 @@ green today.
 | `docs/architecture/21-system-context.md:154` | no bundled binary in the archive | §3, §4 |
 | `docs/architecture/21-system-context.md:155` | "no silent self-update of Core or connector" | §8, §11 |
 | `docs/architecture/22-component-contracts.md:85` | the host's pinnable identity being the manifest it writes | §3, §14 |
-| `docs/architecture/22-component-contracts.md:152` | an unbootable Core (bad binary, AV quarantine) routed here | §12, §13 |
+| `docs/architecture/22-component-contracts.md:156` | an unbootable Core (bad binary, AV quarantine) routed here | §12, §13 |
 | `docs/architecture/23-unified-server-model.md:76` | what the *pinned Core* supports (REALITY over gRPC) | §4.3 |
 | `docs/architecture/27-config-compilation-pipeline.md:58` | the compiler's dependency on install state | §7, §11 |
 | `docs/architecture/30-failure-policy.md:66` | `contained: false` plus an integrity alarm | §15 |
@@ -364,7 +364,7 @@ observation is in data rather than in a support ticket
   which is the *correct* outcome: `IntegrityMismatch`, Core does not start, the proxy decision fails closed per
   `docs/architecture/30-failure-policy.md`. The wrong outcome — which an implementation that treats a missing file
   as "just start again" produces — is traffic going direct.
-- `docs/architecture/22-component-contracts.md:145-146` routes "an unbootable Core (bad binary, AV quarantine)"
+- `docs/architecture/22-component-contracts.md:155-156` routes "an unbootable Core (bad binary, AV quarantine)"
   here; the answer is that both are the same observable state at the point of use, and the *diagnosis* is what
   differs — which is why `diagnostics.get` carries a `versions` section and `connector.version` reports
   `pinsVersion` plus `coreVersion` (`packages/schema/connector-settings.schema.json#/properties/telemetry`
@@ -393,7 +393,7 @@ survives by design (`docs/adr/0011-windows-keystore-dpapi.md:59-60`,
 `docs/architecture/32-secrets-keystore-masking.md` §7), the Core binaries do not need to survive because they are
 re-derivable from a pin plus a fetch, and neither is silently deleted by an uninstall that the user did not ask to
 be destructive. The installer must not register a service or LaunchAgent
-(`docs/architecture/21-system-context.md:198`), which keeps the whole footprint inside the user's session and the
+(`docs/architecture/21-system-context.md:201`), which keeps the whole footprint inside the user's session and the
 user's write permissions.
 
 **The residual, stated.** Anything that can write the host binary or its manifest can answer every command in

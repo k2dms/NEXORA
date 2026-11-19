@@ -16,7 +16,12 @@ var (
 	getServerPID = kernel32.NewProc("GetNamedPipeServerProcessId")
 	queryImage   = kernel32.NewProc("QueryFullProcessImageNameW")
 	createMutex  = kernel32.NewProc("CreateMutexW")
+	openMutex    = kernel32.NewProc("OpenMutexW")
 )
+
+// synchronize is the one right OwnerLive needs: opening the mutex proves the object exists, and no other access is
+// requested because the probe must not be able to disturb the owner.
+const synchronize = 0x00100000
 
 func canonicalPath(path string) (string, error) {
 	if path == "" {
@@ -108,6 +113,25 @@ func Mutex(root string) (io.Closer, error) {
 		return nil, ErrOwned
 	}
 	return mutexHandle(handle), nil
+}
+
+// OwnerLive answers whether some process holds this root's instance mutex right now. It opens the object the owner
+// created instead of creating one: CreateMutexW would make the object exist by the act of asking, and would race
+// the real owner for it — a probe that reported its own probe as the answer.
+//
+// The object is the proof, not a pid in a file: the kernel drops a mutex when its last handle closes, so a crash
+// releases it as surely as a clean exit, while a number a file remembers is a number the system hands out again.
+func OwnerLive(root string) bool {
+	name, err := syscall.UTF16PtrFromString(mutexName(root))
+	if err != nil {
+		return false
+	}
+	handle, _, _ := openMutex.Call(synchronize, 0, uintptr(unsafe.Pointer(name)))
+	if handle == 0 {
+		return false
+	}
+	_ = syscall.CloseHandle(syscall.Handle(handle))
+	return true
 }
 
 func Detach(cmd *exec.Cmd) error {

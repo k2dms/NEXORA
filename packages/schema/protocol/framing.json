@@ -68,6 +68,26 @@
     "jitterPercent": 30,
     "afterReconnect": "re-run connector.hello, then reconcile: the extension sends config.snapshot hash and the Connector answers whether the applied config still matches."
   },
+  "singleInstance": {
+    "rule": "One Connector owns one per-user root. A second process that finds a live owner does not become a second owner: it attaches to the owner's sender endpoint, and when the owner is alive but that endpoint does not answer it is refused with CoreAlreadyRunning -- never replaced, and no second Core is started.",
+    "ownerProof": {
+      "mechanism": "a named mutex, Global\\nexora-<sha256 of the normalised root>, created by the owner and held for its whole life",
+      "why": "the kernel releases the mutex when its last handle closes, so the object's existence is proof that an owner is alive even after a crash; a pid written to a file is a number the system hands out again, and a record a crash left behind would then name a stranger as the owner"
+    },
+    "recordFile": {
+      "path": "state/connector-instance.json",
+      "writtenBy": "the owner, after every sender endpoint is listening and before it accepts a frame",
+      "removedBy": "the owner, on a clean exit; an abrupt exit leaves it behind, and the mutex rather than the file decides whether the owner is still alive",
+      "fields": ["pid", "pipeVersion", "startedAt", "configHash"],
+      "why": "the shim has to name the owner it refuses to replace, and the extension reconciles against the config hash the same instance reports; a record whose shape two processes read differently is a refusal that describes the wrong process"
+    },
+    "adoption": {
+      "reachable": "the shim dials the sender endpoint for this root and sender id and hands the frame to the running owner, so a browser restart costs a reconnect and nothing else",
+      "unreachable": "the mutex says an owner is alive and the record says who it is, yet the endpoint does not answer within the shim's budget: the shim answers CoreAlreadyRunning, whose retryable is false, and starts no Core",
+      "stale": "the mutex is free and a record is present: the owner is gone and the next Connector overwrites the record. Neither process deletes a record on sight, because a delete racing a new owner would remove the record of a live instance"
+    },
+    "why": "the port is the browser's and dies with its worker; the instance behind it must outlive that port without a second instance ever appearing (docs/architecture/21-system-context.md section 11)"
+  },
   "dedupeWindow": {
     "windowSeconds": 300,
     "maxEntries": 256,
