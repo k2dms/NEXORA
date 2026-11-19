@@ -5740,3 +5740,8 @@ defects all refused and the clean fixture passed; `check-adr-shape`, `check-no-s
 now prints one ref, at `f73d67f`. The state commit carrying this sentence was written after the push it names, so it
 is not inside the commit it names: `git rev-list --count nexora/master..HEAD` reads 0 as this paragraph is written and
 1 once the record lands.
+
+**The push of that record.** Confirmed by the user in the next sitting: the same command fast-forwarded
+`refs/heads/master` from `f73d67f` to `33599ae` — one commit, the paragraph above's own — and `git ls-remote --heads
+nexora` now prints one ref at `33599ae`. The commit carrying this sentence was again written after the push it names,
+so `git rev-list --count nexora/master..HEAD` reads 0 as it is written and 1 once it lands.
