@@ -5735,4 +5735,8 @@ defects all refused and the clean fixture passed; `check-adr-shape`, `check-no-s
 `check-legacy-backup` green; `gofmt -l .` empty, `go vet ./...` and `go test ./...` clean over 20 packages. The
 `packages/protocol` drift check is still red for the pre-existing cause recorded in §4.83 and is outside these gates.
 
-**Not pushed yet.** This record is local: the push waits for the user's word as §7 requires.
+**The push.** Confirmed by the user the same sitting: `git push nexora nexora/architecture:master` fast-forwarded
+`refs/heads/master` from `c7a3944` to `f73d67f` — one commit, this section's own — and `git ls-remote --heads nexora`
+now prints one ref, at `f73d67f`. The state commit carrying this sentence was written after the push it names, so it
+is not inside the commit it names: `git rev-list --count nexora/master..HEAD` reads 0 as this paragraph is written and
+1 once the record lands.
