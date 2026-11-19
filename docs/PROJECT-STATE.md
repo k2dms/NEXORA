@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.80; older scope and inventory paragraphs
+continuation is §4.86; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5527,6 +5527,27 @@ future `manual` path would take — the feature to build, not a promise this ite
 still open, and it is work-shaped, not decision-shaped. The ledger rows keep their numbers.
 
 **Gates.** All seven green; 18 Go packages ok; the layout guard's census moved with the deleted file.
+### 4.86 ODEC-11 answered inherited — VER-56 retired whole, the manifest tool enforces the target column (2026-11-19)
+
+**The decision.** ODEC-11 asked when `<all_urls>` can leave the manifest, and its closing condition — COMP-07's
+count of live installations holding an authenticated legacy proxy — cannot exist before publication. The honest
+narrowing is the decision instead of the number: **the grant is inherited from ZeroOmega 3.5.2, not chosen by
+NEXORA**, and its removal is a Phase-2 release decision gated on that cohort measurement. doc 31 §13's
+host_permissions row states it, and §13's open list loses its bullet.
+
+**The witness.** tools/check-manifest-delta.mjs grew rule 6: a manifest that drops `<all_urls>` while §13's
+target column says keep inherited is refused — the selftest injects the defect and refuses it, and the real run
+scans both manifests green. The target half now has the same kind of witness the manifest half has had since
+f73d67f.
+
+**Corpus.** VER-56 retired whole (both halves closed) — matrix 56 → 55 rows, 37 tombstones, no-check 2 → 1,
+tools 1 → 0, tool 1 → 0, marker.counted 162 → 161 (the partition is 110 + 26 + 25). ODEC-11 retired — 28 live
+questions, 47 sites, measurement 2 → 1, and the assertion floor moves 29 → 28. COMP-07 keeps its measurement
+row: the cohort count is still owed, now as a release gate rather than as the question's own closing
+condition. Doc 33's Cited-by row re-anchored for the lines doc 31 §13's rewrite pushed down (:404 → :408).
+The status line of this ledger, which §4.81–§4.85 had left at §4.80, reads §4.86.
+
+**Gates.** All seven green; 18 Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

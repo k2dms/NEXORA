@@ -55,7 +55,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
 
 | # | Question a document could not answer itself | Answered by |
 |---|---|---|
-| 1 | Who owns the 162 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
+| 1 | Who owns the 161 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
 | 2 | Is a deferral the same thing as unfinished work? | No: §4 splits it five ways; the split *is* the useful content |
 | 3 | Can a document claim a check exists when it does not? | §6 — anchors resolve or the run fails |
 | 4 | Can one obligation be counted twice, so the queue looks shorter than it is? | §6 — the same partition check refuses it |
@@ -95,13 +95,13 @@ would have to be re-derived from the design, which is how a verification matrix 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
 | `no-code` | 38 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
-| `no-check` | 2 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
+| `no-check` | 1 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
 | `no-run` | 11 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 1 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 4 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **38 of 56 rows are `no-code`**: this iteration's claims are overwhelmingly
-blocked on the Connector, the compiler and the UI existing, not on tests being clever. 2 `no-check` rows read as
+The distribution is the finding. **38 of 55 rows are `no-code`**: this iteration's claims are overwhelmingly
+blocked on the Connector, the compiler and the UI existing, not on tests being clever. 1 `no-check` rows read as
 the part closable before Phase 2 writes a line of product code, and four of them — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
 open: deleting a row around its gate either leaves the gate blocking nothing or leaves it naming a row that no
@@ -125,14 +125,14 @@ That ordering is not advice; it is what the states say.
 ## 5. Nine owners, eight closing mechanisms
 
 `owners` - who can close the row: `connector` 32, `extension` 9, `contracts` 2, `ci` 2, `packages` 3,
-`ui` 3, `external` 3, `tools` 1, `human` 1.
+`ui` 3, `external` 3, `tools` 0, `human` 1.
 
 `closingKinds` - with what: `live-row` 42, `assertion` 4, `decision` 1, `gate` 2, `ci-step` 2,
-`external-measurement` 4, `tool` 1, `new-live-row` 0.
+`external-measurement` 4, `tool` 0, `new-live-row` 0.
 
 Three consequences worth stating out loud:
 
-- **42 of 56 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **42 of 55 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -309,7 +309,7 @@ pointing at one executable matrix is a plan; the same 58 as 166 scattered phrase
 
 ## 10. The queue
 
-56 rows, grouped by state; the 36 ids this queue has closed are in `packages/schema/verification.json#/retired`,
+55 rows, grouped by state; the 37 ids this queue has closed are in `packages/schema/verification.json#/retired`,
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
@@ -448,7 +448,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-92` beyond the contract layer — 56 live, 36 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO - deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-92` beyond the contract layer — 55 live, 37 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO - deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 
@@ -474,7 +474,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 2. A row is closed by its artefact, and closing deletes the row in the same commit.
 3. Nothing in this document or its data asserts that a check ran. `no-run` is a state, not a result.
 4. The live matrix owns the live rows; this document owns what the rest of the corpus owes them.
-5. The count `162` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
+5. The count `161` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
    when a row is honestly closed. Nothing outside `packages/schema/verification.json#/marker/counted` may depend on it.
 6. This document's §11 table is checked by an assertion whose label is `"every mechanism doc 39 names is a check
    this run actually makes"` — it lives outside the table so it cannot certify itself.

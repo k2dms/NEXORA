@@ -23,7 +23,7 @@
     "file": "docs/architecture/40-open-decisions.md",
     "where": "docs/**/*.md, excluding docs/architecture/40-open-decisions.md itself",
     "rule": "A deferral site is a line that names this file -- by basename or by path, which are the same mention -- plus every bullet of a list whose header line names it. A header that introduces a captured list is not itself a site -- the bullets are the deferrals, and the header is the sentence that says so. A line that merely lists this file among documents (a `See also`, a planned-files inventory) is not a deferral and is recorded in `notADeferral`.",
-    "counted": 48
+    "counted": 47
   },
   "notADeferral": [
     {
@@ -290,31 +290,6 @@
         {
           "doc": "docs/architecture/31-security-model.md",
           "anchor": "- whether any external-API surface survives"
-        }
-      ]
-    },
-    {
-      "id": "ODEC-11",
-      "question": "When can `<all_urls>` be dropped from the manifest, given that both the Connector owning every fetch and the legacy authenticated-proxy path no longer needing `webRequest` must be true first?",
-      "decidedBy": "measurement",
-      "blocks": {
-        "verification": [
-          "VER-56"
-        ],
-        "compatibility": [
-          "COMP-07"
-        ]
-      },
-      "why": "This is a permission shrink, and the review cost of the grant is only worth paying once. The gate is a cohort count: COMP-07 asks how many users still have an authenticated legacy proxy, because that path is what needs `webRequest` today. No tool in this repository can produce the number.",
-      "options": [
-        "drop it in the release where the Connector owns every fetch and no legacy authenticated-proxy path remains",
-        "keep it and record in doc 31 that the grant is inherited, not chosen",
-        "make it an optional grant requested at runtime when a legacy proxy is actually loaded"
-      ],
-      "at": [
-        {
-          "doc": "docs/architecture/31-security-model.md",
-          "anchor": "- removing `<all_urls>`, which is gated on"
         }
       ]
     },
@@ -1031,6 +1006,18 @@
         "freed": {
           "verification": [
             "VER-28"
+          ],
+          "compatibility": []
+        }
+      },
+      {
+        "id": "ODEC-11",
+        "decided": "2026-11-19",
+        "was": "when can <all_urls> be dropped from the manifest, given that both the Connector owning every fetch and the legacy authenticated-proxy path no longer needing webRequest must be true first",
+        "artefact": "the second of its three options, recorded instead of measured: the grant is inherited from ZeroOmega 3.5.2, not chosen by NEXORA, and its removal is a Phase-2 release decision gated on COMP-07's cohort measurement -- which cannot exist before publication, so the honest narrowing is a decision, not a number. doc 31 §13's host_permissions row states it, and tools/check-manifest-delta.mjs rule 6 makes the inherited grant load-bearing: a manifest that drops <all_urls> while the target column says keep inherited is refused, with the selftest case injecting the defect. COMP-07 keeps its measurement row -- the cohort count is still owed, now as a release gate rather than as the question's own closing condition. VER-56 retired in the same commit; the citing bullet in doc 31 §13 states the answer",
+        "freed": {
+          "verification": [
+            "VER-56"
           ],
           "compatibility": []
         }

@@ -1,6 +1,6 @@
 # 40 — The open questions: what Phase 1 could not answer, who is capable of answering, and what artefact closes each
 
-> Purpose: 48 deferral sites in 13 documents point here as the place an answer lives, and six more lines name it only to
+> Purpose: 47 deferral sites in 13 documents point here as the place an answer lives, and six more lines name it only to
 > list it. A deferral that names nothing is
 > a way of not answering politely, so the register is data — `packages/schema/open-decisions.json` — re-derived from
 > those lines on every run, and this document is the argument the data refuses to carry: why each question could not
@@ -72,7 +72,7 @@ is worth stating precisely.
    `packages/schema/open-decisions.json#/notADeferral` and the run checks that each still resolves to one line and
    still would otherwise have counted. That is the difference between excluding a case and forgetting it.
 
-The result is 48 sites, and the partition is exact in both directions: no site without an entry, no entry without a
+The result is 47 sites, and the partition is exact in both directions: no site without an entry, no entry without a
 site, no site owned twice. The second direction is the one that matters most here — an entry with no citing line is
 a question invented by the register, and the register is supposed to be a *report* of what the corpus deferred, not a
 wishing well.
@@ -99,17 +99,17 @@ costs to answer:
 | `product` | 13 | a screen, a sentence, or a refusal the user sees — written into `docs/architecture/37-ui-architecture.md` and the command docs | no measurement can decide what the user should be told; a schema field cannot make the choice less arbitrary |
 | `contract` | 8 | a field, an enum member, an error code or a schema bound in `packages/schema`, plus its examples | choosing costs a commit and a verifier run; nothing about it needs a person or a browser |
 | `adr` | 4 | a new numbered file in `docs/adr/` that supersedes or extends an accepted decision | answering changes a boundary, so `docs/adr/0001-adr-practice.md` requires the record; a field edit would hide it |
-| `measurement` | 2 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
+| `measurement` | 1 | a `COMP-NN` row in `packages/schema/compatibility.json` with a number, a browser, a version and a date | there is no opinion to argue with — the value is in a machine nobody has asked yet |
 | `upstream` | 2 | a documented behaviour of the browser stack, Xray or AMO policy, cited outside this repository | the answer is not held here; the honest output is a stated residual, not a decision |
 
-13 of the 29 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
+13 of the 28 are `product`. That is the honest shape of Phase 1: the architecture is settled about mechanisms
 and unsettled about behaviour, because mechanisms can be derived from constraints and behaviour can only be chosen.
 8 `contract` questions look different from the outside than they are: each is a field nobody wrote, and each
 costs one commit once chosen — which is why they are the rows a Phase-2 commit can delete without waiting on a
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
-`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 17 entries gate exactly 2 and 9 gate 1; that is the honest shape of a design phase - most open questions are one field wide, and the few
+`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 16 entries gate exactly 2 and 9 gate 1; that is the honest shape of a design phase - most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 One question is cited by five sites - `ODEC-15` (the built-in sync secret, five) - and five sit at three (`ODEC-05`, `ODEC-06`, `ODEC-09`,
@@ -243,7 +243,6 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-08` | what a legacy Shadowsocks/Trojan/WireGuard feed becomes | `adr` | `VER-69` |
 | `ODEC-09` | whether `password` joins the sync strip set | `product` | `VER-22`, `VER-74`, `COMP-18` |
 | `ODEC-10` | whether any external API surface survives for third-party compatibility | `product` | `VER-54` |
-| `ODEC-11` | when `<all_urls>` can leave the manifest | `measurement` | `VER-56`, `COMP-07` |
 | `ODEC-12` | whether loopback inbounds get per-profile credentials | `product` | `VER-23`, `VER-45` |
 | `ODEC-13` | how the Firefox AMO id is managed as both continuity constraint and security principal | `product` | `VER-15`, `VER-52` |
 | `ODEC-14` | what `block` actually promises against DNS, WebRTC and the alarm floor | `upstream` | `VER-21`, `VER-74`, `COMP-07`, `COMP-10`, `COMP-14` |
@@ -462,7 +461,7 @@ answer goes into the artefact in the table above and §9 loses its line, not thi
 
 ## 10. Invariants
 
-1. 29 questions, 48 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
+1. 28 questions, 47 sites, one owner per site, at least one site per question. The numbers are outputs of the run,
    not contracts; `packages/schema/open-decisions.json#/citation/counted` states one, and the run compares it -- and
    since this document's §3 table read `contract` 16 against a data of 15 for one commit, the run now reads the
    document's own sentences too, the way doc 39 §11 has done since it caught three stale distributions there.

@@ -371,7 +371,7 @@ Today's grants, from `omega-target-chromium-extension/overlay/manifest.json:39-4
 | `webRequestBlocking` (Firefox only, `omega-target-chromium-extension/overlay/manifest-firefox.json:45`) | the same auth path there | same | LIVE-15's parity half |
 | `tabs` | per-tab badge, "open in a tab" helpers, and reload-after-switch (`omega-target-chromium-extension/src/coffee/omega_target_web.coffee:199-201`) | optional grant | it is UX, not a decision input: nothing about which proxy a request uses depends on it |
 | `contextMenus` | the quick-switch menu (`omega-target-chromium-extension/src/coffee/background_preload.coffee:51`) | optional grant | same |
-| `host_permissions: ["<all_urls>"]` | subscription/PAC fetching and the `['<all_urls>']` urlFilter above | **remove**, once fetching is Connector-side | this is the largest single reduction available and the riskiest to claim: it holds only while the Connector owns every outbound fetch, and the auth path above still asks for it. The honest order is: move the fetch, measure, then remove |
+| `host_permissions: ["<all_urls>"]` | subscription/PAC fetching and the `['<all_urls>']` urlFilter above | **keep inherited** — ODEC-11 answered 2026-11-19: the grant is inherited from ZeroOmega 3.5.2, not chosen by NEXORA, and its removal is a Phase-2 release decision gated on COMP-07's cohort measurement, which only exists after publication; `check-manifest-delta.mjs` refuses a manifest that drops it while this cell says keep | this is the largest single reduction available and the riskiest to claim: the honest order was move the fetch, measure, then remove — the measure cannot exist before users do, so the decision is recorded instead of pretended |
 
 **CSP.** Neither manifest declares `content_security_policy` — VERIFIED for both templates and INFERRED
 repository-wide in `docs/audit/11-security-findings.md` §SEC-3 and `docs/audit/10-manifest-packaging-distribution.md`
@@ -393,7 +393,10 @@ accurately, because its value differs per browser:
 
 **Permission reduction is a product behaviour change**, which puts it under PROJECT-STATE §2.2: it ships with a
 test, not with this document. The "today" column is guarded by `tools/check-manifest-delta.mjs` (`Verified: YES`);
-`Verified: NO — deferred to Phase 2` for the target column above, whose `<all_urls>` target waits on `ODEC-11`.
+**Verified** — the target column above now states the decision: `<all_urls>` is inherited, not chosen, and its
+  removal is a Phase-2 release gate on COMP-07's cohort measurement (`ODEC-11` retired with it);
+  `tools/check-manifest-delta.mjs` refuses a manifest that drops the grant while the column says keep, so the
+  target half has the same witness the today half has had.
 
 ## 14. Residual risk, accepted and named
 
@@ -465,8 +468,6 @@ Open, and deliberately not decided here (each goes to `docs/architecture/40-open
 
 - whether any external-API surface survives for third-party compatibility (§6.5), under the constraint that
   `getOptions` and the `system`-resolving `disable` cannot;
-- removing `<all_urls>`, which is gated on the Connector owning every fetch *and* on the legacy authenticated-proxy
-  path no longer needing `webRequest` (§13);
 - per-profile inbound credentials for loopback inbounds whose protocol can authenticate (§12);
 - the Firefox AMO id as a security principal that cannot rotate (§6.3);
 - DNS disposition and WebRTC while blocked, which the browser does not let us control (§14).

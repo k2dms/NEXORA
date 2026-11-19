@@ -153,7 +153,7 @@ Today's grants:
 | \`webRequestBlocking\` (Firefox only, \`omega-target-chromium-extension/overlay/manifest-firefox.json:45\`) | the same auth path there | same | parity |
 | \`tabs\` | per-tab badge | optional grant | — |
 | \`contextMenus\` | quick-switch menu | optional grant | — |
-| \`host_permissions: ["<all_urls>"]\` | subscription/PAC fetching | **remove** | measure first |
+| \`host_permissions: ["<all_urls>"]\` | subscription/PAC fetching | **keep inherited** | measure first |
 
 ## 14. Residual risk
 
