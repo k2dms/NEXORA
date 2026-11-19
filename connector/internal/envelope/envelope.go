@@ -691,6 +691,18 @@ func (f *Frame) Fail(code, message string) (*Frame, error) {
 	return out, out.finalize()
 }
 
+// AnswerProgress answers a request with a progress frame — the shape the recorded chunk-group fixture gives
+// the intermediate slices of a chunked import (docs/architecture/25-native-messaging-protocol.md §5): the
+// group's own id as both id and inReplyTo, so the caller correlates reassembly state with the transfer it is
+// mid-way through, where a response frame would be a second, unrecorded answer.
+func (f *Frame) AnswerProgress(stage string, done, total int) (*Frame, error) {
+	reply := f.ID
+	t := total
+	out := &Frame{V: f.V, ID: f.ID, Type: TypeProgress, InReplyTo: &reply, TraceID: f.TraceID, SentAt: Now(),
+		Progress: &Progress{Stage: stage, Done: done, Total: &t}}
+	return out, out.finalize()
+}
+
 // NewHeartbeat builds the liveness beat of framing.json#/liveness: v, id, type and sentAt and nothing
 // else. The sender mints a fresh id per beat; the receiver counts its arrival and never answers it.
 func NewHeartbeat() (*Frame, error) {

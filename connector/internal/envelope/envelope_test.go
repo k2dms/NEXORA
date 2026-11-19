@@ -360,3 +360,39 @@ func TestParseWithFloorRefusesBelowTheStatedFloorAndKeepsTheId(t *testing.T) {
 		t.Fatalf("Parse refused a frame at the shipped floor: %v", err)
 	}
 }
+
+// AnswerProgress is the slice answer's shape: the group's own id as both id and inReplyTo — the recorded
+// fixture's progress frames — validated and marshalled as data the peer can read back.
+func TestAnswerProgressIsTheRecordedSliceAnswerShape(t *testing.T) {
+	req, err := NewRequest("pi-req-0001", "profile.import", map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	answer, err := req.AnswerProgress("reassembling", 2, 3)
+	if err != nil {
+		t.Fatalf("the progress answer did not build: %v", err)
+	}
+	if answer.Type != TypeProgress || answer.ID != req.ID || answer.InReplyTo == nil || *answer.InReplyTo != req.ID {
+		t.Fatalf("the progress answer is id=%q inReplyTo=%v, want the group id twice", answer.ID, answer.InReplyTo)
+	}
+	if answer.Progress == nil || answer.Progress.Stage != "reassembling" || answer.Progress.Done != 2 ||
+		answer.Progress.Total == nil || *answer.Progress.Total != 3 {
+		t.Fatalf("the progress payload is %+v", answer.Progress)
+	}
+	for _, forbidden := range []string{"method", "result", "ok", "error"} {
+		if answer.has(forbidden) {
+			t.Fatalf("a progress answer carries %s", forbidden)
+		}
+	}
+	data, err := answer.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := Parse(data)
+	if err != nil {
+		t.Fatalf("the marshalled progress answer does not parse back: %v", err)
+	}
+	if parsed.Progress == nil || parsed.Progress.Done != 2 {
+		t.Fatalf("the round-tripped progress is %+v", parsed.Progress)
+	}
+}

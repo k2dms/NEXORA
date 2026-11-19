@@ -78,6 +78,16 @@ func (r *Reassembler) Add(seq int, payload string) error {
 // Complete reports whether every declared slice has arrived.
 func (r *Reassembler) Complete() bool { return r.arrived == r.count }
 
+// Count reports the slice total the group declared at New.
+func (r *Reassembler) Count() int { return r.count }
+
+// Arrived reports how many declared slices have been recorded so far.
+func (r *Reassembler) Arrived() int { return r.arrived }
+
+// Hash returns the contentHash the group was opened with, so the caller can
+// refuse a slice that declares a different one before recording it.
+func (r *Reassembler) Hash() string { return r.hash }
+
 // Bytes returns the reassembled document once the group is complete, verified
 // against the hash declared at New. A hash mismatch is ErrIntegrityMismatch
 // wrapping the two hashes, and the caller rejects the whole import.

@@ -210,6 +210,33 @@ fragments, hashes the concatenation and refuses a group whose body does not hash
 receiver half: `chunk.New` opens a group, `Add` takes one fragment, `Bytes` reassembles and verifies, and
 a hash mismatch is `ErrIntegrityMismatch` — never a partial apply.
 
+**The slice answers — recorded, and now met.** The fixture has answered this since its first commit
+(`0a06442`, 2026-11-05): every group there answers its intermediate slices with
+**progress frames** and its last slice with **one** response. The receiver half therefore
+had no question to settle, only a recorded shape to meet. Every slice but the last is answered by a
+progress frame — `stage: "reassembling"`, `done` counting the slices recorded so far, `total` the
+declared `chunkCount` — in reply to the group's own `envelope.id`, and exactly one response frame closes
+the group: the import's own result, or its single `IntegrityMismatch` when the group splits. A slice
+frame therefore never reaches a handler and never enters the response cache; the receiver half is the
+dispatcher's chunk gate (`connector/internal/dispatch`), which records the fragment and answers from
+state, and the reassembly of the last slice re-enters the normal reservation-and-handler path with the
+document as its args. The group is one request for every gate that counts: the named `profile.import`
+budget (2/60 s) is spent once, when the group opens with slice 0 — the budget's own `why` counts
+imports ("a second import inside a minute is either a retry of the first … or a bug"), and a chunked
+group is one import — every slice and re-asked slice pays only the catch-all floor, and the encoded
+result is cached under the group id (ADR-0008), which is what any later frame with that id replays. The
+failure rules are the group rules' refusal side: an out-of-order slice, a `contentHash` or `chunkCount`
+disagreement, a fragment that does not decode, and a reassembled document that carries one of `chunk`,
+`payload`, `contentHash`, `credentials` each fail the whole import — `IntegrityMismatch` for the group
+rules, `BadRequest` for the frame's own shape — and drop the group; the reassembled bytes may not
+exceed the `subscription-source` `limits.maxBytes` maximum (8 MiB, rule 8's cap), because chunking
+cannot be used to smuggle an arbitrarily large payload past the size guard. A group that sits without
+slices past the command's own 60 000 ms timeout is dropped silently, and a later slice is answered as a
+gap: the sender re-sends the whole import under a fresh id, which is the same thing the idempotency
+record means for a single-frame import. The answer rules are asserted over the fixtures, not described
+— the chunk-group block's "a chunk group's intermediate slices are answered by reassembling progress
+frames" and "exactly one response closes a clean chunk group".
+
 ## 6. Envelope
 
 Required: `["v","id","type","sentAt"]` — `packages/schema/protocol/envelope.schema.json#/required`.
@@ -370,6 +397,7 @@ and no bidirectional streaming RPC semantics.
 | Chunk shape is one object mirrored in `profile.import` | "the envelope chunk shape and profile.import args.chunk are one shape" assertion | **GREEN** |
 | Chunk groups complete and non-vacuous | the chunk-group block with its absent-group, clean-group and split-hash guards | **GREEN** |
 | Slice bodies reassemble to the document the sender hashed | the chunk-group block's "reassembled slice bodies hash to the declared contentHash" and "the reassembled bytes are a UTF-8 JSON document"; the receiver half is `connector/internal/chunk` (`Bytes` verifies before returning) | **GREEN** |
+| A chunk group is one request for the gates that count, its slices are answered by progress frames and exactly one response closes it | the chunk-group block's "a chunk group's intermediate slices are answered by reassembling progress frames" and "exactly one response closes a clean chunk group"; the receiver half is the dispatcher's chunk gate (`connector/internal/dispatch`), tested in Go for order, budget, replay and the cap | **GREEN** |
 | Nothing dispatchable pre-hello but `connector.hello` | "nothing is dispatchable before negotiation except connector.hello" | **GREEN** |
 | Capability registry and recorded hello are the same set | the capability equality assertions | **GREEN** |
 | Every cited error code exists | "cites only taxonomy codes" + fixture-level taxonomy checks | **GREEN** |

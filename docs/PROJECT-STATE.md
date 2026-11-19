@@ -3751,7 +3751,7 @@ accepted the registered sender, spawned a real Connector over hop 2 and returned
 protocol version 1, connector version 0.1.0 and the capability list. A foreign origin got exactly one
 `UnauthorizedExtension` per frame and no Connector was started (`connector/cmd/nexora-host/main.go:204`); twelve such
 frames produced ten answers and then stdout closed with exit 1 and the guard's own message
-(`connector/internal/dispatch/dispatch.go:408`), which is the amplification bound doing what doc 31 says it does.
+(`connector/internal/dispatch/dispatch.go:430`), which is the amplification bound doing what doc 31 says it does.
 `uninstall` then removed all three keys and both files, and the sender that had just been served was refused with the
 missing-allowlist note (`connector/cmd/nexora-host/main.go:179`). `connector/cmd/nexora-installer/main_test.go:433`
 keeps the registry half of that run as a test against the real `reg.exe`, with its own cleanup.
@@ -5572,3 +5572,70 @@ in place).
 printed one ref before it and one after. The state commit that carries this sentence was written after the push it
 names, which is why it is not inside the commit it names, and why `git rev-list --count nexora/master..HEAD` reads
 1 at the time it was written.
+
+### 4.82 The chunked import is served — the recorded answer shape, met by the receiver (2026-11-15)
+
+**What was already decided, and what was not.** The slice answers were not a question. `0a06442` — the first
+schema commit, 2026-11-05 — wrote `packages/schema/fixtures/protocol/import-chunked.jsonl` with two `progress`
+frames (`stage: "reassembling"`, `done` 1 and 2, `total` 3, both in reply to `pi-req-0001`) between three
+requests and one `ok: true` response closing the group, plus a second group splitting on `contentHash` and closed
+by one `IntegrityMismatch`. The ordering rule
+(`packages/schema/protocol/framing.json#/oversizedPayloads/mechanism/ordering`), the cap
+(`…/cap`), validate-then-apply (`…/atomicity`), the no-credentials-on-a-chunked-frame clause and the group rules
+were likewise recorded data. The only thing the corpus had never written down was what the Connector *does* —
+`profile_import.go` refused every chunked frame with "chunked import is unavailable", and the accounting question
+underneath it (a 2-per-minute import budget charged per slice would make any group of three or more impossible)
+had no answer in prose anywhere.
+
+**No new decision was minted.** A first draft registered `ODEC-46` for the slice-answer question. It was withdrawn
+before the commit: an entry in that register is a question the corpus could not answer, and this one it had
+answered as data five days before the register was last touched — the entry would have claimed a decision where
+the corpus already had a record. What the slice adds is execution and derivation, not choice: the budget charges
+once per group because `framing.json`'s own `why` counts imports ("a second import inside a minute is either a
+retry of the first … or a bug"), and the expiry, id-collision and reassembled-args rules fall out of the command's
+`timeoutMs`, ADR-0008's idempotency record and the `profile.import` `allOf` clauses already on disk. The
+withdrawal is recorded here rather than silently, because a minted-then-deleted id would otherwise look like a
+renumbering.
+
+**The gate.** `connector/internal/dispatch/chunkgate.go`: a frame carrying `envelope.chunk` is served before the
+response cache and before any handler — encoding other than `base64`, or a chunk on any method but
+`profile.import`, is `BadRequest`; slice 0 opens the group (spending the named budget once) and every slice is
+answered by `ChunkProgress`; a slice out of `chunkSeq` order, a `contentHash`/`chunkCount` disagreement, an
+undecodable fragment, a fragment that would push the group past `subscription-source` `limits.maxBytes`
+(8 388 608, asserted against the schema's own `maximum`) or a reassembled document carrying `chunk`, `payload`,
+`contentHash` or `credentials` drops the whole group — `IntegrityMismatch` for the group rules, `BadRequest` for the
+frame's own shape. Groups live in a per-sender map keyed by `(sender, envelope.id)`, expire silently past the
+command's 60 000 ms timeout, and a whole-frame request arriving on an open group id is refused rather than allowed
+to cache under it. The last slice reassembles, verifies, and re-enters the existing reservation path, so its answer
+is cached under the group id for any later frame — the dedupe replay `dispatch.go` already guaranteed.
+
+**The wire.** `envelope.Frame.AnswerProgress` builds the progress answer (group id as both `id` and `inReplyTo`,
+`progress` set, no `method`/`result`/`ok`/`error`), and `service.respond` routes `*dispatch.ChunkProgress` through
+it while every other result still becomes a response. `chunk` gains `Count`, `Arrived` and `Hash` so the gate can
+answer from state instead of re-deriving it, and `profile_import.go`'s refusal now names the gate that serves
+chunked frames rather than claiming none exists.
+
+**The assertions.** `verify.mjs`'s chunk-group block now requires, for every clean group, at least one
+`reassembling` progress frame and exactly one `ok: true` response in reply to the group id, and for every split
+group exactly one `ok: false`/`IntegrityMismatch` response — the fixture's recorded shape, checked instead of
+assumed (checks 1234 → 1236). Doc 25 §5 gains the paragraph that separates "recorded" from "decided" and names
+`0a06442`; doc 26 §2.2 and its table gain the same sentence. Go: `chunkgate_test.go` covers progress/one-response,
+per-group budget, out-of-order, split hash, re-ask, undecodable fragment, the four forbidden reassembled members,
+hash mismatch on a complete group, the cap against the schema, a chunk on another method, a whole frame on an open
+id, and expiry; `chunked_import_test.go` drives the real service twice — a three-slice import that answers progress
+1/3, 2/3 then one result, and a reassembled document carrying credentials refused whole.
+
+**Corpus.** No VER row, ODEC row or tally moves: the queue never carried this gap, and the withdrawal of `ODEC-46`
+returns the register to 30 live / 15 retired. Six citations re-anchored for the paragraphs inserted into docs 25
+and 26 — doc 32's `26-command-surface.md` citation moved from line 250 to 254 and its
+`25-native-messaging-protocol.md` citation from 291 to 317, with the range it cites moving from 286-287 to
+312-313; doc 36's `26-command-surface.md` citation from 219 to 223; doc 34's from 311 to 315; and this file's
+own `connector/internal/dispatch/dispatch.go` citation from 408 to 430 — each moved because the text it quotes
+moved, not because the quote changed.
+
+**Gates.** All seven green; 20 Go packages ok; `verify.mjs` 1236 checks; `packages/protocol`'s drift check remains
+red for a cause that predates this slice (its committed `src/contract.ts` lacks `heartbeat` and `core.select`, and
+that harness is outside the seven), so it is noted, not fixed here.
+
+**Not pushed yet.** This record is local: the push waits for the user's word as §7 requires, and the commit that
+carries this paragraph stays unpushed until then.

@@ -57,8 +57,8 @@ Each row is a real forward reference found by grepping the tree for this file's 
 | `docs/architecture/22-component-contracts.md:399` | masking happens at the sink, not the call site | §8 |
 | `docs/architecture/23-unified-server-model.md:230` | field-level rules for `publicKey`/`shortId` | §10 |
 | `docs/architecture/24-options-envelope-compat.md:81` | a reference arriving without its secret degrades visibly | §14 |
-| `docs/architecture/25-native-messaging-protocol.md:291` | `SecretRedacted` vs a corrupt document | §11 |
-| `docs/architecture/26-command-surface.md:250` | `maskedConfig` must contain no keystore value | §13 |
+| `docs/architecture/25-native-messaging-protocol.md:317` | `SecretRedacted` vs a corrupt document | §11 |
+| `docs/architecture/26-command-surface.md:254` | `maskedConfig` must contain no keystore value | §13 |
 | `docs/architecture/27-config-compilation-pipeline.md:136` | mask and label rules for unrepresentable fields | §9, §10 |
 | `docs/architecture/29-subscriptions-and-servers.md:297` | `detail` masked like any other text | §8 |
 | `docs/architecture/29-subscriptions-and-servers.md:338` | M3–M5: credentials inside a subscription | §6, §14 |
@@ -322,7 +322,7 @@ field cannot be "shown without the token" and "fetched with the token" at the sa
 ## 11. Which refusal is which
 
 Three codes cover "a secret was involved", and they mean three different things to three different readers.
-This is the answer to `docs/architecture/25-native-messaging-protocol.md:286-287`.
+This is the answer to `docs/architecture/25-native-messaging-protocol.md:312-313`.
 
 | Code | Meaning | Whose problem | What they do | Retryable? |
 |---|---|---|---|---|

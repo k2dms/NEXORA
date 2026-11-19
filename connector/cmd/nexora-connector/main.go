@@ -261,6 +261,15 @@ func (s *service) respond(f *envelope.Frame) (*envelope.Frame, error) {
 	result, refusal := s.d.Dispatch(s.ctx, s.sess.Identity(s.senderID, s.allowlisted), f)
 	s.sess.Record(result, refusal)
 	if refusal == nil {
+		// A chunk slice's answer is a progress frame, not a response: reassembly state in reply to the
+		// group id, exactly the shape the recorded group fixture answers its intermediate slices with.
+		if p, ok := result.(*dispatch.ChunkProgress); ok {
+			res, err := f.AnswerProgress(p.Stage, p.Done, p.Total)
+			if err != nil {
+				return nil, err
+			}
+			return res, nil
+		}
 		res, err := f.Respond(result)
 		if err != nil {
 			return nil, err

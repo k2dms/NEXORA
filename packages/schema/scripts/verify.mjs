@@ -720,14 +720,32 @@ check(replayPairs >= 4, 'idempotent replay is exercised', `${replayPairs} replay
         `the reassembled bytes are a UTF-8 JSON document: ${key}`,
         'reassembly produced bytes JSON.parse refuses',
       );
+      // The slice answers, recorded not invented (the fixture has carried them since 0a06442): the
+      // intermediate slices are answered by reassembling progress frames in reply to the group id, and
+      // exactly one response closes the group.
+      const answers = members[0].frames.filter(
+        (f) => f.inReplyTo === members[0].frame.id && (f.type === 'response' || f.type === 'progress'),
+      );
+      const progresses = answers.filter((f) => f.type === 'progress');
+      const responses = answers.filter((f) => f.type === 'response');
+      check(
+        progresses.length >= 1 && progresses.every((f) => f.progress?.stage === 'reassembling'),
+        `a chunk group's intermediate slices are answered by reassembling progress frames: ${key}`,
+        `${progresses.length} progress frames, stages ${[...new Set(progresses.map((f) => f.progress?.stage))].join(', ') || 'none'}`,
+      );
+      check(
+        responses.length === 1 && responses[0].ok === true,
+        `exactly one response closes a clean chunk group: ${key}`,
+        `${responses.length} response frames, ${responses.map((f) => `ok=${f.ok}`).join(', ') || 'none'}`,
+      );
     } else {
       splitGroups++;
       const answers = members[0].frames.filter(
         (f) => f.type === 'response' && f.inReplyTo === members[0].frame.id,
       );
       check(
-        answers.some((f) => f.ok === false && f.error?.code === 'IntegrityMismatch'),
-        `a chunk group that splits its contentHash is rejected, not reassembled: ${key}`,
+        answers.length === 1 && answers[0].ok === false && answers[0].error?.code === 'IntegrityMismatch',
+        `a chunk group that splits its contentHash is rejected by exactly one IntegrityMismatch response: ${key}`,
         `${hashes.size} distinct hashes, answers ${answers.map((a) => `${a.ok}/${a.error?.code ?? 'ok'}`).join(', ') || 'none'}`,
       );
     }

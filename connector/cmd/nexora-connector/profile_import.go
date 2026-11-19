@@ -101,7 +101,10 @@ func (h *profileImport) Handle(ctx context.Context, f *envelope.Frame) (any, *di
 		return nil, refuseImport("BadRequest", "args must be a closed JSON object")
 	}
 	if _, chunk := args["chunk"]; chunk || f.Chunk != nil {
-		return nil, refuseImport("BadRequest", "chunked import is unavailable; no staging or reassembly is performed")
+		// A chunked frame is answered by the dispatcher's reassembly gate and never reaches a handler; this
+		// branch remains for an args.chunk beside a frame the gate did not claim, which is not an import
+		// this path applies.
+		return nil, refuseImport("BadRequest", "a chunked frame is reassembled by the dispatcher's chunk gate before any handler runs; this handler applies complete documents only")
 	}
 	if !importArgsShape(args) {
 		return nil, refuseImport("BadRequest", "args violate the closed single-frame import contract")

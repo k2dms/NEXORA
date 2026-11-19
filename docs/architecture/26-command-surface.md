@@ -190,7 +190,11 @@ profiles (`packages/schema/protocol/commands/profile.import.json:51-55`), `conte
 `chunk` is present, and the group rules — same `chunkCount` across a group, `chunkSeq` covering
 `0..chunkCount-1` exactly once, one hash per group — are asserted over
 `packages/schema/fixtures/protocol/*.jsonl` by `packages/schema/scripts/verify.mjs` "a chunked profile.import slice exists in the fixtures", "a complete chunked import reassembles in the fixtures" and "the chunked IntegrityMismatch path is exercised by a real group", which fails if a chunked group is absent
-from the fixtures rather than passing vacuously.
+from the fixtures rather than passing vacuously. The Connector answers each slice with a reassembling
+progress frame in reply to the group id and closes the group with one response — the answer shape the
+fixture has recorded since the group was first written (`docs/architecture/25-native-messaging-protocol.md`
+§5); the receiver half is the dispatcher's chunk gate (`connector/internal/dispatch`), so a slice frame
+reaches no handler and no response cache until the group is whole.
 
 ## 3. Per-method notes a reader cannot get from the schema
 
@@ -322,6 +326,7 @@ accidental "delete all credentials" is structurally impossible from a UI bug.
 | `probe` is non-replayable | `packages/schema/scripts/verify.mjs` "probe is non-replayable: ${doc.name}" | **Verified** |
 | Chunk mirror equals envelope chunk shape | `packages/schema/scripts/verify.mjs` "the envelope chunk shape and profile.import args.chunk are one shape" | **Verified** |
 | Chunk groups in the fixtures are complete | `packages/schema/scripts/verify.mjs` "a complete chunked import reassembles in the fixtures" | **Verified** |
+| Chunk slices are answered by progress frames and one response closes the group | `packages/schema/scripts/verify.mjs` "a chunk group's intermediate slices are answered by reassembling progress frames" and "exactly one response closes a clean chunk group" | **Verified** |
 | `config.apply` restarts only on hash change | no code exists to run | **Verified: NO — deferred to Phase 2** (golden config test, `docs/architecture/27-config-compilation-pipeline.md`) |
 | A fast switch never restarts Core | `config.apply`'s own `unchangedBecauseHashMatched`/`restarted` fields; the golden pair proves the compiled hash is byte-stable across a re-select | **Verified** (the switch is one, per §2.1; `VER-30` retired with the decision) |
 | `profile.import` rejects a dangling `serverId` | the payload check in the Connector's handler; the load-time check is `nexora/extension/src/profiles/registry.ts`'s `loadRegistry`, tests naming profile and server | **Verified** (registry load) / Connector-side on `profile.import` |

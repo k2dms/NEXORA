@@ -115,6 +115,11 @@ type Dispatcher struct {
 
 	responses map[string]*responseCache
 	evictions DedupeStats
+
+	// groups are the chunked-import reassembly buffers, one per sender and envelope id. A slice frame is
+	// served by the chunk gate (chunkgate.go) before any handler runs; the map is bounded by the import
+	// budget, which only a group's opening slice spends.
+	groups map[string]*openChunk
 }
 
 // DedupeStats exposes aggregate eviction counts without request ids, senders or payloads.
@@ -159,6 +164,7 @@ func New(cfg Config) (*Dispatcher, error) {
 		handlers: handlers, now: cfg.Now,
 		spent: map[string]map[string][]time.Time{}, refusals: map[string][]time.Time{},
 		responses: map[string]*responseCache{},
+		groups:    map[string]*openChunk{},
 	}, nil
 }
 
@@ -213,6 +219,18 @@ func (d *Dispatcher) Dispatch(ctx context.Context, id Identity, f *envelope.Fram
 	handler, ok := d.handlers[method]
 	if !ok {
 		return nil, d.refuse(id, "Internal", fmt.Sprintf("%s is published but this build registers no handler for it", method))
+	}
+	// The chunk gate comes before the response cache, because a slice frame's answer is a progress frame and
+	// never a cached result: the gate records the fragment, and only the group's last slice re-enters the
+	// normal path below with the reassembled document.
+	if f.Chunk != nil {
+		return d.dispatchChunk(ctx, id, f, m, handler)
+	}
+	// A whole-frame request may not borrow an id a group is reassembling under: its answer would be cached
+	// under the group's id and replayed later as the group's final answer.
+	if d.chunkOpen(id.SenderID, f.ID) {
+		return nil, d.refuse(id, "BadRequest",
+			fmt.Sprintf("%s without chunk arrives on id %q while a chunk group is open under it: the group's slices declare this id, and a whole-frame request re-sends the import whole under a fresh id", method, f.ID))
 	}
 	// Admission is always rechecked, even for a stored answer. Dedupe precedes budgets and state,
 	// so a retry does not spend the mutation budget or repeat a protected write.
@@ -363,6 +381,12 @@ func (d *Dispatcher) DedupeStats() DedupeStats {
 func (d *Dispatcher) charge(id Identity, m contract.Method, replay bool) *Refusal {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	return d.chargeLocked(id, m, replay)
+}
+
+// chargeLocked is charge with the lock already held — the chunk gate spends a slice's cost in the same
+// critical section that records the slice, so a budget refusal never records the fragment it refused.
+func (d *Dispatcher) chargeLocked(id Identity, m contract.Method, replay bool) *Refusal {
 	at := d.now()
 
 	named := []contract.RateLimit{contract.CatchAllRateLimit()}
