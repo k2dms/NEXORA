@@ -626,7 +626,7 @@
     {
       "id": "VER-17",
       "subject": "no test shows the Connector listens on nothing but its loopback inbounds -- there is no HTTP control surface to grep",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
@@ -1117,7 +1117,7 @@
     {
       "id": "VER-50",
       "subject": "`server.test` results are specified never to be replayed from cache; the static half is green and the runtime half has not happened",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
