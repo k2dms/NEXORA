@@ -1010,7 +1010,7 @@
     {
       "id": "VER-43",
       "subject": "the archive-entry refusal that runs before anything is written does not exist -- no extractor, so a zip's entry names have never been refused anywhere",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",

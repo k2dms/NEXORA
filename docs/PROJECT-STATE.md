@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.92; older scope and inventory paragraphs
+continuation is §4.93; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5664,6 +5664,22 @@ block; the distribution moves no-code 36 → 35, no-run 10 → 11. The two doc-2
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried a1decb0 (VER-11), 4e1bc9c (VER-73) and 478e376 (VER-90, config.snapshot registered with its expectation arg) plus the eight commits the previous pushes left unpushed since 9ed49f4 — the CI fixes included, so the runner goes green for the first time since §4.84. `nexora/master` moved b8937e7 → 478e376.
+### 4.93 The step-7 archive gate is code — VER-43 moves no-code → no-run (2026-11-20)
+
+**The gate.** `connector/internal/archive` is doc 33 §5 step 7 whole: `Validate` takes the pin's expected set
+and the archive's central-directory entries and refuses the whole archive before the first write — absolute
+paths, `..` climbs (including one hidden behind a directory entry's trailing slash), backslashes, drive
+letters, unclean names, duplicate declarations, the per-entry and total size bounds, and names outside the
+set. Eight Go tests drive it, one over a real zip written in-test with attacker-shaped names.
+
+**The boundary.** The extractor itself is step 8's business and belongs to the installer that has a pin and a
+download (VER-41's register row); the live install stays LIVE-21's. Doc 33 §16's row keeps its deferral label
+in place — the deferred claim spelled out in prose, not by the marker — narrowed to the run the live install still owes; `marker.counted` stays 151.
+
+**Corpus.** VER-43 moves `no-code` → `no-run`; the distribution moves no-code 35 → 34, no-run 11 → 12. Doc 39's
+queue row moved to the `no-run` section with an amendment block.
+
+**Gates.** All seven green; Go packages ok (19, with internal/archive).
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
