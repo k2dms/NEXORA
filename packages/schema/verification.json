@@ -505,7 +505,7 @@
     {
       "id": "VER-12",
       "subject": "no test shows that a second Native Messaging connection re-adopts the running Connector instead of starting a second one",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",

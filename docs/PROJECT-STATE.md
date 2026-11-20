@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.114; older scope and inventory paragraphs
+continuation is §4.115; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5868,6 +5868,17 @@ marker.counted 148 stays. Doc 36 §6 names the run and keeps its deferral label.
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 10e6078 (VER-44 narrowed with the started-Core run); `nexora/master` moved 4afd664 → 10e6078.
+### 4.115 The second connection re-adopts — VER-12 moves no-code → no-run (2026-11-20)
+
+**The run.** The adoption fixture runs a real shared-owner Connector, tears the first host port down, and the
+second host run re-adopts the owner through the instance record and replays the cached answer — no second
+Connector is started, which is the whole of the row negative. Windows-local and env-guarded, the same shape
+the golden test asserts; the browser half stays LIVE-13's.
+
+**Corpus.** VER-12 moves no-code → no-run; the distribution moves no-code 17 → 16, no-run 26 → 27; 48 rows,
+marker.counted 148 stays. Doc 21 §5 names the fixture and keeps its deferral label.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
