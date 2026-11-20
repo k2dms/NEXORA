@@ -399,10 +399,15 @@ user's write permissions.
 **The residual, stated.** Anything that can write the host binary or its manifest can answer every command in
 `docs/architecture/26-command-surface.md` with fabricated data — including "the Core is the pinned Core" — and no
 amount of pinning below that link helps, because the pin is checked by the process an attacker would replace. The
-controls that remain are the ones `docs/architecture/31-security-model.md` already counts: sender identity enforced
-by the browser rather than by the host, loopback-only inbounds, typed commands with no shell, and the extension
-refusing to trust a Connector whose `protocolVersion`/`pinsVersion` it does not recognise. Detection, not proof, and
-labelled as such — `Verified: NO — Phase 2` for even that much, since none of it exists as code yet.
+controls that remain are the ones `docs/architecture/31-security-model.md` already counts, and each now has its
+code: sender identity is the host's on-disk allowlist answered `UnauthorizedExtension` and nothing else
+(`cmd/nexora-host/main.go`, `main_test.go`), loopback-only inbounds are the compiler's own refusal
+(`internal/compile/validate.go`), typed commands with no shell are the boundary validation plus the
+caller-surface guard (`internal/dispatch/caller_surface_test.go`), and the extension drops to `incompatible`
+and stops when the hello's protocol versions do not overlap its own (`packages/state/src/client.ts`), the
+Connector answering `VersionMismatch` to below-floor frames from its side. `pinsVersion` is the pin
+document's own version and travels with the pin flow (`VER-41`). Detection, not proof — the distinction is
+kept by the live rows (`LIVE-02`, `LIVE-03`), and `VER-62` closed 2026-11-20 with the code named.
 
 ## 15. Failure modes, and where each resolution lives
 

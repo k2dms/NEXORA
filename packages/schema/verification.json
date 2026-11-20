@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 150
+    "counted": 149
   },
   "states": {
     "values": [
@@ -461,6 +461,12 @@
         "closed": "2026-11-20",
         "was": "no run shows a per-sender rate budget counted before dispatch, answered with retryable Busy, and producing no side effect; the live watch against a real sender has not happened",
         "artefact": "the enforcement the row asked for is internal/dispatch's chargeLocked, and has been since the dispatcher was built: the named budget and the catch-all floor are pruned and checked before the handler is looked up, an exhausted sender is answered Busy with the retryable bit set (contract.LookupCode), and the amplification guard closes the port after RefusalsPerWindowMax refusals. TestABudgetRefusalIsBusyRetryableAndReachesNoHandler drives the real dispatcher with a counting handler and shows the handler ran exactly MaxRequests times — the request past the budget bought no side effect — plus the window reopening after the oldest requests leave it. The live watch over a real sender stays LIVE-17's own obligation"
+      },
+      {
+        "id": "VER-62",
+        "closed": "2026-11-20",
+        "was": "the doc-33 detection controls (sender identity, loopback-only, typed commands, protocolVersion/pinsVersion refusal) are not code, so even detection is unproven",
+        "artefact": "each control the row named now has its code and its tests, and the row's own state outlived its subject. Sender identity is the host's on-disk allowlist: a sender the startup configuration does not name is answered UnauthorizedExtension and nothing else (cmd/nexora-host/main.go, dispatch_test.go drives the same rule). Loopback-only inbounds are the compiler's own refusal (internal/compile/validate.go refuses a listen that is not 127.0.0.1 before the document is built). Typed commands with no shell are the closed per-command args schemas plus the caller-surface guard (internal/dispatch/caller_surface_test.go), which also pins the ten-file spawn allowlist. The extension's hello gate is bidirectional (packages/state/src/client.ts): overlapping protocol versions or the state drops to incompatible and stops, and the Connector answers VersionMismatch to below-floor frames (internal/peer). pinsVersion is the pin document's own version and travels with the pin flow (VER-41). The row's distinction — detection, not proof — is kept by the live rows LIVE-02 and LIVE-03"
       }
     ]
   },
@@ -1257,23 +1263,6 @@
         }
       ],
       "why": "The coverage rule is checkable at the contract layer for the *naming*, which is green; producing the error is a host behaviour."
-    },
-    {
-      "id": "VER-62",
-      "subject": "the doc-33 detection controls (sender identity, loopback-only, typed commands, `protocolVersion`/`pinsVersion` refusal) are not code, so even detection is unproven",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "live-row",
-        "ref": "LIVE-02"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/33-binary-integrity.md",
-          "anchor": "labelled as such — `Verified: NO — Phase 2` for even that much, since "
-        }
-      ],
-      "why": "Stated as detection, not proof; the row keeps the distinction honest in the queue rather than letting it read as coverage."
     },
     {
       "id": "VER-63",

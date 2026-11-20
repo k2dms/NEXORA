@@ -109,7 +109,7 @@ costs one commit once chosen — which is why they are the rows a Phase-2 commit
 browser, a store or a binary.
 
 One question gates more rows than any other: `ODEC-14` (what `block` promises) stops five at once — `VER-21`,
-`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 14 entries gate exactly 2 and 10 gate 1; that is the honest shape of a design phase - most open questions are one field wide, and the few
+`VER-74`, `COMP-07`, `COMP-10`, `COMP-14`. `ODEC-09` and `ODEC-27` gate three each, 13 entries gate exactly 2 and 11 gate 1; that is the honest shape of a design phase - most open questions are one field wide, and the few
 that are not are the few §5 argues about.
 
 One question is cited by five sites - `ODEC-15` (the built-in sync secret, five) - and five sit at three (`ODEC-05`, `ODEC-06`, `ODEC-09`,
@@ -253,7 +253,7 @@ them, and "gates" is what stops moving without the answer.
 | `ODEC-21` | whether "blocked" needs its own field for a feed refresh to survive it | `contract` | `VER-21`, `VER-63` |
 | `ODEC-22` | whether the pin ships inside the Connector or as a detached signed update | `product` | `VER-41`, `VER-42` |
 | `ODEC-23` | whether `geosite`/`geoip` routing is a feature at all, and how data files get pinned | `product` | `VER-27`, `VER-41` |
-| `ODEC-24` | what an air-gapped install does with a Core newer than the pin | `product` | `VER-41`, `VER-62` |
+| `ODEC-24` | what an air-gapped install does with a Core newer than the pin | `product` | `VER-41` |
 | `ODEC-25` | whether NEXORA signs the Core it rehosts | `product` | `VER-41`, `VER-43` |
 | `ODEC-26` | what removes the compiled config after an unclean kill | `contract` | `VER-23`, `VER-24` |
 | `ODEC-27` | the Linux and macOS equivalents of the Windows integrity story | `adr` | `VER-23`, `VER-43`, `COMP-12` |
