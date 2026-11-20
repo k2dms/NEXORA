@@ -162,7 +162,6 @@
       "decidedBy": "product",
       "blocks": {
         "verification": [
-          "VER-59",
           "VER-92"
         ],
         "compatibility": []

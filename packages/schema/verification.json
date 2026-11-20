@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 149
+    "counted": 148
   },
   "states": {
     "values": [
@@ -467,6 +467,12 @@
         "closed": "2026-11-20",
         "was": "the doc-33 detection controls (sender identity, loopback-only, typed commands, protocolVersion/pinsVersion refusal) are not code, so even detection is unproven",
         "artefact": "each control the row named now has its code and its tests, and the row's own state outlived its subject. Sender identity is the host's on-disk allowlist: a sender the startup configuration does not name is answered UnauthorizedExtension and nothing else (cmd/nexora-host/main.go, dispatch_test.go drives the same rule). Loopback-only inbounds are the compiler's own refusal (internal/compile/validate.go refuses a listen that is not 127.0.0.1 before the document is built). Typed commands with no shell are the closed per-command args schemas plus the caller-surface guard (internal/dispatch/caller_surface_test.go), which also pins the ten-file spawn allowlist. The extension's hello gate is bidirectional (packages/state/src/client.ts): overlapping protocol versions or the state drops to incompatible and stops, and the Connector answers VersionMismatch to below-floor frames (internal/peer). pinsVersion is the pin document's own version and travels with the pin flow (VER-41). The row's distinction — detection, not proof — is kept by the live rows LIVE-02 and LIVE-03"
+      },
+      {
+        "id": "VER-59",
+        "closed": "2026-11-20",
+        "was": "a fetched body is specified never to be executed (compile-not-execute, https-only, byte caps, SSRF guard) and no run has a body to try",
+        "artefact": "the engine the row waited for exists and is a string parser, not an executor: subscription_parse.go reads the body as text, auto-detects the format, refuses HTML and tag-shaped bodies, refuses nested base64, refuses unknown or ambiguous query parameters, and drops unsupported lines as counted entries — no byte of a feed reaches any interpreter (subscription_parse_test.go drives the hostile shapes). The fetch half has its runs too: the stream dies at maxBytes+1 with the body closed and no keystore call (TestSubscriptionStreamLimitAndHTML), the production transport pins TLS 1.3, sends no proxy and follows no redirect off the origin (TestSubscriptionProductionTransportPinnedTLSAndNoProxy), and the DNS guard resolves through a safe mixed A/AAAA set (TestSubscriptionGuardIPsAndMixedDNS). The live watch over a real hostile feed stays LIVE-14's own obligation"
       }
     ]
   },
@@ -1229,23 +1235,6 @@
         }
       ],
       "why": "The bundle is built today and never loaded under the policy; a CSP violation is silent until the page is blank."
-    },
-    {
-      "id": "VER-59",
-      "subject": "a fetched body is specified never to be executed (compile-not-execute, https-only, byte caps, SSRF guard) and no run has a body to try",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "live-row",
-        "ref": "LIVE-12"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/31-security-model.md",
-          "anchor": "A fetched body is executed"
-        }
-      ],
-      "why": "The schema rejects the invalid feeds; the engine that receives a hostile feed does not exist, which is the only part of the claim that matters."
     },
     {
       "id": "VER-60",
