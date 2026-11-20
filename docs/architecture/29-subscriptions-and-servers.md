@@ -373,7 +373,7 @@ no cache-busting parameter at all, and a feed that requires one is served by the
 | Guards are applied to every redirect hop | `docs/verification/live-matrix.md` `LIVE-25` — the two-hop redirect-to-metadata fixture and its in-budget control | Verified: NO — LIVE-25 |
 | `format: auto` never resolves ambiguously | the enum is declared (`packages/schema/subscription-source.schema.json#/properties/format`); §5's two detectors are exclusive by alphabet and the mixed body refuses whole — `TestSubscriptionAutoDetectorsExclusiveAndMixedBodyRefusesWhole` pins both halves | **Verified** |
 | Id reuse across refreshes: `id`, `tag`, `userIdRef` stable, feed name does not overwrite a user rename | `subscriptionServerID` derives the public id from the normalized connection fields alone — feed name and credential UUID are absent — and `userIdRef` is spelled from the id; `cmd/nexora-connector/subscription_stability_test.go` drives the real parser and the real refresh path across a feed rename and a credential rotation | Verified: NO — Phase 2 (the live half stays `LIVE-12`; `VER-67` narrowed with it) |
-| The cap ladder warns before applying | §8; the compile half is `docs/architecture/27-config-compilation-pipeline.md` §7 rule 3 | Verified: NO — Phase 2 |
+| The cap ladder warns before applying | §8; the compile half is `docs/architecture/27-config-compilation-pipeline.md` §7 rule 3 and is measured — the 65th tag and the exhausted range are driven through the real seam and answer `QuotaExceeded` (`connector/cmd/nexora-connector/config_apply_test.go:936`) — while the warn half belongs to the UI (`VER-75`) | Verified: NO — Phase 2 (the live selection stays `LIVE-04`'s; `VER-68` narrowed with it) |
 
 ## 12. Amendments this document forced
 

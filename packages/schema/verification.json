@@ -1062,7 +1062,7 @@
     {
       "id": "VER-45",
       "subject": "the redaction pass has never been run against a live credential in any of the five sinks",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
@@ -1100,7 +1100,7 @@
     {
       "id": "VER-47",
       "subject": "the diagnostics export is specified to upload nothing; no review or grep of the options-page bundle has happened",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "extension",
       "closesBy": {
         "kind": "live-row",
@@ -1319,7 +1319,7 @@
     {
       "id": "VER-68",
       "subject": "the cap ladder is specified to warn before it applies; neither the warning nor the application has run",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
