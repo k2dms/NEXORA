@@ -243,6 +243,11 @@ func newService(cfg config) (*service, error) {
 		return nil, fmt.Errorf("the core.status surface could not be built: %w", err)
 	}
 	handlers["core.status"] = serialized(cs.Handle)
+	csp, err := newConfigSnapshot(stateDir)
+	if err != nil {
+		return nil, fmt.Errorf("the config.snapshot surface could not be built: %w", err)
+	}
+	handlers["config.snapshot"] = serialized(csp.Handle)
 	stop, err := newCoreStop(sup, configDir)
 	if err != nil {
 		return nil, err

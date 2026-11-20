@@ -250,7 +250,9 @@ drops one.
 
 **`config.snapshot`** — returns `appliedConfigHash`, `matchesExtensionHash`, `serverTags`, and optionally a
 masked config (`includeMaskedConfig`, `maxBytes`). This is the drift-detection primitive: the extension holds
-the hash it last applied and asks whether reality matches. Masking is `SecretRedacted`-safe by construction —
+the hash it last applied and asks whether reality matches. The drift half is live in this build: `expectation`
+is a declared arg, and the handler computes `matchesExtensionHash` and `drift` against the applied-state
+record's own hash (`connector/cmd/nexora-connector/config_snapshot.go`). Masking is `SecretRedacted`-safe by construction —
 `maskedConfig` MUST NOT contain any value the keystore holds, which is the invariant of
 `docs/architecture/32-secrets-keystore-masking.md` and `docs/adr/0010-data-split-extension-intent-connector-truth.md:45-48`.
 
@@ -332,7 +334,7 @@ accidental "delete all credentials" is structurally impossible from a UI bug.
 | `profile.import` rejects a dangling `serverId` | the payload check in the Connector's handler; the load-time check is `nexora/extension/src/profiles/registry.ts`'s `loadRegistry`, tests naming profile and server | **Verified** (registry load) / Connector-side on `profile.import` |
 | `diagnostics.get` output contains no secret | fixtures cannot prove absence over a real keystore | **Verified: NO — deferred to Phase 2** (`LIVE-10`) |
 | `server.test` layer results are not replayed | static half green: assertions "probe is non-replayable: server.test" and "probe is answered exactly once" over `packages/schema/fixtures/protocol/` | **Verified: NO — deferred to Phase 2** for the runtime half (rides on `LIVE-05`) |
-| `config.snapshot` can say whether reality matches the hash the extension holds | `packages/schema/protocol/commands/config.snapshot.json#/args` declares two properties and `additionalProperties: false`, so the expectation `matchesExtensionHash` is computed against cannot be sent; this method still has no handler, while `core.status` now reports the supervisor's process and persisted state | **Verified: NO — deferred to Phase 2** (`VER-90`: the field, then the handler, then a run that detects a drift — `LIVE-06` names that check) |
+| `config.snapshot` can say whether reality matches the hash the extension holds | `packages/schema/protocol/commands/config.snapshot.json#/args` now declares `expectation` beside `includeMaskedConfig` and `maxBytes`, and the Connector registers the handler: the answer reads the applied-state record's `appliedConfigHash`, computes `matchesExtensionHash` and `drift` against the expectation, and lists `serverTags` from the Held table (`connector/cmd/nexora-connector/config_snapshot_test.go` drives all six paths). `includeMaskedConfig` is refused `SecretRedacted` until the keystore exposes the value enumeration the masking sink needs | **Verified: NO — deferred to Phase 2** (`VER-90`: the field and the handler exist; what remains is a run that detects a drift — `LIVE-06` names that check) |
 
 Trace: ADR-0004, ADR-0005, ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0013, ADR-0019, ADR-0020 ·
 Contract: `packages/schema/protocol/command-allowlist.json`, `packages/schema/protocol/commands/`,

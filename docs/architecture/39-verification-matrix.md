@@ -43,7 +43,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
   result.
 - **Copying the live matrix.** Its 24 rows are inherited by id (§7). A second copy of 24 rows is a second thing
   that can be wrong, and it would be wrong in the direction that matters: a stale status column reads as progress.
-- **Designing anything.** A row is not a feature request and not an approval. 36 rows say the component does not
+- **Designing anything.** A row is not a feature request and not an approval. 35 rows say the component does not
   exist; that is the queue reporting the phase boundary, not endorsing what comes after it.
 - **Repeating the argument.** Why a claim is made lives in the document that carries the label. This document
   quotes the line and points at it; it does not re-litigate it.
@@ -94,13 +94,13 @@ would have to be re-derived from the design, which is how a verification matrix 
 
 | State | Rows | What it means | The job it implies |
 |---|---|---|---|
-| `no-code` | 36 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
+| `no-code` | 35 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
 | `no-check` | 0 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
-| `no-run` | 10 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
+| `no-run` | 11 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 1 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 4 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **36 of 51 rows are `no-code`**: this iteration's claims are overwhelmingly
+The distribution is the finding. **35 of 51 rows are `no-code`**: this iteration's claims are overwhelmingly
 blocked on the Connector, the compiler and the UI existing, not on tests being clever. 0 `no-check` rows read as the column the harness watches
 the part closable before Phase 2 writes a line of product code, and four of them — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
@@ -252,7 +252,7 @@ Not a schedule — a dependency graph the states impose:
    (`ODEC-06`) changed what `VER-30` even asserted — and §9.5's answer (2026-11-14, inbound-per-tag) removed
    the command from the surface, retiring the row with it. `VER-09`, `VER-37`, `VER-74` wait on browsers and stores, which is
    why they are `needs-human` and not quietly estimated.
-4. **Everything else is `no-code` and waits on the Connector.** 22 of the 36 are owned by it. Four connector rows had
+4. **Everything else is `no-code` and waits on the Connector.** 21 of the 35 are owned by it. Four connector rows had
    left the column by 2026-11-07 — `VER-23`, whose keystore is now code with a green test over the real
    `crypt32` call, `VER-29`, whose writer and rollback are now Go tests over a temp directory
    (`connector/internal/apply`), `VER-14`, whose containment scope is now assigned, reported and proven against a
@@ -355,7 +355,6 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-76 | chunk reassembly has no slice body — the contract says what a slice is, never where its bytes ride | `connector` · assertion | 1 · 1 |
 | VER-84 | the HealthProber and its `server.test` surface are built and tested, and unregistered: the prober refuses to build without the egress endpoint and expected address no schema field carries, and the surface reads a server store no document has placed | `connector` · decision (`ODEC-42`) | 1 · 1 |
 
-| VER-90 | the drift primitive the reconnect step leans on cannot answer: `config.snapshot`'s closed `args` carry no expectation, so `matchesExtensionHash` is null on every permitted answer, and it still has no handler — `core.status` is now registered, but does not provide the missing snapshot comparison | `connector` · LIVE-06 | 1 · 1 |
 | VER-91 | QUIC's positive traffic case and a live FakeDNS match are unmeasured: the sniffing predicates' residual is reported whole rather than evidenced | `connector` · external-measurement | 1 · 1 |
 | VER-92 | the redirect-chain guards (scheme, address family, budget) are specified per hop and unexecuted: `LIVE-25` is the row that closes them | `contracts` · LIVE-25 | 1 · 1 |
 
@@ -367,10 +366,11 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-56 | the permission target column is unmeasured while `ODEC-11` is open — the manifest half closed 2026-11-19, the target half waits on the decision | `tools` · tool | 1 · 1 |
 | VER-85 | which code answers a malformed request is decided per command by analogy — `HandshakeFailed` in `connector.hello`, `HealthCheckFailed` in `server.test` — and thirteen of nineteen command docs declare no `BadRequest` | `contracts` · decision (`ODEC-43`) | 1 · 1 |
 
-### `no-run` — 10
+### `no-run` — 11
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
+| VER-90 | the drift primitive is answerable now — `expectation` is a declared arg, the handler reads the applied-state record's `appliedConfigHash`, computes `matchesExtensionHash` and `drift`, and lists `serverTags` from the Held table — but no browser has asked it | `connector` · LIVE-06 | 1 · 1 |
 | VER-13 | reconnect after a port teardown runs: `packages/state`'s client re-runs `connector.hello`, walks the capped jittered ladder and reconciles by hash, on an injected clock and against a real host killed twice (1009 ms and 1203 ms on the first rung); no browser has torn down a port on worker eviction | `connector` · LIVE-13 | 2 · 3 |
 | VER-14 | the scope is built, assigned and proven for the child the Connector spawns — the job object, the assignment, and a test that ends its own child by closing the handle — while the chain above Core needs a host this repository has not written and a session that kills a real parent | `connector` · LIVE-13 | 2 · 4 |
 | VER-15 | one manifest and three family keys are written and read back from HKCU by `connector/cmd/nexora-installer` and its tests, while no browser has resolved that registration | `connector` · LIVE-16 | 1 · 1 |
@@ -608,6 +608,14 @@ real-host sessions validated six successful replies against the result schema, i
 an unreadable receipt. `VER-90` remains `no-code`: the missing snapshot handler and expectation field are untouched.
 The distributions and marker count do not move; `docs/PROJECT-STATE.md` §4.57 records the evidence and limitations.
 
+**Snapshot drift.** 2026-11-20, with `connector/cmd/nexora-connector/config_snapshot.go`: `VER-90` moves
+`no-code` → `no-run`. `packages/schema/protocol/commands/config.snapshot.json#/args` declares `expectation`, so `matchesExtensionHash` is no
+longer null by construction, and the Connector registers the handler: the answer reads the applied-state
+record's `appliedConfigHash`, computes `matchesExtensionHash` and `drift` against it, and lists `serverTags`
+from the Held table. `includeMaskedConfig` is refused `SecretRedacted` until the keystore exposes the value
+enumeration the masking sink needs — the invariant stays whole by refusing the render. Six Go tests drive the
+paths. The distribution moves `no-code` 36 → 35, `no-run` 10 → 11; 51 rows, `marker.counted` 151 stays.
+
 **Open items.**
 
 1. 2 rows promise a named assertion. 14 of them can only be written once the code they test exists; `VER-20`
@@ -623,7 +631,7 @@ The distributions and marker count do not move; `docs/PROJECT-STATE.md` §4.57 r
    §7's dense-id assertion must be amended in the same commit, deliberately, rather than allowed to drift.
 3. `VER-09` and `VER-74` cannot be closed in-repo at all; they are the two places where this queue's answer is
    "someone must open a browser".
-4. The 36 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
+4. The 35 `no-code` rows are the honest size of Phase 2's verification debt. It is stated here, before Phase 2,
    because it is much harder to state afterwards.
 5. `docs/adr/0020-test-strategy.md:86` calls this document "not yet written". ADR-0001 rule 5 forbids correcting
    history in place, and the same aside sits unsuperseded in `docs/adr/0016-svelte-5-vite-typescript.md:46`, so it

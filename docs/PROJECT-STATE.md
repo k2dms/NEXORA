@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.91; older scope and inventory paragraphs
+continuation is §4.92; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5642,6 +5642,26 @@ for the line the edit added. `ODEC-06` stops gating `VER-73` (`VER-68` stays); d
 14 entries gate exactly 2 and 10 gate 1.
 
 **Gates.** All seven green; 18 Go packages ok.
+### 4.92 The drift primitive is answerable — config.snapshot registered, VER-90 moves no-code → no-run (2026-11-20)
+
+**The contract.** `packages/schema/protocol/commands/config.snapshot.json#/args` declares `expectation` (optional
+lowercase sha256), so `matchesExtensionHash` is no longer null by construction. The projection regenerated
+(`npm --prefix packages/protocol run gen`); the protocol verify is green, 110 frames unchanged.
+
+**The handler.** `connector/cmd/nexora-connector/config_snapshot.go` is registered behind `config.snapshot`: the
+answer reads the applied-state record's `appliedConfigHash`, computes `matchesExtensionHash` and `drift` against
+the expectation, and lists `serverTags` from the Held table sorted. No record answers `CoreNotRunning` — the
+first apply's empty reading, not corruption. `includeMaskedConfig` is refused `SecretRedacted` until the
+keystore exposes the value enumeration the masking sink needs (doc 32's sink half, VER-45's register row): the
+invariant stays whole by refusing the render. Six Go tests drive the paths; the registration pin gained the
+ninth method.
+
+**Corpus.** VER-90 moves `no-code` → `no-run`, owed to `LIVE-06` — no browser has asked the command. Doc 26's
+claim row and §6 prose state both halves; doc 39's queue row moved to the `no-run` section with an amendment
+block; the distribution moves no-code 36 → 35, no-run 10 → 11. The two doc-26 citations that shifted
+(32-secrets:254→256, 34-data-split:315→317) are re-anchored.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
