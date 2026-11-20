@@ -1331,7 +1331,7 @@
     {
       "id": "VER-67",
       "subject": "server id, tag and userIdRef are specified stable across refreshes, with a feed name never overwriting a user rename; nothing checks it",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",

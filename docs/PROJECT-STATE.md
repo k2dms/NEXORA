@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.94; older scope and inventory paragraphs
+continuation is §4.95; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5695,6 +5695,22 @@ keeps its deferral label, narrowed to that run. `marker.counted` stays 151.
 
 **Corpus.** VER-53 moves `no-code` → `no-run`; the distribution moves no-code 34 → 33, no-run 12 → 13. Doc 31
 §16's row names the guard; doc 39's queue row moved to the `no-run` section with an amendment block.
+
+**Gates.** All seven green; Go packages ok.
+### 4.95 The identity promise has its checker — VER-67 moves no-code → no-run (2026-11-20)
+
+**The checker.** `cmd/nexora-connector/subscription_stability_test.go` drives the real parser and the real
+refresh path across a feed rename and a credential rotation and asserts `id`, the tag derived from the id's
+first eight hex digits, `userIdRef`, `subscriptionId` and `source` hold while `displayName` moves. The
+promise was already built into the derivation — `subscriptionServerID` marshals only the normalized
+connection fields, and `userIdRef` is spelled from the id — what was missing was the check.
+
+**The boundary.** The merge decision itself (a user rename outranking the feed name) is the extension
+registry's and stays with the UI; the live half is LIVE-12's. Doc 29 §6's row names the checker and keeps
+its deferral label, narrowed to the run. `marker.counted` stays 151.
+
+**Corpus.** VER-67 moves `no-code` → `no-run`; the distribution moves no-code 33 → 32, no-run 13 → 14.
+Doc 39's queue row moved to the `no-run` section with an amendment block.
 
 **Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
