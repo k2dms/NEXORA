@@ -3841,8 +3841,8 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 37 && count('state', 'no-check') === 0 && count('state', 'no-run') === 11 &&
-      count('state', 'no-fixture') === 1 && count('state', 'needs-human') === 4 && verif.matrix.length === 53,
+    count('state', 'no-code') === 37 && count('state', 'no-check') === 0 && count('state', 'no-run') === 10 &&
+      count('state', 'no-fixture') === 1 && count('state', 'needs-human') === 4 && verif.matrix.length === 52,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
@@ -3850,7 +3850,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   check(
     count('owner', 'connector') === 32 && count('owner', 'extension') === 9 && count('owner', 'packages') === 2 &&
       count('owner', 'ui') === 3 && count('owner', 'contracts') === 1 && count('owner', 'tools') === 0 &&
-      count('owner', 'ci') === 2 && count('owner', 'human') === 1 && count('owner', 'external') === 3,
+      count('owner', 'ci') === 1 && count('owner', 'human') === 1 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
     `connector=${count('owner', 'connector')} extension=${count('owner', 'extension')} ` +
       `packages=${count('owner', 'packages')} ui=${count('owner', 'ui')} contracts=${count('owner', 'contracts')} ` +
@@ -3858,7 +3858,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   );
   check(
     kindCount('live-row') === 42 && kindCount('new-live-row') === 0 && kindCount('assertion') === 2 &&
-      kindCount('gate') === 2 && kindCount('tool') === 0 && kindCount('ci-step') === 2 &&
+      kindCount('gate') === 2 && kindCount('tool') === 0 && kindCount('ci-step') === 1 &&
       kindCount('decision') === 1 && kindCount('external-measurement') === 4,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',
     `live=${kindCount('live-row')} new-live=${kindCount('new-live-row')} assertion=${kindCount('assertion')} ` +

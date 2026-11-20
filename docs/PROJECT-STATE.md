@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.89; older scope and inventory paragraphs
+continuation is §4.90; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5613,6 +5613,19 @@ mirror test reads the regenerated fixture green. README's packages/protocol row 
 
 **Gates.** All seven green; 18 Go packages ok; the protocol package's verify green. The next push to
 `nexora/master` carries this fix, so the runner goes green for the first time since §4.84.
+### 4.90 The ladder lockfile question is answered by the decision — VER-11 retired (2026-11-19)
+
+**The row.** VER-11 asked for a lockfile the ladder roots don't track, so the dependency set was a claim
+rather than a floor. The §9.2 answer (2026-11-14) made that absence a product decision: the contract roots
+track their lockfiles, the ladder roots stay unpinned by the same decision — the floor is enforced by
+mocha-summary count parsing, not by a lockfile. The row's own condition is answered by the decision, not by
+a run over an absent artefact.
+
+**Corpus.** VER-11 retired — matrix 53 → 52 rows, 40 tombstones, no-run 11 → 10, ci 2 → 1, ci-step 2 → 1,
+marker.counted 154 → 153 (the partition is 102 + 26 + 25). Doc 20 §4's layout cell reads GREEN with the
+decision named; doc 39's VER-11 prose states the closure.
+
+**Gates.** All seven green; 18 Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

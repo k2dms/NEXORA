@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 155
+    "counted": 153
   },
   "states": {
     "values": [
@@ -443,6 +443,12 @@
         "closed": "2026-11-19",
         "was": "the .po-to-catalog compiler, the localeSupport table and the promotion threshold do not exist",
         "artefact": "packages/i18n is written: scripts/compile.mjs reads every omega-locales/*/LC_MESSAGES/omega-web.po, measures completion against the en_US reference (a msgid is covered when the locale carries a non-empty non-fuzzy msgstr for it), and emits catalog/shipped.json for the locales po2crx.coffee compiles plus localeSupport.json naming all 27 sources with measured completion and rule 5's per-locale promotion work. scripts/verify.mjs byte-compares the committed artifacts against a fresh compile, pins the shipped set to po2crx.coffee, refuses a shipped locale below the stated threshold (90%) or carrying a fuzzy flag, traces every catalog entry to its po, and prints the promotion-eligible locales for the contributor track. A CI step runs it on every push. The ADR-0017 item's compiler half is superseded by a dated note; its RPC half stays with the live rows and the fetch-graph gate"
+      },
+      {
+        "id": "VER-11",
+        "closed": "2026-11-19",
+        "was": "the Ladder A legacy build chain ran by hand on one host and is green on three runner images at the pinned floors; what the row still owes is the unpinned dependency set, which no run can supply while .gitignore keeps the lockfile out",
+        "artefact": "the §9.2 answer (2026-11-14) made the ladder lockfile's absence a product decision rather than an artefact the run owes: the contract roots track their lockfiles, the ladder roots stay ignored by the same decision, and the floor is enforced by mocha-summary count parsing rather than by a lockfile. The build chain ran green on three runner images at the pinned floors on 2026-11-05 (docs/audit/99-baseline-report.md §12) and green on every push since; the row's own condition is answered by the decision, not by a run over an absent artefact"
       }
     ]
   },
@@ -471,27 +477,6 @@
         }
       ],
       "why": "The most destructive failure available (a `1.x` restart wipes user data on the second update) has a release-gate assertion specified and no run behind it; the rest cannot be measured without publishing."
-    },
-    {
-      "id": "VER-11",
-      "subject": "the Ladder A legacy build chain ran by hand on one host and is green on three runner images at the pinned floors (docs/audit/99-baseline-report.md §12, 2026-11-05); what the row still owes is the half no run can give it while no lockfile is tracked -- that the dependency set which built there is the set a later host resolves",
-      "state": "no-run",
-      "owner": "ci",
-      "closesBy": {
-        "kind": "ci-step",
-        "ref": "legacy build + mocha-summary floor parsing in .github/workflows/verify.yml"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/20-target-repository-layout.md",
-          "anchor": "Legacy build graph still reachable from `omega-build`"
-        },
-        {
-          "doc": "docs/architecture/20-target-repository-layout.md",
-          "anchor": "Verified: NO — deferred to Phase 2: none of the cells above for a root"
-        }
-      ],
-      "why": "A build that works only on the machine that produced it cannot be the floor everything else is pinned to; no lockfile is tracked, so even the dependency set is a claim (docs/PROJECT-STATE.md §9.2)."
     },
     {
       "id": "VER-12",
