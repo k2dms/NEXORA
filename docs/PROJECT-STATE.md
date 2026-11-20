@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.90; older scope and inventory paragraphs
+continuation is §4.91; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5624,6 +5624,22 @@ a run over an absent artefact.
 **Corpus.** VER-11 retired — matrix 53 → 52 rows, 40 tombstones, no-run 11 → 10, ci 2 → 1, ci-step 2 → 1,
 marker.counted 154 → 153 (the partition is 102 + 26 + 25). Doc 20 §4's layout cell reads GREEN with the
 decision named; doc 39's VER-11 prose states the closure.
+
+**Gates.** All seven green; 18 Go packages ok.
+### 4.91 The 64-inbound ceiling row closes on its own tests — VER-73 retired (2026-11-20)
+
+**The row.** VER-73 asked for a ceiling that answers `QuotaExceeded` and never a partial config. Both halves
+were already code: `ports.go` refuses a 65th tag before any document is built, naming the count and refusing
+every port in the document, and `config.apply` maps the compiler's own words to `QuotaExceeded` through the
+`codeMarkers` table. `ports_test.go` drives the 65th tag and `config_apply_test.go` drives the seam — the
+browser-driven half of the sentence is `LIVE-03`'s own obligation and stays live.
+
+**Corpus.** VER-73 retired — matrix 52 → 51 rows, 41 tombstones, no-code 37 → 36, connector 32 → 31,
+live-row 42 → 41, marker.counted 153 → 151 (two lines: §9's invariant cell reads GREEN and §5's plain
+statement now names `ODEC-06` directly, because the refusal half is measured and only the ceiling value
+remains open). Doc 27 §5's consequence line names the closure; doc 36's citation re-anchored 27:159 → 27:160
+for the line the edit added. `ODEC-06` stops gating `VER-73` (`VER-68` stays); doc 40's gating tally is
+14 entries gate exactly 2 and 10 gate 1.
 
 **Gates.** All seven green; 18 Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.

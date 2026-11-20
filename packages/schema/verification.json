@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 153
+    "counted": 151
   },
   "states": {
     "values": [
@@ -449,6 +449,12 @@
         "closed": "2026-11-19",
         "was": "the Ladder A legacy build chain ran by hand on one host and is green on three runner images at the pinned floors; what the row still owes is the unpinned dependency set, which no run can supply while .gitignore keeps the lockfile out",
         "artefact": "the §9.2 answer (2026-11-14) made the ladder lockfile's absence a product decision rather than an artefact the run owes: the contract roots track their lockfiles, the ladder roots stay ignored by the same decision, and the floor is enforced by mocha-summary count parsing rather than by a lockfile. The build chain ran green on three runner images at the pinned floors on 2026-11-05 (docs/audit/99-baseline-report.md §12) and green on every push since; the row's own condition is answered by the decision, not by a run over an absent artefact"
+      },
+      {
+        "id": "VER-73",
+        "closed": "2026-11-20",
+        "was": "the 64-inbound ceiling is specified to produce `QuotaExceeded`, not a partially applied config; the browser has never driven a 65-server selection through `config.apply`",
+        "artefact": "the row's own condition is measured in-repo by two Go tests and the seam between them: `connector/internal/compile/ports.go` refuses a 65th tag before any document is built, naming the count and refusing every port in the document — the whole-set-or-nothing shape doc 27 §9's invariant row asks for (`ports_test.go` drives the 65th tag) — and `connector/cmd/nexora-connector/config_apply.go` maps the compiler's own words (\"which is what QuotaExceeded names\") to `QuotaExceeded` through the `codeMarkers` table, which `config_apply_test.go` drives through the real seam. A config the ceiling refuses can never reach the writer, so no partial config is producible by this path; the browser-driven half of the sentence is `LIVE-03`'s own obligation and stays live. Whether `QuotaExceeded` is the right code for the ceiling is `ODEC-03`'s recorded position, and whether 64 is the right ceiling is `ODEC-06`'s question — neither belongs to this row"
       }
     ]
   },
@@ -1393,27 +1399,6 @@
         }
       ],
       "why": "Constraint 8's cousin: the routing the user built must survive cut-over, and the Firefox half of the parity matrix has never been run at all."
-    },
-    {
-      "id": "VER-73",
-      "subject": "the 64-inbound ceiling is specified to produce `QuotaExceeded`, not a partially applied config",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "live-row",
-        "ref": "LIVE-03"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "The 64-inbound ceiling produces `QuotaExceeded`, not a partial config"
-        },
-        {
-          "doc": "docs/architecture/27-config-compilation-pipeline.md",
-          "anchor": "`Verified: NO — deferred to Phase 2`; the ceiling value itself is an o"
-        }
-      ],
-      "why": "A partial config is the state where some traffic is proxied and some is not, which is the failure the whole failure-policy document is built to make impossible. The refusal exists and is whole-set-or-nothing: `connector/internal/compile/ports.go` answers a 65th tag by naming the count and refusing every port in the document, so no partial config can reach the writer -- and whether `QuotaExceeded`, a `storage`-layer code meaning 'chrome.storage.sync or keystore quota hit' (`protocol/error-taxonomy.json:14`), is that count's code is `ODEC-03`'s question rather than this row's. The second line is doc 27 §5's plain statement of the same limit -- 200 servers need 200 inbounds, `profile.import` answers `QuotaExceeded` naming the count -- and it adds that the number itself is still unchosen, which is `ODEC-06`'s question rather than this row's obligation."
     },
     {
       "id": "VER-74",

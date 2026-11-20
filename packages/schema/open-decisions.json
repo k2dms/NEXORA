@@ -130,8 +130,7 @@
       "decidedBy": "product",
       "blocks": {
         "verification": [
-          "VER-68",
-          "VER-73"
+          "VER-68"
         ],
         "compatibility": []
       },
