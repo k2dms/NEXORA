@@ -1256,7 +1256,7 @@
     {
       "id": "VER-63",
       "subject": "a failed subscription refresh is specified to keep the last good version and record durable status; never executed",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "extension",
       "closesBy": {
         "kind": "live-row",
@@ -1336,7 +1336,7 @@
     {
       "id": "VER-69",
       "subject": "a non-VLESS server in a legacy subscription is specified to be reported, not dropped; there is no parser",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",

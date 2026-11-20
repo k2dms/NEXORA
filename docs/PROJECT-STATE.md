@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.106; older scope and inventory paragraphs
+continuation is §4.107; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5799,6 +5799,20 @@ marker.counted 148 stays. Doc 26 §5's row names the runtime test and keeps its 
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 7857db7 (VER-17 and VER-50 narrowed); `nexora/master` moved a70ccc2 → 7857db7.
+### 4.107 The 404 invariant and the legacy drop have their runs — VER-63 and VER-69 move no-code → no-run (2026-11-20)
+
+**VER-63.** The failed-refresh invariant has its extension half in connection.test.ts: a real Connection
+driven through a refused refresh keeps lastSha256 and lastSuccessAt, grows consecutiveFailures, and records
+a durable nextAttemptAt. The real 404 stays LIVE-12's.
+
+**VER-69.** The non-VLESS legacy line has its parser: subscription_parse.go counts every unsupported line in
+dropped and the answer reports failed[].rejectedCount with the resolved format; the count is driven by test.
+The real feed stays LIVE-14's and the screen half is the UI's (VER-75).
+
+**Corpus.** Both rows move no-code → no-run; the distribution moves no-code 26 → 24, no-run 17 → 19; 48 rows,
+marker.counted 148 stays. Doc 23 §7 and doc 29 §8 name the runs and keep their deferral labels.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
