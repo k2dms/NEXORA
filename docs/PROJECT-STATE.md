@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.108; older scope and inventory paragraphs
+continuation is §4.109; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5815,6 +5815,24 @@ marker.counted 148 stays. Doc 23 §7 and doc 29 §8 name the runs and keep their
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 8d685b1 (VER-63 and VER-69 narrowed); `nexora/master` moved 7857db7 → 8d685b1.
+### 4.109 The seam, the codes and the fetch gate have their runs — VER-35, VER-60 and VER-64 move no-code → no-run (2026-11-20)
+
+**VER-35.** The dangling-ref degradation is driven through the real config.apply seam (config_apply_test.go:953)
+and answers InvalidProfile — the unresolvable server never becomes a reason to go direct. The real restore
+stays LIVE-19's.
+
+**VER-60.** Both keystore codes are produced by tests: KeystoreUnavailable through config.apply,
+profile.import and subscription.refresh with a failing store, SecretRedacted through config.snapshot's
+masked ask. The real DPAPI failure stays LIVE-18's.
+
+**VER-64.** The build-graph gate is real: .github/workflows/verify.yml greps nexora/extension/src for fetch,
+XMLHttpRequest, the WebSocket/Request/EventSource constructors and sendBeacon, and fails the job on any hit.
+The live envelope stays LIVE-12's.
+
+**Corpus.** Three rows move no-code → no-run; the distribution moves no-code 24 → 21, no-run 19 → 22; 48 rows,
+marker.counted 148 stays. Doc 32 §19 and doc 29 §9 name the runs and keep their deferral labels.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

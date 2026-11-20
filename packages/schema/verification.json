@@ -889,7 +889,7 @@
     {
       "id": "VER-35",
       "subject": "an envelope restored onto a machine whose keystore does not hold the value is specified to degrade visibly with `InvalidProfile`; never demonstrated",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
@@ -1239,7 +1239,7 @@
     {
       "id": "VER-60",
       "subject": "every command that writes the keystore is specified to name `KeystoreUnavailable` and `SecretRedacted`; no run has produced either",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
@@ -1273,7 +1273,7 @@
     {
       "id": "VER-64",
       "subject": "nothing prevents the engine from fetching, or proves that no feed body enters the browser process",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "packages",
       "closesBy": {
         "kind": "gate",
