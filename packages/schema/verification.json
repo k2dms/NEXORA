@@ -1128,7 +1128,7 @@
     {
       "id": "VER-51",
       "subject": "no run shows that the probe rate budget is enforced independently of the UI, that the popup performs no side-effecting command on mount, or that `force` bypasses backoff but not the limit",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "extension",
       "closesBy": {
         "kind": "live-row",

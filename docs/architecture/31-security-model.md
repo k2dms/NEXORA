@@ -234,8 +234,12 @@ What the budgets are the enforcement half of (all three promises were written be
 now pointing at real numbers): opening the popup performs no side-effecting command
 (`docs/architecture/22-component-contracts.md` §"popup must not" list); probe rate is bounded independently of the
 UI (`docs/architecture/22-component-contracts.md` §8, whose fourth invariant is this budget); `force` bypasses backoff, not the
-rate limit (`docs/architecture/29-subscriptions-and-servers.md` §7). `Verified: NO — deferred to Phase 2`
-for enforcement (LIVE-17); GREEN for the numbers, the coverage and the arithmetic.
+rate limit (`docs/architecture/29-subscriptions-and-servers.md` §7) — `Verified: NO — deferred to Phase 2`
+for the live watch (LIVE-17); the enforcement each promise now names: the status poll rides `core.status` and
+the handshake alone (`connection.test.ts`'s popup-mount test), the probe budget is
+`contract.RateLimitFor("server.test")` counted in `chargeLocked` — dispatch's own test shows the handler
+running exactly the budget — and `TestAForceFlagIsNotABudgetBypass` shows `force` buying nothing past it
+(`VER-51` narrowed with it).
 
 ## 9. What a refusal costs the user
 

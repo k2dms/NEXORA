@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.100; older scope and inventory paragraphs
+continuation is §4.101; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5747,6 +5747,23 @@ tally is 13 entries gate exactly 2 and 11 gate 1. The id floor in verify.mjs mov
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 8e4a101 (VER-62 retired); `nexora/master` moved 4d3a4ed → 8e4a101.
+### 4.101 The popup poll rides reads only, force buys nothing — VER-51 moves no-code → no-run (2026-11-20)
+
+**The extension half.** `connection.test.ts` drives a mount-and-poll: `readyStatus` then the recorded
+methods — `connector.hello` and `core.status` alone, none of the five mutating commands. A popup that
+fired `subscription.refresh` or `server.test` on mount would hammer every saved VPS just by being opened.
+
+**The connector half.** `TestAForceFlagIsNotABudgetBypass` drives subscription.refresh with `force` past
+its named budget (3 per 60 s) and gets `Busy`, with the handler having run only the budget — `chargeLocked`
+reads the method name, never the args, so the flag that skips the extension-side backoff cannot reach the
+counting. The probe-budget-independent-of-UI half was already `chargeLocked`'s own test.
+
+**Corpus.** VER-51 moves `no-code` → `no-run`; the distribution moves no-code 30 → 29, no-run 14 → 15; the
+owner and closing-kind columns do not move. Doc 31 §8's paragraph names the enforcement and keeps its
+deferral label for the live watch (LIVE-17); two doc-31 citations that shifted (33-binary:408→412,
+34-data-split:369→373, 32-secrets:283→287) are re-anchored.
+
+**Gates.** All seven green; Go packages ok; the extension suite 59/59.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

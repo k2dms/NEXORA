@@ -1098,3 +1098,20 @@ test('checks are transient across disconnect, reconnect and controller restart',
   assert.equal(f.messages.filter((message) => message.method === 'server.test').length, 3);
   assert.equal(f.messages.filter((message) => message.method === 'config.apply').length, 2);
 });
+
+// VER-51's popup half: opening the popup polls `status`, and a status poll must ride reads only. A popup
+// that fired `subscription.refresh`, `server.test` or any mutating command on mount would hammer every VPS
+// the user has ever saved just by being opened — the budget exists for exactly that, and the connector-side
+// half of the promise is dispatch's own force test.
+test('the popup status poll issues no side-effecting command on mount', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await readyStatus(f.connection);
+  const mutating = ['subscription.refresh', 'server.test', 'config.apply', 'profile.import', 'core.stop'];
+  const fired = f.messages.map((message) => message.method);
+  for (const method of mutating) {
+    assert.ok(!fired.includes(method), `the status poll issued ${method}, a side-effecting command`);
+  }
+  // The reads the poll is allowed: the handshake and the process-status read, both replay-free.
+  assert.ok(fired.includes('core.status'), 'the status poll never confirmed the Core');
+});

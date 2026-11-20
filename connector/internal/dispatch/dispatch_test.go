@@ -1027,3 +1027,40 @@ func TestPanicAndEncodingFailureReleaseReservations(t *testing.T) {
 		})
 	}
 }
+
+// The `force` flag is subscription.refresh's own "skip the backoff and refetch now" answer, and the backoff
+// it skips lives above this process. The budget does not: `chargeLocked` reads the method name, never the
+// args, so a sender hammering `force` is counted exactly like any other request — the third refresh in a
+// window is `Busy` whatever the flag says, and the handler runs only the budget's worth. This is the
+// Connector-side half of VER-51's "force bypasses backoff but not the limit".
+func TestAForceFlagIsNotABudgetBypass(t *testing.T) {
+	now := &clock{t: time.Unix(0, 0)}
+	ran, h := counting(t)
+	d, err := New(Config{Handlers: map[string]Handler{"subscription.refresh": h}, Now: now.Now})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	id := negotiated(contract.CapabilityNames()...)
+	rl, ok := contract.RateLimitFor("subscription.refresh")
+	if !ok {
+		t.Fatal("the projection gives subscription.refresh no per-sender budget")
+	}
+	for i := 0; i < rl.MaxRequests; i++ {
+		if _, r := d.Dispatch(context.Background(), id, forced(t, fmt.Sprintf("req-force-%04d", i), `{"force":true}`)); r != nil {
+			t.Fatalf("forced refresh %d was refused: %+v", i+1, r)
+		}
+	}
+	_, r := d.Dispatch(context.Background(), id, forced(t, "req-force-over", `{"force":true}`))
+	if r == nil || r.Code != "Busy" {
+		t.Fatalf("the forced request past the budget got %+v, want Busy", r)
+	}
+	if *ran != rl.MaxRequests {
+		t.Errorf("force bought %d handler runs against a budget of %d — a flag reached the budget", *ran, rl.MaxRequests)
+	}
+}
+
+func forced(t *testing.T, id, args string) *envelope.Frame {
+	f := request(t, id, "subscription.refresh")
+	f.Args = json.RawMessage(args)
+	return f
+}
