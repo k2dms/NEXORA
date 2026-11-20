@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 151
+    "counted": 150
   },
   "states": {
     "values": [
@@ -455,6 +455,12 @@
         "closed": "2026-11-20",
         "was": "the 64-inbound ceiling is specified to produce `QuotaExceeded`, not a partially applied config; the browser has never driven a 65-server selection through `config.apply`",
         "artefact": "the row's own condition is measured in-repo by two Go tests and the seam between them: `connector/internal/compile/ports.go` refuses a 65th tag before any document is built, naming the count and refusing every port in the document — the whole-set-or-nothing shape doc 27 §9's invariant row asks for (`ports_test.go` drives the 65th tag) — and `connector/cmd/nexora-connector/config_apply.go` maps the compiler's own words (\"which is what QuotaExceeded names\") to `QuotaExceeded` through the `codeMarkers` table, which `config_apply_test.go` drives through the real seam. A config the ceiling refuses can never reach the writer, so no partial config is producible by this path; the browser-driven half of the sentence is `LIVE-03`'s own obligation and stays live. Whether `QuotaExceeded` is the right code for the ceiling is `ODEC-03`'s recorded position, and whether 64 is the right ceiling is `ODEC-06`'s question — neither belongs to this row"
+      },
+      {
+        "id": "VER-55",
+        "closed": "2026-11-20",
+        "was": "no run shows a per-sender rate budget counted before dispatch, answered with retryable Busy, and producing no side effect; the live watch against a real sender has not happened",
+        "artefact": "the enforcement the row asked for is internal/dispatch's chargeLocked, and has been since the dispatcher was built: the named budget and the catch-all floor are pruned and checked before the handler is looked up, an exhausted sender is answered Busy with the retryable bit set (contract.LookupCode), and the amplification guard closes the port after RefusalsPerWindowMax refusals. TestABudgetRefusalIsBusyRetryableAndReachesNoHandler drives the real dispatcher with a counting handler and shows the handler ran exactly MaxRequests times — the request past the budget bought no side effect — plus the window reopening after the oldest requests leave it. The live watch over a real sender stays LIVE-17's own obligation"
       }
     ]
   },
@@ -1196,23 +1202,6 @@
         }
       ],
       "why": "This is the one row whose answer changes what Phase 2's first PR is; the honest statement today is that the surface exists in the inherited tree and the removal is a product behaviour change, not a document edit."
-    },
-    {
-      "id": "VER-55",
-      "subject": "no run shows a per-sender rate budget counted *before* dispatch, answered with retryable `Busy`, and producing no side effect",
-      "state": "no-code",
-      "owner": "connector",
-      "closesBy": {
-        "kind": "live-row",
-        "ref": "LIVE-17"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/31-security-model.md",
-          "anchor": "Buggy UI hammers a feed / every VPS"
-        }
-      ],
-      "why": "The budgets are declared in the framing contract and asserted as shape today; an exhausted `subscription.refresh` that still starts a fetch, or an exhausted `server.test` that still opens a connection, is the difference between a budget and a form of address."
     },
     {
       "id": "VER-57",

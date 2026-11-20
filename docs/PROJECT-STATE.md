@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.96; older scope and inventory paragraphs
+continuation is §4.97; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5715,6 +5715,19 @@ Doc 39's queue row moved to the `no-run` section with an amendment block.
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20, confirmed by the user in this session, carried 97b797a (the §4.92 push record), 424c579 (VER-43, the step-7 archive gate) and 34bb4d4 (VER-67, the identity-stability checker). `nexora/master` moved 478e376 → 34bb4d4.
+### 4.96 The rate-budget row closes on its own test — VER-55 retired (2026-11-20)
+
+**The row.** VER-55 asked for proof that a per-sender rate budget is counted before dispatch, answered
+retryable `Busy`, and buys an exhausted sender no side effect. The enforcement has been `chargeLocked`
+since the dispatcher was built, and `TestABudgetRefusalIsBusyRetryableAndReachesNoHandler` drives the real
+dispatcher with a counting handler: the handler ran exactly `MaxRequests` times, the request past the budget
+got `Busy` with the retryable bit, and the window reopened after the oldest requests left it.
+
+**Corpus.** VER-55 retired — matrix 51 → 50 rows, 42 tombstones, no-code 32 → 31, connector 31 → 30,
+live-row 41 → 40, marker.counted 151 → 150 (doc 31 §16's row loses its deferral label with the closure and
+names `LIVE-17` for the live watch; the partition is 99 + 26 + 25).
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

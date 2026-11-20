@@ -11,14 +11,14 @@ import "testing"
 // registry, and the Connector's half is delivering the same id so the merge has something to match on.
 
 func TestSubscriptionStableIdentityAcrossFeedRenameAndRotation(t *testing.T) {
-	id1 := "11111111-1111-4111-8111-111111111111"
+	id1 := "11111111-1111-4111-8111-111111111111" // nexora-secret-allow: synthetic rotation uuid for the stability test, never a real credential
 	body1 := "vless://" + id1 + "@srv1.example.test:443?type=tcp&security=none#Feed%20calls%20it%20this"
 	servers1, _, _, dropped1, err := parseSubscription([]byte(body1), "auto", subscriptionTestID, 1024)
 	if err != nil || dropped1 != 0 || len(servers1) != 1 {
 		t.Fatalf("first parse: err=%v dropped=%d", err, dropped1)
 	}
 	// Same connection fields; a different credential UUID and a feed that renamed the server.
-	id2 := "22222222-2222-4222-8222-222222222222"
+	id2 := "22222222-2222-4222-8222-222222222222" // nexora-secret-allow: synthetic rotation uuid for the stability test, never a real credential
 	body2 := "vless://" + id2 + "@srv1.example.test:443?type=tcp&security=none#The%20user%20renamed%20it"
 	servers2, _, _, dropped2, err := parseSubscription([]byte(body2), "auto", subscriptionTestID, 1024)
 	if err != nil || dropped2 != 0 || len(servers2) != 1 {
@@ -66,7 +66,7 @@ func TestSubscriptionRefreshKeepsIdentityAcrossTwoFetches(t *testing.T) {
 	one := first.Refreshed[0].Servers[0]
 	// Same server, different credential UUID and a changed feed name: the body's hash moves, so the
 	// source is refreshed rather than answered Unchanged.
-	v2 := "vless://99999999-9999-4999-8999-999999999999@stable.example.test:443?type=tcp&security=none#Renamed%20by%20feed"
+	v2 := "vless://99999999-9999-4999-8999-999999999999@stable.example.test:443?type=tcp&security=none#Renamed%20by%20feed" // nexora-secret-allow: synthetic rotation uuid for the stability test, never a real credential
 	subscriptionTestFeed(h, v2)
 	second := subscriptionTestAnswer(t, h, frame)
 	if len(second.Refreshed) != 1 || len(second.Refreshed[0].Servers) != 1 {
