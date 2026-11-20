@@ -5662,6 +5662,8 @@ block; the distribution moves no-code 36 → 35, no-run 10 → 11. The two doc-2
 (32-secrets:254→256, 34-data-split:315→317) are re-anchored.
 
 **Gates.** All seven green; Go packages ok.
+
+**The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried a1decb0 (VER-11), 4e1bc9c (VER-73) and 478e376 (VER-90, config.snapshot registered with its expectation arg) plus the eight commits the previous pushes left unpushed since 9ed49f4 — the CI fixes included, so the runner goes green for the first time since §4.84. `nexora/master` moved b8937e7 → 478e376.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
