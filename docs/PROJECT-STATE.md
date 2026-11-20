@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.93; older scope and inventory paragraphs
+continuation is §4.94; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5680,6 +5680,23 @@ in place — the deferred claim spelled out in prose, not by the marker — narr
 queue row moved to the `no-run` section with an amendment block.
 
 **Gates.** All seven green; Go packages ok (19, with internal/archive).
+### 4.94 The caller-surface guard is code — VER-53 moves no-code → no-run (2026-11-20)
+
+**The guard.** `connector/internal/dispatch/caller_surface_test.go` proves doc 31 §16's row Connector-side in
+two halves. First: no string-typed property in any of the eighteen command args trees names a shell, program,
+path, directory or bind address — the scan walks properties, items and combinators, so a caller has no field
+to choose an exec or a Listen input with. Second: process spawning stays in a ten-file allowlist whose entries
+carry their corpus reasons (the receipt-named Core, the host's own Connector spawn, reg.exe, the named pipe);
+nothing else imports os/exec, nothing calls net.Listen, and no shell interpreter literal appears in non-test
+sources. A new spawn site is a review-visible change to the list, which is the point.
+
+**The boundary.** The live watch — a real sender trying it — stays LIVE-03's and LIVE-16's; doc 31 §16's row
+keeps its deferral label, narrowed to that run. `marker.counted` stays 151.
+
+**Corpus.** VER-53 moves `no-code` → `no-run`; the distribution moves no-code 34 → 33, no-run 12 → 13. Doc 31
+§16's row names the guard; doc 39's queue row moved to the `no-run` section with an amendment block.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

@@ -1162,7 +1162,7 @@
     {
       "id": "VER-53",
       "subject": "no command handler exists to prove that no shell, path or bind address is caller-chosen at run time",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
