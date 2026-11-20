@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.97; older scope and inventory paragraphs
+continuation is §4.98; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5728,6 +5728,8 @@ live-row 41 → 40, marker.counted 151 → 150 (doc 31 §16's row loses its defe
 names `LIVE-17` for the live watch; the partition is 99 + 26 + 25).
 
 **Gates.** All seven green; Go packages ok.
+
+**The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried a439339 (VER-53, the caller-surface guard), 424c579 (VER-43), 34bb4d4 (VER-67) and a5b4f51 (VER-55 retired); `nexora/master` moved b2b11aa → a5b4f51.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
