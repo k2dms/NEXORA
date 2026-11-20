@@ -23,8 +23,8 @@ export const maxInFlightBytes = 8388608 as const;
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
-export type FrameType = "request" | "response" | "event" | "progress";
-export type ChunkEncoding = "base64" | "json";
+export type FrameType = "request" | "response" | "event" | "progress" | "heartbeat";
+export type ChunkEncoding = "base64";
 
 export const errorCodes = [
   "BadRequest",
@@ -89,7 +89,6 @@ export const methods = [
   "core.stop",
   "core.restart",
   "core.status",
-  "core.select",
   "config.apply",
   "config.snapshot",
   "profile.import",
@@ -120,7 +119,6 @@ export const methodTimeoutMs: Readonly<Record<MethodName, number>> = {
   "core.stop": 10000,
   "core.restart": 20000,
   "core.status": 3000,
-  "core.select": 3000,
   "config.apply": 30000,
   "config.snapshot": 5000,
   "profile.import": 60000,
@@ -142,7 +140,6 @@ export const methodCapabilities: Readonly<Record<MethodName, readonly string[]>>
   "core.stop": [],
   "core.restart": ["integrity.pinned-core"],
   "core.status": [],
-  "core.select": [],
   "config.apply": [],
   "config.snapshot": ["config.snapshot"],
   "profile.import": ["chunked.import"],
@@ -235,8 +232,17 @@ export interface EnvelopeProgress {
   chunk?: { contentHash: string; chunkSeq: number; chunkCount: number; encoding: ChunkEncoding };
 }
 
+export interface EnvelopeHeartbeat {
+  v: number;
+  id: string;
+  type: "heartbeat";
+  args?: Json | null;
+  sentAt: string;
+}
+
 export type Envelope =
   | EnvelopeRequest
   | EnvelopeResponse
   | EnvelopeEvent
   | EnvelopeProgress
+  | EnvelopeHeartbeat

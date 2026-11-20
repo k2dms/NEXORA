@@ -74,7 +74,7 @@ function expectFailure(kind, run, message) {
 const b64 = (bytes) => Buffer.from(bytes).toString('base64');
 const unB64 = (text) => new Uint8Array(Buffer.from(text, 'base64'));
 
-// The fixtures are the same 112 frames the schema harness replays as objects; here they are frames on a pipe.
+// The fixtures are the same 110 frames the schema harness replays as objects; here they are frames on a pipe.
 const fixtures = readdirSync(fixtureDir)
   .filter((name) => name.endsWith('.jsonl'))
   .sort()
@@ -95,7 +95,7 @@ check('the generated projection is byte-identical to a fresh generation', () => 
 });
 
 check('the projection carries the fixture frame count it is measured against', () => {
-  assertEqual(frameCount, 112, 'the protocol fixtures changed size without the harness noticing');
+  assertEqual(frameCount, 110, 'the protocol fixtures changed size without the harness noticing');
 });
 
 check('every fixture frame crosses both directions and comes back the same object', () => {
@@ -187,7 +187,7 @@ check('a frame is one object: arrays and null are refused on both sides of the p
 });
 
 check('the projection closes the method and error lists and declares retryability as data', () => {
-  assertEqual(methods.length, 19, 'the command allowlist is nineteen methods');
+  assertEqual(methods.length, 18, 'the command allowlist is eighteen methods');
   assertEqual(errorCodes.length, 23, 'the error taxonomy is twenty-three closed codes');
   assertEqual(Object.keys(retryableErrors).length, errorCodes.length, 'every code declares whether it is retryable');
   assertEqual(typeof frameFormatVersion, 'number', 'the frame version is a number, not a comment');

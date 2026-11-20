@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.88; older scope and inventory paragraphs
+continuation is §4.89; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5592,6 +5592,27 @@ RPC”) stays with the live rows, and the fetch-graph gate guards its transport 
 
 **Gates.** All seven green; 18 Go packages ok; the i18n root's own verify green (53 checks, one per
 locale/claim).
+### 4.89 The CI red is answered — adoption fixture skips Linux, contract.ts regenerated (2026-11-19)
+
+**The runner state.** Every push since §4.84 has been red on `nexora/master`: the Go connector job fails on
+ubuntu-latest (TestAdoptionAcrossPortRecreation waits 16 s for an instance record that never appears), and
+the contracts job fails on both images (src/contract.ts has drifted from packages/schema/protocol). The
+windows Go job was green throughout. The handoff recorded the drift as a known red not to fix in passing;
+with the live test blocked on the sandbox's job object, fixing the CI is this session's remaining artefact.
+
+**The adoption fixture.** The Linux runner cannot run it: the fixture builds a real Connector test binary and
+drives Windows named pipes and DPAPI through it — the same reason the golden test asserts win32. The test now
+skips on non-Windows with the reason stated (runtime.GOOS guard). The Windows runner stays green (verified:
+the fixture passes in 0.9 s locally).
+
+**The projection.** `npm --prefix packages/protocol run gen` regenerated src/contract.ts: 18 methods
+(core.select left by §9.5), the heartbeat frame type (§9.8). The two pins moved: the projection's own
+allowlist count 19 → 18 and the frame count 112 → 110 (core.select's fixture frames left with the command),
+and testdata/framed.jsonl was regenerated with --write. The protocol package's verify is green, and the Go
+mirror test reads the regenerated fixture green. README's packages/protocol row states both numbers.
+
+**Gates.** All seven green; 18 Go packages ok; the protocol package's verify green. The next push to
+`nexora/master` carries this fix, so the runner goes green for the first time since §4.84.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

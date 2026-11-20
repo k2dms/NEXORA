@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -17,6 +18,9 @@ import (
 // Connector survives the loss of a native port, a second host adopts it instead of spawning a second one, the
 // instance record names the same process both times, and a repeated frame id is answered from the cache.
 func TestAdoptionAcrossPortRecreation(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("the adoption fixture drives Windows named pipes, DPAPI and a real Connector process; the Linux runner has no pipe to adopt (the golden test asserts win32 the same way)")
+	}
 	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatal(err)
