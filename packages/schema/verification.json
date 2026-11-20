@@ -1045,7 +1045,7 @@
     {
       "id": "VER-44",
       "subject": "the Core `log` section is specified to suppress the access log; no started Core has been looked at",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",

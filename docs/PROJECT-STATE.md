@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.112; older scope and inventory paragraphs
+continuation is §4.113; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5854,6 +5854,18 @@ marker.counted 148 stays. Doc 36 §6 and doc 29 §8 name the runs and keep their
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 4afd664 (VER-45, VER-47 and VER-68 narrowed); `nexora/master` moved 8b77619 → 4afd664.
+### 4.113 The started Core is looked at — VER-44 moves no-code → no-run (2026-11-20)
+
+**The run.** connector/internal/apply/drive_log_test.go compiles the shape-A golden, materializes it through
+the real Write, starts the pinned Xray 24.11.11 with the Core working directory on the config directory,
+opens the socks inbound far enough for a configured access log to record the connection, and finds no .log
+file — the emitted "access": "none" really suppresses it. The run is local behind NEXORA_XRAY_BIN, which
+the CI images do not carry; the live half stays LIVE-23's.
+
+**Corpus.** VER-44 moves no-code → no-run; the distribution moves no-code 18 → 17, no-run 25 → 26; 48 rows,
+marker.counted 148 stays. Doc 36 §6 names the run and keeps its deferral label.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
