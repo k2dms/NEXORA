@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.128; older scope and inventory paragraphs
+continuation is §4.129; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6014,6 +6014,28 @@ narrowing. The live upstream stays LIVE-02's; the manual channel is untouched.
 **Gates.** All seven green; Go packages ok (20, with internal/install).
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried ae52d81 (VER-41 narrowed with the installer); `nexora/master` moved 3856d9e → ae52d81.
+### 4.129 The UI guard, the expansion and the disabled controls — VER-38 retired, VER-75 and VER-39 narrowed (2026-11-20)
+
+**The gate.** tools/check-ui-guards.mjs proves ADR-0016 rule 4 over the ten NEXORA UI sources: no AngularJS
+runtime access, no jQuery, no serial loader, no ng-* directives, no omega-web/lib-themes/-customCss reaching
+a shadow root, nexora-* tags only, and the only HTML entry is the NEXORA-owned nexora-options.html. The
+self-test injects eight defects, one per rule, and requires all caught. Wired into CI. VER-38 retired: its
+own condition is the gate it asked for.
+
+**The expansion.** localExpansion.ts produces the conservative <local> mapping (RFC1918/loopback/link-local
++ .local suffix, doc 28 §5) and ConnectionPanel.svelte renders the CIDR/suffix lists with the approximation
+note beside them — never the bare token. VER-75 narrowed to no-run (the browser-plane selection half stays
+LIVE-15's).
+
+**The disabled controls.** phase2.ts is the corpus-sourced registry (diagnostics export, Gist sync) and the
+connection panel renders its controls disabled with their reasons — constraint 11's compliant pattern,
+asserted by test. VER-39 narrowed to no-run (the per-screen review over every surface stays open).
+
+**Corpus.** Matrix 48 → 47 rows, 45 tombstones; no-code 11 → 8, no-run 32 → 34; packages 2 → 1, gate 2 → 1;
+marker.counted 146 → 145 (doc 37 §11's row reads YES, and doc 28 §5's row keeps its label narrowed; the
+partition is 94 + 26 + 25). The extension suite is 80/80 and the build is green with the new sections.
+
+**Gates.** All seven green; Go packages ok; the UI-guards gate added to CI.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

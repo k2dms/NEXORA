@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 146
+    "counted": 145
   },
   "states": {
     "values": [
@@ -473,6 +473,12 @@
         "closed": "2026-11-20",
         "was": "a fetched body is specified never to be executed (compile-not-execute, https-only, byte caps, SSRF guard) and no run has a body to try",
         "artefact": "the engine the row waited for exists and is a string parser, not an executor: subscription_parse.go reads the body as text, auto-detects the format, refuses HTML and tag-shaped bodies, refuses nested base64, refuses unknown or ambiguous query parameters, and drops unsupported lines as counted entries — no byte of a feed reaches any interpreter (subscription_parse_test.go drives the hostile shapes). The fetch half has its runs too: the stream dies at maxBytes+1 with the body closed and no keystore call (TestSubscriptionStreamLimitAndHTML), the production transport pins TLS 1.3, sends no proxy and follows no redirect off the origin (TestSubscriptionProductionTransportPinnedTLSAndNoProxy), and the DNS guard resolves through a safe mixed A/AAAA set (TestSubscriptionGuardIPsAndMixedDNS). The live watch over a real hostile feed stays LIVE-14's own obligation"
+      },
+      {
+        "id": "VER-38",
+        "closed": "2026-11-20",
+        "was": "no build-time scan proves that a Svelte root is never mounted inside AngularJS DOM",
+        "artefact": "the scan is tools/check-ui-guards.mjs and it runs in CI with its self-test: it reads the ten NEXORA UI sources (components, entry document, mounting module) and refuses AngularJS runtime access, jQuery $( calls, the $script serial loader, ng-* directives, omega-web and lib/themes stylesheet injection and -customCss reaching a shadow root; it requires every registered custom element to be a nexora-* island and the only HTML entry to be the NEXORA-owned nexora-options.html, whose body mounts nexora-* elements and nothing else; and its --selftest injects eight defects, one per rule, and requires all eight caught. ADR-0016 rule 4's intended check — a build-time scan of nexora/extension/src/ui mount points — is the check, green, and the UI's document-level isolation makes the surface the whole argument"
       }
     ]
   },
@@ -950,26 +956,9 @@
       "why": "A budget is only a budget once something has tried to exceed it; the row is here so nobody mistakes the table for a result."
     },
     {
-      "id": "VER-38",
-      "subject": "no build-time scan proves that a Svelte root is never mounted inside AngularJS DOM",
-      "state": "no-code",
-      "owner": "packages",
-      "closesBy": {
-        "kind": "gate",
-        "ref": "mount-point scan over nexora/extension/src/ui/**"
-      },
-      "at": [
-        {
-          "doc": "docs/architecture/37-ui-architecture.md",
-          "anchor": "no Svelte root inside AngularJS DOM"
-        }
-      ],
-      "why": "ADR-0016's hard rule; the failure is intermittent and presents as a framework bug, which is the most expensive kind of defect to attribute."
-    },
-    {
       "id": "VER-39",
       "subject": "no control on any screen is proven to be disabled-with-a-reason when its backend is Phase 2 (constraint 11)",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "ui",
       "closesBy": {
         "kind": "assertion",
@@ -978,7 +967,7 @@
       "at": [
         {
           "doc": "docs/architecture/22-component-contracts.md",
-          "anchor": "reviewable per screen. `Verified: NO — deferred to Phase 2`."
+          "anchor": "per-screen review over every surface stays the open half. `Verified: NO — deferred to Phase 2`"
         }
       ],
       "why": "This one cannot be automated away: 'a button implies a feature' is a fact about a reader, so the honest close is a review per screen, not an assertion."
@@ -1387,7 +1376,7 @@
     {
       "id": "VER-75",
       "subject": "`<local>` expansion is specified to be shown in the UI, and there is no UI",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "ui",
       "closesBy": {
         "kind": "live-row",

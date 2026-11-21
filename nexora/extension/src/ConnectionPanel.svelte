@@ -4,6 +4,8 @@
   import { onMount } from 'svelte';
   import type { Action as ConnectionAction, ConnectionView, ServerForm } from './model';
   import { request } from './rpc';
+  import { expandLocal, LOCAL_TOKEN } from './localExpansion';
+  import { PHASE2_CONTROLS } from './phase2';
 
   type Action = Exclude<ConnectionAction, 'status'>;
   type FieldErrors = Record<string, string | undefined>;
@@ -65,6 +67,9 @@
   const checkStates = { pass: 'Ответ получен', fail: 'Ошибка', skipped: 'Не проверено', timeout: 'Время истекло' };
   const selectedServer = $derived(view?.servers.find((server) => server.id === view?.server?.id));
   const phaseLabel = $derived(view ? phaseLabels[view.phase] : 'Состояние неизвестно');
+  // VER-75: the <local> token is rendered as the expansion it produces, with the approximation note —
+  // never as a bare token the transport plane cannot match (doc 28 §5).
+  const localExpansion = expandLocal();
 
   function acceptView(next: ConnectionView): void {
     view = next;
@@ -438,6 +443,26 @@
     </form>
   </section>
 
+  <section class="local-expansion" aria-label="Раскрытие локальных адресов">
+    <h2>Локальные адреса</h2>
+    <p class="local-note">Токен {LOCAL_TOKEN} браузерная плоскость раскрывает в следующий набор; транспортная плоскость сопоставляет CIDR-список, а не токен:</p>
+    <ul class="local-list">
+      {#each localExpansion.cidrs as cidr}<li><code>{cidr}</code></li>{/each}
+      {#each localExpansion.suffixes as suffix}<li><code>*{suffix}</code></li>{/each}
+    </ul>
+    <p class="field-hint">{localExpansion.note}</p>
+  </section>
+
+  <section class="phase2" aria-label="Функции в разработке">
+    <h2>Пока недоступно</h2>
+    {#each PHASE2_CONTROLS as control}
+      <div class="phase2-row">
+        <button type="button" disabled aria-describedby={"phase2-" + control.id}>{control.label}</button>
+        <p class="field-hint" id={"phase2-" + control.id}>{control.reason}</p>
+      </div>
+    {/each}
+  </section>
+
   <footer>
     <p>Состояние сообщает Connector. Проверка сервера показывает время отдельных этапов, не задержку до сайта. Доступность HTTPS и внешний IP не проверяются. Это не системный VPN.</p>
     <p class="legacy-note">Прежние настройки сохранены. <a href="options.html" target="_blank" rel="noopener">Открыть настройки</a></p>
@@ -505,6 +530,13 @@
   button, input, select { font: inherit; }
   select { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 40px; padding: 9px 10px; background: #18293d; border: 1px solid #587089; border-radius: 5px; color: var(--paper); font-size: 13px; }
   select:disabled { opacity: 0.55; cursor: not-allowed; }
+  .local-expansion, .phase2 { margin-top: 16px; padding: 12px; background: var(--slate); border: 1px solid var(--line); border-radius: 8px; }
+  .local-expansion h2, .phase2 h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--steel); }
+  .local-list { margin: 8px 0; padding: 0 0 0 18px; }
+  .local-list code { color: var(--cyan); }
+  .local-note { margin: 0; }
+  .phase2-row { margin: 8px 0; }
+  .phase2-row button:disabled { opacity: 0.5; cursor: not-allowed; }
   button { min-height: 40px; border: 1px solid transparent; border-radius: 6px; padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.4; transition: background-color 120ms ease, border-color 120ms ease; }
   button.primary { background: var(--cyan); color: var(--navy); }
   button.primary:hover:not(:disabled) { background: #a0e0e8; }

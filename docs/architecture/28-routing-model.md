@@ -144,7 +144,7 @@ Cross-plane contradiction reporting in the browser is still separate work, not s
 | Nothing invented a 13th condition type | `packages/schema/scripts/verify.mjs` checks the registry count against `docs/audit/07-routing-engine.md`'s twelve | **GREEN** |
 | Every browser rule maps to a profile that exists | JSON Schema cannot express cross-key referential integrity: the `+`-keyed profile is a sibling envelope key, invisible to this schema. Owned by ProfileRegistry (`docs/architecture/22-component-contracts.md` §6), implemented at load: `nexora/extension/src/profiles/registry.ts` refuses a profile whose serverIds name no `-nexora.server.*` key (`VER-31` retired with it) | the Firefox half stays `LIVE-15` |
 | Lowering a rule never changes its meaning | nothing | Verified: NO — deferred to Phase 2 (golden configs compare the *un*lowered browser rules too) |
-| `<local>` expansion is shown in the UI | nothing | Verified: NO — deferred to Phase 2 |
+| `<local>` expansion is shown in the UI | `nexora/extension/src/localExpansion.ts` produces the conservative mapping (RFC1918/loopback/link-local + `.local` suffix) and `ConnectionPanel.svelte` renders the CIDR/suffix lists with the approximation note beside them, never the bare token | Verified: NO — deferred to Phase 2 (the browser-plane selection half stays `LIVE-15`'s; `VER-75` narrowed with the panel) |
 | Rank 5 is unreachable in a compiled config | nothing | Verified: NO — deferred to Phase 2 |
 
 Trace: ADR-0006, ADR-0009, ADR-0012, ADR-0013, ADR-0020 · Contract:

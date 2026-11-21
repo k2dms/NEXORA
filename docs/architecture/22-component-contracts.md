@@ -425,7 +425,9 @@ routing rule editor, health display, the Connector/keystore status panel, and th
 **Invariants**
 1. No button implies a feature that does not exist: any control whose backend is Phase 2 or later is rendered
    disabled with a reason string. This is a master-prompt constraint, so it is stated as an invariant and is
-   reviewable per screen. `Verified: NO — deferred to Phase 2`.
+   reviewable per screen; the registry of such controls is `nexora/extension/src/phase2.ts`, the connection
+   panel renders them disabled with their reasons (`localExpansion.test.ts` asserts the pattern), and the
+   per-screen review over every surface stays the open half. `Verified: NO — deferred to Phase 2`.
 2. It cannot reach the Connector directly: UI → shell → one ConnectorClient. Testable by the import boundary
    (`docs/architecture/20-target-repository-layout.md` §7).
 3. All copy comes from the compiled catalog (`docs/architecture/37-ui-architecture.md` §7), and all colour

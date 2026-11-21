@@ -467,7 +467,7 @@ already owns.
 | doc 37 names what the data declares | `nexora/extension` | "the user-interface document names every surface, state, document, placement, token and locale the data declares" |
 | every budget measured, popup startup | `nexora/extension` | none yet — `Verified: NO`, deferred to Phase 2 with a CI measurement |
 | locale completion threshold and promotion | contributors + `packages/i18n` | `scripts/compile.mjs` measures completion against the en_US reference (the stated threshold is 90%) and emits `localeSupport.json`, whose rows state per-locale promotion work; `scripts/verify.mjs` byte-compares the committed artifacts against a fresh compile (`VER-40` retired with it) |
-| no Svelte root inside AngularJS DOM | `nexora/extension` | none yet — `Verified: NO`, a build-time scan of mount points (ADR-0016 verification) |
+| no Svelte root inside AngularJS DOM | `nexora/extension` | `tools/check-ui-guards.mjs`: the scan refuses AngularJS runtime access, jQuery and the serial loader in NEXORA UI sources, requires `nexora-*` tags and NEXORA-owned entry documents, refuses legacy stylesheet injection into a shadow root, and its self-test injects eight defects and requires all caught; wired into CI | `Verified: YES` (`VER-38` narrowed with the gate) |
 
 ## 12. Threat, control, check
 
