@@ -1115,3 +1115,22 @@ test('the popup status poll issues no side-effecting command on mount', async (t
   // The reads the poll is allowed: the handshake and the process-status read, both replay-free.
   assert.ok(fired.includes('core.status'), 'the status poll never confirmed the Core');
 });
+
+// VER-46's two-plane fixture half: every frame the client sends carries the same session trace id, in
+// framing.json's own shape, so an incident is correlated by the id both planes logged. The connector's
+// echo half is envelope_test.go's TestRespondAndFailCarryTheRequestTraceID, and the migration's
+// history half is migrations.test.ts's byte-identical legacy keys.
+test('every frame carries the session trace id in the framing shape', async (t) => {
+  const f = fixture();
+  t.after(() => f.connection.client.stop());
+  await readyStatus(f.connection);
+  const sent = f.messages.map((message) => (message as { traceId?: unknown }).traceId);
+  assert.ok(sent.length >= 2, 'the fixture recorded no frames');
+  const ids = new Set(sent);
+  assert.equal(ids.size, 1, 'one session, one trace id: ' + [...ids].join(','));
+  const traceId = sent[0] as string;
+  assert.match(traceId, /^[A-Za-z0-9_-]{1,64}$/, 'the trace id is outside framing.json#/$defs/traceId');
+  // The subscription URL and the server UUIDs must never be the correlation id someone can read.
+  const body = f.subscription();
+  if (body) assert.notEqual(traceId, body.serverIds.join(''));
+});

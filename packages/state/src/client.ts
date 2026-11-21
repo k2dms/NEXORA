@@ -90,6 +90,7 @@ export class ConnectorClient {
   private readonly pending = new Map<string, Pending>();
   private inFlightBytes = 0;
   private seq = 0;
+  private readonly traceId = crypto.randomUUID?.() ?? 'sess-' + Math.random().toString(36).slice(2, 12);
   private idCounter = 0;
   private attempt = 0;
   private reconnectTimer: unknown = null;
@@ -210,6 +211,10 @@ export class ConnectorClient {
       type: 'request' as const,
       method,
       args,
+      // One trace id per session, on every frame: the correlation id an incident spans the planes with
+      // (doc 36 §6's two-plane fixture). The connector echoes it and its sinks carry it; the shape is
+      // framing.json's own [A-Za-z0-9_-]{1,64}.
+      traceId: this.traceId,
       sentAt: new Date(this.clock.now()).toISOString(),
       seq: this.seq,
     };

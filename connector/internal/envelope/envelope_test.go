@@ -396,3 +396,36 @@ func TestAnswerProgressIsTheRecordedSliceAnswerShape(t *testing.T) {
 		t.Fatalf("the round-tripped progress is %+v", parsed.Progress)
 	}
 }
+
+// VER-46's connector half: the trace id the extension chose survives the boundary unchanged, in the
+// success answer and in the refusal, because an incident is correlated by the id both planes logged.
+func TestRespondAndFailCarryTheRequestTraceID(t *testing.T) {
+	m := "core.status"
+	trace := "sess-2026-11-20-a"
+	req := &Frame{V: contract.FrameFormatVersion, ID: "req-trace-01", Type: TypeRequest,
+		Method: &m, Args: []byte(`{}`), TraceID: &trace, SentAt: Now()}
+	res, err := req.Respond(map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.TraceID == nil || *res.TraceID != trace {
+		t.Fatalf("the response dropped the trace id: %+v", res.TraceID)
+	}
+	fail, err := req.Fail("Internal", "diagnostic cause")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fail.TraceID == nil || *fail.TraceID != trace {
+		t.Fatalf("the refusal dropped the trace id: %+v", fail.TraceID)
+	}
+	// A request with no trace id stays no-trace-id: the field is nullable and the echo is verbatim.
+	bare := &Frame{V: contract.FrameFormatVersion, ID: "req-trace-02", Type: TypeRequest,
+		Method: &m, Args: []byte(`{}`), SentAt: Now()}
+	res2, err := bare.Respond(map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res2.TraceID != nil {
+		t.Fatalf("a bare request gained a trace id: %+v", res2.TraceID)
+	}
+}

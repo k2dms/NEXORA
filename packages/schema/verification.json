@@ -1083,7 +1083,7 @@
     {
       "id": "VER-46",
       "subject": "no two-plane fixture shows a trace id surviving the boundary, and no migration run shows the correlation history kept",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",

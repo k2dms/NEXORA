@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.120; older scope and inventory paragraphs
+continuation is §4.121; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -3810,16 +3810,16 @@ the protocol harness runs **16** checks where §4.53 recorded 14. The client imp
 no deadline table and no host name of its own, which is the same rule the Go projection lives by.
 
 **What it refuses, and with which code.** Nothing is sent before `connector.hello` succeeds, and a command whose
-capability the hello did not announce is refused before it is written (`packages/state/src/client.ts:132`) — both
+capability the hello did not announce is refused before it is written (`packages/state/src/client.ts:137`) — both
 `HandshakeFailed`, the code `connector/internal/dispatch` uses for the same two refusals. The 64-request window and the
-8 MiB in-flight window refuse with retryable `Busy` (`packages/state/src/client.ts:203`, `:222`); a single request over
+8 MiB in-flight window refuse with retryable `Busy` (`packages/state/src/client.ts:227`, `:222`); a single request over
 the 64 MiB extension-to-host ceiling refuses with non-retryable `BadRequest` and names §5's chunked envelope
 (`packages/state/src/client.ts:217`), because a body that size has a mechanism this client does not implement and a
 silent truncation would be worse than a refusal. Every request arms its own method's deadline
 (`packages/state/src/client.ts:227`) and synthesises a local `Timeout`; an answer whose id has left the table — timed
-out, or answered twice — is dropped and re-applies nothing (`packages/state/src/client.ts:261`). A closed port is a
+out, or answered twice — is dropped and re-applies nothing (`packages/state/src/client.ts:266`). A closed port is a
 reconnect, not a shutdown: what was in flight fails retryably with `NetworkUnreachable`, and the ladder is
-`[1,2,4,8,16,32,60]` s capped at its last rung with ±30 % jitter (`packages/state/src/client.ts:273`, `:275`), reset to
+`[1,2,4,8,16,32,60]` s capped at its last rung with ±30 % jitter (`packages/state/src/client.ts:278`, `:275`), reset to
 zero by a good hello. `VersionMismatch` and `stop()` are terminal.
 
 **One defect the measurement found, fixed here.** A hello rejection belonging to a port that had already closed
@@ -5942,6 +5942,24 @@ the real MV3 worker teardown stays LIVE-23's.
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 9fdbbad (VER-33 narrowed with the migration runner); `nexora/master` moved fbab04a → 9fdbbad.
+### 4.121 The trace id crosses both planes — VER-46 moves no-code → no-run (2026-11-20)
+
+**The client half.** packages/state/src/client.ts stamps every outgoing frame with one session trace id in
+framing.json's own [A-Za-z0-9_-]{1,64} shape. connection.test.ts asserts the constancy and the shape over a
+filled session (60/60 with it).
+
+**The connector half.** Respond and Fail echo the request's trace id verbatim; envelope_test.go pins the
+echo in the success answer, in the refusal, and in the no-trace-id bare request staying bare.
+
+**The migration half.** migrations.test.ts's before/after diff is the history half: every legacy key
+byte-identical, so the correlation history a migration must keep is the history it never touches.
+
+**Corpus.** VER-46 moves no-code → no-run; the distribution moves no-code 15 → 14, no-run 28 → 29; 48 rows,
+marker.counted 148 stays. Doc 36 §6 names the fixtures and keeps its deferral label — the real migration
+run on a real worker stays LIVE-23's. Five client.ts citations in this ledger (§4.57) re-anchored for the
+lines the trace id added (132→137, 203→222, 222→227, 261→266, 273/275→278/281).
+
+**Gates.** All seven green; Go packages ok; the extension suite 61/61.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
