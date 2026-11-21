@@ -219,7 +219,7 @@ is migrated, not rewritten behind their back.
 | `ConnectorProfile` compiles to a loopback proxy string | nothing (no handler yet) | Verified: NO — deferred to Phase 2, LIVE-03 |
 | `transformValueForSync` honours the registry for `-nexora.*` | nothing | Verified: NO — deferred to Phase 2 |
 | Existing `SwitchProfile` rules select a NEXORA profile unchanged | nothing | Verified: NO — LIVE-15 |
-| `-schemaVersion` stays `2` while `-nexora.schemaVersion` is `3` | nothing | Verified: NO — deferred to Phase 2 |
+| `-schemaVersion` stays `2` while `-nexora.schemaVersion` is `3` | `tools/check-legacy-backup.mjs` runs the real migration runner over a shipped fixture and loads the migrated envelope in the same engine: the bare stamp still reads 2, the legacy chain does not fire, and every profile still compiles | Verified: NO — deferred to Phase 2 (the real browser load stays `LIVE-14`'s; `VER-26` narrowed with the gate) |
 
 Trace: ADR-0010, ADR-0011, ADR-0012, ADR-0013, ADR-0014, ADR-0015 · Contract:
 `packages/schema/envelope-keys.schema.json`, `packages/schema/examples/envelope-keys.nexora.json`, every

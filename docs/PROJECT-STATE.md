@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.124; older scope and inventory paragraphs
+continuation is §4.125; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5975,6 +5975,17 @@ stays LIVE-24's.
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried f95256d (VER-34 narrowed); `nexora/master` moved 79a60b7 → f95256d.
+### 4.125 Both stamps load beside the legacy engine — VER-26 moves no-code → no-run (2026-11-20)
+
+**The gate.** tools/check-legacy-backup.mjs now runs the real migration runner over a shipped fixture and
+loads the migrated envelope in the same omega-pac engine as the shipped backups: the bare stamp still reads
+2 (the erase chain never fires), the NEXORA stamp coexists, and every legacy profile still compiles to its
+PAC body. The real browser load stays LIVE-14's.
+
+**Corpus.** VER-26 moves no-code → no-run; the distribution moves no-code 13 → 12, no-run 30 → 31; 48 rows,
+marker.counted 148 stays. Doc 24 §7 names the gate and keeps its deferral label.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

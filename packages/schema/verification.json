@@ -755,7 +755,7 @@
     {
       "id": "VER-26",
       "subject": "the two version stamps coexisting (`-schemaVersion` at 2, `-nexora.schemaVersion` at 3) has never been loaded by the legacy engine alongside the new one",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "extension",
       "closesBy": {
         "kind": "live-row",

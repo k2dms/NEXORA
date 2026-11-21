@@ -212,6 +212,37 @@ for (const rel of FIXTURES) {
   all.push(...failures);
 }
 
+// VER-26's half: the two stamps coexisting. Run the real migration runner over a shipped fixture and
+// load the *migrated* envelope in the same engine — the bare stamp still reads 2, every legacy profile
+// still compiles to the same PAC bytes, and the -nexora.* keys are settings-shaped keys the loader
+// ignores. If the legacy chain fired on this input, the profiles below would not compile at all.
+const migratedStage = async () => {
+  const { MigrationRunner } = await import('../nexora/extension/src/migrations.ts');
+  const rel = FIXTURES[0];
+  const envelope = JSON.parse(await readFile(join(REPO, rel), 'utf8'));
+  const data = structuredClone(envelope);
+  const storage = {
+    async getAll() { return structuredClone(data); },
+    async set(items) { for (const [k, v] of Object.entries(items)) data[k] = structuredClone(v); },
+    async remove(keys) { for (const k of keys) delete data[k]; },
+  };
+  const report = await new MigrationRunner({ storage, extensionVersion: 'legacy-backup-check' }).run();
+  if (report.outcome !== 'migrated' && report.outcome !== 'already-migrated') {
+    return [rel + ': the runner could not produce a migrated envelope: ' + (report.reason ?? report.outcome)];
+  }
+  if (data.schemaVersion !== 2) {
+    return [rel + ': the migrated envelope bare stamp reads ' + data.schemaVersion + ', not 2 — the legacy chain would fire'];
+  }
+  if (!Object.keys(data).some((k) => k === '-nexora.schemaVersion')) {
+    return [rel + ': the migrated envelope carries no NEXORA stamp; the two stamps are not coexisting'];
+  }
+  const { failures, stats } = checkEnvelope(rel + ' (migrated, two stamps)', data);
+  printStats(rel + ' (migrated, two stamps)', stats);
+  return failures;
+};
+
+all.push(...(await migratedStage()));
+
 if (all.length) {
   console.error(`\nFAIL (${all.length})`);
   for (const f of all) console.error(`  ${f}`);
@@ -219,6 +250,6 @@ if (all.length) {
 }
 
 console.log(
-  `OK: ${FIXTURES.length} shipped backups load and compile in the legacy engine ` +
-    '(`omega-pac/index.js`).',
+  `OK: ${FIXTURES.length} shipped backups load and compile in the legacy engine, and the migrated ` +
+    'envelope with both version stamps loads beside them (`omega-pac/index.js`).',
 );
