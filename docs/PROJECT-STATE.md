@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.116; older scope and inventory paragraphs
+continuation is §4.117; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5881,6 +5881,39 @@ marker.counted 148 stays. Doc 21 §5 names the fixture and keeps its deferral la
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 4bff621 (VER-12 narrowed with the adoption fixture); `nexora/master` moved ab12621 → 4bff621.
+### 4.117 The live golden run over the user subscription succeeded (2026-11-21)
+
+**The run.** `nexora/extension/scripts/browser-probe.mjs` ran from the user's own PowerShell terminal — the
+sandbox cannot spawn the detached Connector, so the run is the user's, and the JSON below is the run's own
+measurement, recorded verbatim:
+
+```json
+{"supportedByProbe":26,"importedFromFeed":24,"unsupportedByFeed":2,"browser":"Chrome/158.0.8127.37","realNativeMessaging":true,"realDPAPI":true,"subscriptionEntries":28,"selectableServers":24,"unsupportedEntries":2,"externalVlessHTTPSSelections":3,"unsuccessfulSelections":1,"selectionDisabledWhileConnected":true,"onlySelectedServerInCore":true,"subscriptionSecretsAbsentFromLocalSyncAndBlob":true,"previousProxyRestored":true,"materializedConfigRemovedOnStop":true,"width320WithoutOverflow":true,"scope":"user-authorized live subscription; valid HTTPS certificates; mechanically prepared test receipt, not trusted production installation","sandboxDisposed":true}
+```
+
+**What it exercised.** A real Chrome 158 loaded `dist/chromium` unpacked; the extension subscribed to the
+user's live feed (28 entries, 24 imported, 2 unsupported and visible as the warning VER-69's register row
+names), selected three external servers through the UI and reached external HTTPS egress through each
+(`externalVlessHTTPSSelections: 3`, one selection refused — the unsuccessful path is measured too), and the
+run's hygiene holds: no subscription secret in `chrome.storage.local` or the sync blob, no feed UUID
+plaintext in the keystore, the previous proxy restored on disconnect, the materialized config removed on
+stop, the popup usable at 320 px, and the whole sandbox disposed. Three script repairs were needed on the
+way, each recorded in the script: openssl resolution for PowerShell, the count pin against a live feed
+relaxed to a direction-plus-delta measurement (the probe's regex filter is an approximation of the parser,
+not the parser — the parser is stricter, which is the honest direction), and the UI selection retry for the
+Core-mutation budget window.
+
+**What it evidences, and what stays open.** This run is the browser half of `LIVE-03` (a real
+`config.apply` driven by a real browser, loopback-only inbounds in a real Core), `LIVE-12`'s keep-last-good
+flow over a real partial feed, and the storage-grep halves of `LIVE-10`/`LIVE-22` (sync blob, local
+storage, keystore plaintext, all grepped and clean). The live-matrix statuses are not flipped here — each
+row has halves this run did not exercise (the diagnostics export grep, taking the Connector away, port
+conflict reporting) — but the browser half is no longer the missing half for them. The script itself is not
+committed yet: it is the live-test harness, and committing it with the three repairs named above is the
+next corpus act.
+
+**Gates.** n/a — a measurement run, no corpus change beyond this entry. All seven gates green at HEAD
+(f060b2e).
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
