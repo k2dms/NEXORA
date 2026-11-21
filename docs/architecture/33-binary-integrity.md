@@ -194,7 +194,7 @@ two reasons. First, it covers the non-adversarial failures — a truncated extra
 that rewrote the file in place, a rollback that half-completed — which are the *common* ways the bytes on disk stop
 matching the bytes that were verified. Second, it separates "another process as this user replaced my Core" from
 "another *user*, or a machine-wide updater, or a roaming profile copy did", and the second class is the one ADR-0011
-chose to defend against. `Verified: NO — Phase 2`, and `LIVE-21` owns it.
+chose to defend against. The writer half closed 2026-11-20: `internal/install` writes the receipt the reader consumes, and an env-gated integration test runs the supervisor's spawn path — Verify = receipt.NewVerifier over the installer's receipt — against the pinned release downloaded from a test origin, then refuses a one-byte tamper (`install/integration_test.go`). What stays `Verified: NO — Phase 2` and `LIVE-21`'s is the registered-command reach: a browser-driven core.start over the pipe.
 
 What this does **not** buy: a claim that a same-user adversary is stopped. §16 lists it as uncontrolled, and
 `docs/architecture/31-security-model.md` §14 keeps it in the residual section rather than in this one.

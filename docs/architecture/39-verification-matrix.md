@@ -773,7 +773,15 @@ requires all caught. The `<local>` expansion renders in the connection panel as 
 the approximation note (doc 28 §5's own mapping, `localExpansion.ts`), and the Phase-2 controls render
 disabled-with-a-reason from `phase2.ts`'s corpus-sourced registry — constraint 11's compliant pattern,
 asserted by test. The live halves stay `LIVE-15`'s and the per-screen review stays open. The distribution
-moves `no-code` 11 → 8, `no-run` 32 → 35; 47 rows, `marker.counted` 146 → 145 — two labels left with the closures: doc 37 §11's row reads YES, and VER-38's own condition is the gate it asked for, so the row retired beside it. The partition is 94 + 26 + 25.
+moves `no-code` 11 → 8, `no-run` 32 → 35; 47 rows, `marker.counted` 146 → 145 — two labels left with the closures: doc 37 §11's row reads YES, and VER-38's own condition is the gate it asked for, so the row retired beside it. The partition is 93 + 26 + 25.
+
+**The receipt's writer and its consumer.** 2026-11-20, with `internal/install/integration_test.go`: `VER-87`
+stays `no-run` but its two "nothing" claims are answered in-repo. The installer writes the receipt the
+pre-exec verifier reads (VER-41's slice), and the integration test runs the supervisor's own spawn path —
+`Verify = receipt.NewVerifier` over the installer's receipt, the exact wiring `main.go` builds — against
+the pinned release downloaded from a test origin: a real Core starts, the verifier hashed the installer's
+binary against the installer's receipt before the exec, and a one-byte tamper is refused. What stays live
+is the registered-command reach (`LIVE-21`'s). 48 rows, `marker.counted` 145 stays.
 
 **Open items.**
 

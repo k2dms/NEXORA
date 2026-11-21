@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.130; older scope and inventory paragraphs
+continuation is §4.131; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6038,6 +6038,20 @@ partition is 94 + 26 + 25). The extension suite is 80/80 and the build is green 
 **Gates.** All seven green; Go packages ok; the UI-guards gate added to CI.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried 313985a (VER-38 retired, VER-75 and VER-39 narrowed with the UI guard, the expansion and the disabled controls); `nexora/master` moved 011dafb → 313985a.
+### 4.131 The receipt has its writer and its consumer — VER-87's two nothing-claims answered (2026-11-20)
+
+**The integration.** internal/install/integration_test.go runs the supervisor's own spawn path — Verify =
+receipt.NewVerifier over the installer's receipt, the exact wiring main.go builds — against the pinned
+release downloaded from a test origin: a real Core starts, the verifier hashed the installer's binary
+against the installer's receipt before the exec, and a one-byte tamper is refused. The env-gated skip is
+the golden drive's.
+
+**Corpus.** VER-87 stays no-run — the registered-command reach (a browser-driven core.start over the pipe)
+is LIVE-21's — but its two nothing-claims are answered: the writer exists (VER-41's slice) and the spawn
+path has executed against it. Doc 33 §6 names the integration and keeps its deferral label, narrowed; the
+anchor moved with the text. 48 rows, marker.counted 145 stays (the partition is 93 + 26 + 25).
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
