@@ -872,7 +872,7 @@
     {
       "id": "VER-34",
       "subject": "a future envelope is specified to be held read-only while the legacy chain does not fire; neither half has been executed",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "extension",
       "closesBy": {
         "kind": "live-row",
