@@ -96,11 +96,12 @@ Two properties follow that are easy to get wrong:
 
 ### 4.1 Shape versus instance
 
-The shape is `packages/schema/pins.schema.json` and it exists in this repository today. The instance that ships —
-`connector/testdata/pins.json` (`docs/architecture/20-target-repository-layout.md` §3's `connector/` row) — does not: the whole
-`connector/` tree is absent, and this is the document's largest `Verified: NO`. What does exist is the conforming
-example `packages/schema/examples/pins.xray.json`, which `SEC-6` in
-`docs/audit/11-security-findings.md` cites as the real home of the pin *contract* on disk.
+The shape is `packages/schema/pins.schema.json` and it exists in this repository today. The fixture instance —
+`connector/testdata/pins.json` — exists too since 2026-11-20 (`VER-41`'s register row narrowed with it), carrying the
+example's own placeholder values as the loader's fixture rather than a CI-verified pin: `verifiedAt` names a check
+that has not happened, and the install tests generate their own keypair per run rather than trusting the fixture
+key. The conforming example `packages/schema/examples/pins.xray.json`, which `SEC-6` in
+`docs/audit/11-security-findings.md` cites as the real home of the pin *contract* on disk, stays the contract's home.
 
 ### 4.2 What the schema already refuses
 
@@ -433,7 +434,7 @@ the other would conclude the Core can be replaced automatically, and it cannot.
 
 | Threat | Control | Check | Status |
 |---|---|---|---|
-| Upstream release substituted (compromised host or asset) | minisign against a pinned key, checked before the hash | assertion *every asset URL is the pinned tag with the pinned file name* + a real verification run in CI | `LIVE-02` `Verified: NO — Phase 2` |
+| Upstream release substituted (compromised host or asset) | minisign against a pinned key, checked before the hash | assertion *every asset URL is the pinned tag with the pinned file name*; the in-repo verification run is `internal/install`: Ed25519 over the downloaded bytes, keyed by the pin's pubkey, with the refusal driven by a wrong-keyed signature, a missing one, a hash mismatch, a size-bound abort and a Zip-Slip entry (`install_test.go`) | `LIVE-02` `Verified: NO — Phase 2` (the live upstream run stays live; `VER-41` narrowed with the in-repo half) |
 | Pin list replaced along with the asset | the pin ships inside the Connector, so replacing it means replacing the host — link 2, not link 4 | `buildId`/`pinsVersion` reporting | §14; detection only |
 | Truncated or corrupted download | exact `sizeBytes` bound before hashing, `sha256` after | schema bounds asserted by `npm --prefix packages/schema run verify` | contract green, runtime `LIVE-02` |
 | Malicious archive entries | enumeration and expected-set refusal before any write | `connector/internal/archive`: `Validate` refuses absolute paths, `..` (including a climb behind a directory entry's trailing slash), backslashes, drive letters, unclean names, duplicates, the size bounds and names outside the pin's expected set, before the first write — eight Go tests, one over a real zip's central directory | **GREEN** at the gate; the installer that calls it is `VER-41`'s and the live install stays `LIVE-21`'s — `Verified: NO — Phase 2` for the run, `VER-43` narrowed with it |

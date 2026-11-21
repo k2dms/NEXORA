@@ -1,0 +1,38 @@
+{
+  "pinsVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/XTLS/Xray-core",
+    "releaseTag": "v24.11.11",
+    "assetNaming": "Xray-windows-amd64.zip",
+    "signaturePubkey": "dQhl6RdqT9NtVhZK0mYcXk3sPpQwErTyUiOpAsDfGhJkLzXcVbNmQ1234567"
+  },
+  "verifySignature": true,
+  "silentSelfUpdate": false,
+  "installRoot": "%LOCALAPPDATA%\\NEXORA\\core",
+  "retainedPreviousVersions": 1,
+  "assets": [
+    {
+      "os": "windows",
+      "arch": "amd64",
+      "file": "Xray-windows-amd64.zip",
+      "url": "https://github.com/XTLS/Xray-core/releases/download/v24.11.11/Xray-windows-amd64.zip",
+      "sha256": "1f3c8a9d0b6e2c47a85d3e1f9b7c2a4d6e8f0b1c3d5e7f9a2b4c6d8e0f1a3b5c",
+      "signature": "RWQfdQhl6Rdqexampleminisignsignature000000000000000000000000000000000",
+      "sizeBytes": 9277440,
+      "verifiedAt": "2026-11-04T00:00:00Z",
+      "authenticodeSubject": "CN=XTLS Software Development Joint Service"
+    },
+    {
+      "os": "linux",
+      "arch": "amd64",
+      "libc": "glibc",
+      "file": "Xray-linux-amd64.zip",
+      "url": "https://github.com/XTLS/Xray-core/releases/download/v24.11.11/Xray-linux-amd64.zip",
+      "sha256": "7b2e9d4c1a8f3650b2c9e7d1a4f8b3c605d9e2a7b4c1f8d306a9b5e2c7f41d80",
+      "signature": "RWQfdQhl6Rdqexampleminisignsignature000000000000000000000000000000001",
+      "sizeBytes": 10485760,
+      "verifiedAt": "2026-11-04T00:00:00Z",
+      "authenticodeSubject": null
+    }
+  ]
+}

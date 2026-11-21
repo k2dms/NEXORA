@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.126; older scope and inventory paragraphs
+continuation is §4.127; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5988,6 +5988,30 @@ marker.counted 148 stays. Doc 24 §7 names the gate and keeps its deferral label
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried a78bd3f (VER-26 narrowed with the two-stamp gate); `nexora/master` moved f95256d → a78bd3f.
+### 4.127 The installer is code — VER-41 moves no-code → no-run (2026-11-20)
+
+**The package.** connector/internal/install implements doc 33 §5's twelve-step shape: platform resolution
+with the absent-platform refusal, the free-space check (DiskFull before any write), the size-capped
+download (aborted at sizeBytes + 1), the Ed25519 verification seam keyed by the pin's pubkey — ODEC-22 and
+ODEC-25 own what the signature means for a rehosted Core, so the seam is the commitment and its refusal
+paths are the exercise — the sha256 comparison, the step-7 traversal and expected-set gate over the real
+central directory (internal/archive), owner-only ACL proved by read-back, and the receipt written
+whole-or-not-at-all and then consumed by receipt.NewVerifier. Upgrade keeps the previous version on disk
+and GC keeps exactly retainedPreviousVersions, never the active one.
+
+**The tests.** Ten tests over an httptest origin with a per-run generated keypair: the happy path
+(receipt verifies the extracted binary, upgrade keeps v24.11.11 on disk), and every refusal path — hash
+mismatch, wrong-keyed signature, missing signature, oversized download, Zip-Slip entry, entry outside the
+expected set, DiskShortage, absent platform, broken pins document. connector/testdata/pins.json exists as
+the loader's fixture carrying the example's own placeholder values — not a CI-verified pin.
+
+**Corpus.** VER-41 moves no-code → no-run; the distribution moves no-code 12 → 11, no-run 31 → 32; 48 rows,
+marker.counted 148 → 146 (ADR-0019's verification line says what narrowed instead of what is deferred, and
+doc 33 §4.1's largest-NO phrase left with the fixture it described; the partition is 95 + 26 + 25). Doc 33
+§4.1 and §16 name the fixture and the in-repo verification run; ADR-0019's Verification section names the
+narrowing. The live upstream stays LIVE-02's; the manual channel is untouched.
+
+**Gates.** All seven green; Go packages ok (20, with internal/install).
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

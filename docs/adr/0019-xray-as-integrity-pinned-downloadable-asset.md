@@ -124,9 +124,10 @@ as data, not as prose: the brief's constraint 6 says no committed binaries, and
 - Existing check: `npm --prefix packages/schema run verify` compiles `pins.schema.json`, validates the
   conforming instance, and rejects the mirror-URL case for the recorded keyword -- so rules 2, 3 and 7 are
   machine-checked at the contract layer today.
-- Verified: NO -- deferred to Phase 2: download, sha256 and minisign verification, refusal on mismatch,
-  per-user install ACL, upgrade-with-rollback, and `manual` channel behaviour. These need the Go module and
-  a live host, and are `LIVE` rows (ADR-0020).
+- Narrowed 2026-11-20 (`VER-41`): the download, size bound, Ed25519 verification seam, refusal on mismatch,
+  per-user install ACL and upgrade-keeping-the-previous-version are `internal/install` code driven by tests
+  (`install_test.go`, httptest origin, generated keypair). Still NO: the live host and the `manual` channel
+  behaviour, which stay `LIVE` rows (ADR-0020).
 - Verified: YES -- rule 1 has its repository guard. The `VER-08` step of `.github/workflows/verify.yml` reads
   the first bytes of every tracked file and fails on a PE, ELF or Mach-O magic number, and `.gitattributes`
   now declares the executable suffixes beside the `connector/bin/` and `dist/` patterns of `.gitignore`.

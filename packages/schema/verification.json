@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 148
+    "counted": 146
   },
   "states": {
     "values": [
@@ -986,21 +986,13 @@
     {
       "id": "VER-41",
       "subject": "no download, sha256, minisign verification, refusal-on-mismatch, install ACL, upgrade-with-rollback or `manual` channel has been exercised -- `connector/testdata/pins.json` does not exist",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "connector",
       "closesBy": {
         "kind": "live-row",
         "ref": "LIVE-02"
       },
       "at": [
-        {
-          "doc": "docs/adr/0019-xray-as-integrity-pinned-downloadable-asset.md",
-          "anchor": "- Verified: NO -- deferred to Phase 2: download, sha256 and minisign v"
-        },
-        {
-          "doc": "docs/architecture/33-binary-integrity.md",
-          "anchor": "`connector/` tree is absent, and this is the document's largest `Verif"
-        },
         {
           "doc": "docs/architecture/33-binary-integrity.md",
           "anchor": "Upstream release substituted (compromised host or asset)"
