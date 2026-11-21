@@ -847,7 +847,7 @@
     {
       "id": "VER-33",
       "subject": "the migration runner does not exist: ordering, idempotency, resume, `dryRun`, per-step verification and restore-then-compare are all unrun",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "extension",
       "closesBy": {
         "kind": "live-row",

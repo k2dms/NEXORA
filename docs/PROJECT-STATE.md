@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.118; older scope and inventory paragraphs
+continuation is §4.119; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -5916,6 +5916,30 @@ next corpus act.
 (f060b2e).
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-21 carried the §4.117 entry and the harness itself (`nexora/extension/scripts/browser-probe.mjs`, committed with the three repairs named) — the first commit the harness has been part of; the run that produced the measurement was the user's, from their own terminal.
+### 4.119 The migration runner is code — VER-33 moves no-code → no-run (2026-11-20)
+
+**The runner.** nexora/extension/src/migrations.ts implements the ledger as data: the snapshot gate (zero
+keys aborts; the read-back is re-hashed and compared before restoredAtLeastOnce is set; the connector
+mirror is the second medium when a writer is provided, and its absence still migrates because version 3
+has no destructive step), verify-first replay with no cursor key, the pairing rule proved after every step
+(the bare stamp reads 2 or the run stops before writing), restore-by-deletion with the visible
+restore-required state when the restore itself fails, the read-only future envelope reporting
+SchemaMismatch, and the unsettled-sync refusal. The nine steps are the ledger's own list; step 6's records
+are bridges that reference the legacy +name rather than copies, because version 3 creates no
+traffic-bearing entity and the profile schema requires a Server the user has not created yet.
+
+**The tests.** Eleven tests over the shipped 3.5.2 fixture (docs/verification/
+backup-3.5.2-all-profile-types.json): the additive happy path with byte-identical legacy keys, the dry run
+that writes nothing, the whole-run idempotency replay, the read-only future envelope, the empty-envelope
+abort, the unsettled-sync refusal, a quota-refusing write restored to the snapshot, a mid-step death
+replayed to completion, a wedged restore leaving restore-required, the connector mirror recorded on both
+media, and the write-target guard refusing any key outside -nexora. The extension suite is 76/76.
+
+**Corpus.** VER-33 moves no-code → no-run; the distribution moves no-code 16 → 15, no-run 27 → 28; 48 rows,
+marker.counted 148 stays. Doc 35 §7's two runtime rows name the runner and keep their deferral labels —
+the real MV3 worker teardown stays LIVE-23's.
+
+**Gates.** All seven green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

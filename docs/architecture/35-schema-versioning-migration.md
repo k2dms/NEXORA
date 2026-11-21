@@ -478,9 +478,9 @@ promise is a step whose "verified" means "we hope". Every verifier in §6 re-rea
 | Pruning is bounded to the backup namespace, never to zero | *"pruning is limited to the backup namespace and never to zero snapshots"* | Schema | **YES** |
 | The four other version spaces are stated at their real values | *"the other version spaces the runner must never bump are stated at their real values"* | Schema | **YES** |
 | Doc and ledger name the same steps | *"the migration document names every step the ledger declares, so the two cannot disagree quietly"* | Schema | **YES** — this file is read by the harness |
-| A run orders, verifies, resumes, restores and aborts as specified | a runner test against a storage double, killed at each of the nine boundaries | Extension runtime | **NO — Phase 2**, `LIVE-23` |
+| A run orders, verifies, resumes, restores and aborts as specified | a runner test against a storage double, killed at each of the nine boundaries — `nexora/extension/src/migrations.ts` is the runner and `migrations.test.ts` drives the order, the dry run, the replay, the mid-write restore, the restore-required state, the future envelope and the unsettled-sync refusal over the shipped 3.5.2 fixture | Extension runtime | **NO — Phase 2**, `LIVE-23` (the real worker teardown; `VER-33` narrowed with the runner) |
 | A future envelope is held read-only and the legacy chain does not fire | a v4-on-v3 load with a before/after store diff, plus the legacy control | Extension runtime | **NO — Phase 2**, `LIVE-24` |
-| The snapshot survives quota pressure and MV3 teardown | a real browser, a real worker, a real quota | Extension runtime | **NO — Phase 2**, `LIVE-23` |
+| The snapshot survives quota pressure and MV3 teardown | a real browser, a real worker, a real quota — the simulated halves (a quota-refusing write, a wedged restore, a mid-run death) are driven in `migrations.test.ts`; the real worker is `LIVE-23` | Extension runtime | **NO — Phase 2**, `LIVE-23` |
 
 ## 16. Threat, control, check
 
