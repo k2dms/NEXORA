@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.146; older scope and inventory paragraphs
+continuation is §4.147; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6201,6 +6201,27 @@ as the browser plane's PAC — is the remaining slice of the decision; the store
 **Gates.** All eight green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried 779a601 (the browser-plane store is code); `nexora/master` moved 8fcd555 → 779a601.
+### 4.147 The apply half is code — the bypass list of the applied config carries the temp rule (2026-11-22)
+
+**The apply.** While NEXORA's proxy is in force, a "site goes direct" temp rule is an entry in the applied
+fixed_servers' own bypass list — built by background/apply.ts with `<-loopback>` never removed (doc 30's
+fail-closed coverage), confirmed by a read-back before the verdict, and answered to the popup as applied,
+restored, stored or unchanged. With no Connector in force the rule is stored and the verdict says stored —
+never a fake apply. A rule routing a site to another profile needs the profile's own chain and stays
+stored-not-applied, which is the remaining half the legacy apply path owns.
+
+**The bridge.** popup/bridge.ts reads the active tab's own domain (a read, not a side effect — invariant 2),
+refuses local addresses and non-URLs rather than guessing, and sends the named action over the same
+channel the options page uses; the shell routes both surfaces through one listener. The popup's keyboard
+actions announce the verdict.
+
+**Tests.** apply.test.ts (six: guard-first bypass build, no-op, exact restore, hostname refusal, verdict
+map) and the temp-rule store's five — eleven new tests; the suite is 107/107 and the build is green.
+
+**Corpus.** 52 rows, marker.counted 149 stays. No parity row moves yet: the plain-JS popup row's flip
+waits for a real browser driving the whole behaviour.
+
+**Gates.** All eight green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

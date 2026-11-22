@@ -9,6 +9,7 @@
   import { handleKey, tabbables, type KeyboardHandlers, type KeyboardState } from '../popup/keyboard';
   import { autoResize } from '../popup/resize';
   import { documentStateCopy, type DocumentState } from '../popup/documentStates';
+  import { toggleSiteRule } from '../popup/bridge';
   import type { PopupProfile, PopupSnapshot } from '../popup/model';
 
   let { snapshot, legacyProfiles = [], unavailableReason = '', documentState = null as DocumentState | null }: {
@@ -70,10 +71,15 @@
   }
 
   // js-addrule / js-temprule / js-direct / js-system / js-external: browser-plane quick actions. They
-  // dispatch to the shell and keep working with no Connector — the parity row's own requirement.
-  function browserPlane(action: string, detail: Record<string, unknown> = {}): void {
+  // travel to the shell over the runtime message bridge (the shell owns the state; the popup is a view)
+  // and keep working with no Connector — the parity row's own requirement. A verdict is announced.
+  function browserPlane(action: 'add-rule' | 'temp-rule' | 'select-builtin'): void {
     announce = action;
-    window.dispatchEvent(new CustomEvent('nexora-popup-browser-plane', { detail: { action, ...detail } }));
+    void toggleSiteRule().then((outcome) => {
+      announce = action + ': ' + outcome;
+    }).catch((error: unknown) => {
+      announce = action + ': ' + (error instanceof Error ? error.message : 'не выполнено');
+    });
   }
 
   const handlers: KeyboardHandlers = {
@@ -88,7 +94,7 @@
       announce = selected?.displayName ?? phaseLabel;
     },
     selectBuiltin(which) {
-      browserPlane('select-builtin', { which });
+      browserPlane('select-builtin');
     },
     addRule() {
       browserPlane('add-rule');

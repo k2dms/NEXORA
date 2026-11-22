@@ -2,6 +2,7 @@ import { hostName } from '../../../packages/protocol/src/contract.ts';
 import { Connection, type RuntimeRecord, type Selection } from './connection.ts';
 import { channel, selectedKey, runtimeKey, type Action, type SavedSubscription, type SavedServer } from './model.ts';
 import { TempRules } from './background/tempRules.ts';
+import { bypassWith, bypassWithout, nextVerdict, type ProxyRules } from './background/apply.ts';
 
 const connection = new Connection({
   version: chrome.runtime.getManifest().version,
@@ -108,15 +109,34 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
     respond({ error: 'Неизвестный запрос NEXORA.' });
     return;
   }
+  const domain = typeof request.payload?.domain === 'string' ? request.payload.domain : '';
   if (request.action === 'select-builtin') {
     // The legacy builtins are the legacy engine's to apply; the popup announces the intent and the
     // shell-side apply is the remaining slice, recorded in PROJECT-STATE §4.143.
     respond({ result: { outcome: 'deferred', reason: 'select-builtin needs the legacy apply path (§4.143)' } });
     return true;
   }
-  const domain = typeof request.payload?.domain === 'string' ? request.payload.domain : '';
   void tempRules.toggle(domain, request.payload?.profileName ?? 'direct', request.action === 'add-rule' ? 1 : undefined)
-    .then((outcome) => respond({ result: { outcome } }))
+    .then(async (outcome) => {
+      // The apply half: while NEXORA's proxy is in force, a "site goes direct" rule is an entry in the
+      // applied fixed_servers' own bypass list, with `<-loopback>` never removed (doc 30's invariant).
+      // With no Connector in force, the rule is stored and the verdict says so.
+      const applied = await chrome.proxy.settings.get({ incognito: false });
+      const inForce = applied.levelOfControl === 'controlled_by_this_extension' && applied.value.mode === 'fixed_servers';
+      if (!inForce) {
+        respond({ result: { outcome: nextVerdict(false, outcome), profileName: request.payload?.profileName ?? 'direct' } });
+        return;
+      }
+      const current = applied.value as ProxyRules;
+      const base = current.rules?.bypassList ?? [];
+      const list = outcome === 'removed' ? bypassWithout(base, domain) : bypassWith(base, domain);
+      const next = { ...current, mode: 'fixed_servers' as const, rules: { ...current.rules, bypassList: list } };
+      await chrome.proxy.settings.set({ value: next as typeof applied.value, scope: 'regular' });
+      const check = await chrome.proxy.settings.get({ incognito: false });
+      const rules = (check.value as ProxyRules).rules?.bypassList ?? [];
+      if (JSON.stringify(rules) !== JSON.stringify(list)) throw new Error('Браузер не подтвердил список обхода. Временное правило не применено.');
+      respond({ result: { outcome: nextVerdict(true, outcome), bypassList: list } });
+    })
     .catch((error: unknown) => respond({ error: error instanceof Error ? error.message : 'Неизвестный запрос NEXORA.' }));
   return true;
 });
