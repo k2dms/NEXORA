@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.140; older scope and inventory paragraphs
+continuation is §4.141; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6138,6 +6138,23 @@ green, and all eight gates are green.
 **Gates.** All eight green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried f15d0aa (three more parity flips); `nexora/master` moved 6762d23 → f15d0aa.
+### 4.141 The icons and the ordering are data — VER-97 registered, the fifth parity flip (2026-11-22)
+
+**The facts.** popup/shell.ts reads every legacy profile's type and colour in storage order, the
+quick-switch ranking verbatim (a missing profile kept, not fixed), and the attachment keys (+__ruleListOf_*)
+excluded; the popup renders that order without sorting it — the order a user made is intent data and
+survives the cut-over unchanged (ADR-0013). The icon glyph comes from the profile's own type, the colour
+outline from the profile's own fact — never a name-based guess.
+
+**The row.** VER-97 registered (ui, assertion, no-run): the shell suite asserts the storage-order render,
+the attachment exclusion, the ranking verbatim and the no-sort rule; a real install's ordering is the half
+that stays no-run. The parity row "profile icons, ordering and quick-switch ordering" flipped done naming
+it — parity 5 of 18.
+
+**Corpus.** Matrix 51 → 52 rows; ui 7 → 8, assertion 6 → 7, no-run 39 → 40; marker.counted 148 → 149 (doc 37
+§8's new sentence carries the label; the partition is 95 + 26 + 25). The extension suite is 96/96.
+
+**Gates.** All eight green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

@@ -780,7 +780,8 @@
         "evidence": "omega-web/src/coffee/omega_decoration.coffee:1",
         "surface": "popup",
         "obligation": "the order a user made is intent data and survives the cut-over unchanged (ADR-0013)",
-        "status": "pending"
+        "status": "done",
+        "check": "VER-97"
       },
       {
         "legacy": "backup upload and download, PAC and rule-list export",

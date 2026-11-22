@@ -359,6 +359,12 @@ or drops a binding is a parity row in §9 — flipped to `done` 2026-11-22: the 
 actions, the digit slots, the motions and the modal overlay all asserted), and its check is `VER-93` —
 `Verified: NO` for a real browser driving the map (`VER-93` owns that half).
 
+The profile facts the legacy decoration drew icons with travel as data: `popup/shell.ts` reads every legacy
+profile's type and colour in storage order, the quick-switch ranking verbatim, and the popup renders that
+order without sorting it — the order a user made is intent data and survives the cut-over unchanged. The
+attachment keys (`+__ruleListOf_*`) are excluded, and a colour is the profile's own fact, never a
+name-based guess — `Verified: NO` for a real install's ordering (`VER-97`).
+
 The geometry and the two whole-document states are code too: `popup/resize.ts` posts the measured height to
 the iframe wrapper and skips a document that is its own top frame (Firefox) — `Verified: NO` for a real
 wrapper resizing (`VER-94`); the permission-denial and not-controllable states render in the same document

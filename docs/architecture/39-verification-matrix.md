@@ -55,7 +55,7 @@ Machine-checked by: `packages/schema/scripts/verify.mjs` (§11 names the asserti
 
 | # | Question a document could not answer itself | Answered by |
 |---|---|---|
-| 1 | Who owns the 148 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
+| 1 | Who owns the 149 deferrals the corpus says exist? | §3 and §10 — the queue, with `VER-NN` ids, partitioned by state |
 | 2 | Is a deferral the same thing as unfinished work? | No: §4 splits it five ways; the split *is* the useful content |
 | 3 | Can a document claim a check exists when it does not? | §6 — anchors resolve or the run fails |
 | 4 | Can one obligation be counted twice, so the queue looks shorter than it is? | §6 — the same partition check refuses it |
@@ -96,11 +96,11 @@ would have to be re-derived from the design, which is how a verification matrix 
 |---|---|---|---|
 | `no-code` | 7 | the component the claim is about does not exist | write the component, then its test — no checker can precede this |
 | `no-check` | 0 | the thing exists (a contract, a document rule, an inherited file) and nothing asserts it | write a checker; no feature work is required |
-| `no-run` | 39 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
+| `no-run` | 40 | a check exists and is green where it ran, but has not run where the claim needs it | execute it — in CI or by hand, and record the run |
 | `no-fixture` | 1 | the assertion is writable today; the input that would make it mean something is absent | add one file under `packages/schema/examples/` or `fixtures/` |
 | `needs-human` | 4 | code cannot close it: a decision from `docs/PROJECT-STATE.md` §9, or a number only a browser yields | decide, or measure — then the row becomes one of the four above |
 
-The distribution is the finding. **7 of 51 rows are `no-code`**: this iteration's claims are overwhelmingly
+The distribution is the finding. **7 of 52 rows are `no-code`**: this iteration's claims are overwhelmingly
 blocked on the Connector, the compiler and the UI existing, not on tests being clever. 0 `no-check` rows read as the column the harness watches
 the part closable before Phase 2 writes a line of product code, and four of them — `VER-20`, `VER-56`,
 `VER-65`, `VER-71` — are named in an open decision's `blocks`, which makes them unclosable while that question is
@@ -125,14 +125,14 @@ That ordering is not advice; it is what the states say.
 ## 5. Nine owners, eight closing mechanisms
 
 `owners` - who can close the row: `connector` 28, `extension` 9, `contracts` 1, `ci` 1, `packages` 1,
-`ui` 7, `external` 3, `tools` 0, `human` 1.
+`ui` 8, `external` 3, `tools` 0, `human` 1.
 
-`closingKinds` - with what: `live-row` 38, `assertion` 6, `decision` 1, `gate` 1, `ci-step` 1,
+`closingKinds` - with what: `live-row` 38, `assertion` 7, `decision` 1, `gate` 1, `ci-step` 1,
 `external-measurement` 4, `tool` 0, `new-live-row` 0.
 
 Three consequences worth stating out loud:
 
-- **38 of 51 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
+- **38 of 52 rows close by executing an existing live row.** The queue is, numerically, mostly the live matrix seen
   from the other side. That is the point of promotion rule 4: the live rows are the executable half of the design,
   and a design claim that cannot name one of them is usually not a `no-code` row but a `no-check` one.
 - **Exactly one row closes by a live row that does not exist yet** — `VER-65`, redirect-hop guards. It is the queue
@@ -142,7 +142,7 @@ Three consequences worth stating out loud:
   on `core.select`, `LIVE-08` on containment, `LIVE-02` on determinism, `LIVE-11` on a 404, `LIVE-06` on fail-closed
   inside the live matrix itself); each now names its own closer or the right row, which is the same failure mode
   caught one tier down.
-- **6 rows promise a named assertion** - in `packages/schema/scripts/verify.mjs`, in the Connector's test suite, or
+- **7 rows promise a named assertion** - in `packages/schema/scripts/verify.mjs`, in the Connector's test suite, or
   in the client's — **and every one of them promises an assertion this run does not yet make.** The harness checks
   that (`every row that promises an assertion promises one this run does not yet make`). It is what keeps the queue
   from becoming a graveyard: adding the assertion and leaving the row pointing at it is a build failure, so closing
@@ -309,7 +309,7 @@ pointing at one executable matrix is a plan; the same 53 as 155 scattered phrase
 
 ## 10. The queue
 
-51 rows, grouped by state; the 45 ids this queue has closed are in `packages/schema/verification.json#/retired`,
+52 rows, grouped by state; the 45 ids this queue has closed are in `packages/schema/verification.json#/retired`,
 not in these tables. **Docs · lines** is how many documents carry the claim and how many labelled lines the
 row answers. Full text, `why`, and every anchor are in `packages/schema/verification.json#/matrix`.
 
@@ -338,7 +338,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-56 | the permission target column is unmeasured while `ODEC-11` is open — the manifest half closed 2026-11-19, the target half waits on the decision | `tools` · tool | 1 · 1 |
 | VER-85 | which code answers a malformed request is decided per command by analogy — `HandshakeFailed` in `connector.hello`, `HealthCheckFailed` in `server.test` — and thirteen of nineteen command docs declare no `BadRequest` | `contracts` · decision (`ODEC-43`) | 1 · 1 |
 
-### `no-run` — 39
+### `no-run` — 40
 
 | Row | What is unverified | Owner · mechanism | Docs · lines |
 |---|---|---|---|
@@ -368,6 +368,7 @@ row answers. Full text, `why`, and every anchor are in `packages/schema/verifica
 | VER-39 | the pattern is proven — `phase2.ts` is the registry and the connection panel renders its controls disabled with their corpus-sourced reasons, asserted by test — but the per-screen review over every surface has not run | `ui` · assertion | 1 · 1 |
 | VER-36 | the budget half is measured — the built popup document (nexora-popup.js and its chunk imports) totals 52.2 KiB against the 64 KiB popupBundleKiB budget, asserted by test — but the parity matrix has not gated a flip: five popup rows are still pending and the paint/command/cold-worker numbers need a real browser | `ui` · assertion | 1 · 1 |
 | VER-93 | the popup keyboard map is ported and unit-tested — named actions, digit slots, motions, the modal overlay — and the parity row flipped done with this row as its check, but no real browser has driven the map | `ui` · assertion | 1 · 1 |
+| VER-97 | the profile facts travel as data — `popup/shell.ts` reads every legacy profile's type and colour in storage order with the quick-switch ranking verbatim, and the popup renders that order without sorting — but no real install's ordering has been rendered | `ui` · assertion | 1 · 1 |
 | VER-94 | the auto-resize is code — `popup/resize.ts` posts the measured height to the wrapper and skips a top-frame document — but no real iframe wrapper has resized it | `ui` · assertion | 1 · 1 |
 | VER-95 | the two whole-document states render in the popup document — code in `popup/documentStates.ts` — but no real permission denial has been shown | `ui` · assertion | 1 · 1 |
 | VER-96 | the RPC ladder is ported verbatim — constants, formulas and the exact-string branch unit-driven on a fake schedule — but no real sleeping worker has been ridden | `ui` · assertion | 1 · 1 |
@@ -445,7 +446,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 | Promised assertions are still owed | "every row that promises an assertion promises one this run does not yet make, so a closed row is deleted rather than re-labelled" | GREEN |
 | The COMP debts are queued | "the four compatibility promises that owe a browser measurement are queued as the measurement they owe" | GREEN |
 | The distributions read aloud | "the state distribution doc 39 reads aloud is what the data says" · "the owner distribution doc 39 reads aloud is what the data says" · "the closing-mechanism distribution doc 39 reads aloud is what the data says" | GREEN |
-| Rows `VER-01`…`VER-92` beyond the contract layer — 51 live, 45 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO - deferred to Phase 2, **which is the entire contents of this document** |
+| Rows `VER-01`…`VER-92` beyond the contract layer — 52 live, 45 retired | the tools, CI steps, Go tests and live runs named in each row's `closesBy` | Verified: NO - deferred to Phase 2, **which is the entire contents of this document** |
 
 ---
 
@@ -471,7 +472,7 @@ whenever a rule is added above it, and `docs/README.md` forbids the alternative.
 2. A row is closed by its artefact, and closing deletes the row in the same commit.
 3. Nothing in this document or its data asserts that a check ran. `no-run` is a state, not a result.
 4. The live matrix owns the live rows; this document owns what the rest of the corpus owes them.
-5. The count `148` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
+5. The count `149` is an output of the harness, not a contract: it grows when a document gains a label and shrinks
    when a row is honestly closed. Nothing outside `packages/schema/verification.json#/marker/counted` may depend on it.
 6. This document's §11 table is checked by an assertion whose label is `"every mechanism doc 39 names is a check
    this run actually makes"` — it lives outside the table so it cannot certify itself.
@@ -799,7 +800,7 @@ real browser's to yield. The distribution moves `no-code` 8 → 7, `no-run` 34 �
 
 **Open items.**
 
-1. 6 rows promise a named assertion. 14 of them can only be written once the code they test exists; `VER-20`
+1. 7 rows promise a named assertion. 14 of them can only be written once the code they test exists; `VER-20`
    and `VER-71` promise an assertion over a contract already on disk.
    fixture file. Two more (`VER-56`, `VER-58`) promise a guard under `tools/` over files already on disk —
    `VER-01` was the sixth of that older list and `VER-04`, `VER-05`, `VER-07` its seventh, eighth and ninth, and all

@@ -25,6 +25,8 @@
     profiles: legacyProfiles.map((name, index) => ({
       displayName: name,
       plane: 'legacy' as const,
+      profileType: undefined as PopupProfile['profileType'],
+      color: undefined as PopupProfile['color'],
       selected: index === 0,
     })),
     applied: undefined as PopupSnapshot['applied'],
@@ -43,6 +45,14 @@
     degraded: 'Работает с ограничениями',
     down: 'Connector недоступен',
   };
+  const ICON_GLYPH: Record<string, string> = {
+    FixedProfile: '●',
+    PacProfile: '▲',
+    RuleListProfile: '◈',
+    SwitchProfile: '◆',
+    legacy: '◇',
+  };
+
   const phaseLabels: Record<PopupSnapshot['phase'], string> = {
     disconnected: 'Отключено',
     connecting: 'Подключение…',
@@ -160,7 +170,7 @@
           onclick={() => select(profile)}
         >
           <span class="slot">{index + 1}</span>
-          <span class="icon icon-{profile.plane}" aria-hidden="true">{profile.plane === 'nexora' ? '◆' : '◇'}</span>
+          <span class="icon icon-{profile.profileType ?? 'legacy'}" style={profile.color ? 'outline-color: ' + profile.color : ''} aria-hidden="true">{ICON_GLYPH[profile.profileType ?? 'FixedProfile']}</span>
           {profile.displayName}
           {#if profile.plane === 'legacy'}<span class="plane">legacy</span>{/if}
         </button>
@@ -210,6 +220,10 @@
   .help li { margin: 6px 0; }
   .whole-document { padding: 12px; }
   .whole-document h1 { margin: 0 0 8px; font-size: 15px; }
-  .icon-nexora { color: var(--cyan, #79d2de); }
+  .icon { color: #829bb1; }
+  .icon-FixedProfile { color: #79d2de; }
+  .icon-PacProfile { color: #e0b25a; }
+  .icon-RuleListProfile { color: #d76a5c; }
+  .icon-SwitchProfile { color: #59c98f; }
   .icon-legacy { color: #829bb1; }
 </style>

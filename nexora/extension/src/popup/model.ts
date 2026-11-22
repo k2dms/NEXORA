@@ -6,6 +6,9 @@
 export interface PopupProfile {
   /** The profile's own display name; the legacy list orders by the user's ordering. */
   displayName: string;
+  /** The legacy profile's own type and colour, the two facts the legacy decoration drew icons with. */
+  profileType?: 'FixedProfile' | 'PacProfile' | 'RuleListProfile' | 'SwitchProfile';
+  color?: string;
   /** NEXORA profile id, present only when the legacy profile has a migrated counterpart. */
   nexoraId?: string;
   /** The source of truth this row is read from: legacy (the legacy engine keeps serving, ADR-0013) or nexora. */

@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 148
+    "counted": 149
   },
   "states": {
     "values": [
@@ -1533,6 +1533,23 @@
         }
       ],
       "why": "The behaviour is code and unit-driven on a fake schedule or a storage double; what no test can do is put the real browser surface — the wrapper, the permission denial, the sleeping worker — in front of it, which is the half this row keeps no-run."
+    },
+    {
+      "id": "VER-97",
+      "subject": "the profile facts travel as data — popup/shell.ts reads every legacy profile's type and colour in storage order with the quick-switch ranking verbatim, and the popup renders that order without sorting — but no real install's ordering has been rendered",
+      "state": "no-run",
+      "owner": "ui",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the popup shell suite (nexora/extension/src/popup/shell.test.ts, green in CI)"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "`Verified: NO` for a real install's ordering (`VER-97`)"
+        }
+      ],
+      "why": "The order a user made is intent data and survives the cut-over unchanged (ADR-0013): the popup renders the storage order and sorts nothing, and the two facts the legacy decoration drew icons with (the profile type and the colour) travel as data. What no test can do is render a real install's ordering, which is the half this row keeps no-run."
     }
   ]
 }
