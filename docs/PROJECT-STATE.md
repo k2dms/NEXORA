@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.148; older scope and inventory paragraphs
+continuation is §4.149; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6224,6 +6224,24 @@ waits for a real browser driving the whole behaviour.
 **Gates.** All eight green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried 19af7e4 (the apply half is code); `nexora/master` moved bc3c313 → 19af7e4.
+### 4.149 The sixth parity flip — apply, dirty and discard is one model (2026-11-22)
+
+**The model.** formDirty.ts compares the form field-by-field against the applied server's own projection
+(the port numerically, the credential through its userIdRef, the REALITY facts through their reality block),
+the connection panel renders the dirty fact beside the applied profile — «Есть несохранённые правки.» with
+the applied server named — and a discard that returns the inputs to the rendered defaults. The applied state
+moves only when a view arrives: editing is not applying. The discard queries the component's own shadow
+root through a bound ref, which the UI-guard's query rule caught and corrected.
+
+**The row.** VER-98 registered (ui, assertion, no-run): the field comparison, the panel render and the
+view-gated applied state are asserted; a real editing session is the half that stays no-run. The parity
+row "apply, dirty and discard as one model" flipped done naming it — parity 6 of 18.
+
+**Corpus.** Matrix 52 → 53 rows; ui 8 → 9, assertion 7 → 8, no-run 40 → 41; marker.counted 149 → 150 (doc 37
+§8's new sentence carries the label; the partition is 98 + 26 + 25). The extension suite is 112/112, the
+build and svelte-check are green.
+
+**Gates.** All eight green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

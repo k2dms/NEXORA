@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 149
+    "counted": 150
   },
   "states": {
     "values": [
@@ -1550,6 +1550,23 @@
         }
       ],
       "why": "The order a user made is intent data and survives the cut-over unchanged (ADR-0013): the popup renders the storage order and sorts nothing, and the two facts the legacy decoration drew icons with (the profile type and the colour) travel as data. What no test can do is render a real install's ordering, which is the half this row keeps no-run."
+    },
+    {
+      "id": "VER-98",
+      "subject": "the apply-dirty-discard model is code — formDirty.ts compares the form against the applied server's projection, the panel renders the dirty fact beside the applied profile with a discard, and the applied state moves only when a view arrives — but no real editing session has run",
+      "state": "no-run",
+      "owner": "ui",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the form-dirty suite (nexora/extension/src/formDirty.test.ts, green in CI)"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "editing is not applying. `Verified: NO` for a real editing session"
+        }
+      ],
+      "why": "Editing is not applying: config.apply is a replace-class command, so a dirty buffer and an applied state must both be visible at all times. The comparison is field-by-field against the applied server's own projection and the applied state moves only when a view arrives; what no test can do is drive a real editing session in a real browser, which is the half this row keeps no-run."
     }
   ]
 }

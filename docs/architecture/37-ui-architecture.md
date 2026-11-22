@@ -365,6 +365,12 @@ order without sorting it — the order a user made is intent data and survives t
 attachment keys (`+__ruleListOf_*`) are excluded, and a colour is the profile's own fact, never a
 name-based guess — `Verified: NO` for a real install's ordering (`VER-97`).
 
+Apply, dirty and discard is one model in code: `nexora/extension/src/formDirty.ts` compares the form
+against the applied server's own projection, the connection panel renders the dirty fact beside the
+applied profile with a discard that returns the inputs to the rendered defaults, and the applied state
+moves only when a view arrives — editing is not applying. `Verified: NO` for a real editing session
+(`VER-98`).
+
 The geometry and the two whole-document states are code too: `popup/resize.ts` posts the measured height to
 the iframe wrapper and skips a document that is its own top frame (Firefox) — `Verified: NO` for a real
 wrapper resizing (`VER-94`); the permission-denial and not-controllable states render in the same document

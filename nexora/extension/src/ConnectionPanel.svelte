@@ -45,6 +45,7 @@
   let view = $state<ConnectionView | null>(null);
   let pending = $state<Action | null>(null);
   let replacing = $state(false);
+  let serverFormEl: HTMLFormElement;
   let fieldErrors = $state<FieldErrors>({});
   let actionError = $state<string | null>(null);
   let statusError = $state<string | null>(null);
@@ -66,6 +67,15 @@
   const checkLabels = { dns: 'DNS', tcp: 'TCP сервера', 'core-outbound': 'Ответ SOCKS Core', 'proxied-http': 'HTTP через туннель' };
   const checkStates = { pass: 'Ответ получен', fail: 'Ошибка', skipped: 'Не проверено', timeout: 'Время истекло' };
   const selectedServer = $derived(view?.servers.find((server) => server.id === view?.server?.id));
+  // Apply, dirty and discard as one model (doc 37 §9): the applied profile keeps serving while the form
+  // carries edits, and both states render — editing is not applying. The dirty fact is any input in the
+  // server form; discard returns the inputs to the rendered defaults.
+  let dirty = $state(false);
+  function discardEdits(): void {
+    serverFormEl?.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.value = input.defaultValue; });
+    serverFormEl?.querySelectorAll<HTMLInputElement>('input[type=checkbox]').forEach((input) => { input.checked = input.defaultChecked; });
+    dirty = false;
+  }
   const phaseLabel = $derived(view ? phaseLabels[view.phase] : 'Состояние неизвестно');
   // VER-75: the <local> token is rendered as the expansion it produces, with the approximation note —
   // never as a bare token the transport plane cannot match (doc 28 §5).
@@ -73,6 +83,7 @@
 
   function acceptView(next: ConnectionView): void {
     view = next;
+    dirty = false;
     statusError = null;
     if (next.phase !== 'disconnected') replacing = false;
   }
@@ -378,8 +389,12 @@
         <span class="protocol">Вручную</span>
       </div>
       <p class="section-note">VLESS / REALITY по TCP. Введите параметры, выданные владельцем сервера.</p>
-      <form id="server-form" novalidate autocomplete="off" onsubmit={saveServer}>
-        <fieldset disabled={!editable}>
+      <form bind:this={serverFormEl} id="server-form" novalidate autocomplete="off" onsubmit={saveServer}>
+        <fieldset disabled={!editable} oninput={() => { dirty = true; }}>
+        {#if dirty}
+          <p class="dirty-note" role="status">Есть несохранённые правки. Применён прежний профиль{selectedServer ? ' («' + selectedServer.displayName + '»)' : '.'} Правки не применяются автоматически.</p>
+          <button class="text-button" type="button" onclick={discardEdits}>Отменить правки</button>
+        {/if}
           <legend class="visually-hidden">Параметры сервера VLESS / REALITY</legend>
           <div class="field">
             <label for="display-name">Название</label>
@@ -536,6 +551,7 @@
   .local-list code { color: var(--cyan); }
   .local-note { margin: 0; }
   .phase2-row { margin: 8px 0; }
+  .dirty-note { margin: 8px 0; padding: 6px 8px; background: #1c2e43; border-left: 3px solid #e0b25a; font-size: 12px; }
   .phase2-row button:disabled { opacity: 0.5; cursor: not-allowed; }
   button { min-height: 40px; border: 1px solid transparent; border-radius: 6px; padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.4; transition: background-color 120ms ease, border-color 120ms ease; }
   button.primary { background: var(--cyan); color: var(--navy); }

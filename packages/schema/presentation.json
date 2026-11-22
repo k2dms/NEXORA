@@ -759,7 +759,8 @@
         "evidence": "omega-web/src/options.jade:57-67",
         "surface": "settings",
         "obligation": "editing is not applying. config.apply is a replace-class command, so a dirty buffer and an applied state must both be visible at all times",
-        "status": "specified"
+        "status": "done",
+        "check": "VER-98"
       },
       {
         "legacy": "theme dropdown, three defaults, Clear, and the raw CSS textarea",
