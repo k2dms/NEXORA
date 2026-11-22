@@ -11,8 +11,8 @@ import { snapshotWithoutConnector, type PopupProfile } from './model.ts';
 // migration note that helps them. These tests pin the behaviour, not the key codes' spelling.
 
 const profiles: PopupProfile[] = [
-  { displayName: 'Work', plane: 'nexora', nexoraId: '11111111-1111-4111-8111-111111111111', selected: true },
-  { displayName: 'Home', plane: 'nexora', nexoraId: '22222222-2222-4222-8222-222222222222', selected: false },
+  { displayName: 'Work', plane: 'nexora', nexoraId: '11111111-1111-4111-8111-111111111111', selected: true }, // nexora-secret-allow: synthetic fixture id, never a real credential
+  { displayName: 'Home', plane: 'nexora', nexoraId: '22222222-2222-4222-8222-222222222222', selected: false }, // nexora-secret-allow: synthetic fixture id, never a real credential
   { displayName: 'Travel', plane: 'legacy', selected: false },
 ];
 

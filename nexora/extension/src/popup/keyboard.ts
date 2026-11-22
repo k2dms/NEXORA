@@ -9,6 +9,12 @@
 import type { PopupProfile } from './model.ts';
 
 export interface KeyboardHandlers {
+  /** js-direct / js-system / js-external: the legacy builtins, selected in the browser plane. */
+  selectBuiltin(which: 'direct' | 'system' | 'external'): void;
+  /** js-addrule: add a rule for the current site in the browser plane (works with no Connector). */
+  addRule(): void;
+  /** js-temprule: the temp rule for the current site, browser-plane only. */
+  tempRule(): void;
   /** Digit slots 1–9: select the profile at that position; digits beyond the list do nothing. */
   selectBySlot(slot: number): void;
   /** js-option: navigate to the NEXORA options page. */
@@ -77,10 +83,26 @@ export function handleKey(
     case ' ':
       handlers.activateFocused();
       return state;
+    case '0':
+      handlers.selectBuiltin('direct');
+      return { ...state, announce: 'direct' };
+    case 's':
+      handlers.selectBuiltin('system');
+      return { ...state, announce: 'system' };
+    case 'e':
+      handlers.selectBuiltin('external');
+      return { ...state, announce: 'external' };
+    case 'a':
+    case '+':
+      handlers.addRule();
+      return state;
+    case 't':
+      handlers.tempRule();
+      return state;
     case 'o':
       handlers.openOptions();
       return state;
-    case 'i':
+    case 'r':
       handlers.announceSelection();
       return state;
     default:

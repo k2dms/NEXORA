@@ -7,13 +7,17 @@
 
 <script lang="ts">
   import { handleKey, tabbables, type KeyboardHandlers, type KeyboardState } from '../popup/keyboard';
+  import { autoResize } from '../popup/resize';
+  import { documentStateCopy, type DocumentState } from '../popup/documentStates';
   import type { PopupProfile, PopupSnapshot } from '../popup/model';
 
-  let { snapshot, legacyProfiles = [], unavailableReason = '' }: {
+  let { snapshot, legacyProfiles = [], unavailableReason = '', documentState = null as DocumentState | null }: {
     snapshot?: PopupSnapshot;
     legacyProfiles?: string[];
     unavailableReason?: string;
+    documentState?: DocumentState | null;
   } = $props();
+  const wholeDocument = $derived(documentState ? documentStateCopy(documentState) : null);
 
   // Invariant 1: with no Connector the popup still renders the legacy list and says why the NEXORA half
   // is unavailable — never silently absent.
@@ -55,6 +59,13 @@
     list[next]?.focus();
   }
 
+  // js-addrule / js-temprule / js-direct / js-system / js-external: browser-plane quick actions. They
+  // dispatch to the shell and keep working with no Connector — the parity row's own requirement.
+  function browserPlane(action: string, detail: Record<string, unknown> = {}): void {
+    announce = action;
+    window.dispatchEvent(new CustomEvent('nexora-popup-browser-plane', { detail: { action, ...detail } }));
+  }
+
   const handlers: KeyboardHandlers = {
     selectBySlot(slot: number) {
       const profile = view.profiles[slot - 1];
@@ -65,6 +76,15 @@
     },
     announceSelection() {
       announce = selected?.displayName ?? phaseLabel;
+    },
+    selectBuiltin(which) {
+      browserPlane('select-builtin', { which });
+    },
+    addRule() {
+      browserPlane('add-rule');
+    },
+    tempRule() {
+      browserPlane('temp-rule');
     },
     toggleHelp() {
       helpOpen = !helpOpen;
@@ -89,6 +109,10 @@
   const phaseLabel = $derived(phaseLabels[view.phase]);
 
   let rootEl: HTMLElement;
+  function autoResizeAction(node: HTMLElement): { destroy(): void } {
+    const disconnect = autoResize(node);
+    return { destroy: disconnect };
+  }
 
   function onKeydown(event: KeyboardEvent): void {
     const next = handleKey(event.key, { helpOpen, focusedIndex, announce }, view.profiles, handlers);
@@ -103,7 +127,13 @@
   }
 </script>
 
-<main bind:this={rootEl} onkeydown={onKeydown} tabindex="-1">
+<main bind:this={rootEl} onkeydown={onKeydown} tabindex="-1" use:autoResizeAction>
+  {#if wholeDocument}
+    <div class="whole-document" role="alert">
+      <h1>{wholeDocument.title}</h1>
+      <p>{wholeDocument.body}</p>
+    </div>
+  {/if}
   <header>
     <span class="health health-{view.health}" role="status" aria-label={healthLabels[view.health]}></span>
     <span class="phase">{phaseLabel}</span>
@@ -130,6 +160,7 @@
           onclick={() => select(profile)}
         >
           <span class="slot">{index + 1}</span>
+          <span class="icon icon-{profile.plane}" aria-hidden="true">{profile.plane === 'nexora' ? '◆' : '◇'}</span>
           {profile.displayName}
           {#if profile.plane === 'legacy'}<span class="plane">legacy</span>{/if}
         </button>
@@ -177,4 +208,8 @@
   .help { position: fixed; inset: 0; background: rgba(10, 20, 32, 0.92); padding: 16px; }
   .help ul { list-style: none; margin: 0; padding: 0; }
   .help li { margin: 6px 0; }
+  .whole-document { padding: 12px; }
+  .whole-document h1 { margin: 0 0 8px; font-size: 15px; }
+  .icon-nexora { color: var(--cyan, #79d2de); }
+  .icon-legacy { color: #829bb1; }
 </style>

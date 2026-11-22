@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.134; older scope and inventory paragraphs
+continuation is §4.135; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6078,6 +6078,28 @@ names the one measured number. The extension suite is 86/86 and the build is gre
 **Gates.** All eight green (the UI-guards gate included); Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried 8afefd5 (VER-36 and VER-37 narrowed with the popup island and the measured budget); `nexora/master` moved c16c1f8 → 8afefd5.
+### 4.135 The popup parity behaviours are code — ladder, browser-plane actions, whole-document states, auto-resize (2026-11-22)
+
+**The ladder.** popup/ladder.ts ports the RPC retry ladder verbatim from omega_target_web.coffee:50-77:
+maxAttempts 5, maxWorkerDownAttempts 9, the two delay formulas, and the branch on the exact string
+"Receiving end does not exist". Four tests drive it on a fake schedule — the constants match the ledger
+data, the long ladder runs to nine attempts, the short one stops at five with [100, 200, 300, 400], and a
+transmission that succeeds on a retry resolves.
+
+**The browser-plane actions.** The keyboard map gains the legacy named actions: 0/s/e select the builtins,
+a/+ and t add the rule and the temp rule for the current site — all dispatched to the shell as
+browser-plane events that keep working with no Connector, which is the parity row's own requirement.
+
+**The whole-document states and the geometry.** The two popup states (permission denial, not-controllable
+proxy) render in the same document as §4 states — a location change hides the list the user was reading,
+which is what the legacy redirects did. The auto-resize is a ResizeObserver posting the measured height to
+the iframe wrapper, skipped when the document is its own top frame (Firefox). The rows render plane icons
+and the snapshot's own ordering.
+
+**Corpus.** No parity row status moved — the popup flip needs all five popup rows done and a real browser.
+The extension suite is 90/90 and the build is green. 47 rows, marker.counted 144 stays.
+
+**Gates.** All eight green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
