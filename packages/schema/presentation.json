@@ -809,21 +809,24 @@
         "evidence": "omega-web/src/popup/js/loader.js:45",
         "surface": "popup",
         "obligation": "both become §4 states rendered in the same document, because a location change hides the list the user was trying to read",
-        "status": "specified"
+        "status": "done",
+        "check": "VER-95"
       },
       {
         "legacy": "popup auto-resize through the iframe wrapper",
         "evidence": "omega-target-chromium-extension/overlay/popup-iframe.js:7-13",
         "surface": "popup",
         "obligation": "geometry is behaviour; the cut-over keeps a resizing popup on Chromium and a directly-loaded document on Firefox",
-        "status": "pending"
+        "status": "done",
+        "check": "VER-94"
       },
       {
         "legacy": "the RPC retry ladder a UI action rides on",
         "evidence": "omega-target-chromium-extension/src/coffee/omega_target_web.coffee:50-77",
         "surface": "popup",
         "obligation": "ported verbatim, including the branch on the exact error string (§8)",
-        "status": "specified"
+        "status": "done",
+        "check": "VER-96"
       },
       {
         "legacy": "the switch-profile rule editor: source view, drag-sort, rule import, header editor",

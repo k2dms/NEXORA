@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.138; older scope and inventory paragraphs
+continuation is §4.139; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6121,6 +6121,21 @@ presentation.json row names VER-93 as its check.
 **Gates.** All eight green; the extension suite is 90/90 in CI from this push.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried 6762d23 (the first parity flip); `nexora/master` moved a572a6a → 6762d23.
+### 4.139 Three more parity flips — auto-resize, the two whole-document states, the ladder (2026-11-22)
+
+**The rows.** VER-94 (auto-resize: the measured height posted to the wrapper, Firefox top-frame skipped),
+VER-95 (the permission-denial and not-controllable states rendered in the popup document, no redirect) and
+VER-96 (the RPC ladder ported verbatim: constants, both delay formulas, the exact-string branch) are
+registered — ui, assertion, no-run — and the three parity rows flipped done naming them as checks.
+Doc 37 §8 carries the three labelled sentences the rows anchor on. Parity: 4 of 18 done, all four popup
+behaviour rows; the plain-JS popup row (profile list, temp rules) and the icons/ordering row stay pending
+until the shell snapshot and the browser-plane store land.
+
+**Corpus.** Matrix 48 → 51 rows; ui 4 → 7, assertion 3 → 6, no-run 36 → 39; marker.counted 145 → 148 (three
+labelled sentences in doc 37 §8; the partition is 97 + 26 + 25). The extension suite is 90/90, the build is
+green, and all eight gates are green.
+
+**Gates.** All eight green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

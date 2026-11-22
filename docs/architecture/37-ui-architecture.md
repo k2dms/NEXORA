@@ -359,6 +359,11 @@ or drops a binding is a parity row in §9 — flipped to `done` 2026-11-22: the 
 actions, the digit slots, the motions and the modal overlay all asserted), and its check is `VER-93` —
 `Verified: NO` for a real browser driving the map (`VER-93` owns that half).
 
+The geometry and the two whole-document states are code too: `popup/resize.ts` posts the measured height to
+the iframe wrapper and skips a document that is its own top frame (Firefox) — `Verified: NO` for a real
+wrapper resizing (`VER-94`); the permission-denial and not-controllable states render in the same document
+instead of a redirect — `Verified: NO` for a real permission denial (`VER-95`).
+
 **Cold start.** `omega-target-chromium-extension/src/coffee/omega_target_web.coffee:50-51` sets
 `maxAttempts = 5` and `maxWorkerDownAttempts = 9`; `:63-67` waits `100 * attempt` ms normally and
 `2000 * Math.pow(2, attempt - maxAttempts - 1)` once the error is "Receiving end does not exist". Summing that
@@ -366,7 +371,7 @@ ladder gives **15500 ms**, and the harness recomputes it from the CoffeeScript c
 the number ("the cold-start ladder is recomputed from the legacy constants, and the budget ceiling is that
 sum"). ADR-0016 rule 6 requires the port to be verbatim, including the worker-down branch, and
 `docs/audit/12-what-must-not-change.md` §10 lists it as inherited behaviour that must not be "simplified";
-simplification here is regression #276 in disguise.
+simplification here is regression #276 in disguise. The ladder itself is `popup/ladder.ts`: the constants, the two delay formulas and the branch on the exact string are unit-driven on a fake schedule — `Verified: NO` for a real worker wake (`VER-96`).
 
 What the ceiling means for a budget is in §9: fast is the *local* render. The ≈15 s ladder is the outer bound
 of an RPC, not a target anyone should measure a screen against.

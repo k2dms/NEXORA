@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 145
+    "counted": 148
   },
   "states": {
     "values": [
@@ -1482,6 +1482,57 @@
         }
       ],
       "why": "The keyboard map is a behaviour, not an implementation detail (presentation.json#/popup/keyboardMap): a user who switches profiles with 3 has no migration note that helps them. The map is code (nexora/extension/src/popup/keyboard.ts) and the behaviour suite asserts the named actions, the digit slots, the motions and the modal overlay; what no test can do is put a real keyboard event into a real browser popup, which is the half this row keeps no-run."
+    },
+    {
+      "id": "VER-94",
+      "subject": "the popup auto-resize posts the measured height to the iframe wrapper and skips a directly-loaded document — code in popup/resize.ts, asserted by the build and the suite — but no real wrapper has resized it",
+      "state": "no-run",
+      "owner": "ui",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the popup behaviour suite (nexora/extension/src/popup/*, green in CI)"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "the iframe wrapper and skips a document that is its own top frame (Firefox) — `Verified: NO` for a real"
+        }
+      ],
+      "why": "The behaviour is code and unit-driven on a fake schedule or a storage double; what no test can do is put the real browser surface — the wrapper, the permission denial, the sleeping worker — in front of it, which is the half this row keeps no-run."
+    },
+    {
+      "id": "VER-95",
+      "subject": "the two whole-document popup states (permission denial, not-controllable proxy) render in the same document as §4 states — code in popup/documentStates.ts — but no real permission denial has been shown in a browser",
+      "state": "no-run",
+      "owner": "ui",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the popup behaviour suite (nexora/extension/src/popup/*, green in CI)"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "instead of a redirect — `Verified: NO` for a real permission denial (`VER-95`)"
+        }
+      ],
+      "why": "The behaviour is code and unit-driven on a fake schedule or a storage double; what no test can do is put the real browser surface — the wrapper, the permission denial, the sleeping worker — in front of it, which is the half this row keeps no-run."
+    },
+    {
+      "id": "VER-96",
+      "subject": "the RPC retry ladder is ported verbatim — the constants, the two delay formulas and the branch on the exact error string are unit-driven on a fake schedule — but no real sleeping worker has been ridden through it",
+      "state": "no-run",
+      "owner": "ui",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the popup behaviour suite (nexora/extension/src/popup/*, green in CI)"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "the exact string are unit-driven on a fake schedule — `Verified: NO` for a real worker wake (`VER-96`)"
+        }
+      ],
+      "why": "The behaviour is code and unit-driven on a fake schedule or a storage double; what no test can do is put the real browser surface — the wrapper, the permission denial, the sleeping worker — in front of it, which is the half this row keeps no-run."
     }
   ]
 }
