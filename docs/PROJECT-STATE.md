@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.142; older scope and inventory paragraphs
+continuation is §4.143; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6157,6 +6157,29 @@ it — parity 5 of 18.
 **Gates.** All eight green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried f14755c (VER-97 registered, the fifth parity flip); `nexora/master` moved cf5616c → f14755c.
+### 4.143 The temp-rule decision is answered — through the legacy engine, with a measured finding (2026-11-22)
+
+**The decision (§9, answered by the user).** Temp rules of the browser plane live, in the transition, in
+the legacy engine's own path: the popup dispatches the browser-plane action, and the shell writes it the
+way the legacy background wrote it — the legacy engine stays the browser-plane truth until the cut-over
+(ADR-0013), and the behaviour stays identical to the one a user performs today.
+
+**The finding the decision surfaces.** NEXORA's background does not run the legacy apply path today: the
+shipped manifest's service worker is x-background.js (NEXORA's), the legacy assets (js/background.js,
+omega_pac.min.js) ship in the artifact but are not the registered worker, and NEXORA's proxy apply is
+fixed_servers from the runtime record. So writing a temp rule through the legacy path needs the legacy
+apply path to run in NEXORA's background — omega_pac's compile is shipped and browser-plane compiling is
+the one routing decision the browser plane is allowed to own (constraint 1, doc 28 §6) — which is the
+next feature slice, not a note in passing.
+
+**The popup half that is done.** The popup's browser-plane dispatch is real: the keyboard actions
+(a/+, t, 0, s, e) dispatch named events with the site's domain, and the shell-side handler is the only
+piece the temp-rule behaviour still owes.
+
+**Corpus.** The plain-JS popup parity row stays pending, its obligation now naming the decision. No tallies
+move; 48 rows, marker.counted 145 stays.
+
+**Gates.** n/a — a decision record. All eight gates green at HEAD.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
