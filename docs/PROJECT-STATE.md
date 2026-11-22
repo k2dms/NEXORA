@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.132; older scope and inventory paragraphs
+continuation is §4.133; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6054,6 +6054,28 @@ anchor moved with the text. 48 rows, marker.counted 145 stays (the partition is 
 **Gates.** All seven green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-20 carried c16c1f8 (VER-87's two nothing-claims answered in-repo); `nexora/master` moved 313985a → c16c1f8.
+### 4.133 The popup island and its budget — VER-36 and VER-37 narrowed (2026-11-22)
+
+**The island.** nexora/extension/src/popup + nexora-popup.html: the PopupShell custom element
+(nexora-popup) implements doc 22 §13 — quick switch over the snapshot, health dot from the two sources
+doc 37 §2 names, options tap — with the keyboard map ported as behaviour (nine digit slots, motions with
+clamping, the modal help overlay), invariant 1's no-Connector rendering with a stated reason, and
+invariant 2's entry that starts nothing on mount. Non-goals are the contract's own: no editing, no
+diagnostics, no subscription management, no secret entry.
+
+**The budget.** The built popup document (nexora-popup.js and its chunk imports) totals 52.2 KiB against
+the 64 KiB popupBundleKiB budget, asserted by popup/keyboard.test.ts — the first of the four budgets with
+a measurement. The paint, command and cold-worker numbers stay a real browser's to yield, which is why
+VER-37 stays needs-human with its subject narrowed to the three browser-yielded numbers.
+
+**Corpus.** VER-36 moves no-code → no-run (the budget half measured; the parity-gated flip stays: five
+popup parity rows are pending). VER-37 stays needs-human, narrowed to the three browser-yielded numbers.
+The distribution moves no-code 8 → 7, no-run 34 → 35; 47 rows, marker.counted 145 → 144 (ADR-0016's
+verification line says what narrowed instead of what is deferred; the partition is 93 + 26 + 25). Doc 37
+§9 names the measurement; ADR-0016's Verification section names the narrowing; doc 37 §11's budget row
+names the one measured number. The extension suite is 86/86 and the build is green with the popup island.
+
+**Gates.** All eight green (the UI-guards gate included); Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

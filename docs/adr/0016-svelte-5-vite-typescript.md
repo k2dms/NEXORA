@@ -120,6 +120,6 @@ inside that DOM competes with jQuery for the document.
 - Existing check: `npm --prefix packages/schema run verify` keeps the contract layer UI-independent --
   schemas and command documents reference no UI type, and the description-coverage rule there rejects an
   undocumented contract field, which is what makes rule 3 (derive types, do not redefine them) checkable.
-- Verified: NO -- deferred to Phase 2: the parity matrix gating cut-over; a popup startup budget assertion;
+- Narrowed 2026-11-20 (`VER-36`): the popup startup budget assertion exists — `popup/keyboard.test.ts` measures the built popup document (52.2 KiB against the 64 KiB `popupBundleKiB` budget) — and the parity matrix gates the flip as data; what stays NO is the flip itself, which needs every popup parity row done and a real browser.
   the verbatim-backoff port of rule 6; and "no Svelte root inside AngularJS DOM", for which the intended
   check is a build-time scan of `nexora/extension/src/ui/**` mount points.

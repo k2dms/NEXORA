@@ -427,7 +427,10 @@ Budgets live in this section because they are what the gate is measured against
 | `coldWorkerCeilingMs` | 15500 | the inherited ladder in §8, which is the number a hung popup was fixed at |
 
 Every budget is `Verified: NO — deferred to Phase 2`: a number with no measurement behind it is a target, and
-stating it as data is what makes the missing measurement a list item rather than a rumour.
+stating it as data is what makes the missing measurement a list item rather than a rumour. One of the four has
+its measurement now: `popupBundleKiB` is measured on the built popup document — `nexora-popup.js` and every
+class entry it imports total 52.2 KiB against the 64 KiB budget, asserted by `popup/keyboard.test.ts` — while
+the three numbers a real browser yields (paint, command, cold worker) stay unmeasured until the popup runs.
 
 ## 10. What is forbidden
 
@@ -465,7 +468,7 @@ already owns.
 | keyboard map and ladder constants | `nexora/extension` | "the keyboard map the contract inherits is in the legacy popup today", "the cold-start ladder is recomputed" |
 | parity rows are real and none is closed | `nexora/extension` | "every parity row points at a legacy file that is still in the repository", "no parity row is closed in this iteration" |
 | doc 37 names what the data declares | `nexora/extension` | "the user-interface document names every surface, state, document, placement, token and locale the data declares" |
-| every budget measured, popup startup | `nexora/extension` | none yet — `Verified: NO`, deferred to Phase 2 with a CI measurement |
+| every budget measured, popup startup | `nexora/extension` | `popupBundleKiB` is measured on the built popup document — 52.2 KiB against the 64 KiB budget, asserted by `popup/keyboard.test.ts` — and the paint, command and cold-worker numbers stay a real browser's to yield | `Verified: NO`, deferred to Phase 2 with the three browser-yielded numbers (`VER-37` narrowed with the one measurement) |
 | locale completion threshold and promotion | contributors + `packages/i18n` | `scripts/compile.mjs` measures completion against the en_US reference (the stated threshold is 90%) and emits `localeSupport.json`, whose rows state per-locale promotion work; `scripts/verify.mjs` byte-compares the committed artifacts against a fresh compile (`VER-40` retired with it) |
 | no Svelte root inside AngularJS DOM | `nexora/extension` | `tools/check-ui-guards.mjs`: the scan refuses AngularJS runtime access, jQuery and the serial loader in NEXORA UI sources, requires `nexora-*` tags and NEXORA-owned entry documents, refuses legacy stylesheet injection into a shadow root, and its self-test injects eight defects and requires all caught; wired into CI | `Verified: YES` (`VER-38` narrowed with the gate) |
 

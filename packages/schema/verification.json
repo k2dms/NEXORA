@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 145
+    "counted": 144
   },
   "states": {
     "values": [
@@ -920,7 +920,7 @@
     {
       "id": "VER-36",
       "subject": "no run shows the Svelte cut-over parity matrix gating a flip, and no popup startup budget has been measured",
-      "state": "no-code",
+      "state": "no-run",
       "owner": "ui",
       "closesBy": {
         "kind": "assertion",
@@ -928,19 +928,15 @@
       },
       "at": [
         {
-          "doc": "docs/adr/0016-svelte-5-vite-typescript.md",
-          "anchor": "- Verified: NO -- deferred to Phase 2: the parity matrix gating cut-ov"
-        },
-        {
           "doc": "docs/architecture/37-ui-architecture.md",
-          "anchor": "every budget measured, popup startup"
+          "anchor": "Every budget is `Verified: NO — deferred to Phase 2`"
         }
       ],
       "why": "ADR-0016 makes cut-over a measurement, not a date; without the matrix the popup flips on opinion."
     },
     {
       "id": "VER-37",
-      "subject": "the UI budgets table is a set of targets with no measurement behind any of them",
+      "subject": "three of the four UI budgets (paint, command, cold worker) are numbers only a real browser yields; the fourth, popupBundleKiB, is measured on the built popup document",
       "state": "needs-human",
       "owner": "external",
       "closesBy": {
@@ -950,10 +946,10 @@
       "at": [
         {
           "doc": "docs/architecture/37-ui-architecture.md",
-          "anchor": "Every budget is `Verified: NO — deferred to Phase 2`: a number with no"
+          "anchor": "the paint, command and cold-worker numbers stay a real browser's to yield"
         }
       ],
-      "why": "A budget is only a budget once something has tried to exceed it; the row is here so nobody mistakes the table for a result."
+      "why": "A budget with no measurement behind it is a target, not a fact. The bundle budget is measured in-repo now (52.2 KiB against 64 KiB, asserted by test); the other three need the popup running in a real browser, which is why the row stays needs-human."
     },
     {
       "id": "VER-39",

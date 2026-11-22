@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     outDir: 'dist/assets-build',
     rollupOptions: {
-      input: { 'nexora-options': resolve('nexora-options.html'), 'nexora-background': resolve('src/background.ts') },
+      input: { 'nexora-options': resolve('nexora-options.html'), 'nexora-popup': resolve('nexora-popup.html'), 'nexora-background': resolve('src/background.ts') },
       output: { entryFileNames: '[name].js', chunkFileNames: 'nexora-assets/[name]-[hash].js', assetFileNames: 'nexora-assets/[name]-[hash][extname]' },
     },
   },
