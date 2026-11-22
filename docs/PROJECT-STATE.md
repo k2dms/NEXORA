@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.144; older scope and inventory paragraphs
+continuation is §4.145; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6182,6 +6182,23 @@ move; 48 rows, marker.counted 145 stays.
 **Gates.** n/a — a decision record. All eight gates green at HEAD.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried the §4.143 decision entry; `nexora/master` moved 8afefd5-line → HEAD.
+### 4.145 The browser-plane store is code — the temp rules the decision placed in the legacy path (2026-11-22)
+
+**The store.** background/tempRules.ts is the browser-plane temp-rule store in the legacy _tempProfile
+shape: one HostWildcardCondition rule per domain routed to a profile, the legacy toggle semantics verbatim
+(1 forces on, -1 forces off, 0 toggles, a domain already routed elsewhere is moved), persistence in
+chrome.storage.session — temp rules are ephemeral, so they stay out of the envelope, out of sync and out of
+the key registry. Five tests drive the toggle matrix, the move, the legacy shape and the hostname refusal.
+
+**The wiring.** background.ts routes the popup's browser-plane actions (add-rule, temp-rule,
+select-builtin) from the popup document's sender: the temp-rule and add-rule actions toggle the store, the
+select-builtin action answers deferred with the §4.143 reason (the legacy builtins are the legacy apply
+path's to run). The extension suite is 101/101 and the build is green.
+
+**What stays.** The apply half — compiling the temp profile through the shipped omega_pac and applying it
+as the browser plane's PAC — is the remaining slice of the decision; the store is what that path reads.
+
+**Gates.** All eight green; Go packages ok.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
