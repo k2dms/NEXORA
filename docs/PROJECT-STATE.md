@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.141; older scope and inventory paragraphs
+continuation is §4.142; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6155,6 +6155,8 @@ it — parity 5 of 18.
 §8's new sentence carries the label; the partition is 95 + 26 + 25). The extension suite is 96/96.
 
 **Gates.** All eight green; Go packages ok.
+
+**The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried f14755c (VER-97 registered, the fifth parity flip); `nexora/master` moved cf5616c → f14755c.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
