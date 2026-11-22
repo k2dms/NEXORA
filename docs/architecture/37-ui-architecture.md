@@ -354,7 +354,10 @@ from `omega-web/src/popup/js/keyboard.js:2-28` and `omega-web/src/popup/js/keybo
 is a tree walker over `.om-nav` with a tabbable-only filter
 (`omega-web/src/popup/js/keyboard.js:34-38`, the list itself in `omega-web/src/popup/index.html:10`), which is
 the correct model for a surface whose whole content is a list of one-word targets. A NEXORA popup that renames
-or drops a binding is a parity row in §9 with status `pending`.
+or drops a binding is a parity row in §9 — flipped to `done` 2026-11-22: the NEXORA map is
+`nexora/extension/src/popup/keyboard.ts` with the behaviour unit-tested (`popup/keyboard.test.ts`, the named
+actions, the digit slots, the motions and the modal overlay all asserted), and its check is `VER-93` —
+`Verified: NO` for a real browser driving the map (`VER-93` owns that half).
 
 **Cold start.** `omega-target-chromium-extension/src/coffee/omega_target_web.coffee:50-51` sets
 `maxAttempts = 5` and `maxWorkerDownAttempts = 9`; `:63-67` waits `100 * attempt` ms normally and
@@ -395,11 +398,15 @@ gate anything, so the rows are data (`packages/schema/presentation.json#/parity/
 behaviour, the file that proves it exists, the NEXORA surface responsible for it, the obligation, and a status
 out of `pending`, `specified`, `done`.
 
+The first row flipped 2026-11-22 (the keyboard map, check `VER-93`), and the harness's discipline moved with
+it, deliberately: a row closes only when its named check is a live assertion row this queue owns.
+
 `packages/schema/presentation.json#/parity/gate`: a surface replaces a legacy behaviour only when every row
 naming it is `done`, and the popup flips last. A row cannot be closed by design work alone — `done` means
 executed, with the check named in `docs/architecture/39-verification-matrix.md`, and `docs/adr/0020-*` is the
-rule that an unexecuted row is never reported as passed. The harness asserts the discipline in this iteration
-("no parity row is closed in this iteration"), which is the difference between a plan and a claim.
+rule that an unexecuted row is never reported as passed. The harness asserts the discipline
+("a parity row closes only when its named check is a live assertion row this queue owns"), which is the
+difference between a plan and a claim.
 
 The eighteen rows cover: the seven router states and the restore-by-`lastUrl` behaviour
 (`omega-web/src/omega/app.coffee:48-75`, `omega-target-chromium-extension/src/coffee/omega_target_web.coffee:117-123`),

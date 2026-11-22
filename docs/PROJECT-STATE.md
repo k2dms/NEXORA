@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.136; older scope and inventory paragraphs
+continuation is §4.137; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6102,6 +6102,23 @@ The extension suite is 90/90 and the build is green. 47 rows, marker.counted 144
 **Gates.** All eight green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried 6e76c95 (the popup parity behaviours are code); `nexora/master` moved 8afefd5 → 6e76c95.
+### 4.137 The first parity flip — the keyboard map row closes with VER-93 as its check (2026-11-22)
+
+**The flip.** The parity row "popup keyboard map with nine digit slots and a help overlay" is the first row
+closed as done: the behaviour is code (popup/keyboard.ts, the named actions, the digit slots, the motions,
+the modal overlay) and its check is the behaviour suite. The harness discipline moved with it, deliberately:
+a row closes only when its named check is a VER id that resolves to a live assertion row this queue owns.
+The quoted sentence in doc 37 §9 is amended, and the harness check is split in two — the row shape at the
+parity table, the check's ownership after verification.json is loaded.
+
+**The row.** VER-93 registered (ui, assertion, no-run): the map is unit-tested, and a real browser driving
+it is the half that stays no-run. CI gained the extension suite step so the check is green on every push.
+
+**Corpus.** Matrix 47 → 48 rows; ui 3 → 4, assertion 2 → 3, no-run 35 → 36; marker.counted 144 → 145 (doc 37
+§8's new sentence carries the label; the partition is 94 + 26 + 25). Doc 37 §8 and §9 amended; the
+presentation.json row names VER-93 as its check.
+
+**Gates.** All eight green; the extension suite is 90/90 in CI from this push.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

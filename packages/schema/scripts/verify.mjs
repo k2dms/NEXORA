@@ -3041,10 +3041,15 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
     'every parity row points at a legacy file that is still in the repository',
     `missing: ${badRowEvidence.join(', ') || 'none'}`,
   );
+  // The first deliberate flip (2026-11-22): a row may close only when its named check is a live
+  // assertion row this queue owns — "done means executed, with the check named in
+  // docs/architecture/39-verification-matrix.md" (doc 37 §9). The assertion reads the check's id out of
+  // the row and refuses a done row whose check is absent or not a live owned row.
+  const closedWithoutCheck = rows.filter((r) => r.status === 'done' && !/^VER-[0-9]{2}$/.test(r.check ?? ''));
   check(
-    rows.every((r) => (r.obligation ?? '').length >= 30 && pres.parity.statusValues.includes(r.status) && r.status !== 'done'),
-    'no parity row is closed in this iteration, and every row states an obligation long enough to test',
-    `statuses=${[...new Set(rows.map((r) => r.status))].join(', ')} short=${rows.filter((r) => (r.obligation ?? '').length < 30).length}`,
+    rows.every((r) => (r.obligation ?? '').length >= 30 && pres.parity.statusValues.includes(r.status)) && closedWithoutCheck.length === 0,
+    'a parity row closes only when its named check is a VER id, and every row states an obligation long enough to test',
+    `statuses=${[...new Set(rows.map((r) => r.status))].join(', ')} short=${rows.filter((r) => (r.obligation ?? '').length < 30).length} unowned=${closedWithoutCheck.map((r) => r.check).join(',') || 'none'}`,
   );
   check(
     pres.parity.gate.includes('popup') && pres.parity.gate.includes('ADR-0016') && pres.parity.statusValues.length === 3,
@@ -3635,6 +3640,20 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
 
 {
   const verif = await readJson(join(PKG, 'verification.json'));
+
+  // The first deliberate flip (2026-11-22): a done parity row's check must be a live assertion row this
+  // queue owns — the "named in docs/architecture/39-verification-matrix.md" half of doc 37 §9's gate.
+  const presFlip = await readJson(join(PKG, 'presentation.json'));
+  const doneRows = presFlip.parity.rows.filter((r) => r.status === 'done');
+  const checkLines = doneRows.map((r) => r.check).join(',');
+  check(
+    doneRows.length > 0 && doneRows.every((r) => {
+      const owned = verif.matrix.find((row) => row.id === r.check);
+      return owned && owned.closesBy.kind === 'assertion';
+    }),
+    'every done parity row names a live assertion row this queue owns as its check',
+    'done=' + doneRows.length + ' checks=' + checkLines,
+  );
   const LIVE_DOC = 'docs/verification/live-matrix.md';
 
   const mdFiles = [];
@@ -3678,7 +3697,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const thinTomb = verif.retired.rows.filter((r) =>
     !/^\d{4}-\d{2}-\d{2}$/.test(r.closed ?? '') || (r.was ?? '').length < 40 || (r.artefact ?? '').length < 40).map((r) => r.id);
   check(
-    ids.length >= 47 && dupes.length === 0 && retiredDupes.length === 0 && recycled.length === 0 &&
+    ids.length >= 48 && dupes.length === 0 && retiredDupes.length === 0 && recycled.length === 0 &&
       holes.length === 0 && ascending && thinTomb.length === 0,
     'every VER id the queue ever issued is live or retired, no id is recycled, and a retired one says what it was and what closed it',
     `${ids.length} rows, ${retiredIds.length} retired, duplicates=${[...dupes, ...retiredDupes].join(',') || 'none'}, ` +
@@ -3841,15 +3860,15 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
   const count = (key, v) => verif.matrix.filter((r) => r[key] === v).length;
   const kindCount = (k) => verif.matrix.filter((r) => r.closesBy.kind === k).length;
   check(
-    count('state', 'no-code') === 7 && count('state', 'no-check') === 0 && count('state', 'no-run') === 35 &&
-      count('state', 'no-fixture') === 1 && count('state', 'needs-human') === 4 && verif.matrix.length === 47,
+    count('state', 'no-code') === 7 && count('state', 'no-check') === 0 && count('state', 'no-run') === 36 &&
+      count('state', 'no-fixture') === 1 && count('state', 'needs-human') === 4 && verif.matrix.length === 48,
     'the state distribution doc 39 reads aloud is what the data says',
     `no-code=${count('state', 'no-code')} no-check=${count('state', 'no-check')} no-run=${count('state', 'no-run')} ` +
       `no-fixture=${count('state', 'no-fixture')} needs-human=${count('state', 'needs-human')} of ${verif.matrix.length}`,
   );
   check(
     count('owner', 'connector') === 28 && count('owner', 'extension') === 9 && count('owner', 'packages') === 1 &&
-      count('owner', 'ui') === 3 && count('owner', 'contracts') === 1 && count('owner', 'tools') === 0 &&
+      count('owner', 'ui') === 4 && count('owner', 'contracts') === 1 && count('owner', 'tools') === 0 &&
       count('owner', 'ci') === 1 && count('owner', 'human') === 1 && count('owner', 'external') === 3,
     'the owner distribution doc 39 reads aloud is what the data says',
     `connector=${count('owner', 'connector')} extension=${count('owner', 'extension')} ` +
@@ -3857,7 +3876,7 @@ const XRAY_DOMAIN_STRATEGY = ['AsIs', 'IPIfNonMatch', 'IPOnDemand']; // https://
       `tools=${count('owner', 'tools')} ci=${count('owner', 'ci')} human=${count('owner', 'human')} external=${count('owner', 'external')}`,
   );
   check(
-    kindCount('live-row') === 38 && kindCount('new-live-row') === 0 && kindCount('assertion') === 2 &&
+    kindCount('live-row') === 38 && kindCount('new-live-row') === 0 && kindCount('assertion') === 3 &&
       kindCount('gate') === 1 && kindCount('tool') === 0 && kindCount('ci-step') === 1 &&
       kindCount('decision') === 1 && kindCount('external-measurement') === 4,
     'the closing-mechanism distribution doc 39 reads aloud is what the data says',

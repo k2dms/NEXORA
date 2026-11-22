@@ -142,6 +142,11 @@ jobs:
         run: |
           node tools/check-ui-guards.mjs --selftest
           node tools/check-ui-guards.mjs
+      - name: NEXORA extension suite -- the popup and connection behaviour (VER-93's check rides here)
+        working-directory: nexora/extension
+        run: |
+          npm install
+          node --test src/*.test.ts src/profiles/*.test.ts src/popup/*.test.ts
 
       # doc 31 §13's "today" column is the set of grants the two overlay manifests actually ship. Until 2026-11-19
       # only the citations were checked, so a permission added or removed was a behaviour change with no witness.

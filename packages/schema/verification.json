@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 144
+    "counted": 145
   },
   "states": {
     "values": [
@@ -1465,6 +1465,23 @@
         }
       ],
       "why": "VER-65 registered the omission -- a citation to a live row that did not exist -- and closed when LIVE-25 was written. What remains is the row itself: the two-hop redirect-to-metadata fixture and its in-budget control are unexecuted, and the guards that re-run per hop are the reason a feed cannot walk an allowed host into the cloud metadata service. The row is the queue's pointer at LIVE-25, in the same shape VER-16 and VER-21 point at theirs"
+    },
+    {
+      "id": "VER-93",
+      "subject": "the popup keyboard map is ported and unit-tested — named actions, digit slots, motions, the modal overlay — and the parity row flipped done with this row as its check, but no real browser has driven the map",
+      "state": "no-run",
+      "owner": "ui",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the popup keyboard behaviour suite (nexora/extension/src/popup/keyboard.test.ts, green in CI)"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "`Verified: NO` for a real browser driving the map (`VER-93` owns that half)"
+        }
+      ],
+      "why": "The keyboard map is a behaviour, not an implementation detail (presentation.json#/popup/keyboardMap): a user who switches profiles with 3 has no migration note that helps them. The map is code (nexora/extension/src/popup/keyboard.ts) and the behaviour suite asserts the named actions, the digit slots, the motions and the modal overlay; what no test can do is put a real keyboard event into a real browser popup, which is the half this row keeps no-run."
     }
   ]
 }

@@ -48,7 +48,10 @@
       "plane": "extension",
       "what": "the named, non-AngularJS slots in the legacy page where a NEXORA island is allowed to mount",
       "rule": "A closed list, declared by the legacy template, and nothing else. An island never mounts inside the ui-view (omega-web/src/options.jade:68) because that region is AngularJS-owned; a slot is a sibling element the router does not touch. This is the mechanism ADR-0016 rule 4 asks for and doc 20 §3 forbids violating.",
-      "slots": ["nexora-connector-status", "nexora-core-health"],
+      "slots": [
+        "nexora-connector-status",
+        "nexora-core-health"
+      ],
       "why": "Two slots, both read-only status surfaces, is the smallest set that makes the Connector visible while the legacy page is still the default. Everything else is a document, so the cut-over is per-surface and reversible."
     }
   ],
@@ -57,9 +60,29 @@
       "id": "dashboard",
       "document": "nexora-options.html",
       "purpose": "connection status, active server, routing mode, Connector status, quick actions",
-      "commands": ["connector.status", "connector.health", "core.status", "config.snapshot", "profile.validate"],
-      "events": ["core.started", "core.exited", "core.blocked", "connector.connected", "connector.disconnected", "config.applied"],
-      "states": ["loading", "unknown", "stale", "blocked", "failOpenInForce", "error"],
+      "commands": [
+        "connector.status",
+        "connector.health",
+        "core.status",
+        "config.snapshot",
+        "profile.validate"
+      ],
+      "events": [
+        "core.started",
+        "core.exited",
+        "core.blocked",
+        "connector.connected",
+        "connector.disconnected",
+        "config.applied"
+      ],
+      "states": [
+        "loading",
+        "unknown",
+        "stale",
+        "blocked",
+        "failOpenInForce",
+        "error"
+      ],
       "parityWith": "the master brief's Dashboard section; no legacy screen holds all five of its lines today, which is why this surface is new rather than ported",
       "note": "Health and applied state are read here and nowhere inferred: connector.health#/result/properties/state and core.status#/result/properties/contained are the only two sources of a status line."
     },
@@ -67,9 +90,23 @@
       "id": "servers",
       "document": "nexora-options.html",
       "purpose": "server list, search, filters, latency, favourites, groups",
-      "commands": ["server.test", "config.apply", "profile.validate", "connector.health"],
-      "events": ["server.health.changed"],
-      "states": ["loading", "empty", "unknown", "degradedSecret", "dryRunPlan", "error"],
+      "commands": [
+        "server.test",
+        "config.apply",
+        "profile.validate",
+        "connector.health"
+      ],
+      "events": [
+        "server.health.changed"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "unknown",
+        "degradedSecret",
+        "dryRunPlan",
+        "error"
+      ],
       "parityWith": "the FixedProfile editor (omega-web/src/omega/controllers/fixed_profile.coffee:1) for the field-by-field half; list, search, latency and groups are new",
       "note": "A latency number is a measurement of one probe (server.test#/result/properties/layers), never a claim about the tunnel. The tick a user reads as 'working' is only licensed by server.test#/result/properties/matchesExpectedEgress (docs/verification/live-matrix.md LIVE-04)."
     },
@@ -77,9 +114,23 @@
       "id": "subscriptions",
       "document": "nexora-options.html",
       "purpose": "subscription list, refresh, status, profile count, last update",
-      "commands": ["subscription.refresh", "profile.import", "config.apply", "connector.health"],
-      "events": ["subscription.updated", "subscription.failed"],
-      "states": ["loading", "empty", "stale", "partialImport", "error"],
+      "commands": [
+        "subscription.refresh",
+        "profile.import",
+        "config.apply",
+        "connector.health"
+      ],
+      "events": [
+        "subscription.updated",
+        "subscription.failed"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "stale",
+        "partialImport",
+        "error"
+      ],
       "parityWith": "the RuleList profile and its header editor (omega-web/src/omega/controllers/switch_profile.coffee:1), and the sync-backend form (omega-web/src/omega/controllers/io.coffee:1)",
       "note": "subscription.refresh#/result/properties/{refreshed,unchanged,failed,skipped} is the whole status line; a refresh that failed shows the previous success timestamp, because keeping the last good version is not a UI behaviour but a Connector one (docs/architecture/29-subscriptions-and-servers.md §9)."
     },
@@ -87,9 +138,22 @@
       "id": "routing",
       "document": "nexora-options.html",
       "purpose": "routing mode, rules, domains, IP/CIDR, exceptions",
-      "commands": ["profile.validate", "config.apply", "diagnostics.get"],
-      "events": ["routing.decision"],
-      "states": ["loading", "empty", "localExpanded", "unrepresentable", "dryRunPlan", "error"],
+      "commands": [
+        "profile.validate",
+        "config.apply",
+        "diagnostics.get"
+      ],
+      "events": [
+        "routing.decision"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "localExpanded",
+        "unrepresentable",
+        "dryRunPlan",
+        "error"
+      ],
       "parityWith": "the switch-profile rule editor (omega-web/src/omega/controllers/switch_profile.coffee:1) including drag-sort and rule import",
       "note": "profile.validate#/result/properties/inboundPlan is what makes the 64-inbound ceiling visible before an apply rather than after (docs/architecture/29-subscriptions-and-servers.md §8), and unrepresentable is a notice rather than a failure (docs/architecture/27-config-compilation-pipeline.md §7 rule 3)."
     },
@@ -97,9 +161,27 @@
       "id": "settings",
       "document": "nexora-options.html",
       "purpose": "Core, Connector, browser behaviour, appearance, updates, import and export",
-      "commands": ["core.start", "core.stop", "core.restart", "config.apply", "connector.version", "keystore.purge", "profile.import", "profile.remove"],
-      "events": ["core.restart", "integrity.mismatch"],
-      "states": ["loading", "disabledPhase2", "dryRunPlan", "integrityRejected", "error"],
+      "commands": [
+        "core.start",
+        "core.stop",
+        "core.restart",
+        "config.apply",
+        "connector.version",
+        "keystore.purge",
+        "profile.import",
+        "profile.remove"
+      ],
+      "events": [
+        "core.restart",
+        "integrity.mismatch"
+      ],
+      "states": [
+        "loading",
+        "disabledPhase2",
+        "dryRunPlan",
+        "integrityRejected",
+        "error"
+      ],
       "parityWith": "ui and general, the two controller-less states (omega-web/src/omega/app.coffee:52 and omega-web/src/omega/app.coffee:56) plus the theme screen (omega-web/src/partials/theme.jade:1)",
       "note": "installChannel, logLevel, retentionDays, the routing policy and the block range are all settings-shaped, so they live here and are read from connector-settings.schema.json and failure-policy.schema.json -- no screen re-declares their bounds."
     },
@@ -107,9 +189,21 @@
       "id": "diagnostics",
       "document": "nexora-options.html",
       "purpose": "Connector health, Core health, errors, logs, the exportable report",
-      "commands": ["diagnostics.get", "connector.health", "core.status", "config.snapshot"],
-      "events": ["config.drift", "keystore.unavailable"],
-      "states": ["loading", "truncatedExport", "error"],
+      "commands": [
+        "diagnostics.get",
+        "connector.health",
+        "core.status",
+        "config.snapshot"
+      ],
+      "events": [
+        "config.drift",
+        "keystore.unavailable"
+      ],
+      "states": [
+        "loading",
+        "truncatedExport",
+        "error"
+      ],
       "parityWith": "the About page's log and debug section (omega-web/src/omega/controllers/about.coffee:1)",
       "note": "This surface is the reason doc 36 §11 exists and the reason its export is a user action: the legacy About page shipped localStorage['log'] whole (omega-web/src/omega/app.coffee:90-93), so the NEXORA panel renders only what diagnostics.get returned and masks again before the bytes leave."
     },
@@ -117,9 +211,18 @@
       "id": "migration-review",
       "document": "nexora-options.html",
       "purpose": "what a migration will change, what it stripped, and what has to be restored",
-      "commands": ["profile.import", "config.apply", "diagnostics.get"],
+      "commands": [
+        "profile.import",
+        "config.apply",
+        "diagnostics.get"
+      ],
       "events": [],
-      "states": ["loading", "restoreRequired", "dryRunPlan", "error"],
+      "states": [
+        "loading",
+        "restoreRequired",
+        "dryRunPlan",
+        "error"
+      ],
       "parityWith": "nothing -- the legacy upgrade path is silent by design, which is docs/architecture/35-schema-versioning-migration.md §3's measured erase chain rather than a screen",
       "note": "The wording of 'restore required' and of the dryRun plan screen is the open item docs/architecture/35-schema-versioning-migration.md §17 and packages/schema/migrations.json#/openDecisions/1 hand here; §4 makes them states with rules, so the sentence is the only part still open."
     },
@@ -127,9 +230,18 @@
       "id": "secret-entry",
       "document": "nexora-options.html",
       "purpose": "the one place a secret value is typed, and the one place a keystore failure is named",
-      "commands": ["profile.import", "keystore.purge"],
-      "events": ["keystore.unavailable"],
-      "states": ["degradedSecret", "keystoreUnavailable", "error"],
+      "commands": [
+        "profile.import",
+        "keystore.purge"
+      ],
+      "events": [
+        "keystore.unavailable"
+      ],
+      "states": [
+        "degradedSecret",
+        "keystoreUnavailable",
+        "error"
+      ],
       "parityWith": "the proxy-auth fields (omega-web/src/omega/controllers/fixed_profile.coffee:1) and the request-headers editors (omega-web/src/omega/controllers/pac_profile.coffee:53-57)",
       "note": "profile.import#/args/properties/credentials is the only field in the whole command surface that may receive a value (docs/architecture/32-secrets-keystore-masking.md §6), so this surface is the only one that can write a secret, and a written value never returns to it."
     },
@@ -137,9 +249,28 @@
       "id": "popup",
       "document": "nexora-popup.html",
       "purpose": "current profile, quick switch, health dot, blocked state, one tap to options",
-      "commands": ["config.apply", "connector.status", "core.status", "config.snapshot"],
-      "events": ["core.blocked", "connector.connected", "connector.disconnected", "server.health.changed"],
-      "states": ["loading", "unknown", "stale", "blocked", "failOpenInForce", "busy", "disabledPhase2", "error"],
+      "commands": [
+        "config.apply",
+        "connector.status",
+        "core.status",
+        "config.snapshot"
+      ],
+      "events": [
+        "core.blocked",
+        "connector.connected",
+        "connector.disconnected",
+        "server.health.changed"
+      ],
+      "states": [
+        "loading",
+        "unknown",
+        "stale",
+        "blocked",
+        "failOpenInForce",
+        "busy",
+        "disabledPhase2",
+        "error"
+      ],
       "parityWith": "the plain-JS popup: profile list, temp rules, add-rule, request info, external profile, keyboard help (omega-web/src/popup/js/profiles.js:1, omega-web/src/popup/js/keyboard.js:1)",
       "note": "No command with a side effect runs on mount (docs/architecture/22-component-contracts.md §13 invariant 2, docs/verification/live-matrix.md LIVE-17), and a selection is converge-to-desired-state, so a double tap is one switch — a switch is a config.apply whose compiled hash is unchanged, answered without a restart (docs/PROJECT-STATE.md §9.5)."
     },
@@ -147,9 +278,19 @@
       "id": "connector-status",
       "document": "legacy-mount",
       "purpose": "one line in the legacy sidebar: is there a Connector, and is this build able to talk to it",
-      "commands": ["connector.status", "connector.version"],
-      "events": ["connector.connected", "connector.disconnected"],
-      "states": ["loading", "unknown", "stale"],
+      "commands": [
+        "connector.status",
+        "connector.version"
+      ],
+      "events": [
+        "connector.connected",
+        "connector.disconnected"
+      ],
+      "states": [
+        "loading",
+        "unknown",
+        "stale"
+      ],
       "parityWith": "nothing -- the legacy page has no idea that a second process exists, which is the gap this island closes while the legacy page is still the default",
       "note": "Read-only by construction: the two session commands are the shell's (sessionCommandsRule), so the island shows a status it cannot influence and offers no control at all."
     },
@@ -157,14 +298,29 @@
       "id": "core-health",
       "document": "legacy-mount",
       "purpose": "one line for Core: running, exited, or blocked, with the port a block is using",
-      "commands": ["core.status", "connector.health"],
-      "events": ["core.started", "core.exited", "core.blocked"],
-      "states": ["loading", "unknown", "blocked", "failOpenInForce"],
+      "commands": [
+        "core.status",
+        "connector.health"
+      ],
+      "events": [
+        "core.started",
+        "core.exited",
+        "core.blocked"
+      ],
+      "states": [
+        "loading",
+        "unknown",
+        "blocked",
+        "failOpenInForce"
+      ],
       "parityWith": "the experimental badge in the legacy header (omega-web/src/options.jade:20-21), which is the only status line the shipped page has",
       "note": "core.status#/result/properties/lastExit and the in-force port from docs/architecture/36-observability.md §8 are the only two facts this island may print, and §4's blocked state forbids printing them as a badge alone."
     }
   ],
-  "sessionCommands": ["connector.hello", "connector.events.subscribe"],
+  "sessionCommands": [
+    "connector.hello",
+    "connector.events.subscribe"
+  ],
   "sessionCommandsRule": "The two commands no surface names belong to ExtensionShell: the session is opened once and the subscription is held once, because UI to shell to one ConnectorClient is doc 22 §12 invariant 2. A surface that could subscribe would own a second reader of the same pipe and a second place to leak a payload.",
   "states": [
     {
@@ -313,15 +469,28 @@
     }
   ],
   "errorPlacements": {
-    "values": ["banner", "status", "error", "diagnostics", "none"],
+    "values": [
+      "banner",
+      "status",
+      "error",
+      "diagnostics",
+      "none"
+    ],
     "rule": "packages/schema/protocol/error-taxonomy.json gives every code a `surface` naming where it is shown, and that field's vocabulary is exactly this list: a `banner` is a page-level condition the user did not ask about (the Core exited, an apply failed, Internal), `status` is a line on Dashboard or the popup about a state of the tunnel, `error` is the inline answer to the control the user just used, `diagnostics` is a code the user only sees when they open the panel or export a log, and `none` means the answer belongs to the refused action alone and gets no persistent place. A code whose placement is outside this list has nowhere to appear, which is the same class of defect as an event no surface renders.",
     "why": "The taxonomy was written before the screen existed, so it recorded a placement nobody had declared. Leaving it undeclared means a new error code can be added with a placement the UI has never implemented, and the failure mode of an unrendered error in a proxy tool is silence about traffic going somewhere the user did not choose."
   },
   "controls": {
     "rule": "Every control declares the command it issues. A control whose command is absent, whose backend is Phase 2, or whose answer cannot be had because there is no session renders disabled with a reason string in the language of §4's disabledPhase2, never enabled and never silent.",
-    "confirmationRequired": ["core.restart", "keystore.purge"],
+    "confirmationRequired": [
+      "core.restart",
+      "keystore.purge"
+    ],
     "confirmationRule": "Derived from the command documents, not remembered: exactly the commands that declare an argument named confirm or confirmToken. A control wired to one renders a dialog whose copy names the consequence (a restart drops tunnels; a purge deletes credential material) and sends the token the command validates (docs/architecture/22-component-contracts.md §12 invariant 5).",
-    "dryRunAvailable": ["config.apply", "profile.remove", "keystore.purge"],
+    "dryRunAvailable": [
+      "config.apply",
+      "profile.remove",
+      "keystore.purge"
+    ],
     "dryRunRule": "Derived the same way: exactly the commands that declare a dryRun argument. Where the command can answer before acting, the UI must show the answer before it lets the user ask for the act; elsewhere the confirmation dialog is the only gate and its copy carries the consequence.",
     "notShipable": [
       {
@@ -363,15 +532,52 @@
     "destructiveCopyRule": "A confirmation never re-uses the word 'delete' for a hold. docs/architecture/35-schema-versioning-migration.md §10 holds an envelope read-only and writes nothing; the copy must not report that as a loss, because the user's next action after 'deleted' and after 'held' should not be the same one."
   },
   "themes": {
-    "paletteKeys": ["base00", "base01", "base02", "base03", "base04", "base05", "base06", "base07", "base08", "base09", "base0A", "base0B", "base0C", "base0D", "base0E", "base0F"],
-    "semanticTokens": ["defaultBackground", "lighterBackground", "selectionBackground", "highlightBackground", "darkForeground", "defaultForeground", "lightForeground", "lightBackground", "primaryColor", "secondaryColor", "positiveColor", "negativeColor", "infoColor", "warningColor", "whiteColor"],
+    "paletteKeys": [
+      "base00",
+      "base01",
+      "base02",
+      "base03",
+      "base04",
+      "base05",
+      "base06",
+      "base07",
+      "base08",
+      "base09",
+      "base0A",
+      "base0B",
+      "base0C",
+      "base0D",
+      "base0E",
+      "base0F"
+    ],
+    "semanticTokens": [
+      "defaultBackground",
+      "lighterBackground",
+      "selectionBackground",
+      "highlightBackground",
+      "darkForeground",
+      "defaultForeground",
+      "lightForeground",
+      "lightBackground",
+      "primaryColor",
+      "secondaryColor",
+      "positiveColor",
+      "negativeColor",
+      "infoColor",
+      "warningColor",
+      "whiteColor"
+    ],
     "catalogue": {
       "base16Source": "omega-web/lib/themes/themes.json",
       "base16Count": 164,
       "colorsPerTheme": 16,
       "darkFlagged": 113,
       "stylesheetPath": "the dropdown value is a key, and the key becomes a path only in the controller (omega-web/src/omega/controllers/master.coffee:331 prefixes 'others/base16-'), so a token pipeline reading themes.json never needs the file layout",
-      "defaults": ["default-light", "default-dark", "default-auto"],
+      "defaults": [
+        "default-light",
+        "default-dark",
+        "default-auto"
+      ],
       "defaultsSameAsPalettes": false,
       "defaultNames": "default-light and default-dark are dropdown rows (omega-web/lib/themes/others/base16-default-light.css) and buttons (omega-web/lib/themes/default-light.css) at the same time, and the two files for one name differ byte for byte, so a button is not a shortcut to the row of the same name -- the NEXORA picker keeps four named themes, not two named twice",
       "clear": "an empty selection, written by the same control today (omega-web/src/partials/theme.jade:18-21)",
@@ -382,13 +588,27 @@
       "writes": "the 31 custom properties in paletteKeys plus semanticTokens onto the host element of each surface",
       "inherits": "shadow roots receive custom properties by inheritance, which is why a token pipeline crosses the boundary ADR-0016 rule 5 cannot inject stylesheets across",
       "auto": "default-auto's mechanism is @media (prefers-color-scheme: dark) (omega-web/lib/themes/default-auto.css:19), so Auto is a parity obligation rather than a new feature",
-      "mustNot": ["fetch one of the 164 CSS files to paint a NEXORA surface", "copy a theme's CSS into packages/ui", "inject a legacy stylesheet into a shadow root", "depend on legacy CSS reaching into one"]
+      "mustNot": [
+        "fetch one of the 164 CSS files to paint a NEXORA surface",
+        "copy a theme's CSS into packages/ui",
+        "inject a legacy stylesheet into a shadow root",
+        "depend on legacy CSS reaching into one"
+      ]
     },
     "measuredDefects": {
       "description": "The catalogue is data, and the data has two bad rows. A token pipeline that reads themes.json instead of CSS inherits them, so they are recorded here and trimmed by the reader rather than discovered at runtime.",
       "whitespaceInHex": [
-        { "theme": "china-red-screen", "fields": 16, "form": "leading space before the hash on every value" },
-        { "theme": "tomorrow-night-blue", "fields": 1, "which": "base08", "form": "trailing space after the hash sextet" }
+        {
+          "theme": "china-red-screen",
+          "fields": 16,
+          "form": "leading space before the hash on every value"
+        },
+        {
+          "theme": "tomorrow-night-blue",
+          "fields": 1,
+          "which": "base08",
+          "form": "trailing space after the hash sextet"
+        }
       ],
       "totalValues": 17,
       "namesDifferFromKey": 9,
@@ -401,7 +621,15 @@
     "sourceOfTruth": "omega-locales/en_US/LC_MESSAGES/omega-web.po",
     "enMsgids": 382,
     "localeSources": 27,
-    "shippedTargets": ["en", "zh", "cs", "fa", "ru", "zh_CN", "zh_TW"],
+    "shippedTargets": [
+      "en",
+      "zh",
+      "cs",
+      "fa",
+      "ru",
+      "zh_CN",
+      "zh_TW"
+    ],
     "shippedTargetCount": 7,
     "distinctPoInputs": 6,
     "duplicateTarget": "zh and zh_CN compile from the same .po (omega-target-chromium-extension/grunt/po2crx.coffee:6-7 and :14-15)",
@@ -409,14 +637,26 @@
     "unsuppliedBasis": "the twenty-one locale directories that no shipped target reads -- 27 sources minus the 6 distinct .po inputs. ADR-0017's prose says 20 because it counts 27 sources against 7 targets, and the difference is zh_CN, which supplies two targets. The contributor queue is measured in directories, because a directory is what a translator maintains.",
     "lookup": {
       "mechanism": "a catalog compiled at build time from the same .po files, read locally and synchronously (ADR-0017 rules 2 and 3)",
-      "mustNot": ["call the background for a label", "await a message round trip before first paint", "fork into a JS i18n library with its own catalog"],
+      "mustNot": [
+        "call the background for a label",
+        "await a message round trip before first paint",
+        "fork into a JS i18n library with its own catalog"
+      ],
       "why": "The legacy UI's tr filter is a call to the background (omega-web/src/omega/filters.coffee:24, resolving to omega-target-chromium-extension/src/coffee/omega_target_web.coffee:146), so every label in the shipped popup is an RPC subject to the worker wake-up race the ladder in §8 exists to survive."
     },
     "literalDebt": {
       "trUsesInTemplates": 307,
       "hardcodedAngularLiterals": 22,
       "measuredOver": "omega-web/src/**/*.jade",
-      "namedExamples": ["omega-web/src/partials/theme.jade:2", "omega-web/src/partials/theme.jade:9", "omega-web/src/partials/theme.jade:13", "omega-web/src/partials/theme.jade:17", "omega-web/src/partials/theme.jade:21", "omega-web/src/partials/theme.jade:26", "omega-web/src/partials/io.jade:59"],
+      "namedExamples": [
+        "omega-web/src/partials/theme.jade:2",
+        "omega-web/src/partials/theme.jade:9",
+        "omega-web/src/partials/theme.jade:13",
+        "omega-web/src/partials/theme.jade:17",
+        "omega-web/src/partials/theme.jade:21",
+        "omega-web/src/partials/theme.jade:26",
+        "omega-web/src/partials/io.jade:59"
+      ],
       "rule": "Every label a port touches becomes a msgid in the .po tree. A {{'…'}} without tr is invisible to translators today, so a ported screen that keeps one has made the gap worse in a place nobody measures."
     },
     "placeholders": {
@@ -432,9 +672,21 @@
   "popup": {
     "keyboardMap": {
       "legacySource": "omega-web/src/popup/js/keyboard.js:2-28",
-      "namedActions": ["js-direct", "js-system", "js-external", "js-addrule", "js-temprule", "js-option", "js-reqinfo"],
+      "namedActions": [
+        "js-direct",
+        "js-system",
+        "js-external",
+        "js-addrule",
+        "js-temprule",
+        "js-option",
+        "js-reqinfo"
+      ],
       "digitSlots": 9,
-      "motions": ["up/down", "left/right", "h/j/k/l"],
+      "motions": [
+        "up/down",
+        "left/right",
+        "h/j/k/l"
+      ],
       "helpKey": "slash and question mark open the help overlay (omega-web/src/popup/js/keyboard_help.js:1)",
       "rule": "The map is a behaviour, not an implementation detail: a user who switches profiles with 3 has no migration note that helps them. A NEXORA popup that renames or drops a binding is a parity row in §9 with status pending.",
       "focusModel": "a tree walker over the nav list with a tabbable-only filter (omega-web/src/popup/js/keyboard.js:34-38) is the inherited focus contract; the replacement keeps a walker and an announced selection."
@@ -451,7 +703,10 @@
       "why": "The ≈15 s ceiling is what 'the popup opens fast' actually means on MV3: fast is the local render (§9's budgets), and the ladder is the tolerated wait for a cold worker, and conflating them is how a budget gets set at a number nothing can hit."
     },
     "statesPages": {
-      "legacy": ["omega-web/src/popup/grant_permissions.html", "omega-web/src/popup/proxy_not_controllable.html"],
+      "legacy": [
+        "omega-web/src/popup/grant_permissions.html",
+        "omega-web/src/popup/proxy_not_controllable.html"
+      ],
       "rule": "Both are whole documents reached by a location change before any state is read (omega-web/src/popup/js/loader.js:45). NEXORA renders them as §4 states instead of as pages, because a separate document cannot show the profile list it is refusing to render.",
       "why": "A permission or a not-controllable proxy is a fact about the browser, not about the Connector, so it must render while the Connector is absent -- which is doc 22 §13 invariant 1."
     },
@@ -459,15 +714,31 @@
   },
   "budgets": {
     "status": "targets, not correctness assertions; docs/verification/live-matrix.md excludes them from the LIVE rows for that reason",
-    "popupLocalPaintMs": { "value": 100, "basis": "the catalog is local (§7) and the shell snapshot is one read, so first paint needs no round trip and a paint slower than a frame budget is a rendering problem" },
-    "popupOptionsCommandMs": { "value": 2500, "basis": "half the read-class deadline docs/architecture/25-native-messaging-protocol.md §9 gives a read, so a popup that waits on a command is visibly waiting" },
-    "popupBundleKiB": { "value": 64, "basis": "ADR-0016's consequence that popup startup budgets become reviewable numbers; measured on the built document, not on the source" },
-    "coldWorkerCeilingMs": { "value": 15500, "basis": "the inherited ladder in §8, which is the number the popup hang was fixed at" },
+    "popupLocalPaintMs": {
+      "value": 100,
+      "basis": "the catalog is local (§7) and the shell snapshot is one read, so first paint needs no round trip and a paint slower than a frame budget is a rendering problem"
+    },
+    "popupOptionsCommandMs": {
+      "value": 2500,
+      "basis": "half the read-class deadline docs/architecture/25-native-messaging-protocol.md §9 gives a read, so a popup that waits on a command is visibly waiting"
+    },
+    "popupBundleKiB": {
+      "value": 64,
+      "basis": "ADR-0016's consequence that popup startup budgets become reviewable numbers; measured on the built document, not on the source"
+    },
+    "coldWorkerCeilingMs": {
+      "value": 15500,
+      "basis": "the inherited ladder in §8, which is the number the popup hang was fixed at"
+    },
     "rule": "A budget is a reviewable number attached to a surface, never a promise in UI copy, and every one of them is Verified: NO until a built document exists to measure."
   },
   "parity": {
     "gate": "A NEXORA surface replaces a legacy behaviour only when every parity row that names it is done, and the popup flips last (ADR-0016 rule 8). Rows are obligations taken from code, so a row cannot be closed by design work alone: done means executed, with the check named in docs/architecture/39-verification-matrix.md.",
-    "statusValues": ["pending", "specified", "done"],
+    "statusValues": [
+      "pending",
+      "specified",
+      "done"
+    ],
     "rows": [
       {
         "legacy": "seven registered router states, two of them controller-less",
@@ -530,7 +801,8 @@
         "evidence": "omega-web/src/popup/js/keyboard.js:2-28",
         "surface": "popup",
         "obligation": "every named action and binding stays addressable (§8)",
-        "status": "pending"
+        "status": "done",
+        "check": "VER-93"
       },
       {
         "legacy": "the two whole-document popup states: permission and not-controllable",
@@ -598,21 +870,81 @@
     ]
   },
   "forbidden": [
-    { "rule": "a control that is enabled while its backend does not exist", "evidence": "docs/PROJECT-STATE.md §0 constraint 11 and docs/adr/0016-svelte-5-vite-typescript.md", "reason": "a UI that implies a finished feature trains users not to trust the UI, and it is the one constraint in the brief that a reviewer can check per screen" },
-    { "rule": "a promise of an unreleased locale, transport or Core feature in UI copy", "evidence": "docs/adr/0017-single-i18n-source-compiled-twice.md", "reason": "'unsupported' must be a stated fact rather than an absent file, and a date in a string is a debt nobody tracks" },
-    { "rule": "copying the Happ interface", "evidence": "docs/PROJECT-STATE.md §0, whose source is the brief's UI section", "reason": "the parity matrix is behavioural, not visual: a NEXORA surface owes a user the actions they already have, not another product's layout" },
-    { "rule": "a translated string reached over background RPC", "evidence": "omega-web/src/omega/filters.coffee:24", "reason": "the legacy design makes every label a worker wake-up, which is the documented defect ADR-0017 rule 3 removes" },
-    { "rule": "a second catalog as the place strings are defined", "evidence": "docs/architecture/20-target-repository-layout.md §3", "reason": "two sources means one of them wins by accident, and omega-locales is the one with a community and a history" },
-    { "rule": "a secret value in a store, a URL, a component property, a DOM attribute or a log line", "evidence": "docs/architecture/32-secrets-keystore-masking.md §3", "reason": "the UI is where a value is typed and where a reference is displayed; a round trip through any store turns one door into many" },
-    { "rule": "a silently stale connected indicator", "evidence": "docs/architecture/22-component-contracts.md §12", "reason": "the last snapshot is a legitimate thing to show and an unmarked last snapshot is a claim about a process nobody checked" },
-    { "rule": "a badge as the only evidence of a block or a fail-open", "evidence": "docs/architecture/30-failure-policy.md §9", "reason": "ADR-0009 rule 3 requires visibility a user can verify, and colour carries no port, no reason and no profile" },
-    { "rule": "a health or latency figure presented as proof that traffic is proxied", "evidence": "packages/schema/protocol/commands/server.test.json#/result/properties/matchesExpectedEgress", "reason": "docs/verification/live-matrix.md excludes 'a green tick' from its rows for this reason: a tick is allowed to mean egress proof and nothing else" },
-    { "rule": "a probe, refresh or subscription fetch started by opening the popup", "evidence": "docs/architecture/22-component-contracts.md §13", "reason": "a mount that spends a rate budget makes the popup the reason a real action was refused (LIVE-17)" },
-    { "rule": "an upstream message, a stack, a path or a URL rendered verbatim as an error", "evidence": "omega-web/src/coffee/log_error.coffee:6", "reason": "the frames of a failed fetch contain the URL that failed, and a log line and a screen share the same prohibition for the same reason (docs/architecture/36-observability.md §12)" },
-    { "rule": "a legacy stylesheet injected into a shadow root, or a NEXORA surface depending on legacy CSS", "evidence": "docs/adr/0016-svelte-5-vite-typescript.md", "reason": "inherited stylesheets would put user-authored CSS inside the credential-displaying surface, and ADR-0016 rule 5's encapsulation is the reason the token pipeline exists" },
-    { "rule": "a remote script, an eval, or a build that needs unsafe-eval", "evidence": "docs/architecture/31-security-model.md §13", "reason": "the packaged bundle must survive the declared CSP, and a template compiler at runtime would be a second code path with no owner" },
-    { "rule": "a dryRun plan rendered in a past tense", "evidence": "packages/schema/protocol/commands/config.apply.json#/result/properties/dryRun", "reason": "a hold and an act must not look alike on a screen whose whole job is the difference between them" },
-    { "rule": "one screen re-declaring a bound that a schema already owns", "evidence": "packages/schema/connector-settings.schema.json", "reason": "a UI limit that disagrees with its contract is a control that refuses valid input, and the disagreement is invisible until a user cannot type a legal value" }
+    {
+      "rule": "a control that is enabled while its backend does not exist",
+      "evidence": "docs/PROJECT-STATE.md §0 constraint 11 and docs/adr/0016-svelte-5-vite-typescript.md",
+      "reason": "a UI that implies a finished feature trains users not to trust the UI, and it is the one constraint in the brief that a reviewer can check per screen"
+    },
+    {
+      "rule": "a promise of an unreleased locale, transport or Core feature in UI copy",
+      "evidence": "docs/adr/0017-single-i18n-source-compiled-twice.md",
+      "reason": "'unsupported' must be a stated fact rather than an absent file, and a date in a string is a debt nobody tracks"
+    },
+    {
+      "rule": "copying the Happ interface",
+      "evidence": "docs/PROJECT-STATE.md §0, whose source is the brief's UI section",
+      "reason": "the parity matrix is behavioural, not visual: a NEXORA surface owes a user the actions they already have, not another product's layout"
+    },
+    {
+      "rule": "a translated string reached over background RPC",
+      "evidence": "omega-web/src/omega/filters.coffee:24",
+      "reason": "the legacy design makes every label a worker wake-up, which is the documented defect ADR-0017 rule 3 removes"
+    },
+    {
+      "rule": "a second catalog as the place strings are defined",
+      "evidence": "docs/architecture/20-target-repository-layout.md §3",
+      "reason": "two sources means one of them wins by accident, and omega-locales is the one with a community and a history"
+    },
+    {
+      "rule": "a secret value in a store, a URL, a component property, a DOM attribute or a log line",
+      "evidence": "docs/architecture/32-secrets-keystore-masking.md §3",
+      "reason": "the UI is where a value is typed and where a reference is displayed; a round trip through any store turns one door into many"
+    },
+    {
+      "rule": "a silently stale connected indicator",
+      "evidence": "docs/architecture/22-component-contracts.md §12",
+      "reason": "the last snapshot is a legitimate thing to show and an unmarked last snapshot is a claim about a process nobody checked"
+    },
+    {
+      "rule": "a badge as the only evidence of a block or a fail-open",
+      "evidence": "docs/architecture/30-failure-policy.md §9",
+      "reason": "ADR-0009 rule 3 requires visibility a user can verify, and colour carries no port, no reason and no profile"
+    },
+    {
+      "rule": "a health or latency figure presented as proof that traffic is proxied",
+      "evidence": "packages/schema/protocol/commands/server.test.json#/result/properties/matchesExpectedEgress",
+      "reason": "docs/verification/live-matrix.md excludes 'a green tick' from its rows for this reason: a tick is allowed to mean egress proof and nothing else"
+    },
+    {
+      "rule": "a probe, refresh or subscription fetch started by opening the popup",
+      "evidence": "docs/architecture/22-component-contracts.md §13",
+      "reason": "a mount that spends a rate budget makes the popup the reason a real action was refused (LIVE-17)"
+    },
+    {
+      "rule": "an upstream message, a stack, a path or a URL rendered verbatim as an error",
+      "evidence": "omega-web/src/coffee/log_error.coffee:6",
+      "reason": "the frames of a failed fetch contain the URL that failed, and a log line and a screen share the same prohibition for the same reason (docs/architecture/36-observability.md §12)"
+    },
+    {
+      "rule": "a legacy stylesheet injected into a shadow root, or a NEXORA surface depending on legacy CSS",
+      "evidence": "docs/adr/0016-svelte-5-vite-typescript.md",
+      "reason": "inherited stylesheets would put user-authored CSS inside the credential-displaying surface, and ADR-0016 rule 5's encapsulation is the reason the token pipeline exists"
+    },
+    {
+      "rule": "a remote script, an eval, or a build that needs unsafe-eval",
+      "evidence": "docs/architecture/31-security-model.md §13",
+      "reason": "the packaged bundle must survive the declared CSP, and a template compiler at runtime would be a second code path with no owner"
+    },
+    {
+      "rule": "a dryRun plan rendered in a past tense",
+      "evidence": "packages/schema/protocol/commands/config.apply.json#/result/properties/dryRun",
+      "reason": "a hold and an act must not look alike on a screen whose whole job is the difference between them"
+    },
+    {
+      "rule": "one screen re-declaring a bound that a schema already owns",
+      "evidence": "packages/schema/connector-settings.schema.json",
+      "reason": "a UI limit that disagrees with its contract is a control that refuses valid input, and the disagreement is invisible until a user cannot type a legal value"
+    }
   ],
   "openItems": [
     "the sentences: every state in §4 names what it must never claim, and the wording itself is msgids waiting to be written in omega-locales/en_US/LC_MESSAGES/omega-web.po, which is where docs/architecture/35-schema-versioning-migration.md §17 and packages/schema/migrations.json#/openDecisions/1 stop and the translation pipeline starts",
