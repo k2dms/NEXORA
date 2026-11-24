@@ -28,7 +28,7 @@
     "flags": "gi",
     "why": "Two vocabularies are in use across the corpus -- `Verified: NO — deferred to Phase 2` and the bare `**NO — Phase 2**` of the table columns in docs/architecture/35-38 -- and both are deferred claims. They are one alternation so that `Verified: NO — deferred to Phase 2` counts once, not twice. The leading `\\b` is load-bearing: without it, `UNVERIFIED: no lockfile is tracked` reads as a `Verified: NO` claim and the queue inherits a row nobody wrote.",
     "where": "docs/**/*.md, excluding docs/architecture/39-verification-matrix.md itself -- this document is the queue, not a claim in it",
-    "counted": 150
+    "counted": 151
   },
   "states": {
     "values": [
@@ -919,7 +919,7 @@
     },
     {
       "id": "VER-36",
-      "subject": "no run shows the Svelte cut-over parity matrix gating a flip, and no popup startup budget has been measured",
+      "subject": "the popup cut-over still has one pending parity row (the plain-JS popup), and the paint, command and cold-worker budgets have no browser measurement",
       "state": "no-run",
       "owner": "ui",
       "closesBy": {
@@ -932,7 +932,7 @@
           "anchor": "Every budget is `Verified: NO — deferred to Phase 2`"
         }
       ],
-      "why": "ADR-0016 makes cut-over a measurement, not a date; without the matrix the popup flips on opinion."
+      "why": "ADR-0016 makes cut-over a measurement, not a date. The bundle budget is measured in-repo, but the plain-JS popup row and the three browser-yielded startup numbers still need a real browser before the popup flips."
     },
     {
       "id": "VER-37",
@@ -949,7 +949,7 @@
           "anchor": "the paint, command and cold-worker numbers stay a real browser's to yield"
         }
       ],
-      "why": "A budget with no measurement behind it is a target, not a fact. The bundle budget is measured in-repo now (52.2 KiB against 64 KiB, asserted by test); the other three need the popup running in a real browser, which is why the row stays needs-human."
+      "why": "A budget with no measurement behind it is a target, not a fact. The bundle budget is measured in-repo now (57.1 KiB against 64 KiB, asserted by test); the other three need the popup running in a real browser, which is why the row stays needs-human."
     },
     {
       "id": "VER-39",
@@ -1567,6 +1567,23 @@
         }
       ],
       "why": "Editing is not applying: config.apply is a replace-class command, so a dirty buffer and an applied state must both be visible at all times. The comparison is field-by-field against the applied server's own projection and the applied state moves only when a view arrives; what no test can do is drive a real editing session in a real browser, which is the half this row keeps no-run."
+    },
+    {
+      "id": "VER-99",
+      "subject": "the theme token pipeline is code — themes.ts reads the catalogue, trims its measured whitespace defects, refuses non-hex values and derives the semantic tokens, and Popup.svelte writes all 31 properties to its host — but no real theme dropdown has been rendered",
+      "state": "no-run",
+      "owner": "ui",
+      "closesBy": {
+        "kind": "assertion",
+        "ref": "the theme token suite (nexora/extension/src/themes.test.ts, green in CI)"
+      },
+      "at": [
+        {
+          "doc": "docs/architecture/37-ui-architecture.md",
+          "anchor": "`Verified: NO` for the real theme dropdown (`VER-99`)"
+        }
+      ],
+      "why": "The catalogue crosses into the browser as data and the token writer targets the custom-element host, so no stylesheet is fetched or injected. The unit suite reads the shipped catalogue and variable.css, but what no test can do is render the real dropdown, its three defaults and Clear in a browser, which is the half this row keeps no-run."
     }
   ]
 }

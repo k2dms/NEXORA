@@ -10,14 +10,24 @@
   import { autoResize } from '../popup/resize';
   import { documentStateCopy, type DocumentState } from '../popup/documentStates';
   import { toggleSiteRule } from '../popup/bridge';
+  import { tokensFor, type ThemeEntry } from '../themes';
   import type { PopupProfile, PopupSnapshot } from '../popup/model';
 
-  let { snapshot, legacyProfiles = [], unavailableReason = '', documentState = null as DocumentState | null }: {
+  let { snapshot, legacyProfiles = [], unavailableReason = '', documentState = null as DocumentState | null, theme = null as ThemeEntry | null }: {
     snapshot?: PopupSnapshot;
     legacyProfiles?: string[];
     unavailableReason?: string;
     documentState?: DocumentState | null;
+    theme?: ThemeEntry | null;
   } = $props();
+  const hostEl = $host<HTMLElement>();
+  // Custom properties inherit into the shadow root without injecting a legacy stylesheet.
+  $effect(() => {
+    if (!theme) return;
+    for (const [token, value] of Object.entries(tokensFor(theme))) {
+      hostEl.style.setProperty('--' + token, value);
+    }
+  });
   const wholeDocument = $derived(documentState ? documentStateCopy(documentState) : null);
 
   // Invariant 1: with no Connector the popup still renders the legacy list and says why the NEXORA half

@@ -2,16 +2,15 @@ import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { formOfServer, isDirty } from './formDirty.ts';
-import type { SavedServer } from './model.ts';
 import type { SavedServer, ServerForm } from './model.ts';
 
 const saved: SavedServer = {
-  id: '3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01',
+  id: '3f2a1c9e-7b4d-4e60-9a11-0d2c4e6f8a01', // nexora-secret-allow: synthetic fixture id, never a real credential
   displayName: 'Stockholm',
   protocol: 'vless',
   address: 'se1.example.net',
   port: 443,
-  userIdRef: '11111111-1111-4111-8111-111111111111',
+  userIdRef: '11111111-1111-4111-8111-111111111111', // nexora-secret-allow: synthetic fixture id, never a real credential
   network: 'tcp',
   security: 'reality',
   flow: 'xtls-rprx-vision',
@@ -23,7 +22,7 @@ const clean: ServerForm = {
   displayName: 'Stockholm',
   address: 'se1.example.net',
   port: 443,
-  userId: '11111111-1111-4111-8111-111111111111',
+  userId: '11111111-1111-4111-8111-111111111111', // nexora-secret-allow: synthetic fixture id, never a real credential
   serverName: 'se1.example.net',
   publicKey: 'A'.repeat(43),
   shortId: '0011223',
@@ -36,12 +35,12 @@ test('a form equal to the applied server is not dirty', () => {
 
 test('editing any field makes the buffer dirty', () => {
   for (const field of ['displayName', 'address', 'serverName', 'publicKey'] as const) {
-    assert.equal(isDirty({ ...clean, [field]: clean[field] + 'x' }, saved), true, field);
+    assert.equal(isDirty({ ...clean, [field]: clean[field] + 'x' }, formOfServer(saved)), true, field);
   }
-  assert.equal(isDirty({ ...clean, port: 8443 }, saved), true);
-  assert.equal(isDirty({ ...clean, userId: '22222222-2222-4222-8222-222222222222' }, saved), true);
-  assert.equal(isDirty({ ...clean, shortId: '' }, saved), true);
-  assert.equal(isDirty({ ...clean, flow: false }, saved), true);
+  assert.equal(isDirty({ ...clean, port: 8443 }, formOfServer(saved)), true);
+  assert.equal(isDirty({ ...clean, userId: '22222222-2222-4222-8222-222222222222' }, formOfServer(saved)), true); // nexora-secret-allow: synthetic fixture id, never a real credential
+  assert.equal(isDirty({ ...clean, shortId: '' }, formOfServer(saved)), true);
+  assert.equal(isDirty({ ...clean, flow: false }, formOfServer(saved)), true);
 });
 
 test('the applied state with no form is never dirty: editing is not applying', () => {

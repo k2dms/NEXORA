@@ -10,7 +10,7 @@ Status as of 2026-11-12: **Windows/Chromium supports a private subscription URL 
 open external HTTPS → disconnect. The manual REALITY path and recovery after MV3/full Chrome restart are verified
 in an isolated persistent unpacked installation, without reinstalling on browser restart. It is not a production
 release: trusted Core installation and the complete shared-owner policy remain unfinished.** The latest
-continuation is §4.150; older scope and inventory paragraphs
+continuation is §4.151; older scope and inventory paragraphs
 below are dated history, not a prohibition on implementation.
 §7 records the push authorization and ref.
 
@@ -6244,6 +6244,18 @@ build and svelte-check are green.
 **Gates.** All eight green; Go packages ok.
 
 **The push record.** `git push nexora nexora/architecture:master` on 2026-11-22 carried d7454bc (the sixth parity flip); `nexora/master` moved 19af7e4 → d7454bc.
+
+### 4.151 The theme token pipeline is code — VER-99 registered, the seventh parity flip (2026-11-24)
+
+**The pipeline.** `nexora/extension/src/themes.ts` is browser-safe: the shipped catalogue is parsed as data, the seventeen measured whitespace defects in `china-red-screen` and `tomorrow-night-blue` are trimmed, a non-hex palette is refused, and the fifteen semantic tokens follow `variable.css` exactly. `nexora/extension/src/ui/Popup.svelte` accepts the theme as a property and writes all 31 custom properties to the custom-element host through `$host()`; no stylesheet is fetched, copied or injected. A browser run set a theme property, observed all 31 properties, then changed the theme and observed the host values update.
+
+**The row.** VER-99 registered (ui, assertion, no-run): the catalogue reader, exact semantic mapping and host writer are asserted; the real dropdown, its three defaults and Clear remain the browser half. The parity row "theme dropdown, three defaults, Clear, and the raw" flipped done naming it — parity 7 of 18.
+
+**Corpus.** Matrix 53 → 54 rows; ui 9 → 10, assertion 8 → 9, no-run 41 → 42; marker.counted 150 → 151 (doc 37 §6's new sentence carries the label; the partition is 99 + 26 + 25). The extension suite is 118/118. The rebuilt popup document totals 57.1 KiB against the 64 KiB budget, so doc 37 and doc 39 now carry that measurement in place of the earlier 52.2 KiB snapshot.
+
+**Gates.** All eight green; schema verify runs 1241 checks, the UI-guard self-test catches all eight injected defects, and the Go suite, gofmt and vet are clean. The extension build and svelte-check report zero errors (two warnings), and the full extension suite is green over the rebuilt artifact.
+
+**Not pushed yet.** This record is local: the push waits for the user's explicit confirmation, and the commit that carries this paragraph stays unpushed until then.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*

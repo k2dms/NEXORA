@@ -767,7 +767,8 @@
         "evidence": "omega-web/src/omega/controllers/master.coffee:329-335",
         "surface": "settings",
         "obligation": "168 selectable entries enumerable without a fetch (§6); the textarea stays on the legacy screen because no NEXORA surface accepts raw CSS",
-        "status": "specified"
+        "status": "done",
+        "check": "VER-99"
       },
       {
         "legacy": "the first-run and switch-profile guides",
