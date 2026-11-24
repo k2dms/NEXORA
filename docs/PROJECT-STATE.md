@@ -6255,7 +6255,7 @@ build and svelte-check are green.
 
 **Gates.** All eight green; schema verify runs 1241 checks, the UI-guard self-test catches all eight injected defects, and the Go suite, gofmt and vet are clean. The extension build and svelte-check report zero errors (two warnings), and the full extension suite is green over the rebuilt artifact.
 
-**Not pushed yet.** This record is local: the push waits for the user's explicit confirmation, and the commit that carries this paragraph stays unpushed until then.
+**The push record.** `git push nexora nexora/architecture:master` on 2026-11-24 carried 62b6fc7 (the seventh parity flip); `nexora/master` moved effdd9e → 62b6fc7.
 Plus the decisions in §7 — §9's nine slots now carry eight answered rows (2, 3, 5, 6, 7 and 8 answered 2026-11-14, on top of the fourth and the ninth) and one open question, and the note under that table says why the answered ones keep their numbers.
 Everything in §1, §2, §5 was measured, not inferred — re-run the
 probes before contradicting it.*
